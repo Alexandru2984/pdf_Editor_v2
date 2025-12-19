@@ -1,0 +1,45 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Page Numbers Result{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="max-width: 900px; margin: 3rem auto; padding: 0 1rem;">
+    <div class="preview-header" style="background: white; padding: 2rem; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 2rem; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+        <h2 style="color: #1f2937;">Page Numbers Added Successfully!</h2>
+        <p style="color: #6b7280; margin-top: 0.5rem;">
+            Your PDF now has page numbers on all pages
+        </p>
+    </div>
+
+    <div class="pdf-viewer-wrapper" style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; color: #1f2937; text-align: center;">📄 Numbered File:</h3>
+        
+        <div style="background: #f9fafb; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="font-size: 2rem;">📄</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: #1f2937; font-size: 1.1rem;">
+                        {{ numbered_filename }}
+                    </div>
+                    <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;">
+                        Size: {{ numbered_size|filesizeformat }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="text-decoration: none;">
+                ← Dashboard
+            </a>
+            <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
+                👁️ Preview Numbered PDF
+            </button>
+            <a href="{% url 'download_numbered' %}" class="btn btn-primary" style="text-decoration: none;">
+                📥 Download Numbered PDF
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

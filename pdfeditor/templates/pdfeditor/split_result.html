@@ -1,0 +1,49 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Split Result{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="max-width: 1000px; margin: 3rem auto; padding: 0 1rem;">
+    <div class="preview-header" style="background: white; padding: 2rem; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 2rem; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+        <h2 style="color: #1f2937;">PDF Split Successfully!</h2>
+        <p style="color: #6b7280; margin-top: 0.5rem;">
+            Created <strong>{{ split_count }}</strong> file{{ split_count|pluralize }}
+        </p>
+    </div>
+
+    <div class="pdf-viewer-wrapper" style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; color: #1f2937;">📁 Generated Files:</h3>
+        
+        <div class="files-list" style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for file in files_info %}
+            <div class="file-card" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb;">
+                <div>
+                    <div style="font-weight: 600; color: #1f2937;">📄 {{ file.name }}</div>
+                    <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;">
+                        Size: {{ file.size|filesizeformat }}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: stretch;">
+                    <button onclick="pdfModal.open('/media/{{ file.path_relative }}')" class="btn btn-preview" style="margin: 0; border: none; padding: 0.75rem 1rem; flex: 1; height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; line-height: 1;">
+                        👁️ Preview
+                    </button>
+                    <a href="/download_split/?file={{ forloop.counter0 }}" class="btn btn-primary" style="margin: 0; text-decoration: none; padding: 0.75rem 1rem; flex: 1; height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; line-height: 1;">
+                        📥 Download
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb; text-align: center; display: flex; gap: 1rem; justify-content: center;">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="text-decoration: none;">
+                ← Dashboard
+            </a>
+            <a href="{% url 'dashboard' %}" class="btn btn-primary" style="text-decoration: none;">
+                Process Another PDF
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PDF Platform{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/pdf-modal.css">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Header with Logo -->
+    <header style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 1rem 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div style="max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+            <a href="https://micutu.com" target="_blank" style="text-decoration: none; display: flex; align-items: center; gap: 1rem; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                <img src="/static/images/logo.jpg" alt="Micu's Stuff" style="height: 60px; border-radius: 8px;">
+                <div>
+                    <h1 style="color: white; margin: 0; font-size: 1.5rem; font-weight: 700;">PDF Platform</h1>
+                    <p style="color: #9ca3af; margin: 0; font-size: 0.875rem;">by Micu's Stuff</p>
+                </div>
+            </a>
+            <a href="{% url 'dashboard' %}" style="color: white; text-decoration: none; padding: 0.5rem 1.5rem; background: rgba(255,255,255,0.1); border-radius: 0.5rem; transition: all 0.2s; font-weight: 500;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                🏠 Dashboard
+            </a>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}
+    {% endblock %}
+
+    <!-- PDF Modal JS -->
+    <script src="/static/js/pdf-modal.js"></script>
+    
+    <script>
+        // Auto-hide messages after 5 seconds
+        setTimeout(() => {
+            const messages = document.querySelectorAll('.message');
+            messages.forEach(msg => {
+                msg.style.animation = 'fadeOut 0.3s ease-out forwards';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

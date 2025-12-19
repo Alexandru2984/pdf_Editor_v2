@@ -1,0 +1,761 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}AI Text Rephrase{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/pdfjs-dist@3.4.120/web/pdf_viewer.css">
+<style>
+
+.rephrase-container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+}
+
+.pdf-viewer-section {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.pdf-viewer-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pdf-viewer-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.pdf-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.pdf-controls button {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.pdf-controls button:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.pdf-controls span {
+    font-size: 0.9rem;
+    min-width: 80px;
+    text-align: center;
+}
+
+#pdf-viewer-container {
+    height: 600px;
+    overflow: auto;
+    background: #525659;
+    position: relative;
+}
+
+#pdf-canvas-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+}
+
+.pdf-page-wrapper {
+    position: relative;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.pdf-page-wrapper canvas {
+    display: block;
+}
+
+.pdf-page-wrapper canvas {
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+.pdf-page-wrapper .text-block {
+    z-index: 2 !important;
+    pointer-events: auto !important;
+}
+
+/* textLayer styles come from pdf_viewer.css CDN */
+
+.selection-info {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.selection-info.empty {
+    background: #fef3c7;
+    border-color: #fcd34d;
+}
+
+.form-section {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    height: fit-content;
+}
+
+.form-section h3 {
+    margin: 0 0 1.5rem 0;
+    color: #1f2937;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ollama-status {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.ollama-status.connected {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.ollama-status.disconnected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #374151;
+}
+
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-group textarea:read-only {
+    background: #f9fafb;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.btn-capture {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.btn-group {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.btn-group .btn {
+    flex: 1;
+}
+
+.preview-result {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.preview-result h4 {
+    margin: 0 0 0.5rem 0;
+    color: #0369a1;
+    font-size: 0.9rem;
+}
+
+.preview-result p {
+    margin: 0;
+    color: #1e40af;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.hidden {
+    display: none;
+}
+
+.pdf-selector {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.pdf-selector label {
+    color: white;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.pdf-selector select {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-size: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rephrase-container">
+    <!-- PDF Viewer Section -->
+    <div class="pdf-viewer-section">
+        <div class="pdf-viewer-header">
+            <h3>📄 {{ pdf_name }}</h3>
+            <div class="pdf-controls">
+                <button onclick="prevPage()">◀ Prev</button>
+                <span id="page-info">Page 1 of ?</span>
+                <button onclick="nextPage()">Next ▶</button>
+                <button onclick="zoomOut()">−</button>
+                <span id="zoom-info">100%</span>
+                <button onclick="zoomIn()">+</button>
+            </div>
+        </div>
+        <div id="pdf-viewer-container">
+            <div id="pdf-canvas-container"></div>
+        </div>
+        <div style="padding: 1rem;">
+            <button class="btn btn-capture" onclick="clearSelection()">
+                🗑️ Clear Selection
+            </button>
+            <div id="selection-info" class="selection-info empty">
+                <strong>💡 Instructions:</strong> Click on text lines to select them. Click again to deselect.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Form Section -->
+    <div class="form-section">
+        <h3>🤖 AI Text Rephrase</h3>
+        
+        {% if ollama_connected %}
+        <div class="ollama-status connected">
+            ✅ Ollama connected! {{ ollama_models|length }} models available.
+        </div>
+        {% else %}
+        <div class="ollama-status disconnected">
+            ❌ Ollama not available. Please start Ollama server.
+        </div>
+        {% endif %}
+        
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="pdf-selector">
+            <label>📂 Select PDF:</label>
+            <select name="pdf"
+                onchange="window.location.href='{% url 'rephrase' %}?pdf=' + encodeURIComponent(this.value)">
+
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        
+        <form method="post" id="rephrase-form">
+            {% csrf_token %}
+            
+            <!-- Hidden fields for coordinates -->
+            <input type="hidden" name="page_number" id="page_number" value="">
+            <input type="hidden" name="bbox_x0" id="bbox_x0" value="">
+            <input type="hidden" name="bbox_y0" id="bbox_y0" value="">
+            <input type="hidden" name="bbox_x1" id="bbox_x1" value="">
+            <input type="hidden" name="bbox_y1" id="bbox_y1" value="">
+            
+            <div class="form-group">
+                <label>Selected Text</label>
+                <textarea name="selected_text" id="selected_text" readonly placeholder="Select text from PDF viewer..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="rephrase_style">Rephrase Style</label>
+                <select name="rephrase_style" id="rephrase_style">
+                    <option value="formal">Formal/Professional</option>
+                    <option value="casual">Casual/Friendly</option>
+                    <option value="simplified">Simplified</option>
+                    <option value="concise">Concise/Shorter</option>
+                    <option value="expanded">Expanded/Detailed</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="ai_model">AI Model</label>
+                <select name="ai_model" id="ai_model">
+                    {% for model in ollama_models %}
+                    <option value="{{ model }}">{{ model }}</option>
+                    {% empty %}
+                    <option value="">No models available</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="previewRephrase()">
+                    👁️ Preview
+                </button>
+                <button type="submit" class="btn btn-primary" id="apply-btn" disabled>
+                    ✨ Apply Changes
+                </button>
+            </div>
+            
+            <div id="preview-result" class="preview-result hidden">
+                <h4>✅ Rephrased Text:</h4>
+                <p id="preview-text"></p>
+            </div>
+        </form>
+        
+        <div style="margin-top: 1.5rem;">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="display: inline-block; text-decoration: none;">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
+<script>
+/* =========================
+   PDF.js setup
+========================= */
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+
+let pdfDoc = null;
+let currentPage = 1;
+let scale = 1.5;
+
+let currentPageHeightPDF = 0; // height in PDF units (scale=1)
+let textBlocks = [];          // { element, text, bboxPDF }
+let selected = new Set();
+
+const pdfUrl = '/media/{{ pdf_path_relative }}';
+const container = document.getElementById('pdf-canvas-container');
+const pageInfoEl = document.getElementById('page-info');
+const zoomInfoEl = document.getElementById('zoom-info');
+
+function getCSRFToken() {
+  const el = document.querySelector('input[name=csrfmiddlewaretoken]');
+  return el ? el.value : '';
+}
+
+/* =========================
+   Load + render
+========================= */
+async function loadPDF() {
+  try {
+    pdfDoc = await pdfjsLib.getDocument(pdfUrl).promise;
+    pageInfoEl.textContent = `Page ${currentPage} of ${pdfDoc.numPages}`;
+    await renderPage(currentPage);
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<p style="color:white;padding:2rem;">Error loading PDF</p>';
+  }
+}
+
+async function renderPage(pageNum) {
+  if (!pdfDoc) return;
+
+  const page = await pdfDoc.getPage(pageNum);
+
+  // viewport for rendering (DOM pixels)
+  const viewport = page.getViewport({ scale });
+  console.log('Viewport dimensions:', viewport.width, 'x', viewport.height);
+
+  // unscaled viewport for PDF units (scale=1)
+  const viewportPDF = page.getViewport({ scale: 1 });
+  currentPageHeightPDF = viewportPDF.height;
+
+  // reset UI state for this page
+  container.innerHTML = '';
+  textBlocks = [];
+  selected.clear();
+  updateSelectionUI();
+
+  // wrapper (positioning context)
+  const wrapper = document.createElement('div');
+  wrapper.className = 'pdf-page-wrapper';
+  wrapper.style.position = 'relative';
+  wrapper.style.width = `${viewport.width}px`;
+  wrapper.style.height = `${viewport.height}px`;
+
+  // canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.floor(viewport.width);
+  canvas.height = Math.floor(viewport.height);
+  wrapper.appendChild(canvas);
+  container.appendChild(wrapper);
+
+  // render page bitmap
+  const ctx = canvas.getContext('2d');
+  await page.render({ canvasContext: ctx, viewport }).promise;
+
+  // text items
+  const textContent = await page.getTextContent();
+  console.log('Text items count:', textContent.items.length);
+  console.log('First item:', textContent.items[0]);
+
+  // Build "line blocks": group by y (DOM top) with a stable threshold.
+  // We'll compute each item's DOM-top bounding box using the viewport height.
+  const items = [];
+  for (const it of textContent.items) {
+    const s = (it.str || '').trim();
+    if (!s) continue;
+
+    // transform into viewport coords
+    const tx = pdfjsLib.Util.transform(viewport.transform, it.transform);
+    const x = tx[4];
+    const yBottom = tx[5]; // baseline-ish, in viewport coords (origin bottom-left)
+
+    // Convert to DOM top-left coordinates
+    // After viewport.transform, tx[5] (yBottom) is already in DOM coordinates!
+    // It represents the BASELINE position from TOP of canvas
+    const h = it.height * scale;
+    const w = it.width * scale;
+
+    // yBottom is baseline, subtract height to get top of text box
+    const top = yBottom - h;
+    const left = x;
+
+    if (items.length === 1) {
+      console.log('First item transform:', {
+        yBottom,
+        h,
+        'viewport.height': viewport.height,
+        'calculated top': top,
+        left
+      });
+    }
+
+    items.push({
+      str: s,
+      left,
+      top,
+      width: w,
+      height: h,
+      // Also store PDF-unit bbox (scale=1, bottom-left origin)
+      // Convert viewport pixels -> PDF units: divide by scale
+      bboxPDF: {
+        x0: left / scale,
+        x1: (left + w) / scale,
+        // DOM top -> PDF y: PDF_y = pageHeight - (top/scale) - (h/scale)
+        y0: currentPageHeightPDF - ((top + h) / scale),
+        y1: currentPageHeightPDF - (top / scale),
+      }
+    });
+  }
+
+  // sort by top then left (helps grouping)
+  items.sort((a, b) => (a.top - b.top) || (a.left - b.left));
+
+  const lineThresholdPx = Math.max(4, 6 * (scale / 1.5)); // stable-ish
+  const lines = [];
+  let line = [];
+  let lastTop = null;
+
+  for (const it of items) {
+    if (lastTop === null || Math.abs(it.top - lastTop) <= lineThresholdPx) {
+      line.push(it);
+      lastTop = (lastTop === null) ? it.top : (lastTop * 0.7 + it.top * 0.3);
+    } else {
+      if (line.length) lines.push(line);
+      line = [it];
+      lastTop = it.top;
+    }
+  }
+  if (line.length) lines.push(line);
+
+  console.log('Total lines created:', lines.length);
+  console.log('First line items:', lines[0]?.length);
+
+  // Create clickable overlay for each line
+  lines.forEach((ln, idx) => {
+    // sort line items by left and join with spaces
+    ln.sort((a, b) => a.left - b.left);
+
+    const left = Math.min(...ln.map(i => i.left));
+    const top = Math.min(...ln.map(i => i.top));
+    const right = Math.max(...ln.map(i => i.left + i.width));
+    const bottom = Math.max(...ln.map(i => i.top + i.height));
+
+    const text = ln.map(i => i.str).join(' ').replace(/\s+/g, ' ').trim();
+
+    // Debug first block position
+    if (idx === 0) {
+      console.log('First block position:', {left, top, width: right - left, height: bottom - top});
+    }
+
+    // bbox in PDF units (union)
+    const x0 = Math.min(...ln.map(i => i.bboxPDF.x0));
+    const x1 = Math.max(...ln.map(i => i.bboxPDF.x1));
+    const y0 = Math.min(...ln.map(i => i.bboxPDF.y0));
+    const y1 = Math.max(...ln.map(i => i.bboxPDF.y1));
+
+    const block = document.createElement('div');
+    block.className = 'text-block';
+    block.dataset.index = String(idx);
+    block.style.cssText = `
+      position:absolute;
+      left:${left}px;
+      top:${top}px;
+      width:${right - left}px;
+      height:${bottom - top}px;
+      cursor:pointer;
+      border:2px solid transparent;
+      border-radius:3px;
+      transition:all 0.15s;
+      box-sizing:border-box;
+    `;
+
+    block.addEventListener('click', () => toggleBlock(idx));
+    block.addEventListener('mouseenter', () => {
+      if (!selected.has(idx)) {
+        block.style.background = 'rgba(102, 126, 234, 0.15)';
+        block.style.borderColor = 'rgba(102, 126, 234, 0.4)';
+      }
+    });
+    block.addEventListener('mouseleave', () => {
+      if (!selected.has(idx)) {
+        block.style.background = 'transparent';
+        block.style.borderColor = 'transparent';
+      }
+    });
+
+    wrapper.appendChild(block);
+
+    textBlocks.push({
+      element: block,
+      text,
+      bboxPDF: { x0, y0, x1, y1 }
+    });
+  });
+
+  console.log('Text blocks created:', textBlocks.length);
+  console.log('Wrapper children count:', wrapper.children.length);
+
+  pageInfoEl.textContent = `Page ${currentPage} of ${pdfDoc.numPages}`;
+  zoomInfoEl.textContent = `${Math.round(scale * 100)}%`;
+}
+
+/* =========================
+   Selection logic
+========================= */
+function toggleBlock(index) {
+  const block = textBlocks[index];
+  if (!block) return;
+
+  if (selected.has(index)) {
+    selected.delete(index);
+    block.element.style.background = 'transparent';
+    block.element.style.borderColor = 'transparent';
+  } else {
+    selected.add(index);
+    block.element.style.background = 'rgba(16, 185, 129, 0.25)';
+    block.element.style.borderColor = '#10b981';
+  }
+  updateSelectionUI();
+}
+
+function updateSelectionUI() {
+  const selectedTexts = [];
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+
+  const indices = Array.from(selected).sort((a, b) => a - b);
+  for (const idx of indices) {
+    const b = textBlocks[idx];
+    if (!b) continue;
+
+    selectedTexts.push(b.text);
+
+    x0 = Math.min(x0, b.bboxPDF.x0);
+    y0 = Math.min(y0, b.bboxPDF.y0);
+    x1 = Math.max(x1, b.bboxPDF.x1);
+    y1 = Math.max(y1, b.bboxPDF.y1);
+  }
+
+  const combinedText = selectedTexts.join(' ').replace(/\s+/g, ' ').trim();
+
+  const info = document.getElementById('selection-info');
+  const applyBtn = document.getElementById('apply-btn');
+
+  if (combinedText) {
+    document.getElementById('selected_text').value = combinedText;
+    document.getElementById('page_number').value = currentPage - 1;
+
+    // IMPORTANT: these are already PDF coords (scale=1, bottom-left origin)
+    document.getElementById('bbox_x0').value = x0;
+    document.getElementById('bbox_y0').value = y0;
+    document.getElementById('bbox_x1').value = x1;
+    document.getElementById('bbox_y1').value = y1;
+
+    console.log('BBox sent to server (PDF coords):', {x0, y0, x1, y1});
+    console.log('Page height (PDF units):', currentPageHeightPDF);
+
+    info.innerHTML = `<strong>✅ ${indices.length} line(s) selected</strong> - ${combinedText.length} characters`;
+    info.className = 'selection-info';
+    applyBtn.disabled = false;
+  } else {
+    document.getElementById('selected_text').value = '';
+    document.getElementById('page_number').value = '';
+    document.getElementById('bbox_x0').value = '';
+    document.getElementById('bbox_y0').value = '';
+    document.getElementById('bbox_x1').value = '';
+    document.getElementById('bbox_y1').value = '';
+
+    info.innerHTML = '<strong>💡 Instructions:</strong> Click on text lines to select them. Click again to deselect.';
+    info.className = 'selection-info empty';
+    applyBtn.disabled = true;
+  }
+}
+
+function clearSelection() {
+  for (const idx of selected) {
+    const b = textBlocks[idx];
+    if (!b) continue;
+    b.element.style.background = 'transparent';
+    b.element.style.borderColor = 'transparent';
+  }
+  selected.clear();
+  updateSelectionUI();
+}
+
+/* =========================
+   Controls
+========================= */
+function prevPage() {
+  if (currentPage > 1) {
+    currentPage--;
+    renderPage(currentPage);
+  }
+}
+
+function nextPage() {
+  if (pdfDoc && currentPage < pdfDoc.numPages) {
+    currentPage++;
+    renderPage(currentPage);
+  }
+}
+
+function zoomIn() {
+  scale = Math.min(4.0, scale + 0.25);
+  renderPage(currentPage);
+}
+
+function zoomOut() {
+  scale = Math.max(0.5, scale - 0.25);
+  renderPage(currentPage);
+}
+
+/* =========================
+   Preview (CSRF safe)
+========================= */
+async function previewRephrase() {
+  const selectedText = document.getElementById('selected_text').value.trim();
+  if (!selectedText) {
+    alert('Please select text first by clicking on lines');
+    return;
+  }
+
+  const style = document.getElementById('rephrase_style').value;
+  const model = document.getElementById('ai_model').value;
+
+  document.getElementById('preview-result').classList.remove('hidden');
+  document.getElementById('preview-text').textContent = 'Generating...';
+
+  try {
+    const response = await fetch('{% url "rephrase_preview" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'  // Identifies as AJAX request
+      },
+      body: new URLSearchParams({ text: selectedText, style, model })
+    });
+
+    const data = await response.json();
+    document.getElementById('preview-text').textContent =
+      data.success ? data.rephrased_text : ('Error: ' + (data.error || 'Unknown error'));
+  } catch (err) {
+    document.getElementById('preview-text').textContent = 'Error: ' + err.message;
+  }
+}
+
+/* =========================
+   Init
+========================= */
+loadPDF();
+</script>
+
+{% endblock %}
+

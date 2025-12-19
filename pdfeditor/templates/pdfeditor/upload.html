@@ -1,0 +1,37 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Upload PDF - PDF Editor{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>📤 Încarcă PDF</h2>
+    <p>Selectează fișierul PDF pe care vrei să îl editezi.</p>
+    
+    <form method="post" enctype="multipart/form-data" class="upload-form">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="pdf_file" class="file-label">
+                <span class="file-icon">📁</span>
+                <span class="file-text">Alege fișier PDF</span>
+            </label>
+            <input type="file" 
+                   name="pdf_file" 
+                   id="pdf_file" 
+                   accept=".pdf" 
+                   required
+                   class="file-input">
+            <span class="file-name" id="fileName">Niciun fișier selectat</span>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Încarcă și continuă →</button>
+    </form>
+</div>
+
+<script>
+document.getElementById('pdf_file').addEventListener('change', function(e) {
+    const fileName = e.target.files[0]?.name || 'Niciun fișier selectat';
+    document.getElementById('fileName').textContent = fileName;
+});
+</script>
+{% endblock %}

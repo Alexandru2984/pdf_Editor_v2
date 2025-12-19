@@ -1,0 +1,76 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Rephrase Result - PDF Editor{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>✅ AI Rephrase Complete!</h2>
+    
+    <div class="result-summary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div style="font-size: 3rem;">🤖</div>
+            <div>
+                <h3 style="margin: 0; font-size: 1.5rem;">{{ replacement_count }} Replacement{% if replacement_count != 1 %}s{% endif %} Made</h3>
+                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">
+                    Style: <strong>{{ style|title }}</strong> • Model: <strong>{{ model }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Text Comparison -->
+    <div style="margin-bottom: 1.5rem;">
+        <h3 style="margin: 0 0 1rem 0; color: #374151;">📝 Text Transformation</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <h4 style="margin: 0 0 0.5rem 0; color: #ef4444; font-size: 0.875rem; text-transform: uppercase;">❌ Original Text</h4>
+                <div style="background: #fef2f2; padding: 1rem; border-radius: 0.5rem; border: 2px solid #fecaca; min-height: 60px;">
+                    {{ original_text }}
+                </div>
+            </div>
+            <div>
+                <h4 style="margin: 0 0 0.5rem 0; color: #10b981; font-size: 0.875rem; text-transform: uppercase;">✅ Rephrased Text</h4>
+                <div style="background: #f0fdf4; padding: 1rem; border-radius: 0.5rem; border: 2px solid #bbf7d0; min-height: 60px;">
+                    {{ new_text }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- File Info -->
+    <div style="background: #f8fafc; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+        <p style="margin: 0; color: #6b7280;">
+            📄 <strong>{{ rephrased_filename }}</strong> • 
+            {{ rephrased_size|filesizeformat }}
+        </p>
+    </div>
+    
+    {% if has_warnings %}
+    <div class="warnings-box" style="background: #fef3c7; border: 2px solid #f59e0b; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #92400e;">⚠️ Warnings</h4>
+        <ul style="margin: 0; padding-left: 1.5rem; color: #92400e;">
+            {% for warning in warnings %}
+            <li>{{ warning }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <!-- Preview -->
+    <div style="margin-bottom: 1.5rem;">
+        <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview" style="width: 100%; padding: 1rem;">
+            👁️ Preview Modified PDF
+        </button>
+    </div>
+    
+    <div class="button-group" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+        <a href="{% url 'rephrase' %}" class="btn" style="background: #8b5cf6; color: white;">
+            🤖 Rephrase More
+        </a>
+        <a href="{% url 'download_rephrased' %}" class="btn btn-primary">
+            ⬇️ Download PDF
+        </a>
+    </div>
+</div>
+{% endblock %}

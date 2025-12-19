@@ -1,0 +1,40 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Result{% endblock %}
+
+{% block content %}
+<div class="card result-card">
+    <div class="success-icon">✓</div>
+    <h2>Changes Applied Successfully!</h2>
+    
+    <div class="result-info">
+        <p class="replacement-count">
+            <strong>{{ replacement_count }}</strong> 
+            {% if replacement_count == 1 %}
+                replacement made
+            {% else %}
+                replacements made
+            {% endif %}
+        </p>
+    </div>
+    
+    {% if has_warnings %}
+    <div class="warnings-section">
+        <h3>⚠️ Warning:</h3>
+        <ul class="warnings-list">
+            {% for warning in warnings %}
+            <li>{{ warning }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <div class="button-group">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Dashboard</a>
+        <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
+            👁️ Preview PDF
+        </button>
+        <a href="{% url 'download' %}" class="btn btn-primary">📥 Download Modified PDF</a>
+    </div>
+</div>
+{% endblock %}

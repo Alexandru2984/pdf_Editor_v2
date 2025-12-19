@@ -1,0 +1,52 @@
+# Python
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media/
+/staticfiles/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+
+# Uploads (keep structure, ignore content)
+media/uploads/*
+!media/uploads/.gitkeep
+media/processed/*
+!media/processed/.gitkeep
+media/temp/*
+!media/temp/.gitkeep
+
+# Cache
+*.pid
+*.seed
+*.cache
+.pytest_cache/
+
+# Other
+prompt.txt
+test.pdf
+*.bak

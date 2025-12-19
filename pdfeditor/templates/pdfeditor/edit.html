@@ -1,0 +1,73 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Edit PDF{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>✏️ Find and Replace Text</h2>
+    
+    {% if uploaded_pdfs|length > 1 %}
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.25rem; border-radius: 0.75rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <label for="pdf-selector" style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: white; font-size: 0.95rem;">
+            📂 Select PDF to Edit:
+        </label>
+        <select id="pdf-selector" onchange="window.location.href='{% url 'edit' %}?pdf=' + encodeURIComponent(this.value)" style="width: 100%; padding: 0.875rem 1rem; border: 2px solid rgba(255,255,255,0.3); border-radius: 0.5rem; font-size: 1rem; background: white; color: #1f2937; cursor: pointer; transition: all 0.2s; font-weight: 500;">
+            {% for pdf in uploaded_pdfs %}
+            <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+            </option>
+            {% endfor %}
+        </select>
+        <p style="margin: 0.75rem 0 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.9);">
+            💡 You have {{ uploaded_pdfs|length }} PDFs uploaded. Switch anytime!
+        </p>
+    </div>
+    {% endif %}
+    
+    <p class="pdf-info">
+        Editing: <strong>{{ pdf_name }}</strong>
+        <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview" style="margin-left: 1rem; padding: 0.5rem 1rem;">
+            👁️ Preview PDF
+        </button>
+    </p>
+    
+    <form method="post" class="edit-form">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="{{ form.search_text.id_for_label }}">Search Text</label>
+            {{ form.search_text }}
+            {% if form.search_text.errors %}
+                <div class="error">{{ form.search_text.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.replace_text.id_for_label }}">Replace With</label>
+            {{ form.replace_text }}
+            {% if form.replace_text.errors %}
+                <div class="error">{{ form.replace_text.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group checkbox-group">
+            {{ form.case_sensitive }}
+            <label for="{{ form.case_sensitive.id_for_label }}">Case Sensitive</label>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.page_range.id_for_label }}">Page Range (optional)</label>
+            {{ form.page_range }}
+            <small class="help-text">Example: 1-3,5,7-10 or leave blank for all pages</small>
+            {% if form.page_range.errors %}
+                <div class="error">{{ form.page_range.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="button-group">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back</a>
+            <button type="submit" class="btn btn-primary">Apply Changes ✓</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

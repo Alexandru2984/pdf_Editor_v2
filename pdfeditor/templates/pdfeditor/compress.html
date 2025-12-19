@@ -1,0 +1,95 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Compress PDF{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="max-width: 900px; margin: 3rem auto; padding: 0 1rem;">
+    <div class="preview-header" style="background: white; padding: 2rem; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
+        
+        {% if uploaded_pdfs|length > 1 %}
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.25rem; border-radius: 0.75rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <label for="pdf-selector" style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: white; font-size: 0.95rem;">
+                📂 Select PDF to Compress:
+            </label>
+            <select id="pdf-selector" onchange="window.location.href='{% url 'compress' %}?pdf=' + encodeURIComponent(this.value)" style="width: 100%; padding: 0.875rem 1rem; border: 2px solid rgba(255,255,255,0.3); border-radius: 0.5rem; font-size: 1rem; background: white; color: #1f2937; cursor: pointer; transition: all 0.2s; font-weight: 500;">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+            <p style="margin: 0.75rem 0 0 0; font-size: 0.85rem; color: rgba(255,255,255,0.9);">
+                💡 You have {{ uploaded_pdfs|length }} PDFs uploaded. Switch anytime!
+            </p>
+        </div>
+        {% endif %}
+        
+        <div style="text-align: center;">
+            <h2 style="color: #1f2937; margin-bottom: 0.5rem;">📦 Compress PDF</h2>
+            <p style="color: #6b7280; margin: 0 0 0.5rem 0;">Reduce file size while maintaining quality</p>
+            <div style="display: inline-flex; align-items: center; gap: 1rem; padding: 0.75rem 1.5rem; background: #f9fafb; border-radius: 0.5rem; margin-top: 1rem;">
+                <div>
+                    <div style="font-size: 0.875rem; color: #6b7280;">Current File:</div>
+                    <div style="font-weight: 600; color: #1f2937;">{{ pdf_name }}</div>
+                </div>
+                <div style="border-left: 2px solid #e5e7eb; padding-left: 1rem;">
+                    <div style="font-size: 0.875rem; color: #6b7280;">Original Size:</div>
+                    <div style="font-weight: 600; color: #1f2937;">{{ original_size|filesizeformat }}</div>
+                </div>
+                <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview" style="padding: 0.5rem 1rem;">
+                    👁️ Preview
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper" style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 2rem;">
+        <form method="post">
+            {% csrf_token %}
+            
+            <h3 style="margin-bottom: 1.5rem; color: #1f2937;">⚙️ Select Compression Level:</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+                {% for value, label in form.quality.field.choices %}
+                <label style="display: flex; align-items: start; gap: 1rem; padding: 1.25rem; background: #f9fafb; border-radius: 0.75rem; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;" class="quality-option">
+                    <input type="radio" name="quality" value="{{ value }}" {% if value == form.quality.value %}checked{% endif %} style="margin-top: 0.25rem; width: 1.25rem; height: 1.25rem; cursor: pointer;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">
+                            {% if value == 'low' %}🗜️ {{ label|slice:":21" }}
+                            {% elif value == 'medium' %}⚖️ {{ label|slice:":9" }}
+                            {% else %}💎 {{ label|slice:":20" }}{% endif %}
+                        </div>
+                        <div style="font-size: 0.875rem; color: #6b7280;">
+                            {% if value == 'low' %}{{ label|slice:"24:" }}
+                            {% elif value == 'medium' %}{{ label|slice:"12:" }}
+                            {% else %}{{ label|slice:"23:" }}{% endif %}
+                        </div>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="text-decoration: none;">
+                    ← Back
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    📦 Compress PDF
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.quality-option:hover {
+    background: #eef2ff !important;
+    border-color: #c7d2fe !important;
+}
+
+.quality-option:has(input:checked) {
+    background: #eef2ff !important;
+    border-color: #6366f1 !important;
+}
+</style>
+{% endblock %}

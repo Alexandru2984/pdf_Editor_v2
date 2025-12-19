@@ -1,0 +1,169 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Merge PDFs{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="max-width: 1000px; margin: 3rem auto; padding: 0 1rem;">
+    <div class="preview-header" style="background: white; padding: 2rem; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
+        <div style="text-align: center;">
+            <h2 style="color: #1f2937; margin-bottom: 0.5rem;">🔗 Merge PDFs</h2>
+            <p style="color: #6b7280; margin: 0;">Select 2 or more PDFs to combine into one document</p>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper" style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 2rem;">
+        <form method="post" id="merge-form">
+            {% csrf_token %}
+            {{ form.selected_pdfs }}
+            
+            <div style="margin-bottom: 2rem;">
+                <h3 style="color: #1f2937; margin-bottom: 1rem;">📂 Select PDFs to Merge:</h3>
+                <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">
+                    💡 <strong>Tip:</strong> Check at least 2 PDFs. Drag to reorder - they'll merge in this sequence!
+                </p>
+                
+                <div id="pdf-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    {% for pdf in uploaded_pdfs %}
+                    <div class="pdf-merge-item" data-pdf-id="{{ pdf.id }}" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #f9fafb; border-radius: 0.5rem; border: 2px solid transparent; transition: all 0.2s; cursor: move;">
+                        <input type="checkbox" class="pdf-checkbox" value="{{ pdf.id }}" style="width: 1.25rem; height: 1.25rem; cursor: pointer;">
+                        <div style="font-size: 1.5rem; color: #9ca3af;">⋮⋮</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #1f2937;">📄 {{ pdf.name }}</div>
+                            <div style="font-size: 0.875rem; color: #6b7280;">{{ pdf.size|filesizeformat }}</div>
+                        </div>
+                        <button type="button" onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="btn btn-preview" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                            👁️ Preview
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div id="selection-count" style="margin-top: 1rem; padding: 0.75rem; background: #eff6ff; border-radius: 0.5rem; text-align: center; color: #1e40af; font-weight: 500;">
+                    No PDFs selected
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="{{ form.output_name.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
+                    {{ form.output_name.label }}
+                </label>
+                {{ form.output_name }}
+                <small style="display: block; margin-top: 0.5rem; color: #6b7280;">{{ form.output_name.help_text }}</small>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="text-decoration: none;">
+                    ← Back
+                </a>
+                <button type="submit" id="merge-btn" class="btn btn-primary" disabled>
+                    🔗 Merge PDFs
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Track selected PDFs and handle reordering
+const checkboxes = document.querySelectorAll('.pdf-checkbox');
+const selectedInput = document.querySelector('input[name="selected_pdfs"]');
+const mergeBtn = document.getElementById('merge-btn');
+const selectionCount = document.getElementById('selection-count');
+const pdfList = document.getElementById('pdf-list');
+
+function updateSelection() {
+    const selected = [];
+    document.querySelectorAll('.pdf-merge-item').forEach(item => {
+        const checkbox = item.querySelector('.pdf-checkbox');
+        if (checkbox.checked) {
+            selected.push(checkbox.value);
+            item.style.borderColor = '#6366f1';
+            item.style.background = '#eef2ff';
+        } else {
+            item.style.borderColor = 'transparent';
+            item.style.background = '#f9fafb';
+        }
+    });
+    
+    selectedInput.value = selected.join(',');
+    mergeBtn.disabled = selected.length < 2;
+    
+    if (selected.length === 0) {
+        selectionCount.textContent = 'No PDFs selected';
+        selectionCount.style.background = '#eff6ff';
+        selectionCount.style.color = '#1e40af';
+    } else if (selected.length === 1) {
+        selectionCount.textContent = '1 PDF selected - Need at least 1 more';
+        selectionCount.style.background = '#fef3c7';
+        selectionCount.style.color = '#92400e';
+    } else {
+        selectionCount.textContent = `${selected.length} PDFs selected - Ready to merge!`;
+        selectionCount.style.background = '#d1fae5';
+        selectionCount.style.color = '#065f46';
+    }
+}
+
+checkboxes.forEach(cb => cb.addEventListener('change', updateSelection));
+
+// Simple drag and drop
+let draggedElement = null;
+
+document.querySelectorAll('.pdf-merge-item').forEach(item => {
+    item.draggable = true;
+    
+    item.addEventListener('dragstart', (e) => {
+        draggedElement = item;
+        item.style.opacity = '0.5';
+    });
+    
+    item.addEventListener('dragend', (e) => {
+        item.style.opacity = '1';
+        updateSelection();
+    });
+    
+    item.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(pdfList, e.clientY);
+        if (afterElement == null) {
+            pdfList.appendChild(draggedElement);
+        } else {
+            pdfList.insertBefore(draggedElement, afterElement);
+        }
+    });
+});
+
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.pdf-merge-item:not(.dragging)')];
+    
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+updateSelection();
+</script>
+
+<style>
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.15s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+</style>
+{% endblock %}

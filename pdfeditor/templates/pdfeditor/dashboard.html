@@ -1,0 +1,198 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}PDF Platform - Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="hero-section">
+        <h1 class="hero-title">📄 PDF Platform</h1>
+        <p class="hero-subtitle">Professional PDF Tools - All in One Place</p>
+    </div>
+
+    <div class="upload-zone" id="drop-zone">
+        <div class="upload-icon">📁</div>
+        <h2>Upload Your PDF</h2>
+        <p>Drag & drop your PDF here or click to browse</p>
+        <form method="post" action="{% url 'upload' %}" enctype="multipart/form-data" id="upload-form">
+            {% csrf_token %}
+            <input type="file" name="pdf_file" id="file-input" accept=".pdf" multiple style="display: none;">
+            <button type="button" class="btn btn-primary btn-large" onclick="document.getElementById('file-input').click()">
+                Choose File
+            </button>
+        </form>
+    </div>
+
+    <h2 class="section-title">PDF Operations</h2>
+    
+    <div class="operations-grid">
+        
+        <div class="operation-card" data-feature="edit">
+            <div class="card-icon">✏️</div>
+            <h3>Edit & Rephrase</h3>
+            <p>Find/replace text or use AI to rephrase content</p>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{% url 'edit' %}" class="btn btn-secondary" style="flex: 1;">Find & Replace</a>
+                <a href="{% url 'rephrase' %}" class="btn" style="flex: 1; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white;">🤖 AI Rephrase</a>
+            </div>
+        </div>
+
+        <div class="operation-card" data-feature="split">
+            <div class="card-icon">✂️</div>
+            <h3>Split PDF</h3>
+            <p>Split your PDF into multiple files by pages</p>
+            <a href="{% url 'split' %}" class="btn btn-secondary">Get Started</a>
+        </div>
+
+        <div class="operation-card" data-feature="merge">
+            <div class="card-icon">🔗</div>
+            <h3>Merge PDFs</h3>
+            <p>Combine multiple PDFs into a single document</p>
+            <a href="{% url 'merge' %}" class="btn btn-secondary">Get Started</a>
+        </div>
+
+        <div class="operation-card" data-feature="compress">
+            <div class="card-icon">📦</div>
+            <h3>Compress</h3>
+            <p>Reduce PDF file size without losing quality</p>
+            <a href="{% url 'compress' %}" class="btn btn-secondary">Get Started</a>
+        </div>
+
+        <div class="operation-card" data-feature="watermark">
+            <div class="card-icon">💧</div>
+            <h3>Add Watermark</h3>
+            <p>Add text or image watermark to your PDF</p>
+            <a href="{% url 'watermark' %}" class="btn btn-secondary">Get Started</a>
+        </div>
+
+        <div class="operation-card" data-feature="rotate">
+            <div class="card-icon">🔄</div>
+            <h3>Rotate Pages</h3>
+            <p>Rotate PDF pages by 90, 180, or 270 degrees</p>
+            <a href="{% url 'rotate' %}" class="btn btn-secondary">Get Started</a>
+        </div>
+
+        <div class="operation-card" data-feature="page-numbers">
+            <div class="card-icon">🔢</div>
+            <h3>Add Page Numbers</h3>
+            <p>Add customizable page numbers to your PDF</p>
+            <a href="{% url 'page_numbers' %}" class="btn btn-secondary">Get Started</a>
+        </div>
+
+        <div class="operation-card" data-feature="more">
+            <div class="card-icon">🛠️</div>
+            <h3>More Tools</h3>
+            <p>Advanced PDF tools: Extract Text, OCR, and more</p>
+            <a href="{% url 'more_tools' %}" class="btn btn-secondary">Get Started</a>
+        </div>
+    </div>
+
+    {% if uploaded_pdfs %}
+    <h2 class="section-title" style="margin-top: 3rem;">Your PDFs</h2>
+    
+    <div style="max-width: 1200px; margin: 0 auto;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+            {% for pdf in uploaded_pdfs %}
+            <div class="pdf-item-card" style="background: white; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <div class="card-icon" style="font-size: 2rem;">📄</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <h4 style="margin: 0 0 0.5rem 0; color: #1f2937; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ pdf.name }}">
+                            {{ pdf.name }}
+                        </h4>
+                        <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">
+                            Size: {{ pdf.size|filesizeformat }}
+                       </p>
+                        <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #9ca3af;">
+                            Uploaded: {{ pdf.uploaded_at|slice:":10" }}
+                        </p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <button onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="btn btn-preview" style="flex: 1; padding: 0.5rem; font-size: 0.875rem;">
+                        👁️ Preview
+                    </button>
+                    <a href="{% url 'delete_pdf' pdf.id %}" onclick="return confirm('Delete this PDF?')" class="btn" style="flex: 1; padding: 0.5rem; font-size: 0.875rem; background: #ef4444; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                        🗑️ Delete
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="features-section">
+        <h2 class="section-title">Why Choose Our Platform?</h2>
+        <div class="features-grid">
+            <div class="feature-item">
+                <div class="feature-icon">🔒</div>
+                <h4>Secure</h4>
+                <p>Your files are automatically deleted after processing</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">⚡</div>
+                <h4>Fast</h4>
+                <p>Process PDFs in seconds with our optimized engine</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🎯</div>
+                <h4>Accurate</h4>
+                <p>Preserve formatting and layout with precision</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🌐</div>
+                <h4>No Installation</h4>
+                <p>Work directly in your browser, no downloads needed</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Drag and drop functionality
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const uploadForm = document.getElementById('upload-form');
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        // Check if all files are PDFs
+        const pdfFiles = Array.from(files).filter(file => file.type === 'application/pdf');
+        
+        if (pdfFiles.length === 0) {
+            alert('Please drop PDF files only');
+            return;
+        }
+        
+        if (pdfFiles.length < files.length) {
+            alert(`Uploading ${pdfFiles.length} PDF files (${files.length - pdfFiles.length} non-PDF files skipped)`);
+        }
+        
+        // Set files and submit
+        const dataTransfer = new DataTransfer();
+        pdfFiles.forEach(file => dataTransfer.items.add(file));
+        fileInput.files = dataTransfer.files;
+        uploadForm.submit();
+    }
+});
+
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+        uploadForm.submit();
+    }
+});
+</script>
+{% endblock %}
