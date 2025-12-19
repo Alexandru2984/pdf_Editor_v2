@@ -974,11 +974,17 @@ def rephrase_view(request):
     # Get available models
     available_models = get_available_models() if ollama_connected else []
     
+    # Get available models from both providers
+    from .ai_service import get_all_models, get_provider
+    
+    all_models = get_all_models()
+    ollama_models = all_models.get('ollama', [])
+    groq_models = all_models.get('groq', [])
+
     if request.method == 'POST':
-        # Get form data
         selected_text = request.POST.get('selected_text', '').strip()
         rephrase_style = request.POST.get('rephrase_style', 'formal')
-        model = request.POST.get('ai_model') or (available_models[0] if available_models else None)
+        model = request.POST.get('model') or (ollama_models[0] if ollama_models else None)
         
         # Get coordinates from PDF.js selection
         page_number = int(request.POST.get('page_number', 0))
@@ -997,19 +1003,23 @@ def rephrase_view(request):
         elif bbox_x0 == 0 and bbox_y0 == 0 and bbox_x1 == 0 and bbox_y1 == 0:
             # All coordinates are 0 - likely not set
             messages.error(request, 'Missing selection coordinates. Please capture the selection again.')
-        elif not ollama_connected:
-            messages.error(request, f'Cannot connect to Ollama: {ollama_message}')
+        elif not model:
+            messages.error(request, 'Please select an AI model.')
         else:
             try:
-                # Get rephrased text from Ollama
-                rephrased_text, success, error_message = rephrase_text(
+                # Determine provider
+                provider_name = 'groq' if model in groq_models else 'ollama'
+                provider = get_provider(provider_name)
+                
+                # Rephrase
+                rephrased_text, success, error_message = provider.rephrase(
                     text=selected_text,
                     style=rephrase_style,
                     model=model
                 )
                 
                 if not success:
-                    messages.error(request, f'AI Error: {error_message}')
+                    messages.error(request, f'AI Error ({provider_name}): {error_message}')
                 else:
                     # Import coordinate-based rephrase function
                     from .pdf_processor import rephrase_with_coordinates
@@ -1052,9 +1062,9 @@ def rephrase_view(request):
         'pdf_path_relative': pdf_path.replace(settings.MEDIA_ROOT + '/', ''),
         'uploaded_pdfs': uploaded_pdfs,
         'selected_pdf': selected_pdf,
-        'ollama_connected': ollama_connected,
-        'ollama_message': ollama_message,
-        'ollama_models': available_models
+        'ollama_models': ollama_models,
+        'groq_models': groq_models,
+        'ollama_connected': bool(ollama_models), # Simple check
     }
 
     return render(request, 'pdfeditor/rephrase.html', context)
@@ -1086,27 +1096,16 @@ def rephrase_preview_ajax(request):
                 content_type='application/json'
             )
 
-        # Check connection
-        connected, message = check_ollama_connection()
-        if not connected:
-            return HttpResponse(
-                json.dumps({'success': False, 'error': message}),
-                content_type='application/json'
-            )
+        # Determine provider
+        from .ai_service import get_all_models, get_provider
+        all_models = get_all_models()
+        groq_models = all_models.get('groq', [])
         
-        # Get default model if not specified
-        if not model:
-            models = get_available_models()
-            model = models[0] if models else None
+        provider_name = 'groq' if model in groq_models else 'ollama'
+        provider = get_provider(provider_name)
         
-        if not model:
-            return HttpResponse(
-                json.dumps({'success': False, 'error': 'No AI model available'}),
-                content_type='application/json'
-            )
-        
-        # Get rephrased text
-        rephrased, success, error = rephrase_text(text, style, model)
+        # Rephrase
+        rephrased, success, error = provider.rephrase(text, style, model)
         
         if success:
             return HttpResponse(

@@ -146,6 +146,16 @@
     color: #991b1b;
 }
 
+.groq-status {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
 .form-group {
     margin-bottom: 1.25rem;
 }
@@ -350,14 +360,29 @@
             </div>
             
             <div class="form-group">
-                <label for="ai_model">AI Model</label>
-                <select name="ai_model" id="ai_model">
-                    {% for model in ollama_models %}
-                    <option value="{{ model }}">{{ model }}</option>
-                    {% empty %}
-                    <option value="">No models available</option>
-                    {% endfor %}
+                <label for="model">AI Model</label>
+                <select id="model" name="model" required>
+                    <option value="" disabled selected>Select a model...</option>
+                    
+                    {% if groq_models %}
+                    <optgroup label="Cloud (Groq - Fast)">
+                        {% for model in groq_models %}
+                        <option value="{{ model }}">{{ model }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+
+                    {% if ollama_models %}
+                    <optgroup label="Local (Ollama)">
+                        {% for model in ollama_models %}
+                        <option value="{{ model }}">{{ model }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
                 </select>
+                {% if not ollama_models and not groq_models %}
+                    <small style="color: red;">No models available. Check Ollama connection or Groq API key.</small>
+                {% endif %}
             </div>
             
             <div class="btn-group">
@@ -727,7 +752,7 @@ async function previewRephrase() {
   }
 
   const style = document.getElementById('rephrase_style').value;
-  const model = document.getElementById('ai_model').value;
+  const model = document.getElementById('model').value;
 
   document.getElementById('preview-result').classList.remove('hidden');
   document.getElementById('preview-text').textContent = 'Generating...';
