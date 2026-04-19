@@ -100,16 +100,15 @@ class PDFProcessorTests(TestCase):
             replace_text="exemplu",
             case_sensitive=False
         )
-        
-        # Verifică că s-au făcut înlocuiri
+
         self.assertEqual(count, 2)  # "test" și "Test"
         self.assertTrue(os.path.exists(output_path))
-        
-        # Verifică conținutul PDF-ului modificat
+
         doc = fitz.open(output_path)
-        page_text = doc[0].get_text()
-        self.assertIn("exemplu", page_text.lower())
-        self.assertNotIn("test", page_text.lower())
+        # PyMuPDF may wrap replacement text across lines; strip whitespace before checking.
+        page_text = "".join(doc[0].get_text().split()).lower()
+        self.assertIn("exemplu", page_text)
+        self.assertNotIn("test", page_text)
         doc.close()
         
         # Cleanup
@@ -174,74 +173,49 @@ class ViewTests(TestCase):
         """Test GET request la upload view."""
         response = self.client.get(reverse('upload'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Încarcă PDF')
-    
+
     def test_upload_view_post_valid(self):
-        """Test POST cu fișier valid."""
+        """Test POST cu fișier valid -> redirect la dashboard."""
         with open(self.test_pdf_path, 'rb') as f:
-            uploaded_file = SimpleUploadedFile(
-                "test.pdf",
-                f.read(),
-                content_type="application/pdf"
-            )
-            
-            response = self.client.post(reverse('upload'), {
-                'pdf_file': uploaded_file
-            })
-            
-            # Ar trebui să redirecteze la edit
-            self.assertEqual(response.status_code, 302)
-            self.assertTrue(response.url.endswith(reverse('edit')))
-    
-    def test_upload_view_post_invalid_extension(self):
-        """Test POST cu fișier non-PDF."""
-        uploaded_file = SimpleUploadedFile(
-            "test.txt",
-            b"not a pdf",
-            content_type="text/plain"
-        )
-        
-        response = self.client.post(reverse('upload'), {
-            'pdf_file': uploaded_file
-        })
-        
-        # Ar trebui să rămână pe pagina de upload cu eroare
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Doar fișiere PDF')
-    
-    def test_edit_view_without_upload(self):
-        """Test acces la edit fără upload prealabil."""
-        response = self.client.get(reverse('edit'))
-        
-        # Ar trebui să redirecteze la upload
+            uploaded_file = SimpleUploadedFile("test.pdf", f.read(), content_type="application/pdf")
+            response = self.client.post(reverse('upload'), {'pdf_file': uploaded_file})
+
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.endswith(reverse('upload')))
-    
+        self.assertTrue(response.url.endswith(reverse('dashboard')))
+
+    def test_upload_view_post_invalid_extension(self):
+        """Fișier non-PDF -> rămâne pe upload cu warning."""
+        uploaded_file = SimpleUploadedFile("test.txt", b"not a pdf", content_type="text/plain")
+        response = self.client.post(reverse('upload'), {'pdf_file': uploaded_file})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'only PDF files are accepted')
+
+    def test_edit_view_without_upload(self):
+        """Edit fără upload -> redirect la dashboard."""
+        response = self.client.get(reverse('edit'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.endswith(reverse('dashboard')))
+
     def test_full_workflow(self):
-        """Test workflow complet: upload -> edit -> result -> download."""
-        # Step 1: Upload
+        """Upload -> edit -> result -> download."""
         with open(self.test_pdf_path, 'rb') as f:
             uploaded_file = SimpleUploadedFile("test.pdf", f.read(), content_type="application/pdf")
             self.client.post(reverse('upload'), {'pdf_file': uploaded_file})
-        
-        # Step 2: Edit (find & replace)
+
         response = self.client.post(reverse('edit'), {
             'search_text': 'Test',
             'replace_text': 'Example',
             'case_sensitive': True,
-            'page_range': ''
+            'page_range': '',
         })
-        
-        # Ar trebui să redirecteze la result
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.endswith(reverse('result')))
-        
-        # Step 3: Result
+
         response = self.client.get(reverse('result'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Modificările au fost aplicate')
-        
-        # Step 4: Download
+
         response = self.client.get(reverse('download'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')

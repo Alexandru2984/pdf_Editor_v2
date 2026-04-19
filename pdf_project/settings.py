@@ -3,9 +3,12 @@ Django settings for pdf_project project.
 """
 
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+TESTING = 'test' in sys.argv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -136,7 +139,7 @@ PDF_CLEANUP_HOURS = 24
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Security hardening (prod behind HTTPS)
-SECURE_SSL = env_bool('SECURE_SSL', not DEBUG)
+SECURE_SSL = env_bool('SECURE_SSL', not DEBUG) and not TESTING
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = SECURE_SSL
 CSRF_COOKIE_SECURE = SECURE_SSL
