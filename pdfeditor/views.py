@@ -1,6 +1,7 @@
 """
 Views pentru aplicația PDF Editor.
 """
+import logging
 import os
 import uuid
 from datetime import datetime
@@ -9,9 +10,50 @@ from django.http import FileResponse, Http404, HttpResponse
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.contrib import messages
+from django_ratelimit.decorators import ratelimit
 
 from .forms import FindReplaceForm, SplitPDFForm, MergePDFForm, CompressPDFForm, WatermarkForm, RotatePagesForm, PageNumbersForm
 from .pdf_processor import find_and_replace_text, check_pdf_has_text, split_pdf, merge_pdfs, compress_pdf, add_watermark, rotate_pages, add_page_numbers, extract_text_from_pdf, ocr_pdf_to_text
+
+logger = logging.getLogger(__name__)
+
+
+def _allowed_media_paths(request):
+    """Absolute paths the current session is allowed to read from MEDIA_ROOT."""
+    allowed = set()
+    for pdf in request.session.get('uploaded_pdfs', []) or []:
+        p = pdf.get('path')
+        if p:
+            allowed.add(os.path.realpath(p))
+    for key in (
+        'processed_pdf_path', 'merged_pdf_path', 'compressed_pdf_path',
+        'watermarked_pdf_path', 'rotated_pdf_path', 'numbered_pdf_path',
+        'rephrased_pdf_path',
+    ):
+        p = request.session.get(key)
+        if p:
+            allowed.add(os.path.realpath(p))
+    for p in request.session.get('split_files', []) or []:
+        if p:
+            allowed.add(os.path.realpath(p))
+    return allowed
+
+
+def serve_media_view(request, rel_path):
+    """Serve files from MEDIA_ROOT only if they belong to the current session."""
+    media_root = os.path.realpath(settings.MEDIA_ROOT)
+    requested = os.path.realpath(os.path.join(media_root, rel_path))
+
+    if not requested.startswith(media_root + os.sep):
+        raise Http404()
+
+    if requested not in _allowed_media_paths(request):
+        raise Http404()
+
+    if not os.path.exists(requested):
+        raise Http404()
+
+    return FileResponse(open(requested, 'rb'), content_type='application/pdf')
 
 
 def get_uploaded_pdfs(request):
@@ -58,14 +100,25 @@ def upload_view(request):
         uploaded_pdfs = request.session.get('uploaded_pdfs', [])
         
         uploaded_count = 0
+        max_bytes = getattr(settings, 'PDF_MAX_UPLOAD_BYTES', 10 * 1024 * 1024)
         for uploaded_file in uploaded_files:
             if not uploaded_file.name.lower().endswith('.pdf'):
                 messages.warning(request, f'Skipped "{uploaded_file.name}" - only PDF files are accepted.')
                 continue
-            
-            # Save file
+
+            if uploaded_file.size > max_bytes:
+                messages.warning(request, f'Skipped "{uploaded_file.name}" - exceeds {max_bytes // (1024 * 1024)} MB limit.')
+                continue
+
+            header = uploaded_file.read(5)
+            uploaded_file.seek(0)
+            if header != b'%PDF-':
+                messages.warning(request, f'Skipped "{uploaded_file.name}" - not a valid PDF file.')
+                continue
+
+            safe_name = os.path.basename(uploaded_file.name)
             fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'uploads'))
-            filename = fs.save(uploaded_file.name, uploaded_file)
+            filename = fs.save(safe_name, uploaded_file)
             file_path = fs.path(filename)
             
             # Check for text
@@ -581,7 +634,8 @@ def watermark_view(request):
                     
                     # Save uploaded image temporarily
                     fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'temp'))
-                    image_filename = fs.save(uploaded_image.name, uploaded_image)
+                    safe_image_name = os.path.basename(uploaded_image.name)
+                    image_filename = fs.save(safe_image_name, uploaded_image)
                     image_path = fs.path(image_filename)
                     
                     options = {
@@ -943,6 +997,7 @@ def delete_pdf_view(request, pdf_id):
 # AI Rephrase Views
 # ==========================================
 
+@ratelimit(key='ip', rate='20/h', method='POST', block=True)
 def rephrase_view(request):
     """View for AI-powered text rephrasing in PDF."""
     from .forms import RephraseForm
@@ -992,12 +1047,7 @@ def rephrase_view(request):
         bbox_y0 = float(request.POST.get('bbox_y0', 0))
         bbox_x1 = float(request.POST.get('bbox_x1', 0))
         bbox_y1 = float(request.POST.get('bbox_y1', 0))
-        
-        # DEBUG: Print received coordinates
-        print(f"🔍 Received coordinates from frontend:")
-        print(f"   Page: {page_number}")
-        print(f"   BBox: x0={bbox_x0:.2f}, y0={bbox_y0:.2f}, x1={bbox_x1:.2f}, y1={bbox_y1:.2f}")
-        
+
         if not selected_text:
             messages.error(request, 'Please select text from the PDF first.')
         elif bbox_x0 == 0 and bbox_y0 == 0 and bbox_x1 == 0 and bbox_y1 == 0:
@@ -1059,7 +1109,7 @@ def rephrase_view(request):
     
     context = {
         'pdf_name': pdf_name,
-        'pdf_path_relative': pdf_path.replace(settings.MEDIA_ROOT + '/', ''),
+        'pdf_path_relative': pdf_path.replace(f"{settings.MEDIA_ROOT}/", ''),
         'uploaded_pdfs': uploaded_pdfs,
         'selected_pdf': selected_pdf,
         'ollama_models': ollama_models,
@@ -1070,9 +1120,7 @@ def rephrase_view(request):
     return render(request, 'pdfeditor/rephrase.html', context)
 
 
-from django.views.decorators.csrf import csrf_exempt
-
-@csrf_exempt  # Temporary for debugging CSRF issues
+@ratelimit(key='ip', rate='30/h', method='POST', block=True)
 def rephrase_preview_ajax(request):
     """AJAX endpoint for previewing rephrased text without applying to PDF."""
     import json

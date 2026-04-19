@@ -1,8 +1,11 @@
+import logging
 import os
 import requests
 import json
 from typing import List, Optional, Tuple, Dict, Any
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 # Configuration
 OLLAMA_BASE_URL = getattr(settings, 'OLLAMA_BASE_URL', 'http://localhost:11434')
@@ -82,12 +85,7 @@ class OllamaProvider(AIProvider):
 
 class GroqProvider(AIProvider):
     def __init__(self):
-        # Try to get key from settings or environment
-        self.api_key = getattr(settings, 'GROQ_API_KEY', os.environ.get('GROQ_API_KEY'))
-        if not self.api_key:
-            print("WARNING: GROQ_API_KEY not found in settings or environment.")
-        else:
-            print(f"GROQ_API_KEY found: {self.api_key[:5]}...")
+        self.api_key = getattr(settings, 'GROQ_API_KEY', '') or os.environ.get('GROQ_API_KEY', '')
         
     def get_models(self) -> List[str]:
         if not self.api_key:
@@ -106,7 +104,7 @@ class GroqProvider(AIProvider):
                 return [m['id'] for m in data.get('data', [])]
             return []
         except Exception as e:
-            print(f"Groq API Error: {str(e)}")
+            logger.warning("Groq API error: %s", e)
             return []
 
     def rephrase(self, text: str, style: str, model: str, custom_prompt: Optional[str] = None) -> Tuple[str, bool, str]:
