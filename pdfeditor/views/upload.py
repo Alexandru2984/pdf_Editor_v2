@@ -1,15 +1,14 @@
 """Dashboard, upload, delete."""
 import os
-import uuid
-from datetime import datetime
 
 from django.conf import settings
 from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect, render
 
+from ..models import UploadedPDF
 from ..pdf_processor import check_pdf_has_text
-from ._common import get_uploaded_pdfs
+from ._common import ensure_session_key, get_uploaded_pdfs
 
 
 def dashboard_view(request):
@@ -27,11 +26,11 @@ def upload_view(request):
         messages.error(request, 'Please select at least one PDF file.')
         return render(request, 'pdfeditor/upload.html')
 
-    uploaded_pdfs = request.session.get('uploaded_pdfs', [])
-    uploaded_count = 0
+    session_key = ensure_session_key(request)
     max_bytes = getattr(settings, 'PDF_MAX_UPLOAD_BYTES', 10 * 1024 * 1024)
     fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'uploads'))
 
+    created = []
     for uploaded_file in uploaded_files:
         if not uploaded_file.name.lower().endswith('.pdf'):
             messages.warning(request, f'Skipped "{uploaded_file.name}" - only PDF files are accepted.')
@@ -54,22 +53,18 @@ def upload_view(request):
         if not has_text:
             messages.warning(request, f'{uploaded_file.name}: {message}')
 
-        uploaded_pdfs.append({
-            'id': str(uuid.uuid4()),
-            'path': file_path,
-            'name': uploaded_file.name,
-            'size': uploaded_file.size,
-            'uploaded_at': datetime.now().isoformat(),
-        })
-        uploaded_count += 1
+        created.append(UploadedPDF.objects.create(
+            session_key=session_key,
+            name=uploaded_file.name,
+            path=file_path,
+            size=uploaded_file.size,
+        ))
 
-    request.session['uploaded_pdfs'] = uploaded_pdfs
-
-    if uploaded_count == 1:
-        messages.success(request, f'PDF "{uploaded_pdfs[-1]["name"]}" uploaded successfully! Choose an operation below.')
+    if len(created) == 1:
+        messages.success(request, f'PDF "{created[0].name}" uploaded successfully! Choose an operation below.')
         return redirect('dashboard')
-    if uploaded_count > 1:
-        messages.success(request, f'{uploaded_count} PDFs uploaded successfully! Choose an operation below.')
+    if len(created) > 1:
+        messages.success(request, f'{len(created)} PDFs uploaded successfully! Choose an operation below.')
         return redirect('dashboard')
 
     messages.error(request, 'No valid PDF files were uploaded.')
@@ -77,11 +72,12 @@ def upload_view(request):
 
 
 def delete_pdf_view(request, pdf_id):
-    uploaded_pdfs = request.session.get('uploaded_pdfs', [])
-    updated_pdfs = [pdf for pdf in uploaded_pdfs if pdf['id'] != pdf_id]
+    deleted, _ = UploadedPDF.objects.filter(
+        session_key=ensure_session_key(request),
+        id=pdf_id,
+    ).delete()
 
-    if len(updated_pdfs) < len(uploaded_pdfs):
-        request.session['uploaded_pdfs'] = updated_pdfs
+    if deleted:
         messages.success(request, 'PDF removed successfully.')
     else:
         messages.error(request, 'PDF not found.')

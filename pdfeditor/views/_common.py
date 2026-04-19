@@ -1,52 +1,71 @@
-"""Shared helpers: session PDF lookup + session-scoped media serving."""
+"""Shared helpers: session-scoped PDF lookup and guarded media serving."""
 import os
 
 from django.conf import settings
 from django.http import FileResponse, Http404
 
+from ..models import ProcessedPDF, UploadedPDF
+
+
+def ensure_session_key(request) -> str:
+    """Guarantee that the request has a persistent session_key and return it."""
+    if not request.session.session_key:
+        request.session.save()
+    return request.session.session_key
+
 
 def get_uploaded_pdfs(request):
-    """Return uploaded PDFs from session, filtering out files that have been deleted on disk."""
-    uploaded_pdfs = request.session.get('uploaded_pdfs', [])
-    valid_pdfs = [pdf for pdf in uploaded_pdfs if os.path.exists(pdf['path'])]
-    if len(valid_pdfs) != len(uploaded_pdfs):
-        request.session['uploaded_pdfs'] = valid_pdfs
-    return valid_pdfs
+    """Return UploadedPDF objects for the current session. Prunes stale rows."""
+    session_key = ensure_session_key(request)
+    rows = list(UploadedPDF.objects.filter(session_key=session_key))
+
+    stale_ids = [pdf.id for pdf in rows if not pdf.exists_on_disk()]
+    if stale_ids:
+        UploadedPDF.objects.filter(id__in=stale_ids).delete()
+        rows = [pdf for pdf in rows if pdf.id not in stale_ids]
+
+    return rows
 
 
 def get_pdf_by_id(request, pdf_id):
-    for pdf in get_uploaded_pdfs(request):
-        if pdf['id'] == pdf_id:
-            return pdf
-    return None
+    return UploadedPDF.objects.filter(
+        session_key=ensure_session_key(request),
+        id=pdf_id,
+    ).first()
 
 
-_SESSION_PDF_KEYS = (
-    'processed_pdf_path', 'merged_pdf_path', 'compressed_pdf_path',
-    'watermarked_pdf_path', 'rotated_pdf_path', 'numbered_pdf_path',
-    'rephrased_pdf_path',
-)
+def record_output(request, *, kind: str, path: str, source=None) -> ProcessedPDF:
+    """Create a ProcessedPDF row tracking a generated output file."""
+    return ProcessedPDF.objects.create(
+        session_key=ensure_session_key(request),
+        kind=kind,
+        source=source,
+        name=os.path.basename(path),
+        path=path,
+        size=os.path.getsize(path) if os.path.exists(path) else 0,
+    )
+
+
+def latest_output(request, kind: str):
+    return ProcessedPDF.objects.filter(
+        session_key=ensure_session_key(request),
+        kind=kind,
+    ).first()
 
 
 def _allowed_media_paths(request):
     """Absolute paths the current session is allowed to read from MEDIA_ROOT."""
+    session_key = ensure_session_key(request)
     allowed = set()
-    for pdf in request.session.get('uploaded_pdfs', []) or []:
-        p = pdf.get('path')
-        if p:
-            allowed.add(os.path.realpath(p))
-    for key in _SESSION_PDF_KEYS:
-        p = request.session.get(key)
-        if p:
-            allowed.add(os.path.realpath(p))
-    for p in request.session.get('split_files', []) or []:
-        if p:
-            allowed.add(os.path.realpath(p))
+    for obj in UploadedPDF.objects.filter(session_key=session_key):
+        allowed.add(os.path.realpath(obj.path))
+    for obj in ProcessedPDF.objects.filter(session_key=session_key):
+        allowed.add(os.path.realpath(obj.path))
     return allowed
 
 
 def serve_media_view(request, rel_path):
-    """Serve files from MEDIA_ROOT only if they belong to the current session."""
+    """Serve a MEDIA_ROOT file iff it belongs to the current session."""
     media_root = os.path.realpath(settings.MEDIA_ROOT)
     requested = os.path.realpath(os.path.join(media_root, rel_path))
 
@@ -61,7 +80,6 @@ def serve_media_view(request, rel_path):
 
 
 def attachment_response(path, not_found_message='File not found.'):
-    """Return a FileResponse for download, or raise Http404 if missing."""
     if not path or not os.path.exists(path):
         raise Http404(not_found_message)
     return FileResponse(

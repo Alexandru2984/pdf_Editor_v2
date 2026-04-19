@@ -8,8 +8,15 @@ from django.http import Http404
 from django.shortcuts import redirect, render
 
 from ..forms import PageNumbersForm, RotatePagesForm, WatermarkForm
+from ..models import ProcessedPDF
 from ..pdf_processor import add_page_numbers, add_watermark, rotate_pages
-from ._common import attachment_response, get_pdf_by_id, get_uploaded_pdfs
+from ._common import (
+    attachment_response,
+    ensure_session_key,
+    get_pdf_by_id,
+    get_uploaded_pdfs,
+    record_output,
+)
 
 
 def _require_pdf(request):
@@ -23,8 +30,17 @@ def _require_pdf(request):
     if not selected_pdf:
         messages.error(request, 'Selected PDF not found.')
         return None, None, redirect('dashboard')
-
     return selected_pdf, uploaded_pdfs, None
+
+
+def _fetch_output(request, session_key):
+    output_id = request.session.get(session_key)
+    if not output_id:
+        return None
+    return ProcessedPDF.objects.filter(
+        session_key=ensure_session_key(request),
+        id=output_id,
+    ).first()
 
 
 # ---------- Watermark ----------
@@ -34,7 +50,7 @@ def watermark_view(request):
     if early:
         return early
 
-    pdf_path = selected_pdf['path']
+    pdf_path = selected_pdf.path
 
     if request.method == 'POST':
         form = WatermarkForm(request.POST, request.FILES)
@@ -60,7 +76,13 @@ def watermark_view(request):
                         if os.path.exists(image_path):
                             os.remove(image_path)
 
-                request.session['watermarked_pdf_path'] = output_path
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_WATERMARK,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session['watermarked_pdf_id'] = str(output.id)
                 messages.success(request, 'Watermark added successfully!')
                 return redirect('watermark_result')
             except Exception as e:
@@ -70,7 +92,7 @@ def watermark_view(request):
 
     return render(request, 'pdfeditor/watermark.html', {
         'form': form,
-        'pdf_name': selected_pdf['name'],
+        'pdf_name': selected_pdf.name,
         'pdf_path_relative': os.path.relpath(pdf_path, settings.MEDIA_ROOT),
         'uploaded_pdfs': uploaded_pdfs,
         'selected_pdf': selected_pdf,
@@ -78,21 +100,25 @@ def watermark_view(request):
 
 
 def watermark_result_view(request):
-    watermarked_path = request.session.get('watermarked_pdf_path')
-    if not watermarked_path or not os.path.exists(watermarked_path):
+    output = _fetch_output(request, 'watermarked_pdf_id')
+    if not output or not output.exists_on_disk():
         messages.error(request, 'Watermarked file not found.')
         return redirect('dashboard')
 
     return render(request, 'pdfeditor/watermark_result.html', {
-        'watermarked_filename': os.path.basename(watermarked_path),
-        'watermarked_size': os.path.getsize(watermarked_path),
-        'pdf_path_relative': os.path.relpath(watermarked_path, settings.MEDIA_ROOT),
+        'watermarked_filename': output.name,
+        'watermarked_size': output.size,
+        'pdf_path_relative': os.path.relpath(output.path, settings.MEDIA_ROOT),
     })
 
 
 def download_watermarked_view(request):
+    output = _fetch_output(request, 'watermarked_pdf_id')
+    if not output:
+        messages.error(request, 'File not found.')
+        return redirect('dashboard')
     try:
-        return attachment_response(request.session.get('watermarked_pdf_path'))
+        return attachment_response(output.path)
     except Http404:
         messages.error(request, 'File not found.')
         return redirect('dashboard')
@@ -105,7 +131,7 @@ def rotate_view(request):
     if early:
         return early
 
-    pdf_path = selected_pdf['path']
+    pdf_path = selected_pdf.path
 
     if request.method == 'POST':
         form = RotatePagesForm(request.POST)
@@ -114,7 +140,13 @@ def rotate_view(request):
             page_range = form.cleaned_data.get('page_range', '').strip()
             try:
                 output_path = rotate_pages(pdf_path, rotation_angle, page_range or None)
-                request.session['rotated_pdf_path'] = output_path
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_ROTATE,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session['rotated_pdf_id'] = str(output.id)
                 request.session['rotation_angle'] = rotation_angle
                 messages.success(request, f'Pages rotated {rotation_angle}° successfully!')
                 return redirect('rotate_result')
@@ -127,7 +159,7 @@ def rotate_view(request):
 
     return render(request, 'pdfeditor/rotate.html', {
         'form': form,
-        'pdf_name': selected_pdf['name'],
+        'pdf_name': selected_pdf.name,
         'pdf_path_relative': os.path.relpath(pdf_path, settings.MEDIA_ROOT),
         'uploaded_pdfs': uploaded_pdfs,
         'selected_pdf': selected_pdf,
@@ -135,22 +167,26 @@ def rotate_view(request):
 
 
 def rotate_result_view(request):
-    rotated_path = request.session.get('rotated_pdf_path')
-    if not rotated_path or not os.path.exists(rotated_path):
+    output = _fetch_output(request, 'rotated_pdf_id')
+    if not output or not output.exists_on_disk():
         messages.error(request, 'Rotated file not found.')
         return redirect('dashboard')
 
     return render(request, 'pdfeditor/rotate_result.html', {
-        'rotated_filename': os.path.basename(rotated_path),
-        'rotated_size': os.path.getsize(rotated_path),
+        'rotated_filename': output.name,
+        'rotated_size': output.size,
         'rotation_angle': request.session.get('rotation_angle', 0),
-        'pdf_path_relative': os.path.relpath(rotated_path, settings.MEDIA_ROOT),
+        'pdf_path_relative': os.path.relpath(output.path, settings.MEDIA_ROOT),
     })
 
 
 def download_rotated_view(request):
+    output = _fetch_output(request, 'rotated_pdf_id')
+    if not output:
+        messages.error(request, 'File not found.')
+        return redirect('dashboard')
     try:
-        return attachment_response(request.session.get('rotated_pdf_path'))
+        return attachment_response(output.path)
     except Http404:
         messages.error(request, 'File not found.')
         return redirect('dashboard')
@@ -163,7 +199,7 @@ def page_numbers_view(request):
     if early:
         return early
 
-    pdf_path = selected_pdf['path']
+    pdf_path = selected_pdf.path
 
     if request.method == 'POST':
         form = PageNumbersForm(request.POST)
@@ -176,7 +212,13 @@ def page_numbers_view(request):
             }
             try:
                 output_path = add_page_numbers(pdf_path, options)
-                request.session['numbered_pdf_path'] = output_path
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_PAGE_NUMBERS,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session['numbered_pdf_id'] = str(output.id)
                 messages.success(request, 'Page numbers added successfully!')
                 return redirect('page_numbers_result')
             except Exception as e:
@@ -186,7 +228,7 @@ def page_numbers_view(request):
 
     return render(request, 'pdfeditor/page_numbers.html', {
         'form': form,
-        'pdf_name': selected_pdf['name'],
+        'pdf_name': selected_pdf.name,
         'pdf_path_relative': os.path.relpath(pdf_path, settings.MEDIA_ROOT),
         'uploaded_pdfs': uploaded_pdfs,
         'selected_pdf': selected_pdf,
@@ -194,21 +236,25 @@ def page_numbers_view(request):
 
 
 def page_numbers_result_view(request):
-    numbered_path = request.session.get('numbered_pdf_path')
-    if not numbered_path or not os.path.exists(numbered_path):
+    output = _fetch_output(request, 'numbered_pdf_id')
+    if not output or not output.exists_on_disk():
         messages.error(request, 'Numbered file not found.')
         return redirect('dashboard')
 
     return render(request, 'pdfeditor/page_numbers_result.html', {
-        'numbered_filename': os.path.basename(numbered_path),
-        'numbered_size': os.path.getsize(numbered_path),
-        'pdf_path_relative': os.path.relpath(numbered_path, settings.MEDIA_ROOT),
+        'numbered_filename': output.name,
+        'numbered_size': output.size,
+        'pdf_path_relative': os.path.relpath(output.path, settings.MEDIA_ROOT),
     })
 
 
 def download_numbered_view(request):
+    output = _fetch_output(request, 'numbered_pdf_id')
+    if not output:
+        messages.error(request, 'File not found.')
+        return redirect('dashboard')
     try:
-        return attachment_response(request.session.get('numbered_pdf_path'))
+        return attachment_response(output.path)
     except Http404:
         messages.error(request, 'File not found.')
         return redirect('dashboard')

@@ -25,13 +25,13 @@ def _extract_to_session(request, pdf_id, extractor, suffix):
         return JsonResponse({'success': False, 'error': 'PDF not found'})
 
     try:
-        text = extractor(pdf['path'])
+        text = extractor(pdf.path)
         request.session['extracted_text'] = text
-        request.session['extracted_filename'] = pdf['name'].replace('.pdf', suffix)
+        request.session['extracted_filename'] = pdf.name.replace('.pdf', suffix)
         return JsonResponse({
             'success': True,
             'text': text,
-            'filename': pdf['name'],
+            'filename': pdf.name,
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})

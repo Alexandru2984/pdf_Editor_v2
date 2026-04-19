@@ -9,12 +9,29 @@ from django.shortcuts import redirect, render
 from django_ratelimit.decorators import ratelimit
 
 from ..ai_service import get_all_models, get_provider
+from ..models import ProcessedPDF
 from ..pdf_processor import rephrase_with_coordinates
-from ._common import attachment_response, get_pdf_by_id, get_uploaded_pdfs
+from ._common import (
+    attachment_response,
+    ensure_session_key,
+    get_pdf_by_id,
+    get_uploaded_pdfs,
+    record_output,
+)
 
 
 def _json_response(payload, status=200):
     return HttpResponse(json.dumps(payload), content_type='application/json', status=status)
+
+
+def _fetch_output(request, session_key):
+    output_id = request.session.get(session_key)
+    if not output_id:
+        return None
+    return ProcessedPDF.objects.filter(
+        session_key=ensure_session_key(request),
+        id=output_id,
+    ).first()
 
 
 @ratelimit(key='ip', rate='20/h', method='POST', block=True)
@@ -36,12 +53,12 @@ def rephrase_view(request):
 
     if request.method == 'POST':
         _handle_rephrase_post(request, selected_pdf, ollama_models, groq_models)
-        if request.session.get('rephrased_pdf_path'):
+        if request.session.get('rephrased_pdf_id'):
             return redirect('rephrase_result')
 
     return render(request, 'pdfeditor/rephrase.html', {
-        'pdf_name': selected_pdf['name'],
-        'pdf_path_relative': selected_pdf['path'].replace(f"{settings.MEDIA_ROOT}/", ''),
+        'pdf_name': selected_pdf.name,
+        'pdf_path_relative': selected_pdf.path.replace(f"{settings.MEDIA_ROOT}/", ''),
         'uploaded_pdfs': uploaded_pdfs,
         'selected_pdf': selected_pdf,
         'ollama_models': ollama_models,
@@ -89,14 +106,20 @@ def _handle_rephrase_post(request, selected_pdf, ollama_models, groq_models):
             return
 
         output_path, replacement_count, warnings = rephrase_with_coordinates(
-            pdf_path=selected_pdf['path'],
+            pdf_path=selected_pdf.path,
             page_number=page_number,
             bounding_box_bl=bbox,
             replace_text=rephrased_text,
             original_text=selected_text,
         )
 
-        request.session['rephrased_pdf_path'] = output_path
+        output = record_output(
+            request,
+            kind=ProcessedPDF.KIND_REPHRASE,
+            path=output_path,
+            source=selected_pdf,
+        )
+        request.session['rephrased_pdf_id'] = str(output.id)
         request.session['rephrase_original_text'] = selected_text
         request.session['rephrase_new_text'] = rephrased_text
         request.session['rephrase_count'] = replacement_count
@@ -143,15 +166,15 @@ def rephrase_preview_ajax(request):
 
 
 def rephrase_result_view(request):
-    rephrased_path = request.session.get('rephrased_pdf_path')
-    if not rephrased_path or not os.path.exists(rephrased_path):
+    output = _fetch_output(request, 'rephrased_pdf_id')
+    if not output or not output.exists_on_disk():
         messages.error(request, 'Rephrased PDF not found.')
         return redirect('dashboard')
 
     warnings = request.session.get('rephrase_warnings', [])
     return render(request, 'pdfeditor/rephrase_result.html', {
-        'rephrased_filename': os.path.basename(rephrased_path),
-        'rephrased_size': os.path.getsize(rephrased_path),
+        'rephrased_filename': output.name,
+        'rephrased_size': output.size,
         'original_text': request.session.get('rephrase_original_text', ''),
         'new_text': request.session.get('rephrase_new_text', ''),
         'replacement_count': request.session.get('rephrase_count', 0),
@@ -159,13 +182,17 @@ def rephrase_result_view(request):
         'has_warnings': bool(warnings),
         'style': request.session.get('rephrase_style', ''),
         'model': request.session.get('rephrase_model', ''),
-        'pdf_path_relative': os.path.relpath(rephrased_path, settings.MEDIA_ROOT),
+        'pdf_path_relative': os.path.relpath(output.path, settings.MEDIA_ROOT),
     })
 
 
 def download_rephrased_view(request):
+    output = _fetch_output(request, 'rephrased_pdf_id')
+    if not output:
+        messages.error(request, 'File not found.')
+        return redirect('dashboard')
     try:
-        return attachment_response(request.session.get('rephrased_pdf_path'))
+        return attachment_response(output.path)
     except Http404:
         messages.error(request, 'File not found.')
         return redirect('dashboard')
