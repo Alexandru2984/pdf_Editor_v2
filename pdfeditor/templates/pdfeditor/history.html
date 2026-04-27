@@ -1,0 +1,80 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Operation History{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 1100px; margin: 2rem auto;">
+    <h2>📜 Operation History</h2>
+    <p style="color: #6b7280; margin-bottom: 2rem;">
+        Every PDF this session has produced. Files are auto-deleted after
+        {{ PDF_CLEANUP_HOURS|default:"24" }} hours.
+    </p>
+
+    {% if history_items %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; background: white;">
+            <thead>
+                <tr style="background: #f9fafb; text-align: left;">
+                    <th style="padding: 0.75rem 1rem; border-bottom: 2px solid #e5e7eb; color: #374151;">Operation</th>
+                    <th style="padding: 0.75rem 1rem; border-bottom: 2px solid #e5e7eb; color: #374151;">File</th>
+                    <th style="padding: 0.75rem 1rem; border-bottom: 2px solid #e5e7eb; color: #374151;">Source</th>
+                    <th style="padding: 0.75rem 1rem; border-bottom: 2px solid #e5e7eb; color: #374151;">Size</th>
+                    <th style="padding: 0.75rem 1rem; border-bottom: 2px solid #e5e7eb; color: #374151;">Created</th>
+                    <th style="padding: 0.75rem 1rem; border-bottom: 2px solid #e5e7eb; color: #374151;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in history_items %}
+                <tr style="border-bottom: 1px solid #f3f4f6;">
+                    <td style="padding: 0.75rem 1rem;">
+                        <span style="display: inline-block; padding: 0.25rem 0.625rem; background: #ede9fe; color: #6d28d9; border-radius: 0.375rem; font-size: 0.8125rem; font-weight: 500;">
+                            {{ item.kind_display }}
+                        </span>
+                    </td>
+                    <td style="padding: 0.75rem 1rem; color: #1f2937; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ item.name }}">
+                        {{ item.name }}
+                    </td>
+                    <td style="padding: 0.75rem 1rem; color: #6b7280; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ item.source_name|default:'—' }}">
+                        {{ item.source_name|default:"—" }}
+                    </td>
+                    <td style="padding: 0.75rem 1rem; color: #6b7280;">{{ item.size|filesizeformat }}</td>
+                    <td style="padding: 0.75rem 1rem; color: #6b7280;">{{ item.created_at|date:"Y-m-d H:i" }}</td>
+                    <td style="padding: 0.75rem 1rem; text-align: right;">
+                        <button onclick="pdfModal.open('/media/{{ item.path_relative }}')"
+                                class="btn btn-preview" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;">
+                            👁️
+                        </button>
+                        <a href="{% url 'history_download' item.id %}"
+                           class="btn btn-primary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem; text-decoration: none;">
+                            📥
+                        </a>
+                        <a href="{% url 'history_delete' item.id %}"
+                           class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem; text-decoration: none;"
+                           onclick="return confirm('Remove this output from history?')">
+                            🗑️
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem 1rem; color: #6b7280;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🗂️</div>
+        <p>No operations yet. Upload a PDF and run a tool to see history here.</p>
+        <a href="{% url 'dashboard' %}" class="btn btn-primary" style="text-decoration: none; margin-top: 1rem;">
+            ← Back to Dashboard
+        </a>
+    </div>
+    {% endif %}
+
+    {% if history_items %}
+    <div style="margin-top: 2rem; text-align: center;">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="text-decoration: none;">
+            ← Back to Dashboard
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

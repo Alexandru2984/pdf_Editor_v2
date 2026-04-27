@@ -62,7 +62,9 @@ def merge_pdfs(pdf_paths: List[str], output_name: Optional[str] = None) -> str:
         out.close()
 
 
-def compress_pdf(pdf_path: str, quality: str = "medium", output_name: Optional[str] = None):
+def compress_pdf(
+    pdf_path: str, quality: str = "medium", output_name: Optional[str] = None,
+) -> Tuple[str, int, int, float]:
     """Best-effort compression: deflate streams + re-encode images as JPEG."""
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
@@ -99,7 +101,10 @@ def compress_pdf(pdf_path: str, quality: str = "medium", output_name: Optional[s
     return out_path, original_size, compressed_size, ratio
 
 
-def _calculate_position(position: str, page_width: float, page_height: float, content_width: float, content_height: float):
+def _calculate_position(
+    position: str, page_width: float, page_height: float,
+    content_width: float, content_height: float,
+) -> Tuple[float, float]:
     positions = {
         "top-left": (20, 20 + content_height),
         "top-center": ((page_width - content_width) / 2, 20 + content_height),
@@ -114,7 +119,10 @@ def _calculate_position(position: str, page_width: float, page_height: float, co
     return positions.get(position, positions["center"])
 
 
-def add_watermark(pdf_path: str, watermark_type: str, watermark_content: str, options=None) -> str:
+def add_watermark(
+    pdf_path: str, watermark_type: str, watermark_content: str,
+    options: Optional[dict] = None,
+) -> str:
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
 
@@ -143,10 +151,10 @@ def add_watermark(pdf_path: str, watermark_type: str, watermark_content: str, op
             max_size = 800
             if im.width > max_size or im.height > max_size:
                 r = min(max_size / im.width, max_size / im.height)
-                im = im.resize((int(im.width * r), int(im.height * r)), PILImage.LANCZOS)
+                im = im.resize((int(im.width * r), int(im.height * r)), PILImage.Resampling.LANCZOS)
 
             if rotation:
-                im = im.rotate(-rotation, expand=True, resample=PILImage.BICUBIC)
+                im = im.rotate(-rotation, expand=True, resample=PILImage.Resampling.BICUBIC)
 
             alpha = im.split()[3].point(lambda p: int(p * opacity))
             im.putalpha(alpha)

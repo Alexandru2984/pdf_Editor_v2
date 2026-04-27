@@ -3,7 +3,7 @@ import io
 import os
 import shutil
 import tempfile
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import fitz
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -498,7 +498,8 @@ class RephraseViewTests(_ViewTestBase):
     @patch("pdfeditor.views.rephrase.get_all_models", return_value={"ollama": ["llama3"], "groq": []})
     @patch("pdfeditor.views.rephrase.get_provider")
     def test_rephrase_preview_happy_path(self, mock_provider, _models):
-        mock_provider.return_value.rephrase.return_value = ("Better text.", True, "")
+        # The preview endpoint is async and calls `arephrase`.
+        mock_provider.return_value.arephrase = AsyncMock(return_value=("Better text.", True, ""))
         resp = self.client.post(reverse("rephrase_preview"), {
             "text": "hello world", "style": "formal", "model": "llama3",
         })
@@ -545,3 +546,207 @@ class ServeMediaViewTests(_ViewTestBase):
     def test_nonexistent_path_returns_404(self):
         resp = self.client.get("/media/uploads/not_a_real_file.pdf")
         self.assertEqual(resp.status_code, 404)
+
+
+# ---- Form fill --------------------------------------------------------------
+
+def _form_pdf_bytes():
+    doc = fitz.open()
+    page = doc.new_page(width=595, height=842)
+
+    text_widget = fitz.Widget()
+    text_widget.field_type = fitz.PDF_WIDGET_TYPE_TEXT
+    text_widget.field_name = "full_name"
+    text_widget.rect = fitz.Rect(100, 100, 400, 130)
+    page.add_widget(text_widget)
+
+    cb_widget = fitz.Widget()
+    cb_widget.field_type = fitz.PDF_WIDGET_TYPE_CHECKBOX
+    cb_widget.field_name = "agree"
+    cb_widget.rect = fitz.Rect(100, 200, 120, 220)
+    page.add_widget(cb_widget)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    doc.close()
+    return buf.getvalue()
+
+
+class FormFillViewTests(_ViewTestBase):
+    def _upload_form_pdf(self, name="form.pdf"):
+        return self.client.post(
+            reverse("upload"),
+            {"pdf_file": SimpleUploadedFile(name, _form_pdf_bytes(), content_type="application/pdf")},
+        )
+
+    def test_get_without_pdf_redirects(self):
+        resp = self.client.get(reverse("form_fill"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_with_form_pdf_renders_fields(self):
+        self._upload_form_pdf()
+        resp = self.client.get(reverse("form_fill"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "full_name")
+        self.assertContains(resp, "agree")
+
+    def test_get_with_plain_pdf_redirects_with_warning(self):
+        # Plain PDF without widgets — should redirect to dashboard.
+        self.upload(name="plain.pdf")
+        resp = self.client.get(reverse("form_fill"))
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(resp.url.endswith(reverse("dashboard")))
+
+    def test_post_fills_text_field(self):
+        self._upload_form_pdf()
+        resp = self.client.post(reverse("form_fill"), {
+            "field_full_name": "Alice Example",
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(resp.url.endswith(reverse("form_fill_result")))
+
+        result = self.client.get(reverse("form_fill_result"))
+        self.assertEqual(result.status_code, 200)
+        self.assertContains(result, "Form Filled")
+
+        download = self.client.get(reverse("download_filled"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Type"], "application/pdf")
+
+    def test_post_with_checkbox_on(self):
+        self._upload_form_pdf()
+        resp = self.client.post(reverse("form_fill"), {
+            "field_full_name": "Bob",
+            "field_agree": "on",
+        })
+        self.assertEqual(resp.status_code, 302)
+
+    def test_post_with_flatten_writes_text_into_page(self):
+        self._upload_form_pdf()
+        resp = self.client.post(reverse("form_fill"), {
+            "field_full_name": "FLATTENED VALUE",
+            "flatten": "on",
+        })
+        self.assertEqual(resp.status_code, 302)
+
+        download = self.client.get(reverse("download_filled"))
+        self.assertEqual(download.status_code, 200)
+        # Download the streamed FileResponse to disk and re-open with fitz.
+        fd, out_path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        try:
+            with open(out_path, "wb") as f:
+                f.write(b"".join(download.streaming_content))
+            with fitz.open(out_path) as d:
+                self.assertIn("FLATTENED VALUE", d[0].get_text())
+        finally:
+            if os.path.exists(out_path):
+                os.remove(out_path)
+
+    def test_result_without_session_redirects(self):
+        resp = self.client.get(reverse("form_fill_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_filled"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_unknown_pdf_id_redirects(self):
+        self._upload_form_pdf()
+        resp = self.client.get(
+            reverse("form_fill") + "?pdf=00000000-0000-0000-0000-000000000000",
+        )
+        self.assertEqual(resp.status_code, 302)
+
+
+# ---- History ---------------------------------------------------------------
+
+class HistoryViewTests(_ViewTestBase):
+    def test_empty_history_renders_empty_state(self):
+        resp = self.client.get(reverse("history"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "No operations yet")
+
+    def test_history_lists_processed_pdfs(self):
+        # Run a compress operation to generate a history entry.
+        self.upload()
+        self.client.post(reverse("compress"), {"quality": "medium"})
+
+        resp = self.client.get(reverse("history"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Compress")
+
+    def test_history_skips_other_sessions(self):
+        from .models import ProcessedPDF
+        # Other session's outputs shouldn't appear here.
+        ProcessedPDF.objects.create(
+            session_key="some-other-session",
+            kind=ProcessedPDF.KIND_SPLIT,
+            name="other.pdf", path="/tmp/nope.pdf", size=0,
+        )
+        resp = self.client.get(reverse("history"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, "other.pdf")
+
+    def test_history_prunes_rows_with_missing_files(self):
+        # Create a row pointing to a non-existent file under our session.
+        from django.conf import settings as dj_settings
+        from .models import ProcessedPDF
+
+        # Make sure session_key is initialized.
+        self.client.get(reverse("dashboard"))
+        session_key = self.client.session.session_key
+
+        ProcessedPDF.objects.create(
+            session_key=session_key,
+            kind=ProcessedPDF.KIND_SPLIT,
+            name="ghost.pdf",
+            path=os.path.join(dj_settings.MEDIA_ROOT, "processed", "ghost.pdf"),
+            size=0,
+        )
+        self.assertEqual(ProcessedPDF.objects.count(), 1)
+
+        resp = self.client.get(reverse("history"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(ProcessedPDF.objects.count(), 0)
+
+    def test_history_download_returns_file(self):
+        self.upload()
+        self.client.post(reverse("compress"), {"quality": "medium"})
+        from .models import ProcessedPDF
+        out = ProcessedPDF.objects.first()
+
+        resp = self.client.get(reverse("history_download", args=[out.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/pdf")
+
+    def test_history_download_unowned_redirects(self):
+        from .models import ProcessedPDF
+        # Create an output for a different session.
+        out = ProcessedPDF.objects.create(
+            session_key="not-mine", kind=ProcessedPDF.KIND_SPLIT,
+            name="x.pdf", path="/tmp/nope.pdf", size=0,
+        )
+        resp = self.client.get(reverse("history_download", args=[out.id]))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_history_delete_removes_row(self):
+        self.upload()
+        self.client.post(reverse("compress"), {"quality": "medium"})
+        from .models import ProcessedPDF
+        out = ProcessedPDF.objects.first()
+        self.assertIsNotNone(out)
+
+        resp = self.client.get(reverse("history_delete", args=[out.id]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(ProcessedPDF.objects.filter(id=out.id).count(), 0)
+
+    def test_history_delete_unowned_does_not_delete(self):
+        from .models import ProcessedPDF
+        other = ProcessedPDF.objects.create(
+            session_key="not-mine", kind=ProcessedPDF.KIND_SPLIT,
+            name="x.pdf", path="/tmp/nope.pdf", size=0,
+        )
+        self.client.get(reverse("history_delete", args=[other.id]))
+        # The row still exists — we only deleted within our session scope.
+        self.assertTrue(ProcessedPDF.objects.filter(id=other.id).exists())

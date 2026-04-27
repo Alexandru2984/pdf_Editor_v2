@@ -18,8 +18,12 @@ class Command(BaseCommand):
             help='Retention window in hours (default: settings.PDF_CLEANUP_HOURS).',
         )
 
-    def handle(self, *args, **options):
-        cleanup_hours = options.get('hours') or getattr(settings, 'PDF_CLEANUP_HOURS', 24)
+    def handle(self, *args: object, **options: object) -> None:
+        opt_hours = options.get('hours')
+        if isinstance(opt_hours, int):
+            cleanup_hours = opt_hours
+        else:
+            cleanup_hours = int(getattr(settings, 'PDF_CLEANUP_HOURS', 24))
         cleanup_threshold = timezone.now() - timedelta(hours=cleanup_hours)
 
         rows_deleted = 0
@@ -54,7 +58,7 @@ class Command(BaseCommand):
 
     def _delete_orphaned_files(self, cleanup_threshold):
         """Remove files on disk that no row references and are older than threshold."""
-        tracked = set()
+        tracked: set[str] = set()
         tracked.update(
             os.path.realpath(p) for p in UploadedPDF.objects.values_list('path', flat=True) if p
         )

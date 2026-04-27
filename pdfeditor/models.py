@@ -42,6 +42,7 @@ class ProcessedPDF(models.Model):
     KIND_ROTATE = 'rotate'
     KIND_PAGE_NUMBERS = 'page_numbers'
     KIND_REPHRASE = 'rephrase'
+    KIND_FORM_FILL = 'form_fill'
 
     KIND_CHOICES = [
         (KIND_FIND_REPLACE, 'Find & Replace'),
@@ -52,6 +53,7 @@ class ProcessedPDF(models.Model):
         (KIND_ROTATE, 'Rotate'),
         (KIND_PAGE_NUMBERS, 'Page Numbers'),
         (KIND_REPHRASE, 'AI Rephrase'),
+        (KIND_FORM_FILL, 'Form Fill'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

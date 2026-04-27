@@ -25,5 +25,6 @@ USER app
 
 EXPOSE 8000
 
-# collectstatic at runtime (needs SECRET_KEY); migrate then start gunicorn.
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn pdf_project.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60"]
+# Run under ASGI (uvicorn workers) so the async rephrase preview view doesn't
+# block other requests during slow upstream AI calls. Sync views still work.
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn pdf_project.asgi:application --bind 0.0.0.0:8000 --workers 3 --worker-class uvicorn.workers.UvicornWorker --timeout 60"]

@@ -28,6 +28,12 @@ from .extract import (
     more_tools_view,
     ocr_text_ajax,
 )
+from .form_fill import (
+    download_filled_view,
+    form_fill_result_view,
+    form_fill_view,
+)
+from .history import history_delete_view, history_download_view, history_view
 from .layout_ops import (
     download_numbered_view,
     download_rotated_view,
@@ -59,4 +65,6 @@ __all__ = [
     'page_numbers_view', 'page_numbers_result_view', 'download_numbered_view',
     'more_tools_view', 'extract_text_ajax', 'ocr_text_ajax', 'download_text_view',
     'rephrase_view', 'rephrase_preview_ajax', 'rephrase_result_view', 'download_rephrased_view',
+    'form_fill_view', 'form_fill_result_view', 'download_filled_view',
+    'history_view', 'history_download_view', 'history_delete_view',
 ]

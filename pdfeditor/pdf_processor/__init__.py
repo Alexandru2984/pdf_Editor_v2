@@ -13,6 +13,7 @@ from .edit import (
     replace_with_flow,
 )
 from .extract import extract_text_from_pdf, ocr_pdf_to_text
+from .forms import FormField, extract_form_fields, fill_form_fields, has_form_fields
 from .ops import (
     add_page_numbers,
     add_watermark,
@@ -38,4 +39,8 @@ __all__ = [
     "rephrase_with_coordinates",
     "replace_in_rect_safe",
     "replace_with_flow",
+    "FormField",
+    "extract_form_fields",
+    "fill_form_fields",
+    "has_form_fields",
 ]

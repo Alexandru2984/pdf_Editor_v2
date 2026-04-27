@@ -1,5 +1,5 @@
 """Tests for ai_service — OllamaProvider + GroqProvider with mocked HTTP."""
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from django.test import TestCase, override_settings
 
@@ -11,6 +11,30 @@ from .ai_service import (
     get_all_models,
     get_provider,
 )
+
+
+def _async_response(status_code=200, json_payload=None, text=""):
+    """A MagicMock shaped like an httpx.Response."""
+    resp = MagicMock()
+    resp.status_code = status_code
+    resp.json.return_value = json_payload or {}
+    resp.text = text
+    return resp
+
+
+class _FakeAsyncClient:
+    """Minimal async-context-manager stub that mimics httpx.AsyncClient."""
+
+    def __init__(self, response=None, exc=None):
+        self._response = response
+        self._exc = exc
+        self.post = AsyncMock(side_effect=exc) if exc else AsyncMock(return_value=response)
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        return False
 
 
 def _mock_response(status_code=200, json_payload=None, text=""):
@@ -205,3 +229,95 @@ class GetAllModelsTests(TestCase):
     def test_groups_by_provider(self, _ollama_mock, _groq_mock):
         result = get_all_models()
         self.assertEqual(result, {"ollama": ["o1"], "groq": ["g1", "g2"]})
+
+
+class OllamaArephraseTests(TestCase):
+    """Async variant of OllamaProvider.rephrase, used by ASGI views."""
+
+    @patch("pdfeditor.ai_service.httpx.AsyncClient")
+    async def test_happy_path(self, mock_client_cls):
+        mock_client_cls.return_value = _FakeAsyncClient(
+            response=_async_response(json_payload={"response": "  async out  "}),
+        )
+        text, ok, err = await OllamaProvider().arephrase("hi", "formal", "llama3")
+        self.assertTrue(ok)
+        self.assertEqual(text, "async out")
+        self.assertEqual(err, "")
+
+    @patch("pdfeditor.ai_service.httpx.AsyncClient")
+    async def test_non_200_returns_failure(self, mock_client_cls):
+        mock_client_cls.return_value = _FakeAsyncClient(
+            response=_async_response(status_code=500, text="boom"),
+        )
+        text, ok, err = await OllamaProvider().arephrase("hi", "formal", "llama3")
+        self.assertFalse(ok)
+        self.assertEqual(text, "")
+        self.assertIn("boom", err)
+
+    @patch("pdfeditor.ai_service.httpx.AsyncClient")
+    async def test_connection_exception_returns_failure(self, mock_client_cls):
+        mock_client_cls.return_value = _FakeAsyncClient(exc=TimeoutError("timed out"))
+        text, ok, err = await OllamaProvider().arephrase("hi", "formal", "llama3")
+        self.assertFalse(ok)
+        self.assertIn("Connection Error", err)
+
+    @patch("pdfeditor.ai_service.httpx.AsyncClient")
+    async def test_default_model_when_empty(self, mock_client_cls):
+        client = _FakeAsyncClient(response=_async_response(json_payload={"response": "x"}))
+        mock_client_cls.return_value = client
+        await OllamaProvider().arephrase("hi", "formal", "")
+        body = client.post.call_args.kwargs["json"]
+        self.assertTrue(body["model"])
+
+
+class GroqArephraseTests(TestCase):
+    @override_settings(GROQ_API_KEY="")
+    async def test_no_api_key_returns_failure(self):
+        import os as _os
+        _os.environ.pop("GROQ_API_KEY", None)
+        text, ok, err = await GroqProvider().arephrase("hi", "formal", "llama-3.1-70b")
+        self.assertFalse(ok)
+        self.assertIn("API Key", err)
+
+    @override_settings(GROQ_API_KEY="test-key")
+    @patch("pdfeditor.ai_service.httpx.AsyncClient")
+    async def test_happy_path(self, mock_client_cls):
+        mock_client_cls.return_value = _FakeAsyncClient(
+            response=_async_response(
+                json_payload={"choices": [{"message": {"content": "  groq async  "}}]},
+            ),
+        )
+        text, ok, err = await GroqProvider().arephrase("hi", "casual", "mixtral-8x7b")
+        self.assertTrue(ok)
+        self.assertEqual(text, "groq async")
+
+    @override_settings(GROQ_API_KEY="test-key")
+    @patch("pdfeditor.ai_service.httpx.AsyncClient")
+    async def test_authorization_header_set(self, mock_client_cls):
+        client = _FakeAsyncClient(
+            response=_async_response(
+                json_payload={"choices": [{"message": {"content": "x"}}]},
+            ),
+        )
+        mock_client_cls.return_value = client
+        await GroqProvider().arephrase("hi", "formal", "m")
+        headers = client.post.call_args.kwargs["headers"]
+        self.assertEqual(headers["Authorization"], "Bearer test-key")
+
+    @override_settings(GROQ_API_KEY="test-key")
+    @patch("pdfeditor.ai_service.httpx.AsyncClient")
+    async def test_non_200_returns_text(self, mock_client_cls):
+        mock_client_cls.return_value = _FakeAsyncClient(
+            response=_async_response(status_code=429, text="rate limited"),
+        )
+        text, ok, err = await GroqProvider().arephrase("hi", "formal", "m")
+        self.assertFalse(ok)
+        self.assertIn("rate limited", err)
+
+    @override_settings(GROQ_API_KEY="test-key")
+    @patch("pdfeditor.ai_service.httpx.AsyncClient")
+    async def test_connection_exception(self, mock_client_cls):
+        mock_client_cls.return_value = _FakeAsyncClient(exc=TimeoutError("timeout"))
+        text, ok, err = await GroqProvider().arephrase("hi", "formal", "m")
+        self.assertFalse(ok)
+        self.assertIn("Connection Error", err)

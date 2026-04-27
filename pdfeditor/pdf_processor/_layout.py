@@ -98,7 +98,7 @@ def rect_from_frontend_bbox(page: fitz.Page, bbox_bl: Dict[str, float]) -> fitz.
 
 
 def _line_gap(a: fitz.Rect, b: fitz.Rect) -> float:
-    return b.y0 - a.y1
+    return float(b.y0 - a.y1)
 
 
 def _get_line_size(line: LineInfo) -> float:
@@ -153,7 +153,7 @@ def _flatten_lines_in_reading_order(blocks: List[BlockInfo]) -> List[LineInfo]:
 
 def _detect_alignment(para_lines: List[LineInfo]) -> int:
     if not para_lines:
-        return fitz.TEXT_ALIGN_LEFT
+        return int(fitz.TEXT_ALIGN_LEFT)
 
     x0s = [ln.rect.x0 for ln in para_lines]
     x1s = [ln.rect.x1 for ln in para_lines]
@@ -168,18 +168,18 @@ def _detect_alignment(para_lines: List[LineInfo]) -> int:
         ends_same = True
 
     if starts_same and ends_same:
-        return fitz.TEXT_ALIGN_JUSTIFY
+        return int(fitz.TEXT_ALIGN_JUSTIFY)
     if starts_same:
-        return fitz.TEXT_ALIGN_LEFT
+        return int(fitz.TEXT_ALIGN_LEFT)
     if ends_same:
-        return fitz.TEXT_ALIGN_RIGHT
+        return int(fitz.TEXT_ALIGN_RIGHT)
 
     mids = [(ln.rect.x0 + ln.rect.x1) / 2 for ln in para_lines]
     avg_mid = sum(mids) / len(mids)
     if all(abs(m - avg_mid) < tol for m in mids):
-        return fitz.TEXT_ALIGN_CENTER
+        return int(fitz.TEXT_ALIGN_CENTER)
 
-    return fitz.TEXT_ALIGN_LEFT
+    return int(fitz.TEXT_ALIGN_LEFT)
 
 
 def detect_container_for_selection(page: fitz.Page, sel_rect: fitz.Rect) -> Optional[Dict[str, Any]]:
@@ -243,7 +243,7 @@ def extract_text_from_lines(para_lines: List[LineInfo]) -> str:
     return "\n".join(out_lines).strip()
 
 
-def erase_rect(page: fitz.Page, rect: fitz.Rect):
+def erase_rect(page: fitz.Page, rect: fitz.Rect) -> None:
     page.add_redact_annot(rect, fill=(1, 1, 1))
     page.apply_redactions()
 
@@ -304,6 +304,6 @@ def measure_text_height(width: float, text: str, fontname: str, fontsize: float,
         rc = temp_page.insert_textbox(rect, text, fontname=fontname, fontsize=fontsize, align=align)
         if rc < 0:
             return 5000.0
-        return 5000.0 - rc
+        return float(5000.0 - rc)
     finally:
         temp_doc.close()

@@ -36,4 +36,12 @@ urlpatterns = [
     path('rephrase/preview/', views.rephrase_preview_ajax, name='rephrase_preview'),
     path('rephrase/result/', views.rephrase_result_view, name='rephrase_result'),
     path('download_rephrased/', views.download_rephrased_view, name='download_rephrased'),
+    # Form fill
+    path('form-fill/', views.form_fill_view, name='form_fill'),
+    path('form-fill/result/', views.form_fill_result_view, name='form_fill_result'),
+    path('download_filled/', views.download_filled_view, name='download_filled'),
+    # History
+    path('history/', views.history_view, name='history'),
+    path('history/download/<str:output_id>/', views.history_download_view, name='history_download'),
+    path('history/delete/<str:output_id>/', views.history_delete_view, name='history_delete'),
 ]
