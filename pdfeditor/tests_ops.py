@@ -287,6 +287,18 @@ class AddWatermarkTests(_MediaRootMixin, TestCase):
         with self.assertRaises(ValueError):
             add_watermark(self.pdf, "image", "/no/such/image.png")
 
+    def test_text_watermark_snaps_non_multiple_of_90_rotation(self):
+        # PyMuPDF's insert_text only allows rotations in {0, 90, 180, 270}.
+        # The slider in WatermarkForm allows any int from -90 to 90, so the op
+        # must snap to a valid multiple before calling fitz.
+        for angle in (45, 30, -45, -1, 89):
+            out = add_watermark(self.pdf, "text", "X", options={"rotation": angle})
+            try:
+                self.assertTrue(os.path.exists(out))
+            finally:
+                if os.path.exists(out):
+                    os.remove(out)
+
     def test_missing_pdf_raises(self):
         with self.assertRaises(ValueError):
             add_watermark("/no/such/file.pdf", "text", "x")

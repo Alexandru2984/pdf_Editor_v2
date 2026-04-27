@@ -2,6 +2,7 @@
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django_ratelimit.decorators import ratelimit
 
 from ..pdf_processor import extract_text_from_pdf, ocr_pdf_to_text
 from ._common import get_pdf_by_id, get_uploaded_pdfs
@@ -37,10 +38,12 @@ def _extract_to_session(request, pdf_id, extractor, suffix):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
+@ratelimit(key='ip', rate='60/h', method='POST', block=True)
 def extract_text_ajax(request, pdf_id):
     return _extract_to_session(request, pdf_id, extract_text_from_pdf, '_extracted.txt')
 
 
+@ratelimit(key='ip', rate='10/h', method='POST', block=True)
 def ocr_text_ajax(request, pdf_id):
     return _extract_to_session(request, pdf_id, ocr_pdf_to_text, '_ocr.txt')
 

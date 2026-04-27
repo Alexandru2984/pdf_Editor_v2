@@ -1,0 +1,22 @@
+services:
+  web:
+    build: .
+    image: pdfeditor:latest
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in .env}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      SECURE_SSL: ${SECURE_SSL:-0}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
+      DATABASE_PATH: /app/data/db.sqlite3
+    volumes:
+      - media:/app/media
+      - db:/app/data
+    restart: unless-stopped
+
+volumes:
+  media:
+  db:

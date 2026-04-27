@@ -162,13 +162,15 @@ def add_watermark(pdf_path: str, watermark_type: str, watermark_content: str, op
                 tw = len(text) * font_size * 0.6
                 th = font_size
                 x, y = _calculate_position(position, pw, ph, tw, th)
+                # PyMuPDF's insert_text only accepts rotations in {0, 90, 180, 270}.
+                text_rotation = round(rotation / 90) * 90 % 360
                 page.insert_text(
                     (x, y),
                     text,
                     fontsize=font_size,
                     fontname="hebo",
                     color=(0.65, 0.65, 0.65),
-                    rotate=rotation,
+                    rotate=text_rotation,
                     overlay=True,
                 )
             elif watermark_type == "image":

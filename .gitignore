@@ -45,6 +45,9 @@ media/temp/*
 *.seed
 *.cache
 .pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
 
 # Other
 prompt.txt

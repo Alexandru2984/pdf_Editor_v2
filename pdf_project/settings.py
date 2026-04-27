@@ -34,10 +34,11 @@ CSRF_TRUSTED_ORIGINS = [
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 OLLAMA_BASE_URL = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
 
-# Upload limits (10 MB)
+# Upload limits (10 MB, 500 pages)
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 PDF_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+PDF_MAX_PAGES = int(os.environ.get('PDF_MAX_PAGES', 500))
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -111,7 +112,7 @@ WSGI_APPLICATION = 'pdf_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.environ.get('DATABASE_PATH', BASE_DIR / 'db.sqlite3'),
     }
 }
 
