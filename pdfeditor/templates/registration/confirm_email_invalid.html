@@ -1,0 +1,17 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Invalid Confirmation Link{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 520px; margin: 4rem auto; text-align: center;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+    <h2>Confirmation Link Invalid</h2>
+    <p style="color: #6b7280; margin: 1rem 0 2rem;">
+        This confirmation link is either expired or has already been used.
+        Try registering again, or contact support if you think this is a mistake.
+    </p>
+    <a href="{% url 'register' %}" class="btn btn-primary" style="text-decoration: none;">
+        Register again
+    </a>
+</div>
+{% endblock %}

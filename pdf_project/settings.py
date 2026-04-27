@@ -74,6 +74,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # django-axes: lock account for 1h after 5 failed admin logins
+AXES_ENABLED = not TESTING  # tests use Client.login() which can't pass a request to axes
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
@@ -161,6 +162,30 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 PDF_CLEANUP_HOURS = 24
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Auth flow URLs.
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "dashboard"
+LOGOUT_REDIRECT_URL = "dashboard"
+
+# Email backend — console for dev (prints emails to stdout), SMTP for prod.
+# Override EMAIL_BACKEND in .env for prod (e.g. django.core.mail.backends.smtp.EmailBackend).
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend"
+    if DEBUG
+    else "django.core.mail.backends.smtp.EmailBackend",
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@pdf.micutu.com")
+SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+
+# Public site URL — used in confirmation/reset emails for absolute links.
+SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000")
 
 # Security hardening (prod behind HTTPS)
 SECURE_SSL = env_bool("SECURE_SSL", not DEBUG) and not TESTING

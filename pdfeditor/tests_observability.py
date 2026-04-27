@@ -55,8 +55,13 @@ class RequestIDMiddlewareTests(TestCase):
 
     def test_log_filter_injects_request_id(self):
         record = logging.LogRecord(
-            name="x", level=logging.INFO, pathname="x", lineno=1,
-            msg="hi", args=(), exc_info=None,
+            name="x",
+            level=logging.INFO,
+            pathname="x",
+            lineno=1,
+            msg="hi",
+            args=(),
+            exc_info=None,
         )
         RequestIDLogFilter().filter(record)
         self.assertTrue(hasattr(record, "request_id"))

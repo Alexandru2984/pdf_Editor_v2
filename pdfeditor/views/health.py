@@ -13,23 +13,21 @@ def healthz(request: HttpRequest) -> JsonResponse:
 
 def readyz(request: HttpRequest) -> JsonResponse:
     """Readiness check — verifies that we can talk to the primary database."""
-    payload: dict[str, object] = {"status": "ok", "checks": {}}
+    checks: dict[str, str] = {}
     overall_ok = True
 
     try:
         with connection.cursor() as cur:
             cur.execute("SELECT 1")
             cur.fetchone()
-        payload["checks"]["database"] = "ok"
+        checks["database"] = "ok"
     except OperationalError as exc:
-        payload["checks"]["database"] = f"error: {exc}"
+        checks["database"] = f"error: {exc}"
         overall_ok = False
     except Exception as exc:
-        payload["checks"]["database"] = f"error: {exc}"
+        checks["database"] = f"error: {exc}"
         overall_ok = False
 
     if not overall_ok:
-        payload["status"] = "degraded"
-        return JsonResponse(payload, status=503)
-
-    return JsonResponse(payload)
+        return JsonResponse({"status": "degraded", "checks": checks}, status=503)
+    return JsonResponse({"status": "ok", "checks": checks})

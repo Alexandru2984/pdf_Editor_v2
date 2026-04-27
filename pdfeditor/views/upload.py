@@ -11,7 +11,7 @@ from django.shortcuts import redirect, render
 
 from ..models import UploadedPDF
 from ..pdf_processor import check_pdf_has_text
-from ._common import ensure_session_key, get_uploaded_pdfs
+from ._common import _owner_kwargs, get_uploaded_pdfs, owner_filter
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,6 @@ def upload_view(request):
         messages.error(request, "Please select at least one PDF file.")
         return render(request, "pdfeditor/upload.html")
 
-    session_key = ensure_session_key(request)
     max_bytes = getattr(settings, "PDF_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
     fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "uploads"))
 
@@ -90,7 +89,7 @@ def upload_view(request):
 
         created.append(
             UploadedPDF.objects.create(
-                session_key=session_key,
+                **_owner_kwargs(request),
                 name=uploaded_file.name,
                 path=file_path,
                 size=uploaded_file.size,
@@ -111,10 +110,7 @@ def upload_view(request):
 
 
 def delete_pdf_view(request, pdf_id):
-    deleted, _ = UploadedPDF.objects.filter(
-        session_key=ensure_session_key(request),
-        id=pdf_id,
-    ).delete()
+    deleted, _ = UploadedPDF.objects.filter(owner_filter(request), id=pdf_id).delete()
 
     if deleted:
         messages.success(request, "PDF removed successfully.")

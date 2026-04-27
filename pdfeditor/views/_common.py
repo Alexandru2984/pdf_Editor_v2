@@ -1,24 +1,44 @@
-"""Shared helpers: session-scoped PDF lookup and guarded media serving."""
+"""Shared helpers: ownership-scoped PDF lookup and guarded media serving.
+
+Ownership rule: when the request is authenticated, the PDF must be linked to
+``request.user``; otherwise it must match the request's anonymous
+``session_key`` AND have ``user__isnull=True``. Authenticated and anonymous
+rows never alias each other.
+"""
 
 import os
 
 from django.conf import settings
-from django.http import FileResponse, Http404
+from django.db.models import Q
+from django.http import FileResponse, Http404, HttpRequest
 
 from ..models import ProcessedPDF, UploadedPDF
 
 
-def ensure_session_key(request) -> str:
+def ensure_session_key(request: HttpRequest) -> str:
     """Guarantee that the request has a persistent session_key and return it."""
     if not request.session.session_key:
         request.session.save()
     return request.session.session_key
 
 
-def get_uploaded_pdfs(request):
-    """Return UploadedPDF objects for the current session. Prunes stale rows."""
-    session_key = ensure_session_key(request)
-    rows = list(UploadedPDF.objects.filter(session_key=session_key))
+def owner_filter(request: HttpRequest) -> Q:
+    """Q expression matching PDFs owned by the current requester (user or anon session)."""
+    if getattr(request, "user", None) is not None and request.user.is_authenticated:
+        return Q(user=request.user)
+    return Q(user__isnull=True, session_key=ensure_session_key(request))
+
+
+def _owner_kwargs(request: HttpRequest) -> dict:
+    """kwargs for ``Model.objects.create()`` that set ownership correctly."""
+    if getattr(request, "user", None) is not None and request.user.is_authenticated:
+        return {"user": request.user, "session_key": ""}
+    return {"user": None, "session_key": ensure_session_key(request)}
+
+
+def get_uploaded_pdfs(request: HttpRequest):
+    """Return UploadedPDFs owned by the requester. Prunes rows whose file vanished."""
+    rows = list(UploadedPDF.objects.filter(owner_filter(request)))
 
     stale_ids = [pdf.id for pdf in rows if not pdf.exists_on_disk()]
     if stale_ids:
@@ -28,17 +48,14 @@ def get_uploaded_pdfs(request):
     return rows
 
 
-def get_pdf_by_id(request, pdf_id):
-    return UploadedPDF.objects.filter(
-        session_key=ensure_session_key(request),
-        id=pdf_id,
-    ).first()
+def get_pdf_by_id(request: HttpRequest, pdf_id):
+    return UploadedPDF.objects.filter(owner_filter(request), id=pdf_id).first()
 
 
-def record_output(request, *, kind: str, path: str, source=None) -> ProcessedPDF:
+def record_output(request: HttpRequest, *, kind: str, path: str, source=None) -> ProcessedPDF:
     """Create a ProcessedPDF row tracking a generated output file."""
     return ProcessedPDF.objects.create(
-        session_key=ensure_session_key(request),
+        **_owner_kwargs(request),
         kind=kind,
         source=source,
         name=os.path.basename(path),
@@ -47,26 +64,23 @@ def record_output(request, *, kind: str, path: str, source=None) -> ProcessedPDF
     )
 
 
-def latest_output(request, kind: str):
-    return ProcessedPDF.objects.filter(
-        session_key=ensure_session_key(request),
-        kind=kind,
-    ).first()
+def latest_output(request: HttpRequest, kind: str):
+    return ProcessedPDF.objects.filter(owner_filter(request), kind=kind).first()
 
 
-def _allowed_media_paths(request):
-    """Absolute paths the current session is allowed to read from MEDIA_ROOT."""
-    session_key = ensure_session_key(request)
-    allowed = set()
-    for obj in UploadedPDF.objects.filter(session_key=session_key):
+def _allowed_media_paths(request: HttpRequest) -> set[str]:
+    """Absolute paths the current requester is allowed to read from MEDIA_ROOT."""
+    f = owner_filter(request)
+    allowed: set[str] = set()
+    for obj in UploadedPDF.objects.filter(f):
         allowed.add(os.path.realpath(obj.path))
-    for obj in ProcessedPDF.objects.filter(session_key=session_key):
+    for obj in ProcessedPDF.objects.filter(f):
         allowed.add(os.path.realpath(obj.path))
     return allowed
 
 
-def serve_media_view(request, rel_path):
-    """Serve a MEDIA_ROOT file iff it belongs to the current session."""
+def serve_media_view(request: HttpRequest, rel_path: str) -> FileResponse:
+    """Serve a MEDIA_ROOT file iff it belongs to the current requester."""
     media_root = os.path.realpath(settings.MEDIA_ROOT)
     requested = os.path.realpath(os.path.join(media_root, rel_path))
 
@@ -80,7 +94,7 @@ def serve_media_view(request, rel_path):
     return FileResponse(open(requested, "rb"), content_type="application/pdf")
 
 
-def attachment_response(path, not_found_message="File not found."):
+def attachment_response(path: str, not_found_message: str = "File not found.") -> FileResponse:
     if not path or not os.path.exists(path):
         raise Http404(not_found_message)
     return FileResponse(

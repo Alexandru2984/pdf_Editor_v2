@@ -1,22 +1,30 @@
 """Database models for PDF Editor.
 
-PDFs are scoped per anonymous Django session via ``session_key``. There is no
-user authentication; isolation comes from matching the requesting client's
-session cookie against the stored key. File ownership is not transferable
-across sessions.
+PDFs are scoped per ``user`` when the requester is authenticated, otherwise
+per anonymous Django session via ``session_key``. Both fields exist on the
+same row so the same model serves both flows; queries filter by whichever
+applies to the current request.
 """
 
 import os
 import uuid
 
+from django.conf import settings
 from django.db import models
 
 
 class UploadedPDF(models.Model):
-    """A PDF a user has uploaded in the current session."""
+    """A PDF a user has uploaded — owned by an authenticated user OR by an anonymous session."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    session_key = models.CharField(max_length=64, db_index=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="uploaded_pdfs",
+    )
+    session_key = models.CharField(max_length=64, db_index=True, blank=True)
     name = models.CharField(max_length=255)
     path = models.CharField(max_length=500)
     size = models.BigIntegerField()
@@ -24,9 +32,13 @@ class UploadedPDF(models.Model):
 
     class Meta:
         ordering = ["-uploaded_at"]
+        indexes = [
+            models.Index(fields=["user", "-uploaded_at"]),
+        ]
 
     def __str__(self):
-        return f"{self.name} ({self.session_key[:8]}…)"
+        owner = self.user.username if self.user_id else f"anon:{self.session_key[:8]}"
+        return f"{self.name} ({owner})"
 
     def exists_on_disk(self) -> bool:
         return bool(self.path) and os.path.exists(self.path)
@@ -58,7 +70,14 @@ class ProcessedPDF(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    session_key = models.CharField(max_length=64, db_index=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="processed_pdfs",
+    )
+    session_key = models.CharField(max_length=64, db_index=True, blank=True)
     kind = models.CharField(max_length=20, choices=KIND_CHOICES)
     source = models.ForeignKey(
         UploadedPDF,
@@ -74,10 +93,14 @@ class ProcessedPDF(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["session_key", "kind"])]
+        indexes = [
+            models.Index(fields=["session_key", "kind"]),
+            models.Index(fields=["user", "-created_at"]),
+        ]
 
     def __str__(self):
-        return f"{self.get_kind_display()} · {self.name}"
+        owner = self.user.username if self.user_id else f"anon:{self.session_key[:8]}"
+        return f"{self.get_kind_display()} · {self.name} ({owner})"
 
     def exists_on_disk(self) -> bool:
         return bool(self.path) and os.path.exists(self.path)

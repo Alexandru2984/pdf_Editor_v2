@@ -12,7 +12,6 @@ import contextvars
 import logging
 import uuid
 from collections.abc import Callable
-from typing import Optional
 
 from django.http import HttpRequest, HttpResponse
 

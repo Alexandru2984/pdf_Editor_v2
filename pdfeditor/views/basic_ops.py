@@ -12,9 +12,9 @@ from ..models import ProcessedPDF
 from ..pdf_processor import compress_pdf, merge_pdfs, split_pdf
 from ._common import (
     attachment_response,
-    ensure_session_key,
     get_pdf_by_id,
     get_uploaded_pdfs,
+    owner_filter,
     record_output,
 )
 
@@ -37,10 +37,7 @@ def _fetch_output(request, session_key):
     output_id = request.session.get(session_key)
     if not output_id:
         return None
-    return ProcessedPDF.objects.filter(
-        session_key=ensure_session_key(request),
-        id=output_id,
-    ).first()
+    return ProcessedPDF.objects.filter(owner_filter(request), id=output_id).first()
 
 
 # ---------- Split ----------
@@ -87,8 +84,7 @@ def _session_split_outputs(request):
     ids = request.session.get("split_ids", []) or []
     if not ids:
         return []
-    session_key = ensure_session_key(request)
-    outputs = ProcessedPDF.objects.filter(session_key=session_key, id__in=ids)
+    outputs = ProcessedPDF.objects.filter(owner_filter(request), id__in=ids)
     ordered = {str(o.id): o for o in outputs}
     return [ordered[i] for i in ids if i in ordered]
 

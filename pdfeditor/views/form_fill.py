@@ -11,9 +11,9 @@ from ..models import ProcessedPDF
 from ..pdf_processor import extract_form_fields, fill_form_fields, has_form_fields
 from ._common import (
     attachment_response,
-    ensure_session_key,
     get_pdf_by_id,
     get_uploaded_pdfs,
+    owner_filter,
     record_output,
 )
 
@@ -36,10 +36,7 @@ def _fetch_output(request, session_key):
     output_id = request.session.get(session_key)
     if not output_id:
         return None
-    return ProcessedPDF.objects.filter(
-        session_key=ensure_session_key(request),
-        id=output_id,
-    ).first()
+    return ProcessedPDF.objects.filter(owner_filter(request), id=output_id).first()
 
 
 def form_fill_view(request):

@@ -1,4 +1,4 @@
-"""Operation history view — list all ProcessedPDFs for the current session."""
+"""Operation history view — list every ProcessedPDF the requester owns."""
 
 import os
 
@@ -8,13 +8,12 @@ from django.http import Http404
 from django.shortcuts import redirect, render
 
 from ..models import ProcessedPDF
-from ._common import attachment_response, ensure_session_key
+from ._common import attachment_response, owner_filter
 
 
 def history_view(request):
-    """Show every ProcessedPDF the current session has produced, newest first."""
-    session_key = ensure_session_key(request)
-    rows = list(ProcessedPDF.objects.filter(session_key=session_key).select_related("source"))
+    """Show every ProcessedPDF the current requester has produced, newest first."""
+    rows = list(ProcessedPDF.objects.filter(owner_filter(request)).select_related("source"))
 
     # Drop rows whose underlying file vanished (cleanup, manual deletion).
     valid_rows = []
@@ -51,11 +50,8 @@ def history_view(request):
 
 
 def history_download_view(request, output_id):
-    """Download any past output, gated by session ownership."""
-    output = ProcessedPDF.objects.filter(
-        session_key=ensure_session_key(request),
-        id=output_id,
-    ).first()
+    """Download any past output, gated by ownership (user or anonymous session)."""
+    output = ProcessedPDF.objects.filter(owner_filter(request), id=output_id).first()
     if not output or not output.exists_on_disk():
         messages.error(request, "File not found or no longer available.")
         return redirect("history")
@@ -67,11 +63,8 @@ def history_download_view(request, output_id):
 
 
 def history_delete_view(request, output_id):
-    """Remove a past output (DB row + file)."""
-    deleted_count, _ = ProcessedPDF.objects.filter(
-        session_key=ensure_session_key(request),
-        id=output_id,
-    ).delete()
+    """Remove a past output (DB row + file) owned by the current requester."""
+    deleted_count, _ = ProcessedPDF.objects.filter(owner_filter(request), id=output_id).delete()
     if deleted_count:
         messages.success(request, "Output removed from history.")
     else:
