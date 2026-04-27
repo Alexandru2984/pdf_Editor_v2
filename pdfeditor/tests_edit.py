@@ -1,4 +1,5 @@
 """Tests for pdf_processor.edit — SAFE + FLOW replacement, find_and_replace, rephrase_with_coordinates."""
+
 import os
 import shutil
 import tempfile
@@ -96,7 +97,9 @@ class ReplaceInRectSafeTests(_MediaRootMixin, TestCase):
             page = doc[0]
             rect = fitz.Rect(70, 90, 90, 100)  # ~20pt × 10pt
             warnings = replace_in_rect_safe(
-                page, rect, "This is a very long replacement text that cannot possibly fit." * 5,
+                page,
+                rect,
+                "This is a very long replacement text that cannot possibly fit." * 5,
             )
 
         self.assertTrue(warnings)
@@ -147,7 +150,12 @@ class ReplaceWithFlowTests(_MediaRootMixin, TestCase):
             with fitz.open(blank) as d:
                 page = d[0]
                 warnings = replace_with_flow(page, fitz.Rect(50, 50, 150, 70), "fresh text")
-            self.assertTrue(any("could not detect" in w.lower() or "fallback" in w.lower() or "safe" in w.lower() for w in warnings))
+            self.assertTrue(
+                any(
+                    "could not detect" in w.lower() or "fallback" in w.lower() or "safe" in w.lower()
+                    for w in warnings
+                )
+            )
         finally:
             os.remove(blank)
 
@@ -170,8 +178,10 @@ class ReplaceWithFlowTests(_MediaRootMixin, TestCase):
                 page = d[0]
                 original_height = page.rect.height
                 sel = fitz.Rect(70, 195, 130, 210)
-                long_replacement = ("This is a much much longer replacement that should "
-                                    "force a downward shift of all blocks below it. ") * 8
+                long_replacement = (
+                    "This is a much much longer replacement that should "
+                    "force a downward shift of all blocks below it. "
+                ) * 8
                 warnings = replace_with_flow(page, sel, long_replacement)
                 d.saveIncr()
 
@@ -261,7 +271,7 @@ class FindAndReplaceTextFlowTests(_MediaRootMixin, TestCase):
         doc = fitz.open()
         for n in range(2):
             page = doc.new_page(width=595, height=842)
-            page.insert_text((72, 100), f"Page {n+1}: TARGET appears here.", fontsize=11)
+            page.insert_text((72, 100), f"Page {n + 1}: TARGET appears here.", fontsize=11)
         fd, self.path = tempfile.mkstemp(suffix=".pdf")
         os.close(fd)
         doc.save(self.path)
@@ -273,8 +283,11 @@ class FindAndReplaceTextFlowTests(_MediaRootMixin, TestCase):
 
     def test_replaces_on_all_pages_in_safe_mode(self):
         out_path, count, warnings = find_and_replace_text(
-            pdf_path=self.path, search_text="TARGET", replace_text="REPL",
-            case_sensitive=True, mode="safe",
+            pdf_path=self.path,
+            search_text="TARGET",
+            replace_text="REPL",
+            case_sensitive=True,
+            mode="safe",
         )
         try:
             self.assertGreaterEqual(count, 2)
@@ -289,8 +302,12 @@ class FindAndReplaceTextFlowTests(_MediaRootMixin, TestCase):
 
     def test_page_range_restricts_replacements(self):
         out_path, count, warnings = find_and_replace_text(
-            pdf_path=self.path, search_text="TARGET", replace_text="REPL",
-            case_sensitive=True, page_range="1", mode="safe",
+            pdf_path=self.path,
+            search_text="TARGET",
+            replace_text="REPL",
+            case_sensitive=True,
+            page_range="1",
+            mode="safe",
         )
         try:
             self.assertEqual(count, 1)
@@ -303,7 +320,9 @@ class FindAndReplaceTextFlowTests(_MediaRootMixin, TestCase):
 
     def test_no_matches_returns_zero_count(self):
         out_path, count, _w = find_and_replace_text(
-            pdf_path=self.path, search_text="ZZZZ", replace_text="X",
+            pdf_path=self.path,
+            search_text="ZZZZ",
+            replace_text="X",
             case_sensitive=True,
         )
         try:
@@ -315,8 +334,11 @@ class FindAndReplaceTextFlowTests(_MediaRootMixin, TestCase):
 
     def test_flow_mode_smokes_does_not_crash(self):
         out_path, count, warnings = find_and_replace_text(
-            pdf_path=self.path, search_text="TARGET", replace_text="reflow",
-            case_sensitive=True, mode="flow",
+            pdf_path=self.path,
+            search_text="TARGET",
+            replace_text="reflow",
+            case_sensitive=True,
+            mode="flow",
         )
         try:
             self.assertGreaterEqual(count, 2)
@@ -329,12 +351,17 @@ class FindAndReplaceTextFlowTests(_MediaRootMixin, TestCase):
     def test_missing_file_raises(self):
         with self.assertRaises(ValueError):
             find_and_replace_text(
-                pdf_path="/no/such/file.pdf", search_text="x", replace_text="y",
+                pdf_path="/no/such/file.pdf",
+                search_text="x",
+                replace_text="y",
             )
 
     def test_filename_contains_mode_and_basename(self):
         out_path, _c, _w = find_and_replace_text(
-            pdf_path=self.path, search_text="TARGET", replace_text="X", mode="safe",
+            pdf_path=self.path,
+            search_text="TARGET",
+            replace_text="X",
+            mode="safe",
         )
         try:
             base = os.path.basename(self.path).rsplit(".", 1)[0]

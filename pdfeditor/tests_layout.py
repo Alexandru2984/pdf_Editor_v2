@@ -1,4 +1,5 @@
 """Tests for pdf_processor._layout — paragraph/container detection + reflow geometry."""
+
 import os
 import tempfile
 
@@ -215,7 +216,10 @@ class IterTextBlocksAndPickStyleTests(TestCase):
     def setUp(self):
         self.path = _make_pdf_paragraph(
             ["First line of paragraph.", "Second line continues.", "Third line ends it."],
-            x=72, y=100, line_h=14, size=11,
+            x=72,
+            y=100,
+            line_h=14,
+            size=11,
         )
 
     def tearDown(self):

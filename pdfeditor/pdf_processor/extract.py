@@ -1,9 +1,9 @@
 """Text extraction: direct text layer + OCR fallback."""
+
 from __future__ import annotations
 
 import io
 import os
-from typing import List
 
 import fitz
 
@@ -13,7 +13,7 @@ def extract_text_from_pdf(pdf_path: str) -> str:
         raise ValueError(f"PDF file not found: {pdf_path}")
 
     with fitz.open(pdf_path) as doc:
-        chunks: List[str] = []
+        chunks: list[str] = []
         for i, page in enumerate(doc, 1):
             t = page.get_text()
             if t.strip():
@@ -36,7 +36,7 @@ def ocr_pdf_to_text(pdf_path: str) -> str:
         raise Exception("pytesseract not installed. Run: pip install pytesseract") from e
 
     with fitz.open(pdf_path) as doc:
-        out: List[str] = []
+        out: list[str] = []
         for i, page in enumerate(doc, 1):
             pix = page.get_pixmap(dpi=300)
             img = Image.open(io.BytesIO(pix.tobytes("png")))

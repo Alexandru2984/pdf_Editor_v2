@@ -1,8 +1,8 @@
 """Text editing: find/replace and coordinate-based rephrase (SAFE + FLOW modes)."""
+
 from __future__ import annotations
 
 import os
-from typing import Dict, List, Optional, Tuple
 
 import fitz
 
@@ -24,9 +24,9 @@ def replace_in_rect_safe(
     new_text: str,
     align: int = fitz.TEXT_ALIGN_LEFT,
     shrink_steps: int = 6,
-) -> List[str]:
+) -> list[str]:
     """SAFE mode: redact the rect, insert new text at the same location, shrinking if needed."""
-    warnings: List[str] = []
+    warnings: list[str] = []
     new_text = (new_text or "").strip()
     font, size, color = pick_style_near_rect(page, rect)
 
@@ -53,9 +53,9 @@ def replace_with_flow(
     sel_rect: fitz.Rect,
     replace_text: str,
     original_text: str = "",
-) -> List[str]:
+) -> list[str]:
     """FLOW mode: detect paragraph container, reflow text, shift content below by delta."""
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     info = detect_container_for_selection(page, sel_rect)
     if not info:
@@ -68,13 +68,16 @@ def replace_with_flow(
     align = info["align"]
     safe_font = font if font in BASE14_FONTS else "helv"
 
-    needed_height = measure_text_height(
-        width=container.width,
-        text=replace_text,
-        fontname=safe_font,
-        fontsize=size,
-        align=align,
-    ) + 2.0  # padding
+    needed_height = (
+        measure_text_height(
+            width=container.width,
+            text=replace_text,
+            fontname=safe_font,
+            fontsize=size,
+            align=align,
+        )
+        + 2.0
+    )  # padding
 
     delta = needed_height - container.height
 
@@ -114,18 +117,18 @@ def replace_with_flow(
 def rephrase_with_coordinates(
     pdf_path: str,
     page_number: int,
-    bounding_box_bl: Dict[str, float],
+    bounding_box_bl: dict[str, float],
     replace_text: str,
     mode: str = "flow",
     original_text: str = "",
-) -> Tuple[str, int, List[str]]:
+) -> tuple[str, int, list[str]]:
     """Apply a coordinate-based text replacement from a UI selection."""
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
 
     out_dir = processed_dir()
     out_path = os.path.join(out_dir, f"{safe_basename(pdf_path)}_rephrased_{mode}_{timestamp()}.pdf")
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     with fitz.open(pdf_path) as doc:
         if page_number < 0 or page_number >= len(doc):
@@ -149,14 +152,14 @@ def find_and_replace_text(
     search_text: str,
     replace_text: str,
     case_sensitive: bool = True,
-    page_range: Optional[str] = None,
+    page_range: str | None = None,
     mode: str = "safe",
-) -> Tuple[str, int, List[str]]:
+) -> tuple[str, int, list[str]]:
     """Document-wide search & replace using PyMuPDF's search_for + SAFE/FLOW replacement."""
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
 
-    warnings: List[str] = []
+    warnings: list[str] = []
     replacements = 0
 
     out_dir = processed_dir()
@@ -195,9 +198,9 @@ def rephrase_text_in_pdf(
     search_text: str,
     replace_text: str,
     case_sensitive: bool = True,
-    page_range: Optional[str] = None,
+    page_range: str | None = None,
     mode: str = "flow",
-) -> Tuple[str, int, List[str]]:
+) -> tuple[str, int, list[str]]:
     """Alias of find_and_replace_text that defaults to FLOW mode."""
     return find_and_replace_text(
         pdf_path=pdf_path,

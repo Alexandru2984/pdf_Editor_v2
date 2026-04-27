@@ -1,4 +1,5 @@
 """Shared helpers: session-scoped PDF lookup and guarded media serving."""
+
 import os
 
 from django.conf import settings
@@ -76,14 +77,14 @@ def serve_media_view(request, rel_path):
     if not os.path.exists(requested):
         raise Http404()
 
-    return FileResponse(open(requested, 'rb'), content_type='application/pdf')
+    return FileResponse(open(requested, "rb"), content_type="application/pdf")
 
 
-def attachment_response(path, not_found_message='File not found.'):
+def attachment_response(path, not_found_message="File not found."):
     if not path or not os.path.exists(path):
         raise Http404(not_found_message)
     return FileResponse(
-        open(path, 'rb'),
+        open(path, "rb"),
         as_attachment=True,
         filename=os.path.basename(path),
     )

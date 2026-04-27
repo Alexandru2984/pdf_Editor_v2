@@ -1,4 +1,5 @@
 """Tests for pdf_processor._common (pure helpers + introspection)."""
+
 import os
 import tempfile
 
@@ -98,8 +99,13 @@ class MapFontNameTests(TestCase):
     def test_all_outputs_are_valid_base14(self):
         # Whatever we output must be a font PyMuPDF accepts directly.
         for sample in [
-            "Helvetica", "Times-Roman", "Courier-Bold", "Symbol",
-            "AAAAAA+Helvetica-BoldOblique", "WeirdFont", "",
+            "Helvetica",
+            "Times-Roman",
+            "Courier-Bold",
+            "Symbol",
+            "AAAAAA+Helvetica-BoldOblique",
+            "WeirdFont",
+            "",
         ]:
             self.assertIn(map_font_name(sample), BASE14_FONTS)
 

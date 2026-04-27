@@ -1,4 +1,5 @@
 """End-to-end view tests covering upload, basic_ops, layout_ops, edit, extract, rephrase."""
+
 import io
 import os
 import shutil
@@ -11,8 +12,8 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from PIL import Image as PILImage
 
-
 # ---- Fixture helpers --------------------------------------------------------
+
 
 def _multipage_pdf_bytes(num_pages=2, text_prefix="Page"):
     doc = fitz.open()
@@ -34,7 +35,8 @@ def _png_bytes(size=(50, 50), color=(0, 200, 0, 255)):
 
 def _make_uploaded(name, num_pages=2, text_prefix="Page"):
     return SimpleUploadedFile(
-        name, _multipage_pdf_bytes(num_pages, text_prefix),
+        name,
+        _multipage_pdf_bytes(num_pages, text_prefix),
         content_type="application/pdf",
     )
 
@@ -48,11 +50,13 @@ class _ViewTestBase(TestCase):
         super().setUpClass()
         # Ensure MEDIA_ROOT exists.
         from django.conf import settings as dj_settings
+
         os.makedirs(dj_settings.MEDIA_ROOT, exist_ok=True)
 
     @classmethod
     def tearDownClass(cls):
         from django.conf import settings as dj_settings
+
         shutil.rmtree(dj_settings.MEDIA_ROOT, ignore_errors=True)
         super().tearDownClass()
 
@@ -68,11 +72,13 @@ class _ViewTestBase(TestCase):
 
     def upload_and_get_pdf(self, **kwargs):
         from .models import UploadedPDF
+
         self.upload(**kwargs)
         return UploadedPDF.objects.first()
 
 
 # ---- Upload + dashboard -----------------------------------------------------
+
 
 class UploadViewExtraTests(_ViewTestBase):
     """Beyond what tests.py covers — page-count limit, magic-byte rejection, multi-file."""
@@ -88,7 +94,9 @@ class UploadViewExtraTests(_ViewTestBase):
 
     def test_upload_rejects_oversize(self):
         big = SimpleUploadedFile(
-            "big.pdf", b"%PDF-" + b"\x00" * (11 * 1024 * 1024), content_type="application/pdf",
+            "big.pdf",
+            b"%PDF-" + b"\x00" * (11 * 1024 * 1024),
+            content_type="application/pdf",
         )
         resp = self.client.post(reverse("upload"), {"pdf_file": big})
         self.assertEqual(resp.status_code, 200)
@@ -109,7 +117,8 @@ class UploadViewExtraTests(_ViewTestBase):
     def test_upload_rejects_unparseable_pdf_bytes(self):
         # Magic bytes pass but body is garbage — fitz should fail to parse.
         bad = SimpleUploadedFile(
-            "evil.pdf", b"%PDF-1.4\nthis is not a real pdf at all just text\n%%EOF\n",
+            "evil.pdf",
+            b"%PDF-1.4\nthis is not a real pdf at all just text\n%%EOF\n",
             content_type="application/pdf",
         )
         resp = self.client.post(reverse("upload"), {"pdf_file": bad})
@@ -117,14 +126,18 @@ class UploadViewExtraTests(_ViewTestBase):
         self.assertContains(resp, "could not be parsed")
 
     def test_upload_multiple_files_redirects_to_dashboard(self):
-        resp = self.client.post(reverse("upload"), {
-            "pdf_file": [_make_uploaded("a.pdf"), _make_uploaded("b.pdf")],
-        })
+        resp = self.client.post(
+            reverse("upload"),
+            {
+                "pdf_file": [_make_uploaded("a.pdf"), _make_uploaded("b.pdf")],
+            },
+        )
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(resp.url.endswith(reverse("dashboard")))
 
     def test_delete_pdf_removes_row(self):
         from .models import UploadedPDF
+
         self.upload(name="del.pdf")
         pdf = UploadedPDF.objects.first()
         resp = self.client.get(reverse("delete_pdf", args=[pdf.id]))
@@ -138,6 +151,7 @@ class UploadViewExtraTests(_ViewTestBase):
 
 
 # ---- Edit (find/replace) ----------------------------------------------------
+
 
 class EditViewTests(_ViewTestBase):
     def test_get_without_upload_redirects(self):
@@ -157,10 +171,15 @@ class EditViewTests(_ViewTestBase):
 
     def test_full_workflow_edit_result_download(self):
         self.upload(text_prefix="Hello")  # produces "Hello 1 content here."
-        resp = self.client.post(reverse("edit"), {
-            "search_text": "Hello", "replace_text": "Goodbye",
-            "case_sensitive": True, "page_range": "",
-        })
+        resp = self.client.post(
+            reverse("edit"),
+            {
+                "search_text": "Hello",
+                "replace_text": "Goodbye",
+                "case_sensitive": True,
+                "page_range": "",
+            },
+        )
         self.assertEqual(resp.status_code, 302)
 
         result = self.client.get(reverse("result"))
@@ -181,10 +200,15 @@ class EditViewTests(_ViewTestBase):
 
     def test_preview_processed_renders_after_edit(self):
         self.upload(text_prefix="Hello")
-        self.client.post(reverse("edit"), {
-            "search_text": "Hello", "replace_text": "Hi",
-            "case_sensitive": True, "page_range": "",
-        })
+        self.client.post(
+            reverse("edit"),
+            {
+                "search_text": "Hello",
+                "replace_text": "Hi",
+                "case_sensitive": True,
+                "page_range": "",
+            },
+        )
         resp = self.client.get(reverse("preview") + "?type=processed")
         self.assertEqual(resp.status_code, 200)
 
@@ -194,6 +218,7 @@ class EditViewTests(_ViewTestBase):
 
 
 # ---- Split / Merge / Compress ----------------------------------------------
+
 
 class SplitViewTests(_ViewTestBase):
     def test_get_renders_form(self):
@@ -255,13 +280,17 @@ class MergeViewTests(_ViewTestBase):
 
     def test_full_merge_workflow(self):
         from .models import UploadedPDF
+
         self.upload(name="a.pdf")
         self.upload(name="b.pdf")
         ids = list(UploadedPDF.objects.values_list("id", flat=True))
-        resp = self.client.post(reverse("merge"), {
-            "selected_pdfs": ",".join(str(i) for i in ids),
-            "output_name": "combined",
-        })
+        resp = self.client.post(
+            reverse("merge"),
+            {
+                "selected_pdfs": ",".join(str(i) for i in ids),
+                "output_name": "combined",
+            },
+        )
         self.assertEqual(resp.status_code, 302)
 
         result = self.client.get(reverse("merge_result"))
@@ -291,6 +320,7 @@ class CompressViewTests(_ViewTestBase):
 
 # ---- Watermark / Rotate / Page numbers --------------------------------------
 
+
 class WatermarkViewTests(_ViewTestBase):
     def test_get_renders(self):
         self.upload()
@@ -300,11 +330,17 @@ class WatermarkViewTests(_ViewTestBase):
     def test_text_watermark_workflow(self):
         self.upload()
         # rotation=45 forces the snap-to-90 path in ops.py.
-        resp = self.client.post(reverse("watermark"), {
-            "watermark_type": "text", "text_content": "DRAFT",
-            "font_size": 48, "position": "center",
-            "opacity": 0.3, "rotation": 45,
-        })
+        resp = self.client.post(
+            reverse("watermark"),
+            {
+                "watermark_type": "text",
+                "text_content": "DRAFT",
+                "font_size": 48,
+                "position": "center",
+                "opacity": 0.3,
+                "rotation": 45,
+            },
+        )
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(self.client.get(reverse("watermark_result")).status_code, 200)
         self.assertEqual(self.client.get(reverse("download_watermarked")).status_code, 200)
@@ -312,18 +348,30 @@ class WatermarkViewTests(_ViewTestBase):
     def test_image_watermark_workflow(self):
         self.upload()
         png = SimpleUploadedFile("logo.png", _png_bytes(), content_type="image/png")
-        resp = self.client.post(reverse("watermark"), {
-            "watermark_type": "image", "watermark_image": png,
-            "position": "top-right", "opacity": 0.5, "rotation": 0,
-        })
+        resp = self.client.post(
+            reverse("watermark"),
+            {
+                "watermark_type": "image",
+                "watermark_image": png,
+                "position": "top-right",
+                "opacity": 0.5,
+                "rotation": 0,
+            },
+        )
         self.assertEqual(resp.status_code, 302)
 
     def test_text_watermark_missing_content_invalid(self):
         self.upload()
-        resp = self.client.post(reverse("watermark"), {
-            "watermark_type": "text", "text_content": "",
-            "position": "center", "opacity": 0.3, "rotation": 0,
-        })
+        resp = self.client.post(
+            reverse("watermark"),
+            {
+                "watermark_type": "text",
+                "text_content": "",
+                "position": "center",
+                "opacity": 0.3,
+                "rotation": 0,
+            },
+        )
         self.assertEqual(resp.status_code, 200)
 
 
@@ -354,16 +402,22 @@ class PageNumbersViewTests(_ViewTestBase):
 
     def test_page_numbers_workflow(self):
         self.upload(num_pages=3)
-        resp = self.client.post(reverse("page_numbers"), {
-            "position": "bottom-center", "format": "page_number",
-            "font_size": 12, "start_page": 1,
-        })
+        resp = self.client.post(
+            reverse("page_numbers"),
+            {
+                "position": "bottom-center",
+                "format": "page_number",
+                "font_size": 12,
+                "start_page": 1,
+            },
+        )
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(self.client.get(reverse("page_numbers_result")).status_code, 200)
         self.assertEqual(self.client.get(reverse("download_numbered")).status_code, 200)
 
 
 # ---- Extract + OCR ----------------------------------------------------------
+
 
 class ExtractViewTests(_ViewTestBase):
     def test_more_tools_no_pdf_redirects(self):
@@ -419,6 +473,7 @@ class ExtractViewTests(_ViewTestBase):
 
 # ---- Rephrase ---------------------------------------------------------------
 
+
 class RephraseViewTests(_ViewTestBase):
     def test_get_without_upload_redirects(self):
         resp = self.client.get(reverse("rephrase"))
@@ -436,14 +491,19 @@ class RephraseViewTests(_ViewTestBase):
         mock_provider.return_value.rephrase.return_value = ("Rephrased.", True, "")
         self.upload()
 
-        resp = self.client.post(reverse("rephrase"), {
-            "selected_text": "Page 1 content here.",
-            "rephrase_style": "formal",
-            "model": "llama3",
-            "page_number": "0",
-            "bbox_x0": "70", "bbox_y0": "732",
-            "bbox_x1": "350", "bbox_y1": "742",
-        })
+        resp = self.client.post(
+            reverse("rephrase"),
+            {
+                "selected_text": "Page 1 content here.",
+                "rephrase_style": "formal",
+                "model": "llama3",
+                "page_number": "0",
+                "bbox_x0": "70",
+                "bbox_y0": "732",
+                "bbox_x1": "350",
+                "bbox_y1": "742",
+            },
+        )
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(resp.url.endswith(reverse("rephrase_result")))
 
@@ -456,21 +516,37 @@ class RephraseViewTests(_ViewTestBase):
     @patch("pdfeditor.views.rephrase.get_all_models", return_value={"ollama": ["llama3"], "groq": []})
     def test_post_missing_selected_text(self, _models):
         self.upload()
-        resp = self.client.post(reverse("rephrase"), {
-            "selected_text": "", "rephrase_style": "formal", "model": "llama3",
-            "page_number": "0",
-            "bbox_x0": "0", "bbox_y0": "0", "bbox_x1": "0", "bbox_y1": "0",
-        })
+        resp = self.client.post(
+            reverse("rephrase"),
+            {
+                "selected_text": "",
+                "rephrase_style": "formal",
+                "model": "llama3",
+                "page_number": "0",
+                "bbox_x0": "0",
+                "bbox_y0": "0",
+                "bbox_x1": "0",
+                "bbox_y1": "0",
+            },
+        )
         self.assertEqual(resp.status_code, 200)  # rendered with error
 
     @patch("pdfeditor.views.rephrase.get_all_models", return_value={"ollama": ["llama3"], "groq": []})
     def test_post_zero_bbox_is_rejected(self, _models):
         self.upload()
-        resp = self.client.post(reverse("rephrase"), {
-            "selected_text": "some text", "rephrase_style": "formal", "model": "llama3",
-            "page_number": "0",
-            "bbox_x0": "0", "bbox_y0": "0", "bbox_x1": "0", "bbox_y1": "0",
-        })
+        resp = self.client.post(
+            reverse("rephrase"),
+            {
+                "selected_text": "some text",
+                "rephrase_style": "formal",
+                "model": "llama3",
+                "page_number": "0",
+                "bbox_x0": "0",
+                "bbox_y0": "0",
+                "bbox_x1": "0",
+                "bbox_y1": "0",
+            },
+        )
         self.assertEqual(resp.status_code, 200)
 
     @patch("pdfeditor.views.rephrase.get_all_models", return_value={"ollama": ["llama3"], "groq": []})
@@ -478,13 +554,19 @@ class RephraseViewTests(_ViewTestBase):
     def test_post_provider_failure_shows_error(self, mock_provider, _models):
         mock_provider.return_value.rephrase.return_value = ("", False, "API down")
         self.upload()
-        resp = self.client.post(reverse("rephrase"), {
-            "selected_text": "Page 1",
-            "rephrase_style": "formal", "model": "llama3",
-            "page_number": "0",
-            "bbox_x0": "70", "bbox_y0": "732",
-            "bbox_x1": "350", "bbox_y1": "742",
-        })
+        resp = self.client.post(
+            reverse("rephrase"),
+            {
+                "selected_text": "Page 1",
+                "rephrase_style": "formal",
+                "model": "llama3",
+                "page_number": "0",
+                "bbox_x0": "70",
+                "bbox_y0": "732",
+                "bbox_x1": "350",
+                "bbox_y1": "742",
+            },
+        )
         self.assertEqual(resp.status_code, 200)
 
     def test_rephrase_preview_get_returns_405(self):
@@ -500,9 +582,14 @@ class RephraseViewTests(_ViewTestBase):
     def test_rephrase_preview_happy_path(self, mock_provider, _models):
         # The preview endpoint is async and calls `arephrase`.
         mock_provider.return_value.arephrase = AsyncMock(return_value=("Better text.", True, ""))
-        resp = self.client.post(reverse("rephrase_preview"), {
-            "text": "hello world", "style": "formal", "model": "llama3",
-        })
+        resp = self.client.post(
+            reverse("rephrase_preview"),
+            {
+                "text": "hello world",
+                "style": "formal",
+                "model": "llama3",
+            },
+        )
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertTrue(body["success"])
@@ -519,9 +606,11 @@ class RephraseViewTests(_ViewTestBase):
 
 # ---- Media serving (path-traversal guard) ----------------------------------
 
+
 class ServeMediaViewTests(_ViewTestBase):
     def test_serves_session_owned_file(self):
         from django.conf import settings as dj_settings
+
         pdf = self.upload_and_get_pdf()
         rel = os.path.relpath(pdf.path, dj_settings.MEDIA_ROOT)
         resp = self.client.get(f"/media/{rel}")
@@ -536,6 +625,7 @@ class ServeMediaViewTests(_ViewTestBase):
     def test_unowned_file_returns_404(self):
         # Upload as session A, then make a fresh client (session B) and ask for the same path.
         from django.conf import settings as dj_settings
+
         pdf = self.upload_and_get_pdf()
         rel = os.path.relpath(pdf.path, dj_settings.MEDIA_ROOT)
 
@@ -549,6 +639,7 @@ class ServeMediaViewTests(_ViewTestBase):
 
 
 # ---- Form fill --------------------------------------------------------------
+
 
 def _form_pdf_bytes():
     doc = fitz.open()
@@ -599,9 +690,12 @@ class FormFillViewTests(_ViewTestBase):
 
     def test_post_fills_text_field(self):
         self._upload_form_pdf()
-        resp = self.client.post(reverse("form_fill"), {
-            "field_full_name": "Alice Example",
-        })
+        resp = self.client.post(
+            reverse("form_fill"),
+            {
+                "field_full_name": "Alice Example",
+            },
+        )
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(resp.url.endswith(reverse("form_fill_result")))
 
@@ -615,18 +709,24 @@ class FormFillViewTests(_ViewTestBase):
 
     def test_post_with_checkbox_on(self):
         self._upload_form_pdf()
-        resp = self.client.post(reverse("form_fill"), {
-            "field_full_name": "Bob",
-            "field_agree": "on",
-        })
+        resp = self.client.post(
+            reverse("form_fill"),
+            {
+                "field_full_name": "Bob",
+                "field_agree": "on",
+            },
+        )
         self.assertEqual(resp.status_code, 302)
 
     def test_post_with_flatten_writes_text_into_page(self):
         self._upload_form_pdf()
-        resp = self.client.post(reverse("form_fill"), {
-            "field_full_name": "FLATTENED VALUE",
-            "flatten": "on",
-        })
+        resp = self.client.post(
+            reverse("form_fill"),
+            {
+                "field_full_name": "FLATTENED VALUE",
+                "flatten": "on",
+            },
+        )
         self.assertEqual(resp.status_code, 302)
 
         download = self.client.get(reverse("download_filled"))
@@ -661,6 +761,7 @@ class FormFillViewTests(_ViewTestBase):
 
 # ---- History ---------------------------------------------------------------
 
+
 class HistoryViewTests(_ViewTestBase):
     def test_empty_history_renders_empty_state(self):
         resp = self.client.get(reverse("history"))
@@ -678,11 +779,14 @@ class HistoryViewTests(_ViewTestBase):
 
     def test_history_skips_other_sessions(self):
         from .models import ProcessedPDF
+
         # Other session's outputs shouldn't appear here.
         ProcessedPDF.objects.create(
             session_key="some-other-session",
             kind=ProcessedPDF.KIND_SPLIT,
-            name="other.pdf", path="/tmp/nope.pdf", size=0,
+            name="other.pdf",
+            path="/tmp/nope.pdf",
+            size=0,
         )
         resp = self.client.get(reverse("history"))
         self.assertEqual(resp.status_code, 200)
@@ -691,6 +795,7 @@ class HistoryViewTests(_ViewTestBase):
     def test_history_prunes_rows_with_missing_files(self):
         # Create a row pointing to a non-existent file under our session.
         from django.conf import settings as dj_settings
+
         from .models import ProcessedPDF
 
         # Make sure session_key is initialized.
@@ -714,6 +819,7 @@ class HistoryViewTests(_ViewTestBase):
         self.upload()
         self.client.post(reverse("compress"), {"quality": "medium"})
         from .models import ProcessedPDF
+
         out = ProcessedPDF.objects.first()
 
         resp = self.client.get(reverse("history_download", args=[out.id]))
@@ -722,10 +828,14 @@ class HistoryViewTests(_ViewTestBase):
 
     def test_history_download_unowned_redirects(self):
         from .models import ProcessedPDF
+
         # Create an output for a different session.
         out = ProcessedPDF.objects.create(
-            session_key="not-mine", kind=ProcessedPDF.KIND_SPLIT,
-            name="x.pdf", path="/tmp/nope.pdf", size=0,
+            session_key="not-mine",
+            kind=ProcessedPDF.KIND_SPLIT,
+            name="x.pdf",
+            path="/tmp/nope.pdf",
+            size=0,
         )
         resp = self.client.get(reverse("history_download", args=[out.id]))
         self.assertEqual(resp.status_code, 302)
@@ -734,6 +844,7 @@ class HistoryViewTests(_ViewTestBase):
         self.upload()
         self.client.post(reverse("compress"), {"quality": "medium"})
         from .models import ProcessedPDF
+
         out = ProcessedPDF.objects.first()
         self.assertIsNotNone(out)
 
@@ -743,9 +854,13 @@ class HistoryViewTests(_ViewTestBase):
 
     def test_history_delete_unowned_does_not_delete(self):
         from .models import ProcessedPDF
+
         other = ProcessedPDF.objects.create(
-            session_key="not-mine", kind=ProcessedPDF.KIND_SPLIT,
-            name="x.pdf", path="/tmp/nope.pdf", size=0,
+            session_key="not-mine",
+            kind=ProcessedPDF.KIND_SPLIT,
+            name="x.pdf",
+            path="/tmp/nope.pdf",
+            size=0,
         )
         self.client.get(reverse("history_delete", args=[other.id]))
         # The row still exists — we only deleted within our session scope.

@@ -1,9 +1,9 @@
 """Split, merge, compress, watermark, rotate, page-numbers operations."""
+
 from __future__ import annotations
 
 import io
 import os
-from typing import List, Optional, Tuple
 
 import fitz
 from PIL import Image as PILImage
@@ -11,7 +11,7 @@ from PIL import Image as PILImage
 from ._common import parse_page_range, processed_dir, safe_basename, timestamp
 
 
-def split_pdf(pdf_path: str, ranges: List[Tuple[int, int]]) -> List[str]:
+def split_pdf(pdf_path: str, ranges: list[tuple[int, int]]) -> list[str]:
     """ranges: list of (start,end) 1-indexed inclusive."""
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
@@ -21,7 +21,7 @@ def split_pdf(pdf_path: str, ranges: List[Tuple[int, int]]) -> List[str]:
 
     with fitz.open(pdf_path) as doc:
         total = len(doc)
-        out_files: List[str] = []
+        out_files: list[str] = []
 
         for idx, (start, end) in enumerate(ranges, 1):
             if start < 1 or end > total or start > end:
@@ -40,7 +40,7 @@ def split_pdf(pdf_path: str, ranges: List[Tuple[int, int]]) -> List[str]:
         return out_files
 
 
-def merge_pdfs(pdf_paths: List[str], output_name: Optional[str] = None) -> str:
+def merge_pdfs(pdf_paths: list[str], output_name: str | None = None) -> str:
     if len(pdf_paths) < 2:
         raise ValueError("At least 2 PDF files are required for merging")
     for p in pdf_paths:
@@ -63,8 +63,10 @@ def merge_pdfs(pdf_paths: List[str], output_name: Optional[str] = None) -> str:
 
 
 def compress_pdf(
-    pdf_path: str, quality: str = "medium", output_name: Optional[str] = None,
-) -> Tuple[str, int, int, float]:
+    pdf_path: str,
+    quality: str = "medium",
+    output_name: str | None = None,
+) -> tuple[str, int, int, float]:
     """Best-effort compression: deflate streams + re-encode images as JPEG."""
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
@@ -102,9 +104,12 @@ def compress_pdf(
 
 
 def _calculate_position(
-    position: str, page_width: float, page_height: float,
-    content_width: float, content_height: float,
-) -> Tuple[float, float]:
+    position: str,
+    page_width: float,
+    page_height: float,
+    content_width: float,
+    content_height: float,
+) -> tuple[float, float]:
     positions = {
         "top-left": (20, 20 + content_height),
         "top-center": ((page_width - content_width) / 2, 20 + content_height),
@@ -120,8 +125,10 @@ def _calculate_position(
 
 
 def add_watermark(
-    pdf_path: str, watermark_type: str, watermark_content: str,
-    options: Optional[dict] = None,
+    pdf_path: str,
+    watermark_type: str,
+    watermark_content: str,
+    options: dict | None = None,
 ) -> str:
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
@@ -135,7 +142,7 @@ def add_watermark(
     out_dir = processed_dir()
     out_path = os.path.join(out_dir, f"watermarked_{safe_basename(pdf_path)}_{timestamp()}.pdf")
 
-    temp_img_path: Optional[str] = None
+    temp_img_path: str | None = None
     wm_w = wm_h = 0
 
     with fitz.open(pdf_path) as doc:
@@ -196,7 +203,7 @@ def add_watermark(
     return out_path
 
 
-def rotate_pages(pdf_path: str, rotation_angle: int, page_range: Optional[str] = None) -> str:
+def rotate_pages(pdf_path: str, rotation_angle: int, page_range: str | None = None) -> str:
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
     if rotation_angle not in (90, 180, 270):
@@ -214,7 +221,7 @@ def rotate_pages(pdf_path: str, rotation_angle: int, page_range: Optional[str] =
     return out_path
 
 
-def add_page_numbers(pdf_path: str, options: Optional[dict] = None) -> str:
+def add_page_numbers(pdf_path: str, options: dict | None = None) -> str:
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
 

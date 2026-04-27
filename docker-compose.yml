@@ -1,7 +1,25 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pdfeditor}
+      POSTGRES_USER: ${POSTGRES_USER:-pdfeditor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pdfeditor} -d ${POSTGRES_DB:-pdfeditor}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   web:
     build: .
     image: pdfeditor:latest
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
@@ -11,12 +29,12 @@ services:
       SECURE_SSL: ${SECURE_SSL:-0}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
-      DATABASE_PATH: /app/data/db.sqlite3
+      DATABASE_URL: postgres://${POSTGRES_USER:-pdfeditor}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-pdfeditor}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     volumes:
       - media:/app/media
-      - db:/app/data
     restart: unless-stopped
 
 volumes:
   media:
-  db:
+  pgdata:

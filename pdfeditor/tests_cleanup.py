@@ -1,4 +1,5 @@
 """Tests for the cleanup_old_pdfs management command."""
+
 import os
 import shutil
 import tempfile
@@ -52,7 +53,10 @@ class CleanupCommandTests(TestCase):
     def test_deletes_old_uploaded_pdf_row_and_file(self):
         path = _make_file(self.uploads, "old.pdf")
         old_pdf = UploadedPDF.objects.create(
-            session_key="abc", name="old.pdf", path=path, size=os.path.getsize(path),
+            session_key="abc",
+            name="old.pdf",
+            path=path,
+            size=os.path.getsize(path),
         )
         UploadedPDF.objects.filter(pk=old_pdf.pk).update(uploaded_at=timezone.now() - timedelta(hours=48))
 
@@ -66,7 +70,10 @@ class CleanupCommandTests(TestCase):
     def test_keeps_recent_uploaded_pdf(self):
         path = _make_file(self.uploads, "fresh.pdf")
         recent = UploadedPDF.objects.create(
-            session_key="abc", name="fresh.pdf", path=path, size=os.path.getsize(path),
+            session_key="abc",
+            name="fresh.pdf",
+            path=path,
+            size=os.path.getsize(path),
         )
 
         with self._override_media():
@@ -78,8 +85,11 @@ class CleanupCommandTests(TestCase):
     def test_deletes_old_processed_row(self):
         path = _make_file(self.processed, "out.pdf")
         proc = ProcessedPDF.objects.create(
-            session_key="abc", kind=ProcessedPDF.KIND_SPLIT,
-            name="out.pdf", path=path, size=os.path.getsize(path),
+            session_key="abc",
+            kind=ProcessedPDF.KIND_SPLIT,
+            name="out.pdf",
+            path=path,
+            size=os.path.getsize(path),
         )
         ProcessedPDF.objects.filter(pk=proc.pk).update(created_at=timezone.now() - timedelta(hours=48))
 
@@ -116,7 +126,10 @@ class CleanupCommandTests(TestCase):
         # Row exists with a fresh uploaded_at — file should be preserved as
         # tracked-but-recent.
         row = UploadedPDF.objects.create(
-            session_key="abc", name="tracked.pdf", path=path, size=os.path.getsize(path),
+            session_key="abc",
+            name="tracked.pdf",
+            path=path,
+            size=os.path.getsize(path),
         )
 
         with self._override_media():

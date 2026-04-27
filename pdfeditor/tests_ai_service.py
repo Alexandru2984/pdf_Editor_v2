@@ -1,4 +1,5 @@
 """Tests for ai_service — OllamaProvider + GroqProvider with mocked HTTP."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from django.test import TestCase, override_settings
@@ -86,7 +87,9 @@ class OllamaRephraseTests(TestCase):
             json_payload={"response": "  rephrased version  "},
         )
         text, ok, err = OllamaProvider().rephrase(
-            text="hello world", style="formal", model="llama3",
+            text="hello world",
+            style="formal",
+            model="llama3",
         )
         self.assertTrue(ok)
         self.assertEqual(err, "")
@@ -121,7 +124,9 @@ class OllamaRephraseTests(TestCase):
     def test_custom_prompt_overrides_style(self, mock_post):
         mock_post.return_value = _mock_response(json_payload={"response": "out"})
         OllamaProvider().rephrase(
-            text="hi", style="formal", model="llama3",
+            text="hi",
+            style="formal",
+            model="llama3",
             custom_prompt="Translate to pig latin.",
         )
         body = mock_post.call_args.kwargs["json"]
@@ -136,6 +141,7 @@ class GroqGetModelsTests(TestCase):
         # Ensure neither settings nor env provides a key.
         with patch.dict("os.environ", {}, clear=False):
             import os as _os
+
             _os.environ.pop("GROQ_API_KEY", None)
             self.assertEqual(GroqProvider().get_models(), [])
 
@@ -175,6 +181,7 @@ class GroqRephraseTests(TestCase):
     @override_settings(GROQ_API_KEY="")
     def test_no_api_key_returns_failure_with_message(self):
         import os as _os
+
         _os.environ.pop("GROQ_API_KEY", None)
         text, ok, err = GroqProvider().rephrase("hi", "formal", "llama-3.1-70b")
         self.assertFalse(ok)
@@ -274,6 +281,7 @@ class GroqArephraseTests(TestCase):
     @override_settings(GROQ_API_KEY="")
     async def test_no_api_key_returns_failure(self):
         import os as _os
+
         _os.environ.pop("GROQ_API_KEY", None)
         text, ok, err = await GroqProvider().arephrase("hi", "formal", "llama-3.1-70b")
         self.assertFalse(ok)

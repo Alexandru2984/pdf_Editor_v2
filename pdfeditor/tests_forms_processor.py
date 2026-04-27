@@ -1,4 +1,5 @@
 """Tests for pdf_processor.forms — AcroForm field detection + filling."""
+
 import os
 import shutil
 import tempfile
@@ -172,7 +173,8 @@ class FillFormFieldsTests(_MediaRootMixin, TestCase):
 
     def test_partial_fill_only_counts_matched(self):
         out, count, _w = fill_form_fields(
-            self.path, {"full_name": "Bob", "nonexistent": "x"},
+            self.path,
+            {"full_name": "Bob", "nonexistent": "x"},
         )
         try:
             self.assertEqual(count, 1)
@@ -190,7 +192,9 @@ class FillFormFieldsTests(_MediaRootMixin, TestCase):
 
     def test_flatten_bakes_text(self):
         out, _c, warnings = fill_form_fields(
-            self.path, {"full_name": "FLAT TEXT"}, flatten=True,
+            self.path,
+            {"full_name": "FLAT TEXT"},
+            flatten=True,
         )
         try:
             with fitz.open(out) as d:

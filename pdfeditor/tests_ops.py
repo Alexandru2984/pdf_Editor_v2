@@ -1,4 +1,5 @@
 """Tests for pdf_processor.ops — split, merge, compress, watermark, rotate, page numbers."""
+
 import io
 import os
 import shutil

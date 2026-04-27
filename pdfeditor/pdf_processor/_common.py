@@ -1,9 +1,10 @@
 """Shared helpers: paths, page ranges, font/color mapping."""
+
 from __future__ import annotations
 
 import os
 from datetime import datetime
-from typing import Any, List, Tuple
+from typing import Any
 
 import fitz
 from django.conf import settings
@@ -23,7 +24,7 @@ def safe_basename(path: str) -> str:
     return os.path.splitext(os.path.basename(path))[0]
 
 
-def parse_page_range(range_string: str, total_pages: int) -> List[int]:
+def parse_page_range(range_string: str, total_pages: int) -> list[int]:
     """Parse "1-3,5,7-9" -> 0-indexed page list. Empty -> all pages."""
     if not range_string or not range_string.strip():
         return list(range(total_pages))
@@ -47,7 +48,7 @@ def parse_page_range(range_string: str, total_pages: int) -> List[int]:
     return sorted(pages)
 
 
-def check_pdf_has_text(pdf_path: str) -> Tuple[bool, str]:
+def check_pdf_has_text(pdf_path: str) -> tuple[bool, str]:
     if not os.path.exists(pdf_path):
         return False, f"PDF not found: {pdf_path}"
     try:
@@ -61,14 +62,24 @@ def check_pdf_has_text(pdf_path: str) -> Tuple[bool, str]:
 
 
 BASE14_FONTS = {
-    "helv", "hebo", "heit", "hebi",
-    "tiro", "tibo", "tiri", "tibi",
-    "cour", "cobo", "coit", "cobi",
-    "symb", "zadb",
+    "helv",
+    "hebo",
+    "heit",
+    "hebi",
+    "tiro",
+    "tibo",
+    "tiri",
+    "tibi",
+    "cour",
+    "cobo",
+    "coit",
+    "cobi",
+    "symb",
+    "zadb",
 }
 
 
-def convert_color(color_int: Any) -> Tuple[float, float, float]:
+def convert_color(color_int: Any) -> tuple[float, float, float]:
     if isinstance(color_int, int):
         r = (color_int >> 16) & 0xFF
         g = (color_int >> 8) & 0xFF
@@ -87,21 +98,30 @@ def map_font_name(original_font: str) -> str:
     is_italic = any(x in clean2 for x in ("italic", "it", "oblique", "slant"))
 
     if any(x in clean2 for x in ("times", "timesnewroman", "timesroman")):
-        if is_bold and is_italic: return "tibi"
-        if is_bold: return "tibo"
-        if is_italic: return "tiri"
+        if is_bold and is_italic:
+            return "tibi"
+        if is_bold:
+            return "tibo"
+        if is_italic:
+            return "tiri"
         return "tiro"
 
     if any(x in clean2 for x in ("helvetica", "arial")):
-        if is_bold and is_italic: return "hebi"
-        if is_bold: return "hebo"
-        if is_italic: return "heit"
+        if is_bold and is_italic:
+            return "hebi"
+        if is_bold:
+            return "hebo"
+        if is_italic:
+            return "heit"
         return "helv"
 
     if any(x in clean2 for x in ("courier", "couriernew", "mono")):
-        if is_bold and is_italic: return "cobi"
-        if is_bold: return "cobo"
-        if is_italic: return "coit"
+        if is_bold and is_italic:
+            return "cobi"
+        if is_bold:
+            return "cobo"
+        if is_italic:
+            return "coit"
         return "cour"
 
     if "symbol" in clean2:

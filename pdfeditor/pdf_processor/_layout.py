@@ -1,9 +1,10 @@
 """Text layout model + container/paragraph detection for FLOW mode replacement."""
+
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import fitz
 
@@ -16,7 +17,7 @@ class SpanInfo:
     text: str
     font: str
     size: float
-    color: Tuple[float, float, float]
+    color: tuple[float, float, float]
     flags: int
     line_rect: fitz.Rect
     block_rect: fitz.Rect
@@ -25,28 +26,28 @@ class SpanInfo:
 @dataclass
 class LineInfo:
     rect: fitz.Rect
-    spans: List[SpanInfo]
+    spans: list[SpanInfo]
 
 
 @dataclass
 class BlockInfo:
     rect: fitz.Rect
-    lines: List[LineInfo]
+    lines: list[LineInfo]
 
 
-def iter_text_blocks(page: fitz.Page) -> List[BlockInfo]:
+def iter_text_blocks(page: fitz.Page) -> list[BlockInfo]:
     d = page.get_text("dict", flags=fitz.TEXT_PRESERVE_WHITESPACE)
-    blocks: List[BlockInfo] = []
+    blocks: list[BlockInfo] = []
 
     for b in d.get("blocks", []):
         if b.get("type") != 0:
             continue
         block_rect = fitz.Rect(b["bbox"])
-        lines_out: List[LineInfo] = []
+        lines_out: list[LineInfo] = []
 
         for ln in b.get("lines", []):
             line_rect = fitz.Rect(ln["bbox"])
-            spans_out: List[SpanInfo] = []
+            spans_out: list[SpanInfo] = []
 
             for sp in ln.get("spans", []):
                 t = sp.get("text", "")
@@ -74,7 +75,7 @@ def iter_text_blocks(page: fitz.Page) -> List[BlockInfo]:
     return blocks
 
 
-def pick_style_near_rect(page: fitz.Page, rect: fitz.Rect) -> Tuple[str, float, Tuple[float, float, float]]:
+def pick_style_near_rect(page: fitz.Page, rect: fitz.Rect) -> tuple[str, float, tuple[float, float, float]]:
     for b in iter_text_blocks(page):
         for ln in b.lines:
             if not ln.rect.intersects(rect):
@@ -87,7 +88,7 @@ def pick_style_near_rect(page: fitz.Page, rect: fitz.Rect) -> Tuple[str, float, 
     return "helv", 11.0, (0.0, 0.0, 0.0)
 
 
-def rect_from_frontend_bbox(page: fitz.Page, bbox_bl: Dict[str, float]) -> fitz.Rect:
+def rect_from_frontend_bbox(page: fitz.Page, bbox_bl: dict[str, float]) -> fitz.Rect:
     """Convert PDF bottom-left origin bbox to PyMuPDF top-left origin rect."""
     ph = page.rect.height
     x0 = float(bbox_bl["x0"])
@@ -114,7 +115,7 @@ def _is_list_item(line: LineInfo) -> bool:
     return line.spans[0].text.strip().startswith(_LIST_PREFIXES)
 
 
-def _group_paragraph_lines(lines: List[LineInfo], seed_idx: int, max_gap: float) -> List[int]:
+def _group_paragraph_lines(lines: list[LineInfo], seed_idx: int, max_gap: float) -> list[int]:
     """Grow paragraph from seed line, stopping at large gaps, size changes, or list items."""
     chosen = {seed_idx}
     seed_size = _get_line_size(lines[seed_idx])
@@ -122,9 +123,11 @@ def _group_paragraph_lines(lines: List[LineInfo], seed_idx: int, max_gap: float)
 
     i = seed_idx - 1
     while i >= 0:
-        if (_line_gap(lines[i].rect, lines[i + 1].rect) <= max_gap
-                and abs(_get_line_size(lines[i]) - seed_size) < size_tolerance
-                and not _is_list_item(lines[i])):
+        if (
+            _line_gap(lines[i].rect, lines[i + 1].rect) <= max_gap
+            and abs(_get_line_size(lines[i]) - seed_size) < size_tolerance
+            and not _is_list_item(lines[i])
+        ):
             chosen.add(i)
             i -= 1
         else:
@@ -132,9 +135,11 @@ def _group_paragraph_lines(lines: List[LineInfo], seed_idx: int, max_gap: float)
 
     i = seed_idx + 1
     while i < len(lines):
-        if (_line_gap(lines[i - 1].rect, lines[i].rect) <= max_gap
-                and abs(_get_line_size(lines[i]) - seed_size) < size_tolerance
-                and not _is_list_item(lines[i])):
+        if (
+            _line_gap(lines[i - 1].rect, lines[i].rect) <= max_gap
+            and abs(_get_line_size(lines[i]) - seed_size) < size_tolerance
+            and not _is_list_item(lines[i])
+        ):
             chosen.add(i)
             i += 1
         else:
@@ -143,15 +148,15 @@ def _group_paragraph_lines(lines: List[LineInfo], seed_idx: int, max_gap: float)
     return sorted(chosen)
 
 
-def _flatten_lines_in_reading_order(blocks: List[BlockInfo]) -> List[LineInfo]:
-    lines: List[LineInfo] = []
+def _flatten_lines_in_reading_order(blocks: list[BlockInfo]) -> list[LineInfo]:
+    lines: list[LineInfo] = []
     for b in blocks:
         lines.extend(b.lines)
     lines.sort(key=lambda ln: (round(ln.rect.y0, 2), round(ln.rect.x0, 2)))
     return lines
 
 
-def _detect_alignment(para_lines: List[LineInfo]) -> int:
+def _detect_alignment(para_lines: list[LineInfo]) -> int:
     if not para_lines:
         return int(fitz.TEXT_ALIGN_LEFT)
 
@@ -182,7 +187,7 @@ def _detect_alignment(para_lines: List[LineInfo]) -> int:
     return int(fitz.TEXT_ALIGN_LEFT)
 
 
-def detect_container_for_selection(page: fitz.Page, sel_rect: fitz.Rect) -> Optional[Dict[str, Any]]:
+def detect_container_for_selection(page: fitz.Page, sel_rect: fitz.Rect) -> dict[str, Any] | None:
     """Detect paragraph/column container around a selection rectangle."""
     blocks = iter_text_blocks(page)
     lines = _flatten_lines_in_reading_order(blocks)
@@ -235,8 +240,8 @@ def detect_container_for_selection(page: fitz.Page, sel_rect: fitz.Rect) -> Opti
     }
 
 
-def extract_text_from_lines(para_lines: List[LineInfo]) -> str:
-    out_lines: List[str] = []
+def extract_text_from_lines(para_lines: list[LineInfo]) -> str:
+    out_lines: list[str] = []
     for ln in para_lines:
         line_text = "".join(sp.text for sp in ln.spans)
         out_lines.append(re.sub(r"[ \t]+", " ", line_text).rstrip())
@@ -248,9 +253,9 @@ def erase_rect(page: fitz.Page, rect: fitz.Rect) -> None:
     page.apply_redactions()
 
 
-def text_blocks_below_in_same_column(page: fitz.Page, container_rect: fitz.Rect) -> List[BlockInfo]:
+def text_blocks_below_in_same_column(page: fitz.Page, container_rect: fitz.Rect) -> list[BlockInfo]:
     """Return text blocks below container that share >= 55% horizontal overlap."""
-    out: List[BlockInfo] = []
+    out: list[BlockInfo] = []
     for b in iter_text_blocks(page):
         if b.rect.y0 < container_rect.y1 - 1:
             continue
@@ -264,9 +269,9 @@ def text_blocks_below_in_same_column(page: fitz.Page, container_rect: fitz.Rect)
     return out
 
 
-def shift_text_blocks(page: fitz.Page, blocks: List[BlockInfo], dy: float) -> List[str]:
+def shift_text_blocks(page: fitz.Page, blocks: list[BlockInfo], dy: float) -> list[str]:
     """Shift blocks vertically by dy (erase + re-insert). Heuristic, conservative."""
-    warnings: List[str] = []
+    warnings: list[str] = []
     if not blocks or abs(dy) < 0.5:
         return warnings
 

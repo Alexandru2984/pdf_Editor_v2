@@ -1,4 +1,5 @@
 """Tests for pdf_processor.extract — text-layer extraction + OCR fallback."""
+
 import os
 import shutil
 import tempfile
