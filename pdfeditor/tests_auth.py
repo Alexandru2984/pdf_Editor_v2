@@ -341,6 +341,65 @@ class EmailConfirmationTests(_AuthTestBase):
         self.assertEqual(replay.status_code, 400)
 
 
+class ResendConfirmationTests(_AuthTestBase):
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()  # rate-limit state lives in the cache between tests
+        self.client = Client()
+
+    def test_get_renders_form(self):
+        resp = self.client.get(reverse("resend_confirmation"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Resend Confirmation")
+
+    def test_post_with_inactive_user_email_sends_mail(self):
+        User.objects.create_user(
+            username="hank", email="hank@example.com", password="pw", is_active=False,
+        )
+        resp = self.client.post(
+            reverse("resend_confirmation"), {"email": "hank@example.com"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Check Your Email")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("hank@example.com", mail.outbox[0].to)
+        self.assertIn("/accounts/confirm/", mail.outbox[0].body)
+
+    def test_post_with_active_user_email_does_not_send(self):
+        # Already-active accounts shouldn't get a new confirmation email.
+        User.objects.create_user(
+            username="ivy", email="ivy@example.com", password="pw", is_active=True,
+        )
+        resp = self.client.post(
+            reverse("resend_confirmation"), {"email": "ivy@example.com"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_post_with_unknown_email_silently_succeeds(self):
+        # No existence-oracle: same response page, no email sent.
+        resp = self.client.post(
+            reverse("resend_confirmation"), {"email": "ghost@example.com"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Check Your Email")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_post_with_invalid_email_re_renders_form(self):
+        resp = self.client.post(
+            reverse("resend_confirmation"), {"email": "not-an-email"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Resend Confirmation")  # form re-rendered
+
+    def test_authenticated_user_redirected(self):
+        User.objects.create_user(username="jules", password="pw")
+        self.client.login(username="jules", password="pw")
+        resp = self.client.get(reverse("resend_confirmation"))
+        self.assertEqual(resp.status_code, 302)
+
+
 class PasswordChangeTests(_AuthTestBase):
     def setUp(self):
         self.client = Client()

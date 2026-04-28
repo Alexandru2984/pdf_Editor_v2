@@ -8,13 +8,12 @@ from django.conf import settings
 from django.contrib import messages
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
-from django_ratelimit.core import is_ratelimited
-from django_ratelimit.decorators import ratelimit
 from django_ratelimit.exceptions import Ratelimited
 
 from ..ai_service import get_all_models, get_provider
 from ..models import ProcessedPDF
 from ..pdf_processor import rephrase_with_coordinates
+from ..ratelimiting import auth_aware_ratelimit, check_rate_limit
 from ._common import (
     attachment_response,
     get_pdf_by_id,
@@ -35,7 +34,7 @@ def _fetch_output(request, session_key):
     return ProcessedPDF.objects.filter(owner_filter(request), id=output_id).first()
 
 
-@ratelimit(key="ip", rate="20/h", method="POST", block=True)
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
 def rephrase_view(request):
     uploaded_pdfs = get_uploaded_pdfs(request)
     if not uploaded_pdfs:
@@ -144,15 +143,15 @@ async def rephrase_preview_ajax(request):
     if request.method != "POST":
         return _json_response({"success": False, "error": "Only POST allowed"}, status=405)
 
-    # django-ratelimit 4.1 has no native async-decorator support; call the core
-    # check manually so we still rate-limit ASGI requests.
-    limited = await sync_to_async(is_ratelimited)(
-        request=request,
-        group="rephrase_preview_ajax",
-        key="ip",
-        rate="30/h",
+    # django-ratelimit 4.1 has no native async-decorator support; call the
+    # auth-aware core helper through sync_to_async so ASGI requests still
+    # respect quotas (and authenticated users get the higher rate).
+    limited = await sync_to_async(check_rate_limit)(
+        request,
+        group="pdfeditor.views.rephrase.rephrase_preview_ajax",
+        anon_rate="30/h",
+        user_rate="120/h",
         method="POST",
-        increment=True,
     )
     if limited:
         raise Ratelimited()

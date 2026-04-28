@@ -5,7 +5,7 @@ conf and tests can keep using ``from pdfeditor import views``.
 """
 
 from ._common import serve_media_view
-from .auth import confirm_email_view, register_view
+from .auth import confirm_email_view, register_view, resend_confirmation_view
 from .basic_ops import (
     compress_result_view,
     compress_view,
@@ -100,4 +100,5 @@ __all__ = [
     "readyz",
     "register_view",
     "confirm_email_view",
+    "resend_confirmation_view",
 ]

@@ -18,6 +18,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from ..email_utils import decode_uid, is_token_valid, send_confirmation_email
+from ..ratelimiting import auth_aware_ratelimit
 
 User = get_user_model()
 
@@ -92,3 +93,37 @@ def confirm_email_view(request: HttpRequest, uidb64: str, token: str) -> HttpRes
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     messages.success(request, "Email confirmed! Welcome aboard.")
     return redirect("dashboard")
+
+
+class ResendConfirmationForm(forms.Form):
+    email = forms.EmailField(
+        required=True,
+        label="Email address",
+        widget=forms.EmailInput(
+            attrs={"class": "form-input", "autocomplete": "email", "autofocus": True},
+        ),
+    )
+
+
+@auth_aware_ratelimit(anon_rate="3/h", user_rate="3/h", method="POST")
+def resend_confirmation_view(request: HttpRequest) -> HttpResponse:
+    """Allow inactive users to request a fresh confirmation email.
+
+    Always renders the same "we sent it if the address exists" page on POST,
+    so this endpoint can't be used as an account-existence oracle.
+    """
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        form = ResendConfirmationForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"].strip().lower()
+            user = User.objects.filter(email__iexact=email, is_active=False).first()
+            if user is not None:
+                send_confirmation_email(user)
+            return render(request, "registration/resend_confirmation_done.html")
+    else:
+        form = ResendConfirmationForm()
+
+    return render(request, "registration/resend_confirmation_form.html", {"form": form})

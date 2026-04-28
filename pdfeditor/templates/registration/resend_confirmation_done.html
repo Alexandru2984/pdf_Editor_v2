@@ -1,0 +1,15 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Confirmation Email Sent{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 520px; margin: 4rem auto; text-align: center;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">📬</div>
+    <h2>Check Your Email</h2>
+    <p style="color: #6b7280; margin: 1rem 0 2rem;">
+        If we have an account waiting on confirmation for that email, we've sent a fresh link.
+        Check your inbox (and spam folder). The link is valid for a limited time.
+    </p>
+    <a href="{% url 'login' %}" class="btn btn-primary" style="text-decoration: none;">Back to Sign In</a>
+</div>
+{% endblock %}

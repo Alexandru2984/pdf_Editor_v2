@@ -1,0 +1,30 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Resend Confirmation Email{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 520px; margin: 4rem auto;">
+    <h2>📨 Resend Confirmation Email</h2>
+    <p style="color: #6b7280; margin-bottom: 2rem;">
+        Lost the confirmation email? Enter the address you registered with and we'll send a fresh link.
+    </p>
+
+    <form method="post" class="edit-form">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label for="{{ field.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.5rem;">
+                {{ field.label }}
+            </label>
+            {{ field }}
+            {% if field.errors %}<div style="color:#dc2626; margin-top:0.25rem;">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Send Confirmation Email</button>
+        <p style="text-align: center; margin-top: 1.5rem; color: #6b7280;">
+            <a href="{% url 'login' %}" style="color: #6366f1;">Back to sign in</a>
+        </p>
+    </form>
+</div>
+<style>input[type="email"] { width: 100%; padding: 0.625rem; border: 1px solid #d1d5db; border-radius: 0.5rem; }</style>
+{% endblock %}

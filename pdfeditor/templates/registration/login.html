@@ -46,9 +46,11 @@
 
         <p style="text-align: center; margin-top: 1.5rem; color: #6b7280;">
             Don't have an account? <a href="{% url 'register' %}" style="color: #6366f1; font-weight: 500;">Create one</a>
-            {% if password_reset_url %}
             · <a href="{% url 'password_reset' %}" style="color: #6366f1;">Forgot password?</a>
-            {% endif %}
+        </p>
+        <p style="text-align: center; margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem;">
+            Didn't get a confirmation email?
+            <a href="{% url 'resend_confirmation' %}" style="color: #6366f1;">Resend it</a>
         </p>
     </form>
 </div>

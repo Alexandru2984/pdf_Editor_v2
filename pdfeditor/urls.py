@@ -66,6 +66,11 @@ urlpatterns = [
         views.confirm_email_view,
         name="confirm_email",
     ),
+    path(
+        "accounts/resend-confirmation/",
+        views.resend_confirmation_view,
+        name="resend_confirmation",
+    ),
     # Password change (for logged-in users).
     path(
         "accounts/password/change/",
