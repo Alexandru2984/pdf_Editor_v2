@@ -14,7 +14,8 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -37,27 +38,25 @@ def send_confirmation_email(user: AbstractBaseUser) -> bool:
     registration page down. The caller should warn the user when this returns
     False.
     """
-    link = _build_confirmation_link(user)
-    subject = "Confirm your PDF Editor account"
-    body = (
-        f"Hi {getattr(user, 'username', 'there')},\n\n"
-        "Click the link below to confirm your account and activate sign-in:\n\n"
-        f"{link}\n\n"
-        "If you didn't sign up, just ignore this email.\n"
-    )
-
     email = getattr(user, "email", "") or ""
     if not email:
         return False
 
+    link = _build_confirmation_link(user)
+    context = {"username": getattr(user, "username", "there"), "link": link}
+    subject = "Confirm your PDF Editor account"
+    text_body = render_to_string("registration/confirmation_email.txt", context)
+    html_body = render_to_string("registration/confirmation_email.html", context)
+
     try:
-        send_mail(
-            subject,
-            body,
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False,
+        message = EmailMultiAlternatives(
+            subject=subject,
+            body=text_body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email],
         )
+        message.attach_alternative(html_body, "text/html")
+        message.send(fail_silently=False)
         return True
     except Exception as exc:  # noqa: BLE001 — broad catch is intentional, see docstring
         logger.warning("Failed to send confirmation email to %s: %s", email, exc)
