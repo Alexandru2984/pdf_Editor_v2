@@ -110,7 +110,10 @@ ROOT_URLCONF = "pdf_project.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Project templates win over third-party app templates (notably
+        # django.contrib.admin's registration/* templates, which would
+        # otherwise shadow the project's custom auth/email templates).
+        "DIRS": [BASE_DIR / "pdfeditor" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

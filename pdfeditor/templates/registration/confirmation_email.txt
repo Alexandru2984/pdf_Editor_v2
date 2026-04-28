@@ -1,0 +1,7 @@
+Hi {{ username }},
+
+Click the link below to confirm your account and activate sign-in:
+
+{{ link }}
+
+If you didn't sign up, just ignore this email.
