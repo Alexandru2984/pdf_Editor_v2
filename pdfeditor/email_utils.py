@@ -103,9 +103,7 @@ def make_email_change_token(user: AbstractBaseUser, new_email: str) -> str:
 def verify_email_change_token(token: str) -> tuple[AbstractBaseUser, str] | None:
     """Return (user, new_email) if the token is valid and current, else None."""
     try:
-        payload: dict[str, Any] = loads(
-            token, salt=EMAIL_CHANGE_SALT, max_age=EMAIL_CHANGE_MAX_AGE_SECONDS
-        )
+        payload: dict[str, Any] = loads(token, salt=EMAIL_CHANGE_SALT, max_age=EMAIL_CHANGE_MAX_AGE_SECONDS)
     except SignatureExpired:
         logger.info("Email-change token expired")
         return None
