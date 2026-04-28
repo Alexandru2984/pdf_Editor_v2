@@ -176,12 +176,15 @@ EMAIL_BACKEND = os.environ.get(
     if DEBUG
     else "django.core.mail.backends.smtp.EmailBackend",
 )
-EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+# Accept both Django-standard EMAIL_* names and the shorter SMTP_* aliases.
+EMAIL_HOST = os.environ.get("EMAIL_HOST") or os.environ.get("SMTP_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT") or os.environ.get("SMTP_PORT") or "587")
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER") or os.environ.get("SMTP_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD") or os.environ.get("SMTP_PASS", "")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@pdf.micutu.com")
+DEFAULT_FROM_EMAIL = (
+    os.environ.get("DEFAULT_FROM_EMAIL") or os.environ.get("SMTP_FROM") or "no-reply@pdf.micutu.com"
+)
 SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
 
 # Public site URL — used in confirmation/reset emails for absolute links.

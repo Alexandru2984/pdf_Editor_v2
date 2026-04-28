@@ -580,8 +580,8 @@ class RephraseViewTests(_ViewTestBase):
     @patch("pdfeditor.views.rephrase.get_all_models", return_value={"ollama": ["llama3"], "groq": []})
     @patch("pdfeditor.views.rephrase.get_provider")
     def test_rephrase_preview_happy_path(self, mock_provider, _models):
-        # The preview endpoint is async and calls `arephrase`.
-        mock_provider.return_value.arephrase = AsyncMock(return_value=("Better text.", True, ""))
+        # Preview endpoint runs sync (WSGI-compatible) and calls `rephrase`.
+        mock_provider.return_value.rephrase.return_value = ("Better text.", True, "")
         resp = self.client.post(
             reverse("rephrase_preview"),
             {
