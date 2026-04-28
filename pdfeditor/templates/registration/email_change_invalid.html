@@ -1,0 +1,16 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Email change link invalid{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 520px; margin: 4rem auto;">
+    <h2>⚠️ Link invalid or expired</h2>
+    <p style="color:#374151;">
+        This email-change link is no longer valid. It may have expired,
+        already been used, or been replaced by a newer request.
+    </p>
+    <p style="margin-top:1.5rem;">
+        <a href="{% url 'change_email' %}" class="btn btn-primary" style="text-decoration:none;">Start over</a>
+    </p>
+</div>
+{% endblock %}

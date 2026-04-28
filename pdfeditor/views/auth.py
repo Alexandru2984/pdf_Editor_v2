@@ -13,11 +13,18 @@ from typing import Any
 from django import forms
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
-from ..email_utils import decode_uid, is_token_valid, send_confirmation_email
+from ..email_utils import (
+    decode_uid,
+    is_token_valid,
+    send_confirmation_email,
+    send_email_change_confirmation,
+    verify_email_change_token,
+)
 from ..ratelimiting import auth_aware_ratelimit
 
 User = get_user_model()
@@ -49,6 +56,7 @@ class RegisterForm(UserCreationForm):
         return user
 
 
+@auth_aware_ratelimit(anon_rate="5/h", user_rate="5/h", method="POST")
 def register_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("dashboard")
@@ -103,6 +111,86 @@ class ResendConfirmationForm(forms.Form):
             attrs={"class": "form-input", "autocomplete": "email", "autofocus": True},
         ),
     )
+
+
+class EmailChangeForm(forms.Form):
+    new_email = forms.EmailField(
+        required=True,
+        label="New email address",
+        widget=forms.EmailInput(attrs={"class": "form-input", "autocomplete": "email"}),
+    )
+    current_password = forms.CharField(
+        required=True,
+        label="Current password",
+        widget=forms.PasswordInput(attrs={"class": "form-input", "autocomplete": "current-password"}),
+    )
+
+    def __init__(self, *args: Any, user: Any = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_new_email(self) -> str:
+        email = (self.cleaned_data.get("new_email") or "").strip().lower()
+        if self.user is not None and email == (self.user.email or "").strip().lower():
+            raise forms.ValidationError("That's already your current email.")
+        if email and User.objects.filter(email__iexact=email).exclude(pk=self.user.pk).exists():
+            raise forms.ValidationError("An account with this email already exists.")
+        return email
+
+    def clean_current_password(self) -> str:
+        pw = self.cleaned_data.get("current_password") or ""
+        if not (self.user and self.user.check_password(pw)):
+            raise forms.ValidationError("That password doesn't match your account.")
+        return pw
+
+
+@login_required
+@auth_aware_ratelimit(anon_rate="5/h", user_rate="5/h", method="POST")
+def change_email_view(request: HttpRequest) -> HttpResponse:
+    """Authenticated form: prove password ownership + request new-email confirmation.
+
+    The actual swap only happens after the user clicks the link sent to the
+    *new* address — until then their old email remains the source of truth.
+    """
+    if request.method == "POST":
+        form = EmailChangeForm(request.POST, user=request.user)
+        if form.is_valid():
+            new_email = form.cleaned_data["new_email"]
+            sent = send_email_change_confirmation(request.user, new_email)
+            if sent:
+                messages.success(
+                    request,
+                    f"We sent a confirmation link to {new_email}. "
+                    "Click it to finish the change — your current email stays active until then.",
+                )
+            else:
+                messages.warning(
+                    request,
+                    "We couldn't send the confirmation email. Please try again later.",
+                )
+            return redirect("change_email")
+    else:
+        form = EmailChangeForm(user=request.user)
+
+    return render(request, "registration/email_change_form.html", {"form": form})
+
+
+def confirm_email_change_view(request: HttpRequest, token: str) -> HttpResponse:
+    """Apply the email change requested via the signed token."""
+    result = verify_email_change_token(token)
+    if result is None:
+        return render(request, "registration/email_change_invalid.html", status=400)
+
+    user, new_email = result
+    # Re-check uniqueness at apply-time: someone else may have claimed this
+    # address between request and confirmation.
+    if User.objects.filter(email__iexact=new_email).exclude(pk=user.pk).exists():
+        return render(request, "registration/email_change_invalid.html", status=400)
+
+    user.email = new_email
+    user.save(update_fields=["email"])
+    messages.success(request, f"Email updated to {new_email}.")
+    return redirect("dashboard" if request.user.is_authenticated else "login")
 
 
 @auth_aware_ratelimit(anon_rate="3/h", user_rate="3/h", method="POST")

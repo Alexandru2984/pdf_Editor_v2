@@ -148,6 +148,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    # Block passwords that appear in HIBP's public breach corpus. Fails
+    # open (allow) on network errors so an HIBP outage doesn't block sign-up.
+    {"NAME": "pdfeditor.password_validators.PwnedPasswordValidator"},
 ]
 
 LANGUAGE_CODE = "en-us"

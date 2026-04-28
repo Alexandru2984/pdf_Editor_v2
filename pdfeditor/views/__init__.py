@@ -5,7 +5,13 @@ conf and tests can keep using ``from pdfeditor import views``.
 """
 
 from ._common import serve_media_view
-from .auth import confirm_email_view, register_view, resend_confirmation_view
+from .auth import (
+    change_email_view,
+    confirm_email_change_view,
+    confirm_email_view,
+    register_view,
+    resend_confirmation_view,
+)
 from .basic_ops import (
     compress_result_view,
     compress_view,
@@ -36,6 +42,7 @@ from .form_fill import (
 )
 from .health import healthz, readyz
 from .history import history_delete_view, history_download_view, history_view
+from .profile import profile_view
 from .layout_ops import (
     download_numbered_view,
     download_rotated_view,
@@ -101,4 +108,7 @@ __all__ = [
     "register_view",
     "confirm_email_view",
     "resend_confirmation_view",
+    "change_email_view",
+    "confirm_email_change_view",
+    "profile_view",
 ]
