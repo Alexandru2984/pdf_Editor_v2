@@ -355,10 +355,14 @@ class ResendConfirmationTests(_AuthTestBase):
 
     def test_post_with_inactive_user_email_sends_mail(self):
         User.objects.create_user(
-            username="hank", email="hank@example.com", password="pw", is_active=False,
+            username="hank",
+            email="hank@example.com",
+            password="pw",
+            is_active=False,
         )
         resp = self.client.post(
-            reverse("resend_confirmation"), {"email": "hank@example.com"},
+            reverse("resend_confirmation"),
+            {"email": "hank@example.com"},
         )
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Check Your Email")
@@ -369,10 +373,14 @@ class ResendConfirmationTests(_AuthTestBase):
     def test_post_with_active_user_email_does_not_send(self):
         # Already-active accounts shouldn't get a new confirmation email.
         User.objects.create_user(
-            username="ivy", email="ivy@example.com", password="pw", is_active=True,
+            username="ivy",
+            email="ivy@example.com",
+            password="pw",
+            is_active=True,
         )
         resp = self.client.post(
-            reverse("resend_confirmation"), {"email": "ivy@example.com"},
+            reverse("resend_confirmation"),
+            {"email": "ivy@example.com"},
         )
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(mail.outbox), 0)
@@ -380,7 +388,8 @@ class ResendConfirmationTests(_AuthTestBase):
     def test_post_with_unknown_email_silently_succeeds(self):
         # No existence-oracle: same response page, no email sent.
         resp = self.client.post(
-            reverse("resend_confirmation"), {"email": "ghost@example.com"},
+            reverse("resend_confirmation"),
+            {"email": "ghost@example.com"},
         )
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Check Your Email")
@@ -388,7 +397,8 @@ class ResendConfirmationTests(_AuthTestBase):
 
     def test_post_with_invalid_email_re_renders_form(self):
         resp = self.client.post(
-            reverse("resend_confirmation"), {"email": "not-an-email"},
+            reverse("resend_confirmation"),
+            {"email": "not-an-email"},
         )
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Resend Confirmation")  # form re-rendered

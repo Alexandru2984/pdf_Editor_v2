@@ -3,7 +3,6 @@
 import json
 import os
 
-from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib import messages
 from django.http import Http404, HttpResponse
@@ -138,22 +137,23 @@ def _handle_rephrase_post(request, selected_pdf, ollama_models, groq_models):
         messages.error(request, f"Error processing PDF: {e}")
 
 
-async def rephrase_preview_ajax(request):
-    """Preview rephrased text without applying to the PDF (async to free workers during AI calls)."""
+def rephrase_preview_ajax(request):
+    """Preview rephrased text without applying to the PDF.
+
+    Kept as a sync view so it runs under WSGI gunicorn (the prod worker class).
+    The async ``provider.arephrase()`` path remains in ai_service.py for the
+    day we switch to ``uvicorn.workers.UvicornWorker``.
+    """
     if request.method != "POST":
         return _json_response({"success": False, "error": "Only POST allowed"}, status=405)
 
-    # django-ratelimit 4.1 has no native async-decorator support; call the
-    # auth-aware core helper through sync_to_async so ASGI requests still
-    # respect quotas (and authenticated users get the higher rate).
-    limited = await sync_to_async(check_rate_limit)(
+    if check_rate_limit(
         request,
         group="pdfeditor.views.rephrase.rephrase_preview_ajax",
         anon_rate="30/h",
         user_rate="120/h",
         method="POST",
-    )
-    if limited:
+    ):
         raise Ratelimited()
 
     try:
@@ -164,11 +164,11 @@ async def rephrase_preview_ajax(request):
         if not text:
             return _json_response({"success": False, "error": "No text provided"}, status=400)
 
-        groq_models = await sync_to_async(lambda: get_all_models().get("groq", []))()
+        groq_models = get_all_models().get("groq", [])
         provider_name = "groq" if model in groq_models else "ollama"
         provider = get_provider(provider_name)
 
-        rephrased, success, error = await provider.arephrase(text, style, model)
+        rephrased, success, error = provider.rephrase(text, style, model)
         if not success:
             return _json_response({"success": False, "error": error})
 

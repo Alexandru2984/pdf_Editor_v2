@@ -161,7 +161,11 @@ class CheckRateLimitAsyncHelperTests(TestCase):
         # Repeated peeks should never tip the limit.
         for _ in range(10):
             limited = check_rate_limit(
-                request, group="peek", anon_rate="1/h", user_rate="1/h",
-                method="POST", increment=False,
+                request,
+                group="peek",
+                anon_rate="1/h",
+                user_rate="1/h",
+                method="POST",
+                increment=False,
             )
             self.assertFalse(limited)
