@@ -689,6 +689,110 @@ class ProfileViewTests(_AuthTestBase):
         self.assertEqual(resp.context["processed_count"], 1)
 
 
+class ExportDataViewTests(_AuthTestBase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="kira",
+            email="kira@example.com",
+            password="StrongPw!12345",
+        )
+
+    def test_anonymous_redirected(self):
+        resp = self.client.get(reverse("export_data"))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/accounts/login/", resp.url)
+
+    def test_export_returns_user_data_only(self):
+        UploadedPDF.objects.create(user=self.user, name="mine.pdf", path="/x", size=42)
+        ProcessedPDF.objects.create(
+            user=self.user, kind=ProcessedPDF.KIND_COMPRESS, name="out.pdf", path="/y", size=12
+        )
+        # A different user's data must not leak.
+        other = User.objects.create_user(username="leo", password="x")
+        UploadedPDF.objects.create(user=other, name="leak.pdf", path="/z", size=99)
+
+        self.client.login(username="kira", password="StrongPw!12345")
+        resp = self.client.get(reverse("export_data"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("attachment", resp["Content-Disposition"])
+        import json as _json
+
+        body = _json.loads(resp.content)
+        self.assertEqual(body["account"]["username"], "kira")
+        self.assertEqual(len(body["uploaded_pdfs"]), 1)
+        self.assertEqual(body["uploaded_pdfs"][0]["name"], "mine.pdf")
+        self.assertEqual(len(body["processed_pdfs"]), 1)
+
+
+class DeleteAccountViewTests(_AuthTestBase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="mike",
+            email="mike@example.com",
+            password="StrongPw!12345",
+        )
+        self.client.login(username="mike", password="StrongPw!12345")
+
+    def test_anonymous_redirected(self):
+        anon = Client()
+        resp = anon.get(reverse("delete_account"))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/accounts/login/", resp.url)
+
+    def test_get_renders_form(self):
+        resp = self.client.get(reverse("delete_account"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Delete account")
+
+    def test_wrong_password_rejected(self):
+        resp = self.client.post(
+            reverse("delete_account"),
+            {"password": "wrong", "confirmation": "DELETE"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(User.objects.filter(username="mike").exists())
+
+    def test_missing_confirmation_keyword_rejected(self):
+        resp = self.client.post(
+            reverse("delete_account"),
+            {"password": "StrongPw!12345", "confirmation": "delete"},  # lowercase
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(User.objects.filter(username="mike").exists())
+
+    def test_delete_removes_user_and_cascades_pdfs(self):
+        # File on disk to verify it gets cleaned up.
+        from django.conf import settings as dj_settings
+
+        os.makedirs(dj_settings.MEDIA_ROOT, exist_ok=True)
+        path = os.path.join(dj_settings.MEDIA_ROOT, "mike-file.pdf")
+        with open(path, "wb") as fh:
+            fh.write(b"%PDF-fake")
+        UploadedPDF.objects.create(user=self.user, name="mike-file.pdf", path=path, size=9)
+
+        resp = self.client.post(
+            reverse("delete_account"),
+            {"password": "StrongPw!12345", "confirmation": "DELETE"},
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(User.objects.filter(username="mike").exists())
+        self.assertFalse(UploadedPDF.objects.filter(name="mike-file.pdf").exists())
+        self.assertFalse(os.path.exists(path))
+
+    def test_other_users_data_untouched_by_deletion(self):
+        other = User.objects.create_user(username="nina", password="x")
+        UploadedPDF.objects.create(user=other, name="hers.pdf", path="/p", size=1)
+
+        self.client.post(
+            reverse("delete_account"),
+            {"password": "StrongPw!12345", "confirmation": "DELETE"},
+        )
+        self.assertTrue(User.objects.filter(username="nina").exists())
+        self.assertTrue(UploadedPDF.objects.filter(name="hers.pdf").exists())
+
+
 class PwnedPasswordValidatorTests(TestCase):
     """The HIBP validator hits a remote API; tests mock httpx.get."""
 
@@ -719,20 +823,24 @@ class PwnedPasswordValidatorTests(TestCase):
         # SHA1("password") = 5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8
         # Suffix after first 5 chars: 1E4C9B93F3F0682250B6CF8331B7EE68FD8
         body = "1E4C9B93F3F0682250B6CF8331B7EE68FD8:9999999\n0011223344:1\n"
-        with override_settings(TESTING=False):
-            with patch("pdfeditor.password_validators.httpx.get", return_value=self._hibp_response(body)):
-                with self.assertRaises(ValidationError) as ctx:
-                    self.validator.validate("password")
-                self.assertEqual(ctx.exception.error_list[0].code, "password_pwned")
+        with (
+            override_settings(TESTING=False),
+            patch("pdfeditor.password_validators.httpx.get", return_value=self._hibp_response(body)),
+            self.assertRaises(ValidationError) as ctx,
+        ):
+            self.validator.validate("password")
+        self.assertEqual(ctx.exception.error_list[0].code, "password_pwned")
 
     def test_unseen_password_passes(self):
         from unittest.mock import patch
 
         # Suffix for "password" is NOT in this body.
         body = "0000000000000000000000000000000000A:3\nDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEAD:5\n"
-        with override_settings(TESTING=False):
-            with patch("pdfeditor.password_validators.httpx.get", return_value=self._hibp_response(body)):
-                self.validator.validate("password")  # should not raise
+        with (
+            override_settings(TESTING=False),
+            patch("pdfeditor.password_validators.httpx.get", return_value=self._hibp_response(body)),
+        ):
+            self.validator.validate("password")  # should not raise
 
     def test_min_breach_count_threshold_allows_low_count(self):
         from unittest.mock import patch
@@ -742,28 +850,36 @@ class PwnedPasswordValidatorTests(TestCase):
         validator = PwnedPasswordValidator(min_breach_count=10)
         # Real suffix for "password", count=2 < threshold=10 → allowed.
         body = "1E4C9B93F3F0682250B6CF8331B7EE68FD8:2\n"
-        with override_settings(TESTING=False):
-            with patch("pdfeditor.password_validators.httpx.get", return_value=self._hibp_response(body)):
-                validator.validate("password")  # below threshold, allowed
+        with (
+            override_settings(TESTING=False),
+            patch("pdfeditor.password_validators.httpx.get", return_value=self._hibp_response(body)),
+        ):
+            validator.validate("password")  # below threshold, allowed
 
     def test_network_failure_fails_open(self):
-        import httpx
         from unittest.mock import patch
 
-        with override_settings(TESTING=False):
-            with patch(
+        import httpx
+
+        with (
+            override_settings(TESTING=False),
+            patch(
                 "pdfeditor.password_validators.httpx.get",
                 side_effect=httpx.ConnectError("boom"),
-            ):
-                self.validator.validate("password")  # fail-open: no exception
+            ),
+        ):
+            self.validator.validate("password")  # fail-open: no exception
 
     def test_timeout_fails_open(self):
-        import httpx
         from unittest.mock import patch
 
-        with override_settings(TESTING=False):
-            with patch(
+        import httpx
+
+        with (
+            override_settings(TESTING=False),
+            patch(
                 "pdfeditor.password_validators.httpx.get",
                 side_effect=httpx.TimeoutException("slow"),
-            ):
-                self.validator.validate("password")  # fail-open: no exception
+            ),
+        ):
+            self.validator.validate("password")  # fail-open: no exception

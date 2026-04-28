@@ -3,50 +3,150 @@
 {% block title %}Profile{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 760px; margin: 2rem auto; padding: 2rem;">
-    <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 2rem;">
-        <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.75rem; font-weight: 700;">
-            {{ user.username|slice:":1"|upper }}
-        </div>
-        <div>
-            <h2 style="margin: 0; color: #111827;">{{ user.username }}</h2>
-            <p style="margin: 0.25rem 0 0 0; color: #6b7280;">{{ user.email|default:"(no email on file)" }}</p>
+<div class="profile-card">
+    <div class="profile-header">
+        <div class="profile-avatar">{{ user.username|slice:":1"|upper }}</div>
+        <div class="profile-identity">
+            <h2>{{ user.username }}</h2>
+            <p>{{ user.email|default:"(no email on file)" }}</p>
         </div>
     </div>
 
-    <h3 style="font-size: 1rem; color: #374151; margin: 0 0 0.75rem 0; text-transform: uppercase; letter-spacing: 0.05em;">Account</h3>
-    <div style="background: #f9fafb; border-radius: 0.5rem; padding: 1rem 1.25rem; margin-bottom: 2rem;">
-        <div style="display: grid; grid-template-columns: 160px 1fr; gap: 0.5rem 1rem; font-size: 0.9375rem;">
-            <div style="color: #6b7280;">Username</div>
-            <div style="color: #1f2937;">{{ user.username }}</div>
-            <div style="color: #6b7280;">Email</div>
-            <div style="color: #1f2937;">{{ user.email|default:"—" }}</div>
-            <div style="color: #6b7280;">Member since</div>
-            <div style="color: #1f2937;">{{ user.date_joined|date:"F j, Y" }}</div>
-            {% if user.last_login %}
-            <div style="color: #6b7280;">Last login</div>
-            <div style="color: #1f2937;">{{ user.last_login|date:"F j, Y · H:i" }}</div>
-            {% endif %}
+    <h3 class="profile-section-title">Account</h3>
+    <div class="profile-info">
+        <div class="info-label">Username</div>
+        <div class="info-value">{{ user.username }}</div>
+        <div class="info-label">Email</div>
+        <div class="info-value">{{ user.email|default:"—" }}</div>
+        <div class="info-label">Member since</div>
+        <div class="info-value">{{ user.date_joined|date:"F j, Y" }}</div>
+        {% if user.last_login %}
+        <div class="info-label">Last login</div>
+        <div class="info-value">{{ user.last_login|date:"F j, Y · H:i" }}</div>
+        {% endif %}
+    </div>
+
+    <h3 class="profile-section-title">Activity</h3>
+    <div class="stats-grid">
+        <div class="stat-card stat-uploaded">
+            <div class="stat-label">PDFs uploaded</div>
+            <div class="stat-value">{{ uploaded_count }}</div>
+        </div>
+        <div class="stat-card stat-processed">
+            <div class="stat-label">Outputs produced</div>
+            <div class="stat-value">{{ processed_count }}</div>
         </div>
     </div>
 
-    <h3 style="font-size: 1rem; color: #374151; margin: 0 0 0.75rem 0; text-transform: uppercase; letter-spacing: 0.05em;">Activity</h3>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-        <div style="background: #eef2ff; border: 1px solid #c7d2fe; padding: 1.25rem; border-radius: 0.625rem;">
-            <div style="font-size: 0.8125rem; color: #4338ca; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">PDFs uploaded</div>
-            <div style="font-size: 2rem; font-weight: 700; color: #312e81; margin-top: 0.25rem;">{{ uploaded_count }}</div>
-        </div>
-        <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1.25rem; border-radius: 0.625rem;">
-            <div style="font-size: 0.8125rem; color: #047857; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Outputs produced</div>
-            <div style="font-size: 2rem; font-weight: 700; color: #064e3b; margin-top: 0.25rem;">{{ processed_count }}</div>
-        </div>
+    <h3 class="profile-section-title">Manage account</h3>
+    <div class="profile-actions">
+        <a href="{% url 'change_email' %}" class="profile-btn primary">✉️ Change email</a>
+        <a href="{% url 'password_change' %}" class="profile-btn primary">🔑 Change password</a>
+        <a href="{% url 'history' %}" class="profile-btn neutral">📜 View history</a>
     </div>
 
-    <h3 style="font-size: 1rem; color: #374151; margin: 0 0 0.75rem 0; text-transform: uppercase; letter-spacing: 0.05em;">Manage account</h3>
-    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
-        <a href="{% url 'change_email' %}" class="btn" style="background: #6366f1; color: white; padding: 0.625rem 1.25rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;">✉️ Change email</a>
-        <a href="{% url 'password_change' %}" class="btn" style="background: #6366f1; color: white; padding: 0.625rem 1.25rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;">🔑 Change password</a>
-        <a href="{% url 'history' %}" class="btn" style="background: #f3f4f6; color: #1f2937; padding: 0.625rem 1.25rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;">📜 View history</a>
+    <h3 class="profile-section-title danger-section">Your data</h3>
+    <div class="profile-actions">
+        <a href="{% url 'export_data' %}" class="profile-btn neutral">⬇️ Export my data (JSON)</a>
+        <a href="{% url 'delete_account' %}" class="profile-btn danger">🗑️ Delete account</a>
     </div>
 </div>
+
+<style>
+    .profile-card {
+        max-width: 760px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: #fff;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        box-sizing: border-box;
+    }
+    .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+    .profile-avatar {
+        width: 64px; height: 64px; flex-shrink: 0;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-size: 1.75rem; font-weight: 700;
+    }
+    .profile-identity h2 { margin: 0; color: #111827; word-break: break-word; }
+    .profile-identity p {
+        margin: 0.25rem 0 0 0; color: #6b7280;
+        word-break: break-all; font-size: 0.9375rem;
+    }
+    .profile-section-title {
+        font-size: 0.8125rem; color: #374151;
+        margin: 0 0 0.75rem 0;
+        text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;
+    }
+    .profile-section-title.danger-section { color: #b91c1c; margin-top: 1.5rem; }
+    .profile-info {
+        background: #f9fafb; border-radius: 0.5rem;
+        padding: 1rem 1.25rem; margin-bottom: 2rem;
+        display: grid; grid-template-columns: 160px 1fr;
+        gap: 0.5rem 1rem; font-size: 0.9375rem;
+    }
+    .info-label { color: #6b7280; }
+    .info-value { color: #1f2937; word-break: break-word; }
+    .stats-grid {
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 1rem; margin-bottom: 2rem;
+    }
+    .stat-card {
+        padding: 1.25rem; border-radius: 0.625rem;
+    }
+    .stat-uploaded { background: #eef2ff; border: 1px solid #c7d2fe; }
+    .stat-processed { background: #ecfdf5; border: 1px solid #a7f3d0; }
+    .stat-label {
+        font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;
+    }
+    .stat-uploaded .stat-label { color: #4338ca; }
+    .stat-processed .stat-label { color: #047857; }
+    .stat-value { font-size: 2rem; font-weight: 700; margin-top: 0.25rem; }
+    .stat-uploaded .stat-value { color: #312e81; }
+    .stat-processed .stat-value { color: #064e3b; }
+    .profile-actions {
+        display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.5rem;
+    }
+    .profile-btn {
+        flex: 1 1 200px; padding: 0.75rem 1rem;
+        border-radius: 0.5rem; text-decoration: none;
+        font-weight: 500; text-align: center; box-sizing: border-box;
+        font-size: 0.9375rem;
+    }
+    .profile-btn.primary { background: #6366f1; color: white; }
+    .profile-btn.primary:hover { background: #4f46e5; }
+    .profile-btn.neutral { background: #f3f4f6; color: #1f2937; }
+    .profile-btn.neutral:hover { background: #e5e7eb; }
+    .profile-btn.danger {
+        background: #fff; color: #b91c1c; border: 1px solid #fecaca;
+    }
+    .profile-btn.danger:hover { background: #fef2f2; }
+
+    @media (max-width: 600px) {
+        .profile-card { margin: 1rem; padding: 1.25rem; }
+        .profile-header { gap: 0.875rem; margin-bottom: 1.5rem; }
+        .profile-avatar { width: 52px; height: 52px; font-size: 1.4rem; }
+        .profile-identity h2 { font-size: 1.25rem; }
+        .profile-info {
+            grid-template-columns: 1fr;
+            gap: 0.25rem;
+            padding: 1rem;
+        }
+        .info-label {
+            font-size: 0.75rem; text-transform: uppercase;
+            letter-spacing: 0.04em; font-weight: 600; margin-top: 0.5rem;
+        }
+        .info-label:first-child { margin-top: 0; }
+        .stats-grid { grid-template-columns: 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
+        .stat-value { font-size: 1.5rem; }
+        .profile-btn { flex-basis: 100%; }
+    }
+</style>
 {% endblock %}
