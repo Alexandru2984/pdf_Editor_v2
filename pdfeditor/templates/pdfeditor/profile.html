@@ -1,0 +1,52 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 760px; margin: 2rem auto; padding: 2rem;">
+    <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 2rem;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.75rem; font-weight: 700;">
+            {{ user.username|slice:":1"|upper }}
+        </div>
+        <div>
+            <h2 style="margin: 0; color: #111827;">{{ user.username }}</h2>
+            <p style="margin: 0.25rem 0 0 0; color: #6b7280;">{{ user.email|default:"(no email on file)" }}</p>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1rem; color: #374151; margin: 0 0 0.75rem 0; text-transform: uppercase; letter-spacing: 0.05em;">Account</h3>
+    <div style="background: #f9fafb; border-radius: 0.5rem; padding: 1rem 1.25rem; margin-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: 160px 1fr; gap: 0.5rem 1rem; font-size: 0.9375rem;">
+            <div style="color: #6b7280;">Username</div>
+            <div style="color: #1f2937;">{{ user.username }}</div>
+            <div style="color: #6b7280;">Email</div>
+            <div style="color: #1f2937;">{{ user.email|default:"—" }}</div>
+            <div style="color: #6b7280;">Member since</div>
+            <div style="color: #1f2937;">{{ user.date_joined|date:"F j, Y" }}</div>
+            {% if user.last_login %}
+            <div style="color: #6b7280;">Last login</div>
+            <div style="color: #1f2937;">{{ user.last_login|date:"F j, Y · H:i" }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <h3 style="font-size: 1rem; color: #374151; margin: 0 0 0.75rem 0; text-transform: uppercase; letter-spacing: 0.05em;">Activity</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: #eef2ff; border: 1px solid #c7d2fe; padding: 1.25rem; border-radius: 0.625rem;">
+            <div style="font-size: 0.8125rem; color: #4338ca; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">PDFs uploaded</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #312e81; margin-top: 0.25rem;">{{ uploaded_count }}</div>
+        </div>
+        <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1.25rem; border-radius: 0.625rem;">
+            <div style="font-size: 0.8125rem; color: #047857; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Outputs produced</div>
+            <div style="font-size: 2rem; font-weight: 700; color: #064e3b; margin-top: 0.25rem;">{{ processed_count }}</div>
+        </div>
+    </div>
+
+    <h3 style="font-size: 1rem; color: #374151; margin: 0 0 0.75rem 0; text-transform: uppercase; letter-spacing: 0.05em;">Manage account</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+        <a href="{% url 'change_email' %}" class="btn" style="background: #6366f1; color: white; padding: 0.625rem 1.25rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;">✉️ Change email</a>
+        <a href="{% url 'password_change' %}" class="btn" style="background: #6366f1; color: white; padding: 0.625rem 1.25rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;">🔑 Change password</a>
+        <a href="{% url 'history' %}" class="btn" style="background: #f3f4f6; color: #1f2937; padding: 0.625rem 1.25rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;">📜 View history</a>
+    </div>
+</div>
+{% endblock %}

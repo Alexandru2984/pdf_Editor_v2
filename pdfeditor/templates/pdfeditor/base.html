@@ -34,7 +34,7 @@
                     🏠 Dashboard
                 </a>
                 {% if user.is_authenticated %}
-                <span style="color: #9ca3af; font-size: 0.875rem;">👤 {{ user.username }}</span>
+                <a href="{% url 'profile' %}" style="color: white; text-decoration: none; padding: 0.5rem 1.25rem; background: rgba(255,255,255,0.1); border-radius: 0.5rem; transition: all 0.2s; font-weight: 500; font-size: 0.875rem;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">👤 {{ user.username }}</a>
                 <form method="post" action="{% url 'logout' %}" style="display: inline; margin: 0;">
                     {% csrf_token %}
                     <button type="submit" style="color: white; padding: 0.5rem 1.25rem; background: rgba(255,255,255,0.1); border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 500; font-family: inherit;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">

@@ -58,6 +58,9 @@ class _AuthTestBase(TestCase):
 
 class RegisterViewTests(_AuthTestBase):
     def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()  # rate-limit state lives in the cache between tests
         self.client = Client()
 
     def test_get_renders_form(self):
@@ -456,6 +459,9 @@ class PasswordChangeTests(_AuthTestBase):
 
 class PasswordResetTests(_AuthTestBase):
     def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()  # rate-limit state lives in the cache between tests
         self.client = Client()
         self.user = User.objects.create_user(
             username="grace",
@@ -503,3 +509,261 @@ class PasswordResetTests(_AuthTestBase):
 
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password("FreshPw!7777"))
+
+
+class EmailChangeTests(_AuthTestBase):
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()  # rate-limit state lives in the cache between tests
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="henry",
+            email="henry@example.com",
+            password="StrongPw!12345",
+        )
+        self.client.login(username="henry", password="StrongPw!12345")
+
+    def _extract_confirm_path(self, body: str) -> str | None:
+        match = re.search(r"/accounts/email/change/confirm/([^/\s]+)/", body)
+        return match.group(1) if match else None
+
+    def test_get_renders_form(self):
+        resp = self.client.get(reverse("change_email"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Change Email")
+        self.assertContains(resp, "henry@example.com")
+
+    def test_anonymous_redirected_to_login(self):
+        anon = Client()
+        resp = anon.get(reverse("change_email"))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/accounts/login/", resp.url)
+
+    def test_post_with_wrong_password_does_not_send_email(self):
+        resp = self.client.post(
+            reverse("change_email"),
+            {"new_email": "henry-new@example.com", "current_password": "wrong"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(mail.outbox), 0)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "henry@example.com")
+
+    def test_post_with_same_email_rejected(self):
+        resp = self.client.post(
+            reverse("change_email"),
+            {"new_email": "henry@example.com", "current_password": "StrongPw!12345"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_post_with_existing_email_rejected(self):
+        User.objects.create_user(username="other", email="taken@example.com", password="x")
+        resp = self.client.post(
+            reverse("change_email"),
+            {"new_email": "taken@example.com", "current_password": "StrongPw!12345"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_valid_request_sends_link_to_new_address_only(self):
+        resp = self.client.post(
+            reverse("change_email"),
+            {"new_email": "henry-new@example.com", "current_password": "StrongPw!12345"},
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        # Link goes to the *new* address — never the old one.
+        self.assertEqual(mail.outbox[0].to, ["henry-new@example.com"])
+        self.assertIn("/accounts/email/change/confirm/", mail.outbox[0].body)
+        # Email on the user record stays untouched until they click the link.
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "henry@example.com")
+
+    def test_confirm_link_applies_email_change(self):
+        self.client.post(
+            reverse("change_email"),
+            {"new_email": "henry-new@example.com", "current_password": "StrongPw!12345"},
+        )
+        token = self._extract_confirm_path(mail.outbox[0].body)
+        self.assertIsNotNone(token)
+
+        resp = self.client.get(reverse("confirm_email_change", args=[token]))
+        self.assertEqual(resp.status_code, 302)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "henry-new@example.com")
+
+    def test_confirm_with_bogus_token_returns_400(self):
+        resp = self.client.get(reverse("confirm_email_change", args=["totally-bogus-token"]))
+        self.assertEqual(resp.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "henry@example.com")
+
+    def test_confirm_after_email_already_changed_is_invalid(self):
+        # Issue token for henry → henry-new
+        self.client.post(
+            reverse("change_email"),
+            {"new_email": "henry-new@example.com", "current_password": "StrongPw!12345"},
+        )
+        token = self._extract_confirm_path(mail.outbox[0].body)
+        self.assertIsNotNone(token)
+
+        # Meanwhile the email gets changed by some other path.
+        self.user.email = "henry-other@example.com"
+        self.user.save(update_fields=["email"])
+
+        resp = self.client.get(reverse("confirm_email_change", args=[token]))
+        self.assertEqual(resp.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "henry-other@example.com")
+
+    def test_confirm_when_target_email_taken_meanwhile_returns_400(self):
+        self.client.post(
+            reverse("change_email"),
+            {"new_email": "henry-new@example.com", "current_password": "StrongPw!12345"},
+        )
+        token = self._extract_confirm_path(mail.outbox[0].body)
+
+        # Another account claims that address before henry confirms.
+        User.objects.create_user(username="claimer", email="henry-new@example.com", password="x")
+
+        resp = self.client.get(reverse("confirm_email_change", args=[token]))
+        self.assertEqual(resp.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "henry@example.com")
+
+    def test_expired_token_rejected(self):
+        from .email_utils import make_email_change_token
+
+        token = make_email_change_token(self.user, "henry-new@example.com")
+        # Patch loads to simulate expiry without sleeping for 24h.
+        from unittest.mock import patch
+
+        from django.core.signing import SignatureExpired
+
+        with patch("pdfeditor.email_utils.loads", side_effect=SignatureExpired("expired")):
+            resp = self.client.get(reverse("confirm_email_change", args=[token]))
+        self.assertEqual(resp.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "henry@example.com")
+
+
+class ProfileViewTests(_AuthTestBase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="iris",
+            email="iris@example.com",
+            password="StrongPw!12345",
+        )
+
+    def test_anonymous_redirected_to_login(self):
+        resp = self.client.get(reverse("profile"))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/accounts/login/", resp.url)
+
+    def test_authenticated_sees_account_info(self):
+        self.client.login(username="iris", password="StrongPw!12345")
+        resp = self.client.get(reverse("profile"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "iris")
+        self.assertContains(resp, "iris@example.com")
+
+    def test_counts_reflect_only_current_user(self):
+        UploadedPDF.objects.create(user=self.user, name="a.pdf", path="/x", size=1)
+        UploadedPDF.objects.create(user=self.user, name="b.pdf", path="/x", size=1)
+        ProcessedPDF.objects.create(
+            user=self.user, kind=ProcessedPDF.KIND_COMPRESS, name="c.pdf", path="/x", size=1
+        )
+        # A different user's rows must NOT count.
+        other = User.objects.create_user(username="jack", password="x")
+        UploadedPDF.objects.create(user=other, name="z.pdf", path="/x", size=1)
+
+        self.client.login(username="iris", password="StrongPw!12345")
+        resp = self.client.get(reverse("profile"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "PDFs uploaded")
+        # Iris has 2 uploads, 1 output.
+        self.assertEqual(resp.context["uploaded_count"], 2)
+        self.assertEqual(resp.context["processed_count"], 1)
+
+
+class PwnedPasswordValidatorTests(TestCase):
+    """The HIBP validator hits a remote API; tests mock httpx.get."""
+
+    def setUp(self):
+        from .password_validators import PwnedPasswordValidator
+
+        self.validator = PwnedPasswordValidator()
+
+    def test_skips_lookup_when_TESTING_setting_is_true(self):
+        # The default test settings have TESTING=True, so an unmocked
+        # validator call should be a no-op (no network, no error).
+        self.validator.validate("anything")  # would crash if it tried to hit HIBP
+
+    def _hibp_response(self, body: str, status: int = 200):
+        from unittest.mock import MagicMock
+
+        resp = MagicMock()
+        resp.text = body
+        resp.status_code = status
+        resp.raise_for_status = MagicMock()
+        return resp
+
+    def test_pwned_password_raises_validation_error(self):
+        from unittest.mock import patch
+
+        from django.core.exceptions import ValidationError
+
+        # SHA1("password") = 5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8
+        # Suffix after first 5 chars: 1E4C9B93F3F0682250B6CF8331B7EE68FD8
+        body = "1E4C9B93F3F0682250B6CF8331B7EE68FD8:9999999\n0011223344:1\n"
+        with override_settings(TESTING=False):
+            with patch("pdfeditor.password_validators.httpx.get", return_value=self._hibp_response(body)):
+                with self.assertRaises(ValidationError) as ctx:
+                    self.validator.validate("password")
+                self.assertEqual(ctx.exception.error_list[0].code, "password_pwned")
+
+    def test_unseen_password_passes(self):
+        from unittest.mock import patch
+
+        # Suffix for "password" is NOT in this body.
+        body = "0000000000000000000000000000000000A:3\nDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEAD:5\n"
+        with override_settings(TESTING=False):
+            with patch("pdfeditor.password_validators.httpx.get", return_value=self._hibp_response(body)):
+                self.validator.validate("password")  # should not raise
+
+    def test_min_breach_count_threshold_allows_low_count(self):
+        from unittest.mock import patch
+
+        from .password_validators import PwnedPasswordValidator
+
+        validator = PwnedPasswordValidator(min_breach_count=10)
+        # Real suffix for "password", count=2 < threshold=10 → allowed.
+        body = "1E4C9B93F3F0682250B6CF8331B7EE68FD8:2\n"
+        with override_settings(TESTING=False):
+            with patch("pdfeditor.password_validators.httpx.get", return_value=self._hibp_response(body)):
+                validator.validate("password")  # below threshold, allowed
+
+    def test_network_failure_fails_open(self):
+        import httpx
+        from unittest.mock import patch
+
+        with override_settings(TESTING=False):
+            with patch(
+                "pdfeditor.password_validators.httpx.get",
+                side_effect=httpx.ConnectError("boom"),
+            ):
+                self.validator.validate("password")  # fail-open: no exception
+
+    def test_timeout_fails_open(self):
+        import httpx
+        from unittest.mock import patch
+
+        with override_settings(TESTING=False):
+            with patch(
+                "pdfeditor.password_validators.httpx.get",
+                side_effect=httpx.TimeoutException("slow"),
+            ):
+                self.validator.validate("password")  # fail-open: no exception

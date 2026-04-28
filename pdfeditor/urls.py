@@ -2,6 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from . import views
+from .ratelimiting import auth_aware_ratelimit
 
 urlpatterns = [
     path("", views.dashboard_view, name="dashboard"),
@@ -61,6 +62,7 @@ urlpatterns = [
         name="logout",
     ),
     path("accounts/register/", views.register_view, name="register"),
+    path("accounts/profile/", views.profile_view, name="profile"),
     path(
         "accounts/confirm/<str:uidb64>/<str:token>/",
         views.confirm_email_view,
@@ -70,6 +72,14 @@ urlpatterns = [
         "accounts/resend-confirmation/",
         views.resend_confirmation_view,
         name="resend_confirmation",
+    ),
+    # Email change (for logged-in users — proves password ownership and
+    # confirms via a signed-token link sent to the new address).
+    path("accounts/email/change/", views.change_email_view, name="change_email"),
+    path(
+        "accounts/email/change/confirm/<str:token>/",
+        views.confirm_email_change_view,
+        name="confirm_email_change",
     ),
     # Password change (for logged-in users).
     path(
@@ -88,14 +98,18 @@ urlpatterns = [
         name="password_change_done",
     ),
     # Password reset (forgot-password flow, for users who can't log in).
+    # Rate-limited per IP/user since each POST sends an email — without a
+    # cap, an attacker can flood arbitrary inboxes via our SMTP relay.
     path(
         "accounts/password/reset/",
-        auth_views.PasswordResetView.as_view(
-            template_name="registration/password_reset_form.html",
-            email_template_name="registration/password_reset_email.txt",
-            html_email_template_name="registration/password_reset_email.html",
-            subject_template_name="registration/password_reset_subject.txt",
-            success_url=reverse_lazy("password_reset_done"),
+        auth_aware_ratelimit(anon_rate="5/h", user_rate="5/h", method="POST")(
+            auth_views.PasswordResetView.as_view(
+                template_name="registration/password_reset_form.html",
+                email_template_name="registration/password_reset_email.txt",
+                html_email_template_name="registration/password_reset_email.html",
+                subject_template_name="registration/password_reset_subject.txt",
+                success_url=reverse_lazy("password_reset_done"),
+            )
         ),
         name="password_reset",
     ),
