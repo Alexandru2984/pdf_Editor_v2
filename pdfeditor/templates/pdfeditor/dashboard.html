@@ -30,9 +30,9 @@
             <div class="card-icon">✏️</div>
             <h3>Edit & Rephrase</h3>
             <p>Find/replace text or use AI to rephrase content</p>
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <a href="{% url 'edit' %}" class="btn btn-secondary" style="flex: 1;">Find & Replace</a>
-                <a href="{% url 'rephrase' %}" class="btn" style="flex: 1; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white;">🤖 AI Rephrase</a>
+            <div class="card-button-row">
+                <a href="{% url 'edit' %}" class="btn btn-secondary">Find & Replace</a>
+                <a href="{% url 'rephrase' %}" class="btn btn-ai">🤖 AI Rephrase</a>
             </div>
         </div>
 
@@ -101,33 +101,23 @@
     </div>
 
     {% if uploaded_pdfs %}
-    <h2 class="section-title" style="margin-top: 3rem;">Your PDFs</h2>
-    
-    <div style="max-width: 1200px; margin: 0 auto;">
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+    <h2 class="section-title section-title-spaced">Your PDFs</h2>
+
+    <div class="user-pdfs-wrapper">
+        <div class="user-pdfs-grid">
             {% for pdf in uploaded_pdfs %}
-            <div class="pdf-item-card" style="background: white; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                <div style="display: flex; align-items: start; gap: 1rem;">
-                    <div class="card-icon" style="font-size: 2rem;">📄</div>
-                    <div style="flex: 1; min-width: 0;">
-                        <h4 style="margin: 0 0 0.5rem 0; color: #1f2937; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ pdf.name }}">
-                            {{ pdf.name }}
-                        </h4>
-                        <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">
-                            Size: {{ pdf.size|filesizeformat }}
-                       </p>
-                        <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: #9ca3af;">
-                            Uploaded: {{ pdf.uploaded_at|slice:":10" }}
-                        </p>
+            <div class="pdf-item-card">
+                <div class="pdf-item-head">
+                    <div class="pdf-item-icon">📄</div>
+                    <div class="pdf-item-meta">
+                        <h4 class="pdf-item-name" title="{{ pdf.name }}">{{ pdf.name }}</h4>
+                        <p class="pdf-item-size">Size: {{ pdf.size|filesizeformat }}</p>
+                        <p class="pdf-item-date">Uploaded: {{ pdf.uploaded_at|slice:":10" }}</p>
                     </div>
                 </div>
-                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                    <button onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="btn btn-preview" style="flex: 1; padding: 0.5rem; font-size: 0.875rem;">
-                        👁️ Preview
-                    </button>
-                    <a href="{% url 'delete_pdf' pdf.id %}" onclick="return confirm('Delete this PDF?')" class="btn" style="flex: 1; padding: 0.5rem; font-size: 0.875rem; background: #ef4444; color: white; text-decoration: none; display: flex; align-items: center; justify-content: center;">
-                        🗑️ Delete
-                    </a>
+                <div class="pdf-item-actions">
+                    <button onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="btn btn-preview pdf-item-btn">👁️ Preview</button>
+                    <a href="{% url 'delete_pdf' pdf.id %}" onclick="return confirm('Delete this PDF?')" class="btn btn-delete pdf-item-btn">🗑️ Delete</a>
                 </div>
             </div>
             {% endfor %}
