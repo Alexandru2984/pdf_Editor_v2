@@ -3,41 +3,34 @@
 {% block title %}Change Email{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 520px; margin: 4rem auto;">
+<div class="auth-card" style="--auth-card-max-width: 520px;">
     <h2>✉️ Change Email</h2>
-    <p style="color:#6b7280; margin-top:-0.25rem;">
+    <p class="auth-sub-tight">
         Currently <strong>{{ request.user.email }}</strong>. We'll send a confirmation link to your new address — your current email stays active until you click it.
     </p>
 
     {% if messages %}
         {% for message in messages %}
-        <div style="background: {% if message.tags == 'success' %}#ecfdf5{% else %}#fffbeb{% endif %}; border: 1px solid {% if message.tags == 'success' %}#a7f3d0{% else %}#fde68a{% endif %}; padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1rem; color: {% if message.tags == 'success' %}#065f46{% else %}#92400e{% endif %};">
+        <div class="alert-box alert-box--{% if message.tags == 'success' %}success{% else %}warning{% endif %}">
             {{ message }}
         </div>
         {% endfor %}
     {% endif %}
 
-    <form method="post" class="edit-form">
+    <form method="post" class="edit-form" novalidate>
         {% csrf_token %}
         {% if form.non_field_errors %}
-            <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1rem; color: #991b1b;">
-                {{ form.non_field_errors }}
-            </div>
+            <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
         {% endif %}
         {% for field in form %}
-        <div class="form-group" style="margin-bottom: 1.25rem;">
-            <label for="{{ field.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.5rem;">{{ field.label }}</label>
+        <div class="form-field">
+            <label class="form-field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
             {{ field }}
-            {% if field.help_text %}<small style="display:block; color:#6b7280; margin-top:0.25rem;">{{ field.help_text|safe }}</small>{% endif %}
-            {% if field.errors %}<div style="color:#dc2626; margin-top:0.25rem;">{{ field.errors }}</div>{% endif %}
+            {% if field.help_text %}<small class="form-field-help">{{ field.help_text|safe }}</small>{% endif %}
+            {% if field.errors %}<div class="form-field-error">{{ field.errors }}</div>{% endif %}
         </div>
         {% endfor %}
-        <button type="submit" class="btn btn-primary" style="width:100%;">Send confirmation link</button>
+        <button type="submit" class="btn btn-primary btn-block">Send confirmation link</button>
     </form>
 </div>
-<style>
-    input[type="email"], input[type="password"] {
-        width: 100%; padding: 0.625rem; border: 1px solid #d1d5db; border-radius: 0.5rem;
-    }
-</style>
 {% endblock %}

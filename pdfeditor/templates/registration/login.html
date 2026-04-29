@@ -3,54 +3,46 @@
 {% block title %}Sign In{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 480px; margin: 4rem auto;">
+<div class="auth-card">
     <h2>🔐 Sign In</h2>
-    <p style="color: #6b7280; margin-bottom: 2rem;">
+    <p class="auth-sub">
         Sign in to keep your PDFs across browsers, see your full history, and access password-protected features.
     </p>
 
-    <form method="post" class="edit-form">
+    <form method="post" class="edit-form" novalidate>
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-        <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1rem; color: #991b1b;">
-            {{ form.non_field_errors }}
-        </div>
+        <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
         {% endif %}
 
-        <div class="form-group" style="margin-bottom: 1.25rem;">
-            <label for="{{ form.username.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.5rem;">
-                Username
-            </label>
+        <div class="form-field">
+            <label class="form-field-label" for="{{ form.username.id_for_label }}">Username</label>
             <input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}"
-                   autocomplete="username" autofocus required
-                   style="width: 100%; padding: 0.625rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
-            {% if form.username.errors %}<div class="error">{{ form.username.errors }}</div>{% endif %}
+                   autocomplete="username" autofocus required>
+            {% if form.username.errors %}<div class="form-field-error">{{ form.username.errors }}</div>{% endif %}
         </div>
 
-        <div class="form-group" style="margin-bottom: 1.25rem;">
-            <label for="{{ form.password.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.5rem;">
-                Password
-            </label>
+        <div class="form-field">
+            <label class="form-field-label" for="{{ form.password.id_for_label }}">Password</label>
             <input type="password" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}"
-                   autocomplete="current-password" required
-                   style="width: 100%; padding: 0.625rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
-            {% if form.password.errors %}<div class="error">{{ form.password.errors }}</div>{% endif %}
+                   autocomplete="current-password" required>
+            {% if form.password.errors %}<div class="form-field-error">{{ form.password.errors }}</div>{% endif %}
         </div>
 
         <input type="hidden" name="next" value="{{ next }}">
 
-        <button type="submit" class="btn btn-primary" style="width: 100%;">
-            Sign In
-        </button>
+        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
 
-        <p style="text-align: center; margin-top: 1.5rem; color: #6b7280;">
-            Don't have an account? <a href="{% url 'register' %}" style="color: #6366f1; font-weight: 500;">Create one</a>
-            · <a href="{% url 'password_reset' %}" style="color: #6366f1;">Forgot password?</a>
+        <p class="auth-footer">
+            Don't have an account?
+            <a href="{% url 'register' %}" class="auth-link-strong">Create one</a>
+            ·
+            <a href="{% url 'password_reset' %}">Forgot password?</a>
         </p>
-        <p style="text-align: center; margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem;">
+        <p class="auth-footer-sub">
             Didn't get a confirmation email?
-            <a href="{% url 'resend_confirmation' %}" style="color: #6366f1;">Resend it</a>
+            <a href="{% url 'resend_confirmation' %}">Resend it</a>
         </p>
     </form>
 </div>
