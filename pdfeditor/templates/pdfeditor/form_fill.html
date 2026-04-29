@@ -7,11 +7,11 @@
     <h2>📝 Fill PDF Form</h2>
 
     {% if uploaded_pdfs|length > 1 %}
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.25rem; border-radius: 0.75rem; margin-bottom: 1.5rem;">
-        <label for="pdf-selector" style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: white;">
+    <div class="tool-pdf-selector-bar">
+        <label for="pdf-selector">
             📂 Select PDF to fill:
         </label>
-        <select id="pdf-selector" onchange="window.location.href='{% url 'form_fill' %}?pdf=' + encodeURIComponent(this.value)" style="width: 100%; padding: 0.875rem 1rem; border: 2px solid rgba(255,255,255,0.3); border-radius: 0.5rem; font-size: 1rem; background: white; cursor: pointer;">
+        <select id="pdf-selector" onchange="window.location.href='{% url 'form_fill' %}?pdf=' + encodeURIComponent(this.value)">
             {% for pdf in uploaded_pdfs %}
             <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
                 📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
@@ -23,12 +23,12 @@
 
     <p class="pdf-info">
         Filling: <strong>{{ pdf_name }}</strong>
-        <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview" style="margin-left: 1rem; padding: 0.5rem 1rem;">
+        <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
             👁️ Preview PDF
         </button>
     </p>
 
-    <p style="color: #6b7280; margin: 1rem 0;">
+    <p class="tool-section-helper">
         Detected <strong>{{ fields|length }}</strong> fillable field(s) in this PDF.
     </p>
 
@@ -36,8 +36,8 @@
         {% csrf_token %}
 
         {% for field in fields %}
-        <div class="form-group" style="margin-bottom: 1.25rem;">
-            <label for="field_{{ field.name }}" style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #1f2937;">
+        <div class="tool-form-group">
+            <label for="field_{{ field.name }}" class="tool-form-label">
                 {{ field.name }}
                 <span style="font-size: 0.75rem; font-weight: 400; color: #6b7280;">
                     ({{ field.field_type }} · page {{ field.page_number|add:1 }}{% if field.is_required %} · required{% endif %}{% if field.is_readonly %} · read-only{% endif %})
@@ -45,41 +45,38 @@
             </label>
 
             {% if field.is_readonly %}
-                <input type="text" value="{{ field.current_value }}" readonly disabled
-                       style="width: 100%; padding: 0.625rem; border: 1px solid #d1d5db; border-radius: 0.5rem; background: #f3f4f6; color: #6b7280;">
+                <input type="text" value="{{ field.current_value }}" readonly disabled class="text-input">
             {% elif field.field_type == "checkbox" %}
                 <input type="checkbox" id="field_{{ field.name }}" name="field_{{ field.name }}"
                        {% if field.current_value|lower == "yes" or field.current_value|lower == "true" or field.current_value == "1" %}checked{% endif %}
                        style="width: 1.25rem; height: 1.25rem; vertical-align: middle;">
             {% elif field.field_type == "combobox" or field.field_type == "listbox" %}
-                <select id="field_{{ field.name }}" name="field_{{ field.name }}"
-                        style="width: 100%; padding: 0.625rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                <select id="field_{{ field.name }}" name="field_{{ field.name }}" class="select-input">
                     <option value="">-- choose --</option>
                     {% for opt in field.options %}
                     <option value="{{ opt }}" {% if opt == field.current_value %}selected{% endif %}>{{ opt }}</option>
                     {% endfor %}
                 </select>
             {% elif field.field_type == "signature" %}
-                <input type="text" value="(signature field — cannot be filled here)" disabled
-                       style="width: 100%; padding: 0.625rem; border: 1px solid #d1d5db; border-radius: 0.5rem; background: #f3f4f6; color: #6b7280;">
+                <input type="text" value="(signature field — cannot be filled here)" disabled class="text-input">
             {% else %}
                 <input type="text" id="field_{{ field.name }}" name="field_{{ field.name }}"
                        value="{{ field.current_value }}"
                        {% if field.max_length %}maxlength="{{ field.max_length }}"{% endif %}
-                       style="width: 100%; padding: 0.625rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
+                       class="text-input">
             {% endif %}
         </div>
         {% endfor %}
 
-        <div class="form-group" style="margin-top: 1.5rem; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
-            <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 500;">
-                <input type="checkbox" name="flatten" style="width: 1.1rem; height: 1.1rem;">
+        <div class="checkbox-row">
+            <label>
+                <input type="checkbox" name="flatten">
                 <span>Flatten form (bake values into the page so the result is no longer editable)</span>
             </label>
         </div>
 
-        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-            <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="text-decoration: none;">
+        <div class="tool-form-actions" style="margin-top: 2rem;">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
                 ← Back
             </a>
             <button type="submit" class="btn btn-primary">
