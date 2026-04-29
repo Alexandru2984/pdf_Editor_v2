@@ -3,15 +3,15 @@
 {% block title %}Add Watermark{% endblock %}
 
 {% block content %}
-<div class="preview-container" style="max-width: 1000px; margin: 3rem auto; padding: 0 1rem;">
-    <div class="preview-header" style="background: white; padding: 2rem; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;">
-        
+<div class="preview-container">
+    <div class="preview-header">
+
         {% if uploaded_pdfs|length > 1 %}
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.25rem; border-radius: 0.75rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-            <label for="pdf-selector" style="display: block; font-weight: 600; margin-bottom: 0.75rem; color: white; font-size: 0.95rem;">
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
                 📂 Select PDF:
             </label>
-            <select id="pdf-selector" onchange="window.location.href='{% url 'watermark' %}?pdf=' + encodeURIComponent(this.value)" style="width: 100%; padding: 0.875rem 1rem; border: 2px solid rgba(255,255,255,0.3); border-radius: 0.5rem; font-size: 1rem; background: white; color: #1f2937; cursor: pointer; transition: all 0.2s; font-weight: 500;">
+            <select id="pdf-selector" onchange="window.location.href='{% url 'watermark' %}?pdf=' + encodeURIComponent(this.value)">
                 {% for pdf in uploaded_pdfs %}
                 <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
                     📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
@@ -20,81 +20,80 @@
             </select>
         </div>
         {% endif %}
-        
-        <div style="text-align: center;">
-            <h2 style="color: #1f2937; margin-bottom: 0.5rem;">💧 Add Watermark</h2>
-            <p style="color: #6b7280; margin: 0;">Add text or image watermark to: <strong>{{ pdf_name }}</strong></p>
+
+        <div class="text-center">
+            <h2 class="tool-page-title">💧 Add Watermark</h2>
+            <p class="tool-page-subtitle">Add text or image watermark to: <strong>{{ pdf_name }}</strong></p>
         </div>
     </div>
 
-    <div class="pdf-viewer-wrapper" style="background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 2rem;">
+    <div class="pdf-viewer-wrapper">
         <form method="post" enctype="multipart/form-data" id="watermark-form">
             {% csrf_token %}
-            
-            <h3 style="margin-bottom: 1rem; color: #1f2937;">1️⃣ Choose Watermark Type:</h3>
-            <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+
+            <h3 class="tool-section-title">1️⃣ Choose Watermark Type:</h3>
+            <div class="watermark-type-row">
                 {% for value, label in form.watermark_type.field.choices %}
-                <label style="flex: 1; display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: #f9fafb; border-radius: 0.5rem; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;" class="watermark-type-option" data-type="{{ value }}">
-                    <input type="radio" name="watermark_type" value="{{ value }}" {% if value == 'text' %}checked{% endif %} style="width: 1.25rem; height: 1.25rem; cursor: pointer;">
-                    <span style="font-weight: 600; color: #1f2937;">{{ label }}</span>
+                <label class="watermark-type-option" data-type="{{ value }}">
+                    <input type="radio" name="watermark_type" value="{{ value }}" {% if value == 'text' %}checked{% endif %}>
+                    <span>{{ label }}</span>
                 </label>
                 {% endfor %}
             </div>
 
-            <div id="text-fields" style="margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem; color: #1f2937;">2️⃣ Text Settings:</h3>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">{{ form.text_content.label }}</label>
+            <div id="text-fields" class="tool-form-section">
+                <h3 class="tool-section-title">2️⃣ Text Settings:</h3>
+                <div class="tool-form-group">
+                    <label class="tool-form-label">{{ form.text_content.label }}</label>
                     {{ form.text_content }}
                 </div>
-                <div class="form-group">
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">{{ form.font_size.label }}: <span id="font-size-value">48</span></label>
-                    <input type="range" name="font_size" min="12" max="200" value="48" class="form-input" style="width: 100%;" oninput="document.getElementById('font-size-value').textContent = this.value">
+                <div class="tool-form-group">
+                    <label class="tool-form-label">{{ form.font_size.label }}: <span id="font-size-value">48</span></label>
+                    <input type="range" name="font_size" min="12" max="200" value="48" class="range-input" oninput="document.getElementById('font-size-value').textContent = this.value">
                 </div>
             </div>
 
-            <div id="image-fields" style="display: none; margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem; color: #1f2937;">2️⃣ Upload Watermark Image:</h3>
-                <div style="border: 2px dashed #d1d5db; border-radius: 0.75rem; padding: 2rem; text-align: center; background: #f9fafb;">
+            <div id="image-fields" class="tool-form-section" style="display: none;">
+                <h3 class="tool-section-title">2️⃣ Upload Watermark Image:</h3>
+                <div class="file-upload-zone">
                     {{ form.watermark_image }}
-                    <p style="margin-top: 1rem; color: #6b7280; font-size: 0.875rem;">{{ form.watermark_image.help_text }}</p>
+                    <p>{{ form.watermark_image.help_text }}</p>
                 </div>
-                
-                <!-- Live Preview -->
-                <div id="image-preview-container" style="display: none; margin-top: 1.5rem; text-align: center;">
-                    <h4 style="color: #1f2937; margin-bottom: 0.75rem;">Preview:</h4>
-                    <div style="background: repeating-conic-gradient(#e5e7eb 0% 25%, #fff 0% 50%) 50% / 20px 20px; padding: 1rem; border-radius: 0.5rem; display: inline-block;">
-                        <img id="image-preview" style="max-width: 200px; max-height: 200px; transition: opacity 0.2s;" />
+
+                <div id="image-preview-container" class="image-preview-block">
+                    <h4>Preview:</h4>
+                    <div class="image-preview-checker">
+                        <img id="image-preview" alt="Watermark preview">
                     </div>
                 </div>
             </div>
 
-            <h3 style="margin-bottom: 1rem; color: #1f2937;">3️⃣ Position & Style:</h3>
-            
-            <div class="form-group" style="margin-bottom: 1.5rem;">
-                <label style="display: block; font-weight: 600; margin-bottom: 0.75rem;">Position:</label>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; max-width: 400px;">
+            <h3 class="tool-section-title">3️⃣ Position & Style:</h3>
+
+            <div class="tool-form-group">
+                <label class="tool-form-label">Position:</label>
+                <div class="position-grid">
                     {% for value, label in form.position.field.choices %}
-                    <label style="padding: 0.75rem; background: #f9fafb; border-radius: 0.5rem; text-align: center; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; font-size: 0.875rem;" class="position-option">
-                        <input type="radio" name="position" value="{{ value }}" {% if value == 'center' %}checked{% endif %} style="display: none;">
+                    <label class="position-option">
+                        <input type="radio" name="position" value="{{ value }}" {% if value == 'center' %}checked{% endif %}>
                         {{ label }}
                     </label>
                     {% endfor %}
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 1.5rem;">
-                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Opacity: <span id="opacity-value">30</span>%</label>
-                <input type="range" name="opacity" min="0.1" max="1.0" step="0.1" value="0.3" class="form-input" style="width: 100%;" oninput="document.getElementById('opacity-value').textContent = Math.round(this.value * 100)">
+            <div class="tool-form-group">
+                <label class="tool-form-label">Opacity: <span id="opacity-value">30</span>%</label>
+                <input type="range" name="opacity" min="0.1" max="1.0" step="0.1" value="0.3" class="range-input" oninput="document.getElementById('opacity-value').textContent = Math.round(this.value * 100)">
             </div>
 
-            <div class="form-group" style="margin-bottom: 2rem;">
-                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Rotation: <span id="rotation-value">45</span>°</label>
-                <input type="range" name="rotation" min="-90" max="90" value="45" class="form-input" style="width: 100%;" oninput="document.getElementById('rotation-value').textContent = this.value">
+            <div class="tool-form-group">
+                <label class="tool-form-label">Rotation: <span id="rotation-value">45</span>°</label>
+                <input type="range" name="rotation" min="-90" max="90" value="45" class="range-input" oninput="document.getElementById('rotation-value').textContent = this.value">
             </div>
 
-            <div style="display: flex; gap: 1rem; justify-content: center;">
-                <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="text-decoration: none;">← Back</a>
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back</a>
                 <button type="submit" class="btn btn-primary">💧 Apply Watermark</button>
             </div>
         </form>
@@ -102,7 +101,6 @@
 </div>
 
 <script>
-// Toggle between text and image fields
 const textFields = document.getElementById('text-fields');
 const imageFields = document.getElementById('image-fields');
 const watermarkTypeOptions = document.querySelectorAll('.watermark-type-option');
@@ -117,41 +115,9 @@ watermarkTypeOptions.forEach(option => {
             textFields.style.display = 'none';
             imageFields.style.display = 'block';
         }
-        
-        // Update styling
-        watermarkTypeOptions.forEach(opt => {
-            opt.style.borderColor = 'transparent';
-            opt.style.background = '#f9fafb';
-        });
-        option.style.borderColor = '#6366f1';
-        option.style.background = '#eef2ff';
     });
 });
 
-// Position selector styling
-const positionOptions = document.querySelectorAll('.position-option');
-positionOptions.forEach(option => {
-    const input = option.querySelector('input');
-    if (input.checked) {
-        option.style.borderColor = '#6366f1';
-        option.style.background = '#eef2ff';
-    }
-    
-    option.addEventListener('click', () => {
-        positionOptions.forEach(opt => {
-            opt.style.borderColor = 'transparent';
-            opt.style.background = '#f9fafb';
-        });
-        option.style.borderColor = '#6366f1';
-        option.style.background = '#eef2ff';
-    });
-});
-
-// Initialize
-document.querySelector('.watermark-type-option[data-type="text"]').style.borderColor = '#6366f1';
-document.querySelector('.watermark-type-option[data-type="text"]').style.background = '#eef2ff';
-
-// Image upload preview
 const imageInput = document.querySelector('input[type="file"]');
 const imagePreview = document.getElementById('image-preview');
 const imagePreviewContainer = document.getElementById('image-preview-container');
@@ -164,8 +130,7 @@ if (imageInput) {
             const reader = new FileReader();
             reader.onload = function(event) {
                 imagePreview.src = event.target.result;
-                imagePreviewContainer.style.display = 'block';
-                // Apply current opacity
+                imagePreviewContainer.classList.add('visible');
                 imagePreview.style.opacity = opacitySlider.value;
             };
             reader.readAsDataURL(file);
@@ -173,7 +138,6 @@ if (imageInput) {
     });
 }
 
-// Update preview opacity when slider changes
 if (opacitySlider && imagePreview) {
     opacitySlider.addEventListener('input', function() {
         if (imagePreview.src) {
@@ -182,17 +146,14 @@ if (opacitySlider && imagePreview) {
     });
 }
 
-// Update preview rotation when slider changes
 const rotationSlider = document.querySelector('input[name="rotation"]');
 if (rotationSlider && imagePreview) {
     rotationSlider.addEventListener('input', function() {
         if (imagePreview.src) {
-            // Negative rotation because CSS rotates differently
             imagePreview.style.transform = `rotate(${-this.value}deg)`;
         }
     });
 }
-
 </script>
 
 <style>
