@@ -77,20 +77,186 @@ body {
     padding: 0 var(--spacing-md);
 }
 
-header {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    box-shadow: var(--shadow-sm);
-    padding: var(--spacing-md) 0;
+/* ========================================
+   Site Header (top bar)
+   ======================================== */
+
+.site-header {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     position: sticky;
     top: 0;
     z-index: 100;
 }
 
-header h1 {
-    color: var(--primary-color);
-    font-size: 1.75rem;
+.site-header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: nowrap;
+}
+
+.site-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    text-decoration: none;
+    transition: transform 0.2s;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.site-logo:hover { transform: scale(1.03); }
+
+.site-logo-img {
+    height: 52px;
+    width: 52px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    object-fit: cover;
+}
+
+.site-logo-text { min-width: 0; }
+.site-logo-text h1 {
+    color: white;
+    margin: 0;
+    font-size: 1.25rem;
     font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.site-logo-text p {
+    color: #9ca3af;
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+}
+
+.site-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    transition: background 0.2s;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    white-space: nowrap;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    box-sizing: border-box;
+}
+
+.nav-link:hover { background: rgba(255, 255, 255, 0.2); }
+
+.nav-link-button {
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.nav-link-cta {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+.nav-link-cta:hover { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); }
+
+.nav-logout-form { display: inline; margin: 0; }
+
+/* Hamburger toggle — checkbox-driven, no JS */
+.nav-toggle { display: none; }
+
+.nav-toggle-btn {
+    display: none;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+.nav-toggle-btn span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: white;
+    border-radius: 2px;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+@media (max-width: 768px) {
+    .site-header-inner { padding: 0.625rem 1rem; }
+    .site-logo-img { height: 42px; width: 42px; }
+    .site-logo-text h1 { font-size: 1.05rem; }
+    .site-logo-text p { display: none; }
+
+    .nav-toggle-btn { display: flex; }
+
+    .site-nav {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        left: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.375rem;
+        padding: 0.75rem 1rem 1rem;
+        background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.25s ease-out, padding 0.25s ease-out;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .nav-toggle:checked ~ .site-nav {
+        max-height: 480px;
+        padding-top: 0.75rem;
+        padding-bottom: 1rem;
+    }
+
+    .nav-toggle:checked ~ .nav-toggle-btn span:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+    }
+    .nav-toggle:checked ~ .nav-toggle-btn span:nth-child(2) {
+        opacity: 0;
+    }
+    .nav-toggle:checked ~ .nav-toggle-btn span:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+    }
+
+    .nav-link, .nav-logout-form { display: flex; width: 100%; }
+    .nav-link {
+        justify-content: flex-start;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
+    .nav-link-button { justify-content: flex-start; }
+}
+
+@media (max-width: 380px) {
+    .site-header-inner { padding: 0.5rem 0.75rem; gap: 0.5rem; }
+    .site-logo-img { height: 36px; width: 36px; }
+    .site-logo-text h1 { font-size: 0.95rem; }
 }
 
 footer {
@@ -478,25 +644,209 @@ footer {
 }
 
 /* ========================================
+   Dashboard — uploaded PDFs grid
+   ======================================== */
+
+.section-title-spaced { margin-top: 3rem; }
+
+.user-pdfs-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.user-pdfs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.pdf-item-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+}
+
+.pdf-item-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    flex: 1;
+}
+
+.pdf-item-icon { font-size: 2rem; flex-shrink: 0; }
+
+.pdf-item-meta { flex: 1; min-width: 0; }
+
+.pdf-item-name {
+    margin: 0 0 0.375rem 0;
+    color: var(--text-primary);
+    font-size: 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pdf-item-size { margin: 0; font-size: 0.875rem; color: var(--text-secondary); }
+.pdf-item-date { margin: 0.25rem 0 0 0; font-size: 0.75rem; color: var(--text-light); }
+
+.pdf-item-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.pdf-item-btn {
+    flex: 1;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.btn-delete {
+    background: var(--error-color);
+    color: white;
+}
+.btn-delete:hover { background: #dc2626; }
+
+/* Operation card — multi-button row (used on Edit & Rephrase card) */
+.card-button-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.card-button-row .btn { flex: 1 1 140px; }
+.btn-ai {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+}
+.btn-ai:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    color: white;
+}
+
+/* ========================================
+   Tool pages — shared layout (split / merge / compress / etc.)
+   ======================================== */
+
+.tool-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.tool-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 1.5rem;
+}
+
+.tool-card-header { text-align: center; }
+.tool-card-header h2 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+.tool-card-header p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.tool-pdf-picker {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-md);
+}
+.tool-pdf-picker label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: white;
+    font-size: 0.95rem;
+}
+.tool-pdf-picker select {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    background: white;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-weight: 500;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='8' viewBox='0 0 14 8'><path fill='%231f2937' d='M7 8L0 0h14z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+}
+.tool-pdf-picker .picker-hint {
+    margin: 0.75rem 0 0 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ========================================
    Responsive Design
    ======================================== */
 
 @media (max-width: 768px) {
-    .hero-title {
-        font-size: 2.5rem;
-    }
-    
-    .operations-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .features-grid {
-        grid-template-columns: 1fr;
-    }
-    
+    .hero-title { font-size: 2.25rem; }
+    .hero-subtitle { font-size: 1rem; }
+    .hero-section { padding: var(--spacing-md) 0; margin-bottom: var(--spacing-md); }
+
+    .operations-grid { grid-template-columns: 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+
     .dashboard-container {
-        padding: var(--spacing-md);
+        padding: var(--spacing-md) var(--spacing-sm);
     }
+
+    .upload-zone {
+        padding: var(--spacing-md) var(--spacing-sm);
+        margin-bottom: var(--spacing-lg);
+    }
+    .upload-icon { font-size: 3rem; }
+
+    .section-title { font-size: 1.5rem; margin-top: var(--spacing-lg); }
+    .section-title-spaced { margin-top: 2rem; }
+
+    .features-section { padding: var(--spacing-md); }
+
+    .operation-card { padding: var(--spacing-md); }
+    .operation-card h3 { font-size: 1.125rem; }
+    .card-icon { font-size: 2.5rem; }
+
+    .user-pdfs-grid { grid-template-columns: 1fr; }
+    .card-button-row .btn { flex-basis: 100%; }
+
+    .tool-container { margin: 1rem auto; padding: 0 0.75rem; }
+    .tool-card { padding: 1.25rem; margin-bottom: 1rem; }
+    .tool-card-header h2 { font-size: 1.25rem; }
+    .tool-pdf-picker { padding: 1rem; margin-bottom: 1rem; }
+    .tool-pdf-picker select { font-size: 0.9375rem; padding: 0.75rem 0.875rem; padding-right: 2.25rem; }
+}
+
+@media (max-width: 480px) {
+    .hero-title { font-size: 1.75rem; }
+    .hero-subtitle { font-size: 0.9375rem; }
+    .upload-zone { padding: var(--spacing-sm); }
+    .upload-icon { font-size: 2.5rem; }
+    .upload-zone h2 { font-size: 1.25rem; }
+
+    .btn { padding: 0.625rem 1rem; font-size: 0.9375rem; }
+    .btn-large { padding: 0.875rem 1.5rem; font-size: 1rem; }
 }
 
 /* ========================================
