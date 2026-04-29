@@ -3,57 +3,38 @@
 {% block title %}Create Account{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 520px; margin: 4rem auto;">
+<div class="auth-card" style="--auth-card-max-width: 520px;">
     <h2>✨ Create Account</h2>
-    <p style="color: #6b7280; margin-bottom: 2rem;">
+    <p class="auth-sub">
         Once registered, your PDFs and operation history persist across devices and sessions.
     </p>
 
-    <form method="post" class="edit-form">
+    <form method="post" class="edit-form" novalidate>
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-        <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1rem; color: #991b1b;">
-            {{ form.non_field_errors }}
-        </div>
+        <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
         {% endif %}
 
         {% for field in form %}
-        <div class="form-group" style="margin-bottom: 1.25rem;">
-            <label for="{{ field.id_for_label }}" style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: #1f2937;">
-                {{ field.label }}
-            </label>
+        <div class="form-field">
+            <label class="form-field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
             {{ field }}
             {% if field.help_text %}
-            <small style="display: block; margin-top: 0.25rem; color: #6b7280; font-size: 0.85rem;">
-                {{ field.help_text|safe }}
-            </small>
+            <small class="form-field-help">{{ field.help_text|safe }}</small>
             {% endif %}
             {% if field.errors %}
-            <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">
-                {{ field.errors }}
-            </div>
+            <div class="form-field-error">{{ field.errors }}</div>
             {% endif %}
         </div>
         {% endfor %}
 
-        <button type="submit" class="btn btn-primary" style="width: 100%;">
-            Create Account
-        </button>
+        <button type="submit" class="btn btn-primary btn-block">Create Account</button>
 
-        <p style="text-align: center; margin-top: 1.5rem; color: #6b7280;">
-            Already have an account? <a href="{% url 'login' %}" style="color: #6366f1; font-weight: 500;">Sign in</a>
+        <p class="auth-footer">
+            Already have an account?
+            <a href="{% url 'login' %}" class="auth-link-strong">Sign in</a>
         </p>
     </form>
 </div>
-
-<style>
-input[type="text"], input[type="password"], input[type="email"] {
-    width: 100%;
-    padding: 0.625rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.5rem;
-    font-size: 1rem;
-}
-</style>
 {% endblock %}
