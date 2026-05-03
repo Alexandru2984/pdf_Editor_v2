@@ -161,9 +161,8 @@ def thumbnail_view(request, pdf_id):
     if pdf is None or not pdf.exists_on_disk():
         raise Http404
     thumb_path = _thumbnail_path(pdf.id)
-    if not os.path.exists(thumb_path):
-        if not _generate_thumbnail(pdf.path, thumb_path):
-            raise Http404
-    response = FileResponse(open(thumb_path, "rb"), content_type="image/jpeg")
+    if not os.path.exists(thumb_path) and not _generate_thumbnail(pdf.path, thumb_path):
+        raise Http404
+    response = FileResponse(open(thumb_path, "rb"), content_type="image/jpeg")  # noqa: SIM115
     response["Cache-Control"] = "private, max-age=3600"
     return response
