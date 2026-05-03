@@ -1,9 +1,12 @@
 """Text extraction: direct text layer + OCR fallback.
 
-OCR is parallelized across pages with a process pool because tesseract is
-CPU-bound — a 20-page scan that took ~30s sequentially completes in ~7s
-with 4 workers. Pages that already have an extractable text layer skip
-the rasterise+OCR entirely (huge win on mixed-content PDFs).
+The big win is skipping any page that already has an extractable text
+layer — on mixed-content PDFs, only the truly scanned pages pay the
+rasterise+OCR cost. OCR runs sequentially by default: a process pool
+inherits the gunicorn worker's memory and OOM-kills the host, while a
+thread pool runs slower than sequential on this hardware (tesseract
+subprocesses contend for CPU and bloat per-page latency). Set
+``OCR_MAX_WORKERS`` to opt into thread-pool parallelism.
 """
 
 from __future__ import annotations
@@ -11,7 +14,8 @@ from __future__ import annotations
 import io
 import logging
 import os
-from concurrent.futures import ProcessPoolExecutor
+import shutil
+from concurrent.futures import ThreadPoolExecutor
 
 import fitz
 
@@ -25,8 +29,14 @@ OCR_DPI = int(os.environ.get("OCR_DPI", "200"))
 # this app's audience. Override with OCR_LANG if you only need one.
 OCR_LANG = os.environ.get("OCR_LANG", "eng+ron")
 
-# 0 = pick automatically, capped at 4 so we don't starve a shared VPS.
-OCR_MAX_WORKERS = int(os.environ.get("OCR_MAX_WORKERS", "0"))
+# Default to 1 (sequential) — safest in a gunicorn worker. Set higher to
+# experiment with thread-pool parallelism on faster hardware.
+OCR_MAX_WORKERS = int(os.environ.get("OCR_MAX_WORKERS", "1"))
+
+# systemd often runs services with a minimal PATH that excludes /usr/bin,
+# so pytesseract's default subprocess('tesseract') lookup fails. Resolve
+# the binary up-front and tell pytesseract exactly where it is.
+TESSERACT_CMD = os.environ.get("TESSERACT_CMD") or shutil.which("tesseract") or "/usr/bin/tesseract"
 
 
 def extract_text_from_pdf(pdf_path: str) -> str:
@@ -47,15 +57,12 @@ def extract_text_from_pdf(pdf_path: str) -> str:
 
 
 def _ocr_one_page(args: tuple[str, int, int, str]) -> tuple[int, str]:
-    """Worker entry point. Runs in a separate process — must be picklable.
-
-    Re-opens the PDF in the child rather than passing pixmap bytes, since
-    PyMuPDF rasterisation is itself CPU-bound and benefits from running in
-    parallel with the OCR call.
-    """
+    """Render one page and OCR it. Safe to call from multiple threads."""
     pdf_path, page_index, dpi, lang = args
     import pytesseract
     from PIL import Image
+
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
     with fitz.open(pdf_path) as doc:
         page = doc.load_page(page_index)
@@ -68,11 +75,7 @@ def _ocr_one_page(args: tuple[str, int, int, str]) -> tuple[int, str]:
 
 
 def _resolve_worker_count(page_count: int) -> int:
-    if OCR_MAX_WORKERS > 0:
-        target = OCR_MAX_WORKERS
-    else:
-        target = min(4, max(1, os.cpu_count() or 1))
-    return max(1, min(target, page_count))
+    return max(1, min(OCR_MAX_WORKERS, page_count))
 
 
 def ocr_pdf_to_text(pdf_path: str) -> str:
@@ -96,14 +99,8 @@ def ocr_pdf_to_text(pdf_path: str) -> str:
     if workers == 1:
         results = [_ocr_one_page(a) for a in args_list]
     else:
-        try:
-            with ProcessPoolExecutor(max_workers=workers) as ex:
-                results = list(ex.map(_ocr_one_page, args_list))
-        except Exception as exc:
-            # Fall back to sequential if the pool can't spin up (rare —
-            # mostly seen in restricted sandboxes / containerised tests).
-            logger.warning("OCR process pool failed (%s); falling back to sequential", exc)
-            results = [_ocr_one_page(a) for a in args_list]
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            results = list(ex.map(_ocr_one_page, args_list))
 
     out: list[str] = []
     for page_index, text in sorted(results, key=lambda r: r[0]):
