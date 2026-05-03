@@ -18,9 +18,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path, re_path
 
-from pdfeditor.views import serve_media_view
+from pdfeditor.views import admin_health_view, serve_media_view
 
 urlpatterns = [
+    path("admin/health/", admin_health_view, name="admin_health"),
     path("admin/", admin.site.urls),
     re_path(r"^media/(?P<rel_path>.+)$", serve_media_view, name="serve_media"),
     # Django's set_language view writes the chosen language to a cookie

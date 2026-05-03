@@ -40,7 +40,7 @@ from .form_fill import (
     form_fill_result_view,
     form_fill_view,
 )
-from .health import healthz, readyz
+from .health import admin_health_view, healthz, readyz
 from .history import history_delete_view, history_download_view, history_view
 from .layout_ops import (
     download_numbered_view,
@@ -106,6 +106,7 @@ __all__ = [
     "history_delete_view",
     "healthz",
     "readyz",
+    "admin_health_view",
     "register_view",
     "confirm_email_view",
     "resend_confirmation_view",

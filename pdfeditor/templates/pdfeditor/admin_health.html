@@ -1,0 +1,207 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Platform health" %}{% endblock %}
+
+{% block content %}
+<div class="health-card">
+    <div class="health-header">
+        <h2>{% trans "Platform health" %}</h2>
+        <span class="health-status health-status--{% if db_ok %}ok{% else %}error{% endif %}">
+            {% if db_ok %}● {% trans "Database OK" %}{% else %}● {% trans "Database error" %}{% endif %}
+        </span>
+    </div>
+    {% if not db_ok %}
+    <p class="health-error-detail">{{ db_error }}</p>
+    {% endif %}
+
+    <h3 class="health-section-title">{% trans "Users" %}</h3>
+    <div class="health-grid">
+        <div class="stat-tile">
+            <div class="stat-value">{{ total_users }}</div>
+            <div class="stat-label">{% trans "Total" %}</div>
+        </div>
+        <div class="stat-tile">
+            <div class="stat-value">{{ active_users }}</div>
+            <div class="stat-label">{% trans "Active" %}</div>
+        </div>
+        <div class="stat-tile">
+            <div class="stat-value">{{ new_users_week }}</div>
+            <div class="stat-label">{% trans "New (last 7 days)" %}</div>
+        </div>
+    </div>
+
+    <h3 class="health-section-title">{% trans "PDFs uploaded" %}</h3>
+    <div class="health-grid">
+        <div class="stat-tile">
+            <div class="stat-value">{{ uploaded_total }}</div>
+            <div class="stat-label">{% trans "Total" %}</div>
+        </div>
+        <div class="stat-tile">
+            <div class="stat-value">{{ uploaded_week }}</div>
+            <div class="stat-label">{% trans "Last 7 days" %}</div>
+        </div>
+        <div class="stat-tile">
+            <div class="stat-value">{{ uploaded_size|filesizeformat }}</div>
+            <div class="stat-label">{% trans "Storage used" %}</div>
+        </div>
+    </div>
+
+    <h3 class="health-section-title">{% trans "Outputs produced" %}</h3>
+    <div class="health-grid">
+        <div class="stat-tile">
+            <div class="stat-value">{{ processed_total }}</div>
+            <div class="stat-label">{% trans "Total" %}</div>
+        </div>
+        <div class="stat-tile">
+            <div class="stat-value">{{ processed_week }}</div>
+            <div class="stat-label">{% trans "Last 7 days" %}</div>
+        </div>
+        <div class="stat-tile">
+            <div class="stat-value">{{ processed_size|filesizeformat }}</div>
+            <div class="stat-label">{% trans "Storage used" %}</div>
+        </div>
+    </div>
+
+    {% if kind_breakdown %}
+    <h3 class="health-section-title">{% trans "By operation" %}</h3>
+    <table class="health-table">
+        <thead>
+            <tr>
+                <th>{% trans "Operation" %}</th>
+                <th>{% trans "Count" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in kind_breakdown %}
+            <tr>
+                <td>{{ row.label }}</td>
+                <td>{{ row.count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <h3 class="health-section-title">{% trans "Total storage" %}</h3>
+    <div class="health-grid">
+        <div class="stat-tile stat-tile--wide">
+            <div class="stat-value">{{ total_size|filesizeformat }}</div>
+            <div class="stat-label">{% trans "Uploaded + processed" %}</div>
+        </div>
+    </div>
+
+    <p class="health-footer">
+        <a href="/admin/" class="btn btn-secondary">{% trans "Back to admin" %}</a>
+    </p>
+</div>
+
+<style>
+    .health-card {
+        max-width: 880px;
+        margin: 2rem auto;
+        padding: 1.75rem;
+        background: var(--card-bg, #fff);
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .health-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.5rem;
+    }
+    .health-header h2 {
+        margin: 0;
+        color: #1f2937;
+    }
+    .health-status {
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+    }
+    .health-status--ok {
+        background: #ecfdf5;
+        color: #065f46;
+    }
+    .health-status--error {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+    .health-error-detail {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 0.625rem 0.875rem;
+        border-radius: 0.5rem;
+        font-family: monospace;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+    .health-section-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        margin: 1.75rem 0 0.75rem 0;
+    }
+    .health-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.875rem;
+    }
+    .stat-tile {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.625rem;
+        padding: 1rem;
+        text-align: center;
+    }
+    .stat-tile--wide {
+        grid-column: 1 / -1;
+    }
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #4f46e5;
+        line-height: 1.2;
+    }
+    .stat-label {
+        font-size: 0.8125rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+    .health-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 0.5rem;
+    }
+    .health-table th, .health-table td {
+        text-align: left;
+        padding: 0.625rem 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .health-table th {
+        font-size: 0.8125rem;
+        text-transform: uppercase;
+        color: #6b7280;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+    }
+    .health-footer {
+        margin-top: 1.75rem;
+        text-align: right;
+    }
+    [data-theme="dark"] .health-card { background: #1f2937; }
+    [data-theme="dark"] .health-header h2 { color: #f3f4f6; }
+    [data-theme="dark"] .stat-tile { background: #111827; border-color: #374151; }
+    [data-theme="dark"] .stat-label { color: #9ca3af; }
+    [data-theme="dark"] .health-section-title { color: #9ca3af; }
+    [data-theme="dark"] .health-table th { color: #9ca3af; }
+    [data-theme="dark"] .health-table td { color: #e5e7eb; border-color: #374151; }
+</style>
+{% endblock %}
