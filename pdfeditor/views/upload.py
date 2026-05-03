@@ -7,6 +7,7 @@ import fitz
 from django.conf import settings
 from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
+from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
 
 from ..models import UploadedPDF
@@ -14,6 +15,9 @@ from ..pdf_processor import check_pdf_has_text
 from ._common import _owner_kwargs, get_uploaded_pdfs, owner_filter
 
 logger = logging.getLogger(__name__)
+
+THUMB_SUBDIR = "thumbs"
+THUMB_TARGET_WIDTH = 480
 
 
 def _count_pages_safely(file_path):
@@ -24,6 +28,28 @@ def _count_pages_safely(file_path):
     except Exception as exc:
         logger.warning("Failed to inspect uploaded PDF %s: %s", file_path, exc)
         return None
+
+
+def _thumbnail_path(pdf_id) -> str:
+    return os.path.join(settings.MEDIA_ROOT, THUMB_SUBDIR, f"{pdf_id}.jpg")
+
+
+def _generate_thumbnail(pdf_path: str, thumb_path: str) -> bool:
+    """Render the first page of a PDF to ``thumb_path`` as JPEG. Returns True on success."""
+    try:
+        with fitz.open(pdf_path) as doc:
+            if len(doc) == 0:
+                return False
+            page = doc.load_page(0)
+            zoom = THUMB_TARGET_WIDTH / max(page.rect.width, 1)
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat, alpha=False)
+            os.makedirs(os.path.dirname(thumb_path), exist_ok=True)
+            pix.save(thumb_path)
+        return True
+    except Exception as exc:
+        logger.warning("Thumbnail generation failed for %s: %s", pdf_path, exc)
+        return False
 
 
 def dashboard_view(request):
@@ -87,14 +113,16 @@ def upload_view(request):
         if not has_text:
             messages.warning(request, f"{uploaded_file.name}: {message}")
 
-        created.append(
-            UploadedPDF.objects.create(
-                **_owner_kwargs(request),
-                name=uploaded_file.name,
-                path=file_path,
-                size=uploaded_file.size,
-            )
+        pdf_obj = UploadedPDF.objects.create(
+            **_owner_kwargs(request),
+            name=uploaded_file.name,
+            path=file_path,
+            size=uploaded_file.size,
         )
+        # Best-effort: failure here only means the dashboard falls back to
+        # the lazy-regen path in thumbnail_view.
+        _generate_thumbnail(file_path, _thumbnail_path(pdf_obj.id))
+        created.append(pdf_obj)
 
     if len(created) == 1:
         messages.success(
@@ -110,11 +138,32 @@ def upload_view(request):
 
 
 def delete_pdf_view(request, pdf_id):
-    deleted, _ = UploadedPDF.objects.filter(owner_filter(request), id=pdf_id).delete()
-
-    if deleted:
-        messages.success(request, "PDF removed successfully.")
-    else:
+    pdf = UploadedPDF.objects.filter(owner_filter(request), id=pdf_id).first()
+    if pdf is None:
         messages.error(request, "PDF not found.")
+        return redirect("dashboard")
 
+    thumb_path = _thumbnail_path(pdf.id)
+    if os.path.exists(thumb_path):
+        try:
+            os.remove(thumb_path)
+        except OSError as exc:
+            logger.warning("Failed to remove thumbnail %s: %s", thumb_path, exc)
+
+    pdf.delete()
+    messages.success(request, "PDF removed successfully.")
     return redirect("dashboard")
+
+
+def thumbnail_view(request, pdf_id):
+    """Serve the first-page JPEG thumbnail. Owner-scoped, regenerated lazily."""
+    pdf = UploadedPDF.objects.filter(owner_filter(request), id=pdf_id).first()
+    if pdf is None or not pdf.exists_on_disk():
+        raise Http404
+    thumb_path = _thumbnail_path(pdf.id)
+    if not os.path.exists(thumb_path):
+        if not _generate_thumbnail(pdf.path, thumb_path):
+            raise Http404
+    response = FileResponse(open(thumb_path, "rb"), content_type="image/jpeg")
+    response["Cache-Control"] = "private, max-age=3600"
+    return response

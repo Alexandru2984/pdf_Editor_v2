@@ -70,7 +70,7 @@ MIDDLEWARE = [
 
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",
-    "django.contrib.auth.backends.ModelBackend",
+    "pdfeditor.auth_backends.CaseInsensitiveModelBackend",
 ]
 
 # django-axes: lock account for 1h after 5 failed admin logins
@@ -79,6 +79,10 @@ AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
 AXES_RESET_ON_SUCCESS = True
+# We sit behind nginx — without these, ipware reads REMOTE_ADDR (the proxy
+# itself) and every lockout records ip=None / 127.0.0.1.
+AXES_BEHIND_REVERSE_PROXY = True
+AXES_IPWARE_PROXY_COUNT = 1
 
 LOGGING = {
     "version": 1,

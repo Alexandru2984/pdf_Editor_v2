@@ -60,13 +60,14 @@ from .rephrase import (
     rephrase_result_view,
     rephrase_view,
 )
-from .upload import dashboard_view, delete_pdf_view, upload_view
+from .upload import dashboard_view, delete_pdf_view, thumbnail_view, upload_view
 
 __all__ = [
     "serve_media_view",
     "dashboard_view",
     "upload_view",
     "delete_pdf_view",
+    "thumbnail_view",
     "edit_view",
     "result_view",
     "download_view",

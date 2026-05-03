@@ -4,7 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}PDF Platform{% endblock %}</title>
-    
+
+    <script>
+        // Apply saved theme before stylesheet loads — prevents flash of wrong theme.
+        (function () {
+            try {
+                var saved = localStorage.getItem('theme');
+                var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+            } catch (e) { /* localStorage blocked — fall back to light */ }
+        })();
+    </script>
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,6 +40,11 @@
                     <p>by Micu's Stuff</p>
                 </div>
             </a>
+
+            <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+                <span class="theme-toggle-icon-light" aria-hidden="true">🌙</span>
+                <span class="theme-toggle-icon-dark" aria-hidden="true">☀️</span>
+            </button>
 
             <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
             <label for="nav-toggle" class="nav-toggle-btn" aria-hidden="true">
@@ -76,6 +92,18 @@
                 setTimeout(() => msg.remove(), 300);
             });
         }, 5000);
+
+        // Theme toggle
+        document.getElementById('theme-toggle')?.addEventListener('click', () => {
+            const root = document.documentElement;
+            const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            if (next === 'dark') {
+                root.setAttribute('data-theme', 'dark');
+            } else {
+                root.removeAttribute('data-theme');
+            }
+            try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+        });
     </script>
     
     {% block extra_js %}{% endblock %}
