@@ -1,0 +1,58 @@
+{% load i18n %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Server error" %} — PDF Platform</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f9fafb;
+            color: #1f2937;
+        }
+        .error-wrap {
+            max-width: 480px;
+            margin: 5rem auto;
+            text-align: center;
+            padding: 2rem 1.5rem;
+        }
+        .error-code {
+            font-size: 5rem;
+            font-weight: 700;
+            color: #dc2626;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+        .error-title {
+            font-size: 1.5rem;
+            margin: 0 0 0.75rem 0;
+        }
+        .error-message {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.625rem 1.25rem;
+            background: #4f46e5;
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+        .btn:hover { background: #4338ca; }
+    </style>
+</head>
+<body>
+    <div class="error-wrap">
+        <div class="error-code">500</div>
+        <h1 class="error-title">{% trans "Something went wrong" %}</h1>
+        <p class="error-message">
+            {% trans "An unexpected error occurred. Our team has been notified. Please try again in a moment." %}
+        </p>
+        <a href="/" class="btn">{% trans "Back to Dashboard" %}</a>
+    </div>
+</body>
+</html>

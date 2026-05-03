@@ -1,0 +1,43 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Page not found" %} — {% trans "PDF Platform" %}{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-code">404</div>
+    <h1 class="error-title">{% trans "Page not found" %}</h1>
+    <p class="error-message">
+        {% trans "The page you're looking for doesn't exist or has been moved." %}
+    </p>
+    <a href="{% url 'dashboard' %}" class="btn btn-primary">
+        {% trans "Back to Dashboard" %}
+    </a>
+</div>
+
+<style>
+    .error-page {
+        max-width: 480px;
+        margin: 4rem auto;
+        text-align: center;
+        padding: 2rem 1rem;
+    }
+    .error-code {
+        font-size: 5rem;
+        font-weight: 700;
+        color: #4f46e5;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    .error-title {
+        font-size: 1.5rem;
+        margin: 0 0 0.75rem 0;
+        color: #1f2937;
+    }
+    .error-message {
+        color: #6b7280;
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}

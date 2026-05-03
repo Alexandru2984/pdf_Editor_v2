@@ -3,10 +3,12 @@
 import logging
 from unittest.mock import patch
 
-from django.test import Client, RequestFactory, TestCase
+from django.contrib.auth import get_user_model
+from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
 from .middleware import RequestIDLogFilter, RequestIDMiddleware, get_current_request_id
+from .models import ProcessedPDF, UploadedPDF
 
 
 class RequestIDMiddlewareTests(TestCase):
@@ -99,3 +101,47 @@ class HealthEndpointTests(TestCase):
         body = resp.json()
         self.assertEqual(body["status"], "degraded")
         self.assertIn("connection refused", body["checks"]["database"])
+
+
+class AdminHealthDashboardTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user(
+            username="boss", password="pw1234567x", email="boss@example.com", is_staff=True
+        )
+        self.regular = User.objects.create_user(
+            username="alice", password="pw1234567x", email="alice@example.com"
+        )
+
+    def test_anonymous_redirected_to_login(self):
+        resp = self.client.get(reverse("admin_health"))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("login", resp["Location"])
+
+    def test_non_staff_redirected_to_login(self):
+        self.client.login(username="alice", password="pw1234567x")
+        resp = self.client.get(reverse("admin_health"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_staff_sees_dashboard(self):
+        UploadedPDF.objects.create(user=self.regular, name="a.pdf", path="/x", size=1024)
+        ProcessedPDF.objects.create(
+            user=self.regular, name="a-out.pdf", path="/y", size=512, kind=ProcessedPDF.KIND_SPLIT
+        )
+        self.client.login(username="boss", password="pw1234567x")
+        resp = self.client.get(reverse("admin_health"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Platform health")
+        # Counts include the seeded rows
+        self.assertContains(resp, "1")  # at least one upload + one processed
+        # Kind label rendered
+        self.assertContains(resp, "Split")
+
+
+@override_settings(DEBUG=False, ALLOWED_HOSTS=["testserver"])
+class CustomErrorPageTests(TestCase):
+    def test_404_uses_custom_template(self):
+        resp = self.client.get("/this-path-does-not-exist-anywhere/")
+        self.assertEqual(resp.status_code, 404)
+        # Our custom template renders the "Page not found" string
+        self.assertContains(resp, "Page not found", status_code=404)
