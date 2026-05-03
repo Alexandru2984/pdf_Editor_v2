@@ -1,13 +1,13 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Operation History{% endblock %}
+{% block title %}{% trans "Operation History" %}{% endblock %}
 
 {% block content %}
 <div class="card" style="--card-max-width: 1100px;">
-    <h2>📜 Operation History</h2>
+    <h2>📜 {% trans "Operation History" %}</h2>
     <p class="tool-section-helper" style="margin-bottom: 2rem;">
-        Every PDF this session has produced. Files are auto-deleted after
-        {{ PDF_CLEANUP_HOURS|default:"24" }} hours.
+        {% blocktrans with hours=PDF_CLEANUP_HOURS|default:"24" %}Every PDF this session has produced. Files are auto-deleted after {{ hours }} hours.{% endblocktrans %}
     </p>
 
     {% if history_items %}
@@ -15,28 +15,28 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Operation</th>
-                    <th>File</th>
-                    <th>Source</th>
-                    <th>Size</th>
-                    <th>Created</th>
+                    <th>{% trans "Operation" %}</th>
+                    <th>{% trans "File" %}</th>
+                    <th>{% trans "Source" %}</th>
+                    <th>{% trans "Size" %}</th>
+                    <th>{% trans "Created" %}</th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in history_items %}
                 <tr>
-                    <td data-label="Operation">
+                    <td data-label="{% trans 'Operation' %}">
                         <span class="kind-badge">{{ item.kind_display }}</span>
                     </td>
-                    <td data-label="File" class="cell-truncate" title="{{ item.name }}">
+                    <td data-label="{% trans 'File' %}" class="cell-truncate" title="{{ item.name }}">
                         {{ item.name }}
                     </td>
-                    <td data-label="Source" class="cell-truncate cell-muted" title="{{ item.source_name|default:'—' }}">
+                    <td data-label="{% trans 'Source' %}" class="cell-truncate cell-muted" title="{{ item.source_name|default:'—' }}">
                         {{ item.source_name|default:"—" }}
                     </td>
-                    <td data-label="Size" class="cell-muted">{{ item.size|filesizeformat }}</td>
-                    <td data-label="Created" class="cell-muted">{{ item.created_at|date:"Y-m-d H:i" }}</td>
+                    <td data-label="{% trans 'Size' %}" class="cell-muted">{{ item.size|filesizeformat }}</td>
+                    <td data-label="{% trans 'Created' %}" class="cell-muted">{{ item.created_at|date:"Y-m-d H:i" }}</td>
                     <td class="cell-actions">
                         <button onclick="pdfModal.open('/media/{{ item.path_relative }}')" class="btn btn-preview">
                             👁️
@@ -45,7 +45,7 @@
                             📥
                         </a>
                         <a href="{% url 'history_delete' item.id %}" class="btn btn-secondary"
-                           onclick="return confirm('Remove this output from history?')">
+                           onclick="return confirm('{% trans "Remove this output from history?" %}')">
                             🗑️
                         </a>
                     </td>
@@ -57,9 +57,9 @@
     {% else %}
     <div class="empty-state">
         <div class="empty-state-icon">🗂️</div>
-        <p>No operations yet. Upload a PDF and run a tool to see history here.</p>
+        <p>{% trans "No operations yet. Upload a PDF and run a tool to see history here." %}</p>
         <a href="{% url 'dashboard' %}" class="btn btn-primary" style="text-decoration: none; margin-top: 1rem;">
-            ← Back to Dashboard
+            ← {% trans "Back to Dashboard" %}
         </a>
     </div>
     {% endif %}
@@ -67,7 +67,7 @@
     {% if history_items %}
     <div style="margin-top: 2rem; text-align: center;">
         <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="text-decoration: none;">
-            ← Back to Dashboard
+            ← {% trans "Back to Dashboard" %}
         </a>
     </div>
     {% endif %}

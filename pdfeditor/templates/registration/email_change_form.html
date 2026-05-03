@@ -1,12 +1,13 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Change Email{% endblock %}
+{% block title %}{% trans "Change Email" %}{% endblock %}
 
 {% block content %}
 <div class="auth-card" style="--auth-card-max-width: 520px;">
-    <h2>✉️ Change Email</h2>
+    <h2>✉️ {% trans "Change Email" %}</h2>
     <p class="auth-sub-tight">
-        Currently <strong>{{ request.user.email }}</strong>. We'll send a confirmation link to your new address — your current email stays active until you click it.
+        {% blocktrans with email=request.user.email %}Currently <strong>{{ email }}</strong>. We'll send a confirmation link to your new address — your current email stays active until you click it.{% endblocktrans %}
     </p>
 
     {% if messages %}
@@ -30,7 +31,7 @@
             {% if field.errors %}<div class="form-field-error">{{ field.errors }}</div>{% endif %}
         </div>
         {% endfor %}
-        <button type="submit" class="btn btn-primary btn-block">Send confirmation link</button>
+        <button type="submit" class="btn btn-primary btn-block">{% trans "Send confirmation link" %}</button>
     </form>
 </div>
 {% endblock %}

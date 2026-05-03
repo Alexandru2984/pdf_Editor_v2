@@ -1,6 +1,7 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}More Tools{% endblock %}
+{% block title %}{% trans "More Tools" %}{% endblock %}
 
 {% block content %}
 <canvas id="confetti-canvas" class="mt-confetti-canvas"></canvas>
@@ -9,7 +10,7 @@
     <div class="mt-overlay-content">
         <div class="mt-overlay-icon">🚀</div>
         <h1 class="mt-overlay-title">PDF Editor 2.0</h1>
-        <p class="mt-overlay-subtitle">The Future of PDF Editing</p>
+        <p class="mt-overlay-subtitle">{% trans "The Future of PDF Editing" %}</p>
         <div class="mt-loading-dots">
             <span></span>
             <span></span>
@@ -23,8 +24,8 @@
         <div class="mt-hero">
             <div class="mt-hero-badge">✨ PDF Editor 2.0</div>
             <div class="mt-hero-icon">🛠️</div>
-            <h2>Advanced PDF Command Center</h2>
-            <p>All your PDF tools in one powerful interface</p>
+            <h2>{% trans "Advanced PDF Command Center" %}</h2>
+            <p>{% trans "All your PDF tools in one powerful interface" %}</p>
         </div>
 
         <div class="mt-pdf-grid">
@@ -39,7 +40,7 @@
                 </div>
                 <div class="mt-pdf-card-action">
                     <button class="select-pdf-btn btn btn-primary">
-                        Select & Preview →
+                        {% trans "Select & Preview" %} →
                     </button>
                 </div>
             </div>
@@ -50,7 +51,7 @@
     <div id="pdf-tools-view" class="mt-tools-view" style="display: none;">
         <div class="mt-tools-header">
             <button id="back-to-list-btn" class="btn mt-back-btn">
-                ← Back to List
+                ← {% trans "Back to List" %}
             </button>
             <div class="mt-tools-title">
                 ✨ PDF Editor 2.0
@@ -59,14 +60,14 @@
 
         <div class="mt-tabs-bar">
             <div class="mt-tabs-nav">
-                <button class="tab-btn active" data-tab="extract">📄 Extract Text</button>
-                <button class="tab-btn" data-tab="ocr">🔍 OCR</button>
-                <button class="tab-btn" data-tab="edit">✏️ Edit</button>
-                <button class="tab-btn" data-tab="split">✂️ Split</button>
-                <button class="tab-btn" data-tab="compress">🗜️ Compress</button>
-                <button class="tab-btn" data-tab="watermark">💧 Watermark</button>
-                <button class="tab-btn" data-tab="rotate">🔄 Rotate</button>
-                <button class="tab-btn" data-tab="numbers">🔢 Page Numbers</button>
+                <button class="tab-btn active" data-tab="extract">📄 {% trans "Extract Text" %}</button>
+                <button class="tab-btn" data-tab="ocr">🔍 {% trans "OCR" %}</button>
+                <button class="tab-btn" data-tab="edit">✏️ {% trans "Edit" %}</button>
+                <button class="tab-btn" data-tab="split">✂️ {% trans "Split" %}</button>
+                <button class="tab-btn" data-tab="compress">🗜️ {% trans "Compress" %}</button>
+                <button class="tab-btn" data-tab="watermark">💧 {% trans "Watermark" %}</button>
+                <button class="tab-btn" data-tab="rotate">🔄 {% trans "Rotate" %}</button>
+                <button class="tab-btn" data-tab="numbers">🔢 {% trans "Page Numbers" %}</button>
             </div>
         </div>
 
@@ -74,11 +75,11 @@
             <div class="mt-tools-grid">
                 <div class="mt-pdf-pane">
                     <div class="mt-pane-header">
-                        <h3>PDF Preview</h3>
+                        <h3>{% trans "PDF Preview" %}</h3>
                         <div class="mt-page-controls">
-                            <button id="prev-page-btn" class="btn btn-secondary">← Prev</button>
-                            <span id="page-indicator" class="mt-page-indicator">Page 1 of 1</span>
-                            <button id="next-page-btn" class="btn btn-secondary">Next →</button>
+                            <button id="prev-page-btn" class="btn btn-secondary">← {% trans "Prev" %}</button>
+                            <span id="page-indicator" class="mt-page-indicator">{% blocktrans with current=1 total=1 %}Page {{ current }} of {{ total }}{% endblocktrans %}</span>
+                            <button id="next-page-btn" class="btn btn-secondary">{% trans "Next" %} →</button>
                         </div>
                     </div>
                     <div id="pdf-preview-container" class="mt-pdf-preview">
@@ -89,61 +90,61 @@
                 <div class="mt-tabs-pane">
                     <div id="panel-extract" class="tab-panel mt-tab-panel active">
                         <div class="mt-pane-header">
-                            <h3>📄 Extract Text</h3>
-                            <button id="extract-text-btn" class="btn btn-primary">Extract Now</button>
+                            <h3>📄 {% trans "Extract Text" %}</h3>
+                            <button id="extract-text-btn" class="btn btn-primary">{% trans "Extract Now" %}</button>
                         </div>
-                        <textarea id="extracted-text-area" class="mt-text-area" readonly placeholder="Click 'Extract Now' to extract text from PDF..."></textarea>
+                        <textarea id="extracted-text-area" class="mt-text-area" readonly placeholder="{% trans "Click 'Extract Now' to extract text from PDF..." %}"></textarea>
                         <div id="extract-actions" class="mt-tab-actions">
-                            <button id="copy-extract-btn" class="btn btn-secondary">📋 Copy</button>
-                            <a href="{% url 'download_text' %}" class="btn btn-primary" style="text-decoration: none;">📥 Download</a>
+                            <button id="copy-extract-btn" class="btn btn-secondary">📋 {% trans "Copy" %}</button>
+                            <a href="{% url 'download_text' %}" class="btn btn-primary" style="text-decoration: none;">📥 {% trans "Download" %}</a>
                         </div>
                     </div>
 
                     <div id="panel-ocr" class="tab-panel mt-tab-panel">
                         <div class="mt-pane-header">
-                            <h3>🔍 OCR to Text</h3>
-                            <button id="ocr-text-btn" class="btn btn-primary">Start OCR</button>
+                            <h3>🔍 {% trans "OCR to Text" %}</h3>
+                            <button id="ocr-text-btn" class="btn btn-primary">{% trans "Start OCR" %}</button>
                         </div>
-                        <textarea id="ocr-text-area" class="mt-text-area" readonly placeholder="Click 'Start OCR' to extract text via OCR..."></textarea>
+                        <textarea id="ocr-text-area" class="mt-text-area" readonly placeholder="{% trans "Click 'Start OCR' to extract text via OCR..." %}"></textarea>
                         <div id="ocr-actions" class="mt-tab-actions">
-                            <button id="copy-ocr-btn" class="btn btn-secondary">📋 Copy</button>
-                            <a href="{% url 'download_text' %}" class="btn btn-primary" style="text-decoration: none;">📥 Download</a>
+                            <button id="copy-ocr-btn" class="btn btn-secondary">📋 {% trans "Copy" %}</button>
+                            <a href="{% url 'download_text' %}" class="btn btn-primary" style="text-decoration: none;">📥 {% trans "Download" %}</a>
                         </div>
                     </div>
 
                     <div id="panel-edit" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">✏️ Edit Text</h3>
-                        <p style="color: #6b7280;">Coming soon...</p>
+                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">✏️ {% trans "Edit Text" %}</h3>
+                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
                     </div>
 
                     <div id="panel-split" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">✂️ Split PDF</h3>
-                        <p style="color: #6b7280;">Coming soon...</p>
+                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">✂️ {% trans "Split PDF" %}</h3>
+                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
                     </div>
 
                     <div id="panel-compress" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">🗜️ Compress PDF</h3>
-                        <p style="color: #6b7280;">Coming soon...</p>
+                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">🗜️ {% trans "Compress PDF" %}</h3>
+                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
                     </div>
 
                     <div id="panel-watermark" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">💧 Add Watermark</h3>
-                        <p style="color: #6b7280;">Coming soon...</p>
+                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">💧 {% trans "Add Watermark" %}</h3>
+                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
                     </div>
 
                     <div id="panel-rotate" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">🔄 Rotate Pages</h3>
-                        <p style="color: #6b7280;">Coming soon...</p>
+                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">🔄 {% trans "Rotate Pages" %}</h3>
+                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
                     </div>
 
                     <div id="panel-numbers" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">🔢 Add Page Numbers</h3>
-                        <p style="color: #6b7280;">Coming soon...</p>
+                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">🔢 {% trans "Add Page Numbers" %}</h3>
+                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
                     </div>
 
                     <div id="loading-indicator" class="mt-loading">
                         <div class="mt-loading-icon">⏳</div>
-                        <p style="color: #6b7280;">Processing... This may take a moment.</p>
+                        <p style="color: #6b7280;">{% trans "Processing... This may take a moment." %}</p>
                     </div>
                 </div>
             </div>
@@ -278,13 +279,13 @@ document.getElementById('extract-text-btn').addEventListener('click', function()
             textArea.value = data.text;
             actions.classList.add('visible');
         } else {
-            textArea.value = `Error: ${data.error}`;
+            textArea.value = `{% trans "Error" %}: ${data.error}`;
         }
     })
     .catch(error => {
         loading.style.display = 'none';
         textArea.style.display = 'block';
-        textArea.value = `Error: ${error.message}`;
+        textArea.value = `{% trans "Error" %}: ${error.message}`;
     });
 });
 
@@ -315,13 +316,13 @@ document.getElementById('ocr-text-btn').addEventListener('click', function() {
             textArea.value = data.text;
             actions.classList.add('visible');
         } else {
-            textArea.value = `Error: ${data.error}`;
+            textArea.value = `{% trans "Error" %}: ${data.error}`;
         }
     })
     .catch(error => {
         loading.style.display = 'none';
         textArea.style.display = 'block';
-        textArea.value = `Error: ${error.message}`;
+        textArea.value = `{% trans "Error" %}: ${error.message}`;
     });
 });
 
@@ -332,7 +333,7 @@ document.getElementById('copy-extract-btn').addEventListener('click', function()
 
     const btn = this;
     const original = btn.textContent;
-    btn.textContent = '✅ Copied!';
+    btn.textContent = '✅ {% trans "Copied!" %}';
     setTimeout(() => btn.textContent = original, 2000);
 });
 
@@ -343,7 +344,7 @@ document.getElementById('copy-ocr-btn').addEventListener('click', function() {
 
     const btn = this;
     const original = btn.textContent;
-    btn.textContent = '✅ Copied!';
+    btn.textContent = '✅ {% trans "Copied!" %}';
     setTimeout(() => btn.textContent = original, 2000);
 });
 
@@ -377,8 +378,10 @@ function renderPage(pageNum) {
     });
 }
 
+const pageIndicatorTpl = '{% trans "Page %(current)s of %(total)s" %}';
 function updatePageIndicator() {
-    document.getElementById('page-indicator').textContent = `Page ${currentPageNum} of ${totalPages}`;
+    document.getElementById('page-indicator').textContent =
+        pageIndicatorTpl.replace('%(current)s', currentPageNum).replace('%(total)s', totalPages);
     document.getElementById('prev-page-btn').disabled = currentPageNum <= 1;
     document.getElementById('next-page-btn').disabled = currentPageNum >= totalPages;
 }

@@ -1,13 +1,14 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Merge PDFs{% endblock %}
+{% block title %}{% trans "Merge PDFs" %}{% endblock %}
 
 {% block content %}
 <div class="preview-container">
     <div class="preview-header">
         <div class="text-center">
-            <h2 class="tool-page-title">🔗 Merge PDFs</h2>
-            <p class="tool-page-subtitle">Select 2 or more PDFs to combine into one document</p>
+            <h2 class="tool-page-title">{% trans "🔗 Merge PDFs" %}</h2>
+            <p class="tool-page-subtitle">{% trans "Select 2 or more PDFs to combine into one document" %}</p>
         </div>
     </div>
 
@@ -17,9 +18,9 @@
             {{ form.selected_pdfs }}
 
             <div class="tool-form-section">
-                <h3 class="tool-section-title">📂 Select PDFs to Merge:</h3>
+                <h3 class="tool-section-title">{% trans "📂 Select PDFs to Merge:" %}</h3>
                 <p class="tool-section-helper">
-                    💡 <strong>Tip:</strong> Check at least 2 PDFs. Drag to reorder - they'll merge in this sequence!
+                    {% trans "💡 <strong>Tip:</strong> Check at least 2 PDFs. Drag to reorder - they'll merge in this sequence!" %}
                 </p>
 
                 <div id="pdf-list" class="pdf-merge-list">
@@ -32,14 +33,14 @@
                             <div class="pdf-size">{{ pdf.size|filesizeformat }}</div>
                         </div>
                         <button type="button" onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="btn btn-preview">
-                            👁️ Preview
+                            {% trans "👁️ Preview" %}
                         </button>
                     </div>
                     {% endfor %}
                 </div>
 
                 <div id="selection-count" class="merge-selection-counter">
-                    No PDFs selected
+                    {% trans "No PDFs selected" %}
                 </div>
             </div>
 
@@ -53,10 +54,10 @@
 
             <div class="tool-form-actions">
                 <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-                    ← Back
+                    {% trans "← Back" %}
                 </a>
                 <button type="submit" id="merge-btn" class="btn btn-primary" disabled>
-                    🔗 Merge PDFs
+                    {% trans "🔗 Merge PDFs" %}
                 </button>
             </div>
         </form>

@@ -1,6 +1,7 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}AI Text Rephrase{% endblock %}
+{% block title %}{% trans "AI Text Rephrase" %}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/pdfjs-dist@3.4.120/web/pdf_viewer.css">
@@ -311,9 +312,9 @@
         <div class="pdf-viewer-header">
             <h3>📄 {{ pdf_name }}</h3>
             <div class="pdf-controls">
-                <button onclick="prevPage()">◀ Prev</button>
-                <span id="page-info">Page 1 of ?</span>
-                <button onclick="nextPage()">Next ▶</button>
+                <button onclick="prevPage()">◀ {% trans "Prev" %}</button>
+                <span id="page-info">{% blocktrans %}Page 1 of ?{% endblocktrans %}</span>
+                <button onclick="nextPage()">{% trans "Next" %} ▶</button>
                 <button onclick="zoomOut()">−</button>
                 <span id="zoom-info">100%</span>
                 <button onclick="zoomIn()">+</button>
@@ -324,31 +325,31 @@
         </div>
         <div style="padding: 1rem;">
             <button class="btn btn-capture" onclick="clearSelection()">
-                🗑️ Clear Selection
+                🗑️ {% trans "Clear Selection" %}
             </button>
             <div id="selection-info" class="selection-info empty">
-                <strong>💡 Instructions:</strong> Click on text lines to select them. Click again to deselect.
+                <strong>💡 {% trans "Instructions:" %}</strong> {% trans "Click on text lines to select them. Click again to deselect." %}
             </div>
         </div>
     </div>
-    
+
     <!-- Form Section -->
     <div class="form-section">
-        <h3>🤖 AI Text Rephrase</h3>
-        
+        <h3>🤖 {% trans "AI Text Rephrase" %}</h3>
+
         {% if ollama_connected %}
         <div class="ollama-status connected">
-            ✅ Ollama connected! {{ ollama_models|length }} models available.
+            ✅ {% blocktrans with count=ollama_models|length %}Ollama connected! {{ count }} models available.{% endblocktrans %}
         </div>
         {% else %}
         <div class="ollama-status disconnected">
-            ❌ Ollama not available. Please start Ollama server.
+            ❌ {% trans "Ollama not available. Please start Ollama server." %}
         </div>
         {% endif %}
-        
+
         {% if uploaded_pdfs|length > 1 %}
         <div class="pdf-selector">
-            <label>📂 Select PDF:</label>
+            <label>📂 {% trans "Select PDF:" %}</label>
             <select name="pdf"
                 onchange="window.location.href='{% url 'rephrase' %}?pdf=' + encodeURIComponent(this.value)">
 
@@ -372,28 +373,28 @@
             <input type="hidden" name="bbox_y1" id="bbox_y1" value="">
             
             <div class="form-group">
-                <label>Selected Text</label>
-                <textarea name="selected_text" id="selected_text" readonly placeholder="Select text from PDF viewer..."></textarea>
+                <label>{% trans "Selected Text" %}</label>
+                <textarea name="selected_text" id="selected_text" readonly placeholder="{% trans 'Select text from PDF viewer...' %}"></textarea>
             </div>
-            
+
             <div class="form-group">
-                <label for="rephrase_style">Rephrase Style</label>
+                <label for="rephrase_style">{% trans "Rephrase Style" %}</label>
                 <select name="rephrase_style" id="rephrase_style">
-                    <option value="formal">Formal/Professional</option>
-                    <option value="casual">Casual/Friendly</option>
-                    <option value="simplified">Simplified</option>
-                    <option value="concise">Concise/Shorter</option>
-                    <option value="expanded">Expanded/Detailed</option>
+                    <option value="formal">{% trans "Formal/Professional" %}</option>
+                    <option value="casual">{% trans "Casual/Friendly" %}</option>
+                    <option value="simplified">{% trans "Simplified" %}</option>
+                    <option value="concise">{% trans "Concise/Shorter" %}</option>
+                    <option value="expanded">{% trans "Expanded/Detailed" %}</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
-                <label for="model">AI Model</label>
+                <label for="model">{% trans "AI Model" %}</label>
                 <select id="model" name="model" required>
-                    <option value="" disabled selected>Select a model...</option>
-                    
+                    <option value="" disabled selected>{% trans "Select a model..." %}</option>
+
                     {% if groq_models %}
-                    <optgroup label="Cloud (Groq - Fast)">
+                    <optgroup label="{% trans 'Cloud (Groq - Fast)' %}">
                         {% for model in groq_models %}
                         <option value="{{ model }}">{{ model }}</option>
                         {% endfor %}
@@ -401,7 +402,7 @@
                     {% endif %}
 
                     {% if ollama_models %}
-                    <optgroup label="Local (Ollama)">
+                    <optgroup label="{% trans 'Local (Ollama)' %}">
                         {% for model in ollama_models %}
                         <option value="{{ model }}">{{ model }}</option>
                         {% endfor %}
@@ -409,28 +410,28 @@
                     {% endif %}
                 </select>
                 {% if not ollama_models and not groq_models %}
-                    <small style="color: red;">No models available. Check Ollama connection or Groq API key.</small>
+                    <small style="color: red;">{% trans "No models available. Check Ollama connection or Groq API key." %}</small>
                 {% endif %}
             </div>
-            
+
             <div class="btn-group">
                 <button type="button" class="btn btn-secondary" onclick="previewRephrase()">
-                    👁️ Preview
+                    👁️ {% trans "Preview" %}
                 </button>
                 <button type="submit" class="btn btn-primary" id="apply-btn" disabled>
-                    ✨ Apply Changes
+                    ✨ {% trans "Apply Changes" %}
                 </button>
             </div>
-            
+
             <div id="preview-result" class="preview-result hidden">
-                <h4>✅ Rephrased Text:</h4>
+                <h4>✅ {% trans "Rephrased Text:" %}</h4>
                 <p id="preview-text"></p>
             </div>
         </form>
-        
+
         <div style="margin-top: 1.5rem;">
             <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="display: inline-block; text-decoration: none;">
-                ← Back to Dashboard
+                ← {% trans "Back to Dashboard" %}
             </a>
         </div>
     </div>
@@ -468,11 +469,11 @@ function getCSRFToken() {
 async function loadPDF() {
   try {
     pdfDoc = await pdfjsLib.getDocument(pdfUrl).promise;
-    pageInfoEl.textContent = `Page ${currentPage} of ${pdfDoc.numPages}`;
+    pageInfoEl.textContent = `{% trans "Page" %} ${currentPage} {% trans "of" %} ${pdfDoc.numPages}`;
     await renderPage(currentPage);
   } catch (err) {
     console.error(err);
-    container.innerHTML = '<p style="color:white;padding:2rem;">Error loading PDF</p>';
+    container.innerHTML = '<p style="color:white;padding:2rem;">{% trans "Error loading PDF" %}</p>';
   }
 }
 
@@ -656,7 +657,7 @@ async function renderPage(pageNum) {
   console.log('Text blocks created:', textBlocks.length);
   console.log('Wrapper children count:', wrapper.children.length);
 
-  pageInfoEl.textContent = `Page ${currentPage} of ${pdfDoc.numPages}`;
+  pageInfoEl.textContent = `{% trans "Page" %} ${currentPage} {% trans "of" %} ${pdfDoc.numPages}`;
   zoomInfoEl.textContent = `${Math.round(scale * 100)}%`;
 }
 
@@ -714,7 +715,7 @@ function updateSelectionUI() {
     console.log('BBox sent to server (PDF coords):', {x0, y0, x1, y1});
     console.log('Page height (PDF units):', currentPageHeightPDF);
 
-    info.innerHTML = `<strong>✅ ${indices.length} line(s) selected</strong> - ${combinedText.length} characters`;
+    info.innerHTML = `<strong>✅ ${indices.length} {% trans "line(s) selected" %}</strong> - ${combinedText.length} {% trans "characters" %}`;
     info.className = 'selection-info';
     applyBtn.disabled = false;
   } else {
@@ -725,7 +726,7 @@ function updateSelectionUI() {
     document.getElementById('bbox_x1').value = '';
     document.getElementById('bbox_y1').value = '';
 
-    info.innerHTML = '<strong>💡 Instructions:</strong> Click on text lines to select them. Click again to deselect.';
+    info.innerHTML = '<strong>💡 {% trans "Instructions:" %}</strong> {% trans "Click on text lines to select them. Click again to deselect." %}';
     info.className = 'selection-info empty';
     applyBtn.disabled = true;
   }
@@ -775,7 +776,7 @@ function zoomOut() {
 async function previewRephrase() {
   const selectedText = document.getElementById('selected_text').value.trim();
   if (!selectedText) {
-    alert('Please select text first by clicking on lines');
+    alert('{% trans "Please select text first by clicking on lines" %}');
     return;
   }
 
@@ -783,7 +784,7 @@ async function previewRephrase() {
   const model = document.getElementById('model').value;
 
   document.getElementById('preview-result').classList.remove('hidden');
-  document.getElementById('preview-text').textContent = 'Generating...';
+  document.getElementById('preview-text').textContent = '{% trans "Generating..." %}';
 
   try {
     const response = await fetch('{% url "rephrase_preview" %}', {
@@ -798,9 +799,9 @@ async function previewRephrase() {
 
     const data = await response.json();
     document.getElementById('preview-text').textContent =
-      data.success ? data.rephrased_text : ('Error: ' + (data.error || 'Unknown error'));
+      data.success ? data.rephrased_text : ('{% trans "Error:" %} ' + (data.error || '{% trans "Unknown error" %}'));
   } catch (err) {
-    document.getElementById('preview-text').textContent = 'Error: ' + err.message;
+    document.getElementById('preview-text').textContent = '{% trans "Error:" %} ' + err.message;
   }
 }
 

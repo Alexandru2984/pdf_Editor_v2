@@ -1,12 +1,13 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Resend Confirmation Email{% endblock %}
+{% block title %}{% trans "Resend Confirmation Email" %}{% endblock %}
 
 {% block content %}
 <div class="auth-card" style="--auth-card-max-width: 520px;">
-    <h2>📨 Resend Confirmation Email</h2>
+    <h2>📨 {% trans "Resend Confirmation Email" %}</h2>
     <p class="auth-sub">
-        Lost the confirmation email? Enter the address you registered with and we'll send a fresh link.
+        {% trans "Lost the confirmation email? Enter the address you registered with and we'll send a fresh link." %}
     </p>
 
     <form method="post" class="edit-form" novalidate>
@@ -18,9 +19,9 @@
             {% if field.errors %}<div class="form-field-error">{{ field.errors }}</div>{% endif %}
         </div>
         {% endfor %}
-        <button type="submit" class="btn btn-primary btn-block">Send Confirmation Email</button>
+        <button type="submit" class="btn btn-primary btn-block">{% trans "Send Confirmation Email" %}</button>
         <p class="auth-footer">
-            <a href="{% url 'login' %}">Back to sign in</a>
+            <a href="{% url 'login' %}">{% trans "Back to sign in" %}</a>
         </p>
     </form>
 </div>

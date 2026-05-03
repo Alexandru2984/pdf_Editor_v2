@@ -1,9 +1,10 @@
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="ro">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}PDF Platform{% endblock %}</title>
+    <title>{% block title %}{% trans "PDF Platform" %}{% endblock %}</title>
 
     <script>
         // Apply saved theme before stylesheet loads — prevents flash of wrong theme.
@@ -41,27 +42,35 @@
                 </div>
             </a>
 
-            <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <button type="button" id="theme-toggle" class="theme-toggle" aria-label="{% trans 'Toggle dark mode' %}" title="{% trans 'Toggle dark mode' %}">
                 <span class="theme-toggle-icon-light" aria-hidden="true">🌙</span>
                 <span class="theme-toggle-icon-dark" aria-hidden="true">☀️</span>
             </button>
 
-            <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
+            <form action="{% url 'set_language' %}" method="post" class="lang-switcher-form">
+                {% csrf_token %}
+                <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                <button type="submit" name="language" value="{% if LANGUAGE_CODE|slice:':2' == 'ro' %}en{% else %}ro{% endif %}" class="lang-switcher" aria-label="{% trans 'Switch language' %}" title="{% trans 'Switch language' %}">
+                    {% if LANGUAGE_CODE|slice:":2" == "ro" %}EN{% else %}RO{% endif %}
+                </button>
+            </form>
+
+            <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="{% trans 'Toggle navigation' %}">
             <label for="nav-toggle" class="nav-toggle-btn" aria-hidden="true">
                 <span></span><span></span><span></span>
             </label>
 
             <nav class="site-nav">
-                <a href="{% url 'dashboard' %}" class="nav-link">🏠 Dashboard</a>
+                <a href="{% url 'dashboard' %}" class="nav-link">🏠 {% trans "Dashboard" %}</a>
                 {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}" class="nav-link">👤 {{ user.username }}</a>
                 <form method="post" action="{% url 'logout' %}" class="nav-logout-form">
                     {% csrf_token %}
-                    <button type="submit" class="nav-link nav-link-button">Sign Out</button>
+                    <button type="submit" class="nav-link nav-link-button">{% trans "Sign Out" %}</button>
                 </form>
                 {% else %}
-                <a href="{% url 'login' %}" class="nav-link">Sign In</a>
-                <a href="{% url 'register' %}" class="nav-link nav-link-cta">Register</a>
+                <a href="{% url 'login' %}" class="nav-link">{% trans "Sign In" %}</a>
+                <a href="{% url 'register' %}" class="nav-link nav-link-cta">{% trans "Register" %}</a>
                 {% endif %}
             </nav>
         </div>

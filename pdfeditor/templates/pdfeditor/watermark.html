@@ -1,6 +1,7 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Add Watermark{% endblock %}
+{% block title %}{% trans "Add Watermark" %}{% endblock %}
 
 {% block content %}
 <div class="preview-container">
@@ -9,7 +10,7 @@
         {% if uploaded_pdfs|length > 1 %}
         <div class="tool-pdf-selector-bar">
             <label for="pdf-selector">
-                📂 Select PDF:
+                📂 {% trans "Select PDF:" %}
             </label>
             <select id="pdf-selector" onchange="window.location.href='{% url 'watermark' %}?pdf=' + encodeURIComponent(this.value)">
                 {% for pdf in uploaded_pdfs %}
@@ -22,8 +23,8 @@
         {% endif %}
 
         <div class="text-center">
-            <h2 class="tool-page-title">💧 Add Watermark</h2>
-            <p class="tool-page-subtitle">Add text or image watermark to: <strong>{{ pdf_name }}</strong></p>
+            <h2 class="tool-page-title">💧 {% trans "Add Watermark" %}</h2>
+            <p class="tool-page-subtitle">{% blocktrans with name=pdf_name %}Add text or image watermark to: <strong>{{ name }}</strong>{% endblocktrans %}</p>
         </div>
     </div>
 
@@ -31,7 +32,7 @@
         <form method="post" enctype="multipart/form-data" id="watermark-form">
             {% csrf_token %}
 
-            <h3 class="tool-section-title">1️⃣ Choose Watermark Type:</h3>
+            <h3 class="tool-section-title">1️⃣ {% trans "Choose Watermark Type:" %}</h3>
             <div class="watermark-type-row">
                 {% for value, label in form.watermark_type.field.choices %}
                 <label class="watermark-type-option" data-type="{{ value }}">
@@ -42,7 +43,7 @@
             </div>
 
             <div id="text-fields" class="tool-form-section">
-                <h3 class="tool-section-title">2️⃣ Text Settings:</h3>
+                <h3 class="tool-section-title">2️⃣ {% trans "Text Settings:" %}</h3>
                 <div class="tool-form-group">
                     <label class="tool-form-label">{{ form.text_content.label }}</label>
                     {{ form.text_content }}
@@ -54,24 +55,24 @@
             </div>
 
             <div id="image-fields" class="tool-form-section" style="display: none;">
-                <h3 class="tool-section-title">2️⃣ Upload Watermark Image:</h3>
+                <h3 class="tool-section-title">2️⃣ {% trans "Upload Watermark Image:" %}</h3>
                 <div class="file-upload-zone">
                     {{ form.watermark_image }}
                     <p>{{ form.watermark_image.help_text }}</p>
                 </div>
 
                 <div id="image-preview-container" class="image-preview-block">
-                    <h4>Preview:</h4>
+                    <h4>{% trans "Preview:" %}</h4>
                     <div class="image-preview-checker">
-                        <img id="image-preview" alt="Watermark preview">
+                        <img id="image-preview" alt="{% trans 'Watermark preview' %}">
                     </div>
                 </div>
             </div>
 
-            <h3 class="tool-section-title">3️⃣ Position & Style:</h3>
+            <h3 class="tool-section-title">3️⃣ {% trans "Position & Style:" %}</h3>
 
             <div class="tool-form-group">
-                <label class="tool-form-label">Position:</label>
+                <label class="tool-form-label">{% trans "Position:" %}</label>
                 <div class="position-grid">
                     {% for value, label in form.position.field.choices %}
                     <label class="position-option">
@@ -83,18 +84,18 @@
             </div>
 
             <div class="tool-form-group">
-                <label class="tool-form-label">Opacity: <span id="opacity-value">30</span>%</label>
+                <label class="tool-form-label">{% trans "Opacity:" %} <span id="opacity-value">30</span>%</label>
                 <input type="range" name="opacity" min="0.1" max="1.0" step="0.1" value="0.3" class="range-input" oninput="document.getElementById('opacity-value').textContent = Math.round(this.value * 100)">
             </div>
 
             <div class="tool-form-group">
-                <label class="tool-form-label">Rotation: <span id="rotation-value">45</span>°</label>
+                <label class="tool-form-label">{% trans "Rotation:" %} <span id="rotation-value">45</span>°</label>
                 <input type="range" name="rotation" min="-90" max="90" value="45" class="range-input" oninput="document.getElementById('rotation-value').textContent = this.value">
             </div>
 
             <div class="tool-form-actions">
-                <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back</a>
-                <button type="submit" class="btn btn-primary">💧 Apply Watermark</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">← {% trans "Back" %}</a>
+                <button type="submit" class="btn btn-primary">💧 {% trans "Apply Watermark" %}</button>
             </div>
         </form>
     </div>

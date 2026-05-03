@@ -1,15 +1,15 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Email change link invalid{% endblock %}
+{% block title %}{% trans "Email change link invalid" %}{% endblock %}
 
 {% block content %}
 <div class="auth-card auth-card--center" style="--auth-card-max-width: 520px;">
     <div class="auth-icon">⚠️</div>
-    <h2>Link invalid or expired</h2>
+    <h2>{% trans "Link invalid or expired" %}</h2>
     <p class="auth-sub">
-        This email-change link is no longer valid. It may have expired,
-        already been used, or been replaced by a newer request.
+        {% trans "This email-change link is no longer valid. It may have expired, already been used, or been replaced by a newer request." %}
     </p>
-    <a href="{% url 'change_email' %}" class="btn btn-primary">Start over</a>
+    <a href="{% url 'change_email' %}" class="btn btn-primary">{% trans "Start over" %}</a>
 </div>
 {% endblock %}

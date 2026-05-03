@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
 from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
+from django.utils.translation import gettext as _
 
 from ..models import UploadedPDF
 from ..pdf_processor import check_pdf_has_text
@@ -68,7 +69,7 @@ def upload_view(request):
 
     uploaded_files = request.FILES.getlist("pdf_file")
     if not uploaded_files:
-        messages.error(request, "Please select at least one PDF file.")
+        messages.error(request, _("Please select at least one PDF file."))
         return render(request, "pdfeditor/upload.html")
 
     max_bytes = getattr(settings, "PDF_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
@@ -77,18 +78,26 @@ def upload_view(request):
     created = []
     for uploaded_file in uploaded_files:
         if not uploaded_file.name.lower().endswith(".pdf"):
-            messages.warning(request, f'Skipped "{uploaded_file.name}" - only PDF files are accepted.')
+            messages.warning(
+                request,
+                _('Skipped "%(name)s" - only PDF files are accepted.') % {"name": uploaded_file.name},
+            )
             continue
         if uploaded_file.size > max_bytes:
             messages.warning(
-                request, f'Skipped "{uploaded_file.name}" - exceeds {max_bytes // (1024 * 1024)} MB limit.'
+                request,
+                _('Skipped "%(name)s" - exceeds %(mb)d MB limit.')
+                % {"name": uploaded_file.name, "mb": max_bytes // (1024 * 1024)},
             )
             continue
 
         header = uploaded_file.read(5)
         uploaded_file.seek(0)
         if header != b"%PDF-":
-            messages.warning(request, f'Skipped "{uploaded_file.name}" - not a valid PDF file.')
+            messages.warning(
+                request,
+                _('Skipped "%(name)s" - not a valid PDF file.') % {"name": uploaded_file.name},
+            )
             continue
 
         safe_name = os.path.basename(uploaded_file.name)
@@ -99,13 +108,17 @@ def upload_view(request):
         page_count = _count_pages_safely(file_path)
         if page_count is None:
             os.remove(file_path)
-            messages.warning(request, f'Skipped "{uploaded_file.name}" - could not be parsed as a PDF.')
+            messages.warning(
+                request,
+                _('Skipped "%(name)s" - could not be parsed as a PDF.') % {"name": uploaded_file.name},
+            )
             continue
         if page_count > max_pages:
             os.remove(file_path)
             messages.warning(
                 request,
-                f'Skipped "{uploaded_file.name}" - {page_count} pages exceeds the {max_pages}-page limit.',
+                _('Skipped "%(name)s" - %(pages)d pages exceeds the %(max)d-page limit.')
+                % {"name": uploaded_file.name, "pages": page_count, "max": max_pages},
             )
             continue
 
@@ -126,21 +139,26 @@ def upload_view(request):
 
     if len(created) == 1:
         messages.success(
-            request, f'PDF "{created[0].name}" uploaded successfully! Choose an operation below.'
+            request,
+            _('PDF "%(name)s" uploaded successfully! Choose an operation below.')
+            % {"name": created[0].name},
         )
         return redirect("dashboard")
     if len(created) > 1:
-        messages.success(request, f"{len(created)} PDFs uploaded successfully! Choose an operation below.")
+        messages.success(
+            request,
+            _("%(count)d PDFs uploaded successfully! Choose an operation below.") % {"count": len(created)},
+        )
         return redirect("dashboard")
 
-    messages.error(request, "No valid PDF files were uploaded.")
+    messages.error(request, _("No valid PDF files were uploaded."))
     return render(request, "pdfeditor/upload.html")
 
 
 def delete_pdf_view(request, pdf_id):
     pdf = UploadedPDF.objects.filter(owner_filter(request), id=pdf_id).first()
     if pdf is None:
-        messages.error(request, "PDF not found.")
+        messages.error(request, _("PDF not found."))
         return redirect("dashboard")
 
     thumb_path = _thumbnail_path(pdf.id)
@@ -151,7 +169,7 @@ def delete_pdf_view(request, pdf_id):
             logger.warning("Failed to remove thumbnail %s: %s", thumb_path, exc)
 
     pdf.delete()
-    messages.success(request, "PDF removed successfully.")
+    messages.success(request, _("PDF removed successfully."))
     return redirect("dashboard")
 
 

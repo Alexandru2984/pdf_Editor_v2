@@ -8,6 +8,7 @@ from typing import Any
 
 import fitz
 from django.conf import settings
+from django.utils.translation import gettext as _
 
 
 def processed_dir() -> str:
@@ -50,15 +51,15 @@ def parse_page_range(range_string: str, total_pages: int) -> list[int]:
 
 def check_pdf_has_text(pdf_path: str) -> tuple[bool, str]:
     if not os.path.exists(pdf_path):
-        return False, f"PDF not found: {pdf_path}"
+        return False, _("PDF not found: %(path)s") % {"path": pdf_path}
     try:
         with fitz.open(pdf_path) as doc:
             for page in doc:
                 if page.get_text().strip():
-                    return True, "PDF-ul conține text selectabil."
-        return False, "PDF-ul nu conține text selectabil (posibil scanat doar cu imagini)."
+                    return True, _("PDF contains selectable text.")
+        return False, _("PDF does not contain selectable text (possibly a scanned image-only document).")
     except Exception as e:
-        return False, f"Eroare la verificarea PDF-ului: {e}"
+        return False, _("Error while checking PDF: %(err)s") % {"err": e}
 
 
 BASE14_FONTS = {

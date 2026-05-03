@@ -1,15 +1,15 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Invalid Confirmation Link{% endblock %}
+{% block title %}{% trans "Invalid Confirmation Link" %}{% endblock %}
 
 {% block content %}
 <div class="auth-card auth-card--center" style="--auth-card-max-width: 520px;">
     <div class="auth-icon">⚠️</div>
-    <h2>Confirmation Link Invalid</h2>
+    <h2>{% trans "Confirmation Link Invalid" %}</h2>
     <p class="auth-sub">
-        This confirmation link is either expired or has already been used.
-        Try registering again, or contact support if you think this is a mistake.
+        {% trans "This confirmation link is either expired or has already been used. Try registering again, or contact support if you think this is a mistake." %}
     </p>
-    <a href="{% url 'register' %}" class="btn btn-primary">Register again</a>
+    <a href="{% url 'register' %}" class="btn btn-primary">{% trans "Register again" %}</a>
 </div>
 {% endblock %}

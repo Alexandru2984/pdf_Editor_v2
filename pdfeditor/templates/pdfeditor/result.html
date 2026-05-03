@@ -1,26 +1,27 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Result{% endblock %}
+{% block title %}{% trans "Result" %}{% endblock %}
 
 {% block content %}
 <div class="card result-card">
     <div class="success-icon">✓</div>
-    <h2>Changes Applied Successfully!</h2>
-    
+    <h2>{% trans "Changes Applied Successfully!" %}</h2>
+
     <div class="result-info">
         <p class="replacement-count">
-            <strong>{{ replacement_count }}</strong> 
+            <strong>{{ replacement_count }}</strong>
             {% if replacement_count == 1 %}
-                replacement made
+                {% trans "replacement made" %}
             {% else %}
-                replacements made
+                {% trans "replacements made" %}
             {% endif %}
         </p>
     </div>
-    
+
     {% if has_warnings %}
     <div class="warnings-section">
-        <h3>⚠️ Warning:</h3>
+        <h3>{% trans "⚠️ Warning:" %}</h3>
         <ul class="warnings-list">
             {% for warning in warnings %}
             <li>{{ warning }}</li>
@@ -28,13 +29,13 @@
         </ul>
     </div>
     {% endif %}
-    
+
     <div class="button-group">
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Dashboard</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">{% trans "← Dashboard" %}</a>
         <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
-            👁️ Preview PDF
+            {% trans "👁️ Preview PDF" %}
         </button>
-        <a href="{% url 'download' %}" class="btn btn-primary">📥 Download Modified PDF</a>
+        <a href="{% url 'download' %}" class="btn btn-primary">{% trans "📥 Download Modified PDF" %}</a>
     </div>
 </div>
 {% endblock %}

@@ -1,17 +1,19 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Delete account{% endblock %}
+{% block title %}{% trans "Delete account" %}{% endblock %}
 
 {% block content %}
 <div class="card delete-card">
-    <h2 style="margin-top: 0; color: #b91c1c;">⚠️ Delete account</h2>
+    <h2 style="margin-top: 0; color: #b91c1c;">⚠️ {% trans "Delete account" %}</h2>
     <p style="color: #374151; line-height: 1.6;">
-        This will permanently delete your account, every PDF you've uploaded
-        and every output you've produced. <strong>This cannot be undone.</strong>
+        {% blocktrans %}This will permanently delete your account, every PDF you've uploaded
+        and every output you've produced. <strong>This cannot be undone.</strong>{% endblocktrans %}
     </p>
     <p style="color: #6b7280; font-size: 0.9375rem;">
-        If you just want a copy of your data first, you can
-        <a href="{% url 'export_data' %}" style="color:#4f46e5;">export it</a>.
+        {% url 'export_data' as export_url %}
+        {% blocktrans %}If you just want a copy of your data first, you can
+        <a href="{{ export_url }}" style="color:#4f46e5;">export it</a>.{% endblocktrans %}
     </p>
 
     {% if messages %}
@@ -33,8 +35,8 @@
         </div>
         {% endfor %}
         <div class="actions">
-            <a href="{% url 'profile' %}" class="btn btn-secondary">Cancel</a>
-            <button type="submit" class="btn btn-danger">Delete my account</button>
+            <a href="{% url 'profile' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+            <button type="submit" class="btn btn-danger">{% trans "Delete my account" %}</button>
         </div>
     </form>
 </div>

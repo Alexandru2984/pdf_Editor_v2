@@ -1,6 +1,7 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Rotate Pages{% endblock %}
+{% block title %}{% trans "Rotate Pages" %}{% endblock %}
 
 {% block content %}
 <div class="preview-container" style="--tool-max-width: 900px;">
@@ -9,7 +10,7 @@
         {% if uploaded_pdfs|length > 1 %}
         <div class="tool-pdf-selector-bar">
             <label for="pdf-selector">
-                📂 Select PDF:
+                📂 {% trans "Select PDF:" %}
             </label>
             <select id="pdf-selector" onchange="window.location.href='{% url 'rotate' %}?pdf=' + encodeURIComponent(this.value)">
                 {% for pdf in uploaded_pdfs %}
@@ -22,8 +23,8 @@
         {% endif %}
 
         <div class="text-center">
-            <h2 class="tool-page-title">🔄 Rotate Pages</h2>
-            <p class="tool-page-subtitle">Rotate pages in: <strong>{{ pdf_name }}</strong></p>
+            <h2 class="tool-page-title">🔄 {% trans "Rotate Pages" %}</h2>
+            <p class="tool-page-subtitle">{% blocktrans with name=pdf_name %}Rotate pages in: <strong>{{ name }}</strong>{% endblocktrans %}</p>
         </div>
     </div>
 
@@ -31,7 +32,7 @@
         <form method="post">
             {% csrf_token %}
 
-            <h3 class="tool-section-title">Select Rotation Angle:</h3>
+            <h3 class="tool-section-title">{% trans "Select Rotation Angle:" %}</h3>
 
             <div class="tool-options-list">
                 {% for value, label in form.rotation_angle.field.choices %}
@@ -42,9 +43,9 @@
                             🔄 {{ label }}
                         </div>
                         <div class="option-card-desc">
-                            {% if value == 90 %}Rotate right (portrait → landscape right)
-                            {% elif value == 180 %}Flip upside down
-                            {% else %}Rotate left (portrait → landscape left){% endif %}
+                            {% if value == 90 %}{% trans "Rotate right (portrait → landscape right)" %}
+                            {% elif value == 180 %}{% trans "Flip upside down" %}
+                            {% else %}{% trans "Rotate left (portrait → landscape left)" %}{% endif %}
                         </div>
                     </div>
                 </label>
@@ -58,8 +59,8 @@
             </div>
 
             <div class="tool-form-actions">
-                <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back</a>
-                <button type="submit" class="btn btn-primary">🔄 Rotate Pages</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">← {% trans "Back" %}</a>
+                <button type="submit" class="btn btn-primary">🔄 {% trans "Rotate Pages" %}</button>
             </div>
         </form>
     </div>

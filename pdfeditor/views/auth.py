@@ -17,6 +17,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _lazy
 
 from ..email_utils import (
     decode_uid,
@@ -33,8 +35,8 @@ User = get_user_model()
 class RegisterForm(UserCreationForm):
     email = forms.EmailField(
         required=True,
-        label="Email",
-        help_text="We'll use this for password resets and confirmations.",
+        label=_lazy("Email"),
+        help_text=_lazy("We'll use this for password resets and confirmations."),
         widget=forms.EmailInput(attrs={"class": "form-input", "autocomplete": "email"}),
     )
 
@@ -45,7 +47,7 @@ class RegisterForm(UserCreationForm):
     def clean_email(self) -> str:
         email = (self.cleaned_data.get("email") or "").strip().lower()
         if email and User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError("An account with this email already exists.")
+            raise forms.ValidationError(_("An account with this email already exists."))
         return email
 
     def save(self, commit: bool = True) -> Any:
@@ -72,13 +74,15 @@ def register_view(request: HttpRequest) -> HttpResponse:
             if sent:
                 messages.success(
                     request,
-                    "Account created! Check your email to confirm your address before signing in.",
+                    _("Account created! Check your email to confirm your address before signing in."),
                 )
             else:
                 messages.warning(
                     request,
-                    "Account created, but we couldn't send the confirmation email. "
-                    "Contact support to activate your account.",
+                    _(
+                        "Account created, but we couldn't send the confirmation email. "
+                        "Contact support to activate your account."
+                    ),
                 )
             return redirect("login")
     else:
@@ -99,14 +103,14 @@ def confirm_email_view(request: HttpRequest, uidb64: str, token: str) -> HttpRes
 
     # Auto-login on confirmation — same UX as most SaaS apps.
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-    messages.success(request, "Email confirmed! Welcome aboard.")
+    messages.success(request, _("Email confirmed! Welcome aboard."))
     return redirect("dashboard")
 
 
 class ResendConfirmationForm(forms.Form):
     email = forms.EmailField(
         required=True,
-        label="Email address",
+        label=_lazy("Email address"),
         widget=forms.EmailInput(
             attrs={"class": "form-input", "autocomplete": "email", "autofocus": True},
         ),
@@ -116,12 +120,12 @@ class ResendConfirmationForm(forms.Form):
 class EmailChangeForm(forms.Form):
     new_email = forms.EmailField(
         required=True,
-        label="New email address",
+        label=_lazy("New email address"),
         widget=forms.EmailInput(attrs={"class": "form-input", "autocomplete": "email"}),
     )
     current_password = forms.CharField(
         required=True,
-        label="Current password",
+        label=_lazy("Current password"),
         widget=forms.PasswordInput(attrs={"class": "form-input", "autocomplete": "current-password"}),
     )
 
@@ -132,15 +136,15 @@ class EmailChangeForm(forms.Form):
     def clean_new_email(self) -> str:
         email = (self.cleaned_data.get("new_email") or "").strip().lower()
         if self.user is not None and email == (self.user.email or "").strip().lower():
-            raise forms.ValidationError("That's already your current email.")
+            raise forms.ValidationError(_("That's already your current email."))
         if email and User.objects.filter(email__iexact=email).exclude(pk=self.user.pk).exists():
-            raise forms.ValidationError("An account with this email already exists.")
+            raise forms.ValidationError(_("An account with this email already exists."))
         return email
 
     def clean_current_password(self) -> str:
         pw = self.cleaned_data.get("current_password") or ""
         if not (self.user and self.user.check_password(pw)):
-            raise forms.ValidationError("That password doesn't match your account.")
+            raise forms.ValidationError(_("That password doesn't match your account."))
         return pw
 
 

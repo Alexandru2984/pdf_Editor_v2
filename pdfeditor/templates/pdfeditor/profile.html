@@ -1,6 +1,7 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Profile{% endblock %}
+{% block title %}{% trans "Profile" %}{% endblock %}
 
 {% block content %}
 <div class="profile-card">
@@ -8,47 +9,47 @@
         <div class="profile-avatar">{{ user.username|slice:":1"|upper }}</div>
         <div class="profile-identity">
             <h2>{{ user.username }}</h2>
-            <p>{{ user.email|default:"(no email on file)" }}</p>
+            <p>{{ user.email|default:_("(no email on file)") }}</p>
         </div>
     </div>
 
-    <h3 class="profile-section-title">Account</h3>
+    <h3 class="profile-section-title">{% trans "Account" %}</h3>
     <div class="profile-info">
-        <div class="info-label">Username</div>
+        <div class="info-label">{% trans "Username" %}</div>
         <div class="info-value">{{ user.username }}</div>
-        <div class="info-label">Email</div>
+        <div class="info-label">{% trans "Email" %}</div>
         <div class="info-value">{{ user.email|default:"—" }}</div>
-        <div class="info-label">Member since</div>
+        <div class="info-label">{% trans "Member since" %}</div>
         <div class="info-value">{{ user.date_joined|date:"F j, Y" }}</div>
         {% if user.last_login %}
-        <div class="info-label">Last login</div>
+        <div class="info-label">{% trans "Last login" %}</div>
         <div class="info-value">{{ user.last_login|date:"F j, Y · H:i" }}</div>
         {% endif %}
     </div>
 
-    <h3 class="profile-section-title">Activity</h3>
+    <h3 class="profile-section-title">{% trans "Activity" %}</h3>
     <div class="stats-grid">
         <div class="stat-card stat-uploaded">
-            <div class="stat-label">PDFs uploaded</div>
+            <div class="stat-label">{% trans "PDFs uploaded" %}</div>
             <div class="stat-value">{{ uploaded_count }}</div>
         </div>
         <div class="stat-card stat-processed">
-            <div class="stat-label">Outputs produced</div>
+            <div class="stat-label">{% trans "Outputs produced" %}</div>
             <div class="stat-value">{{ processed_count }}</div>
         </div>
     </div>
 
-    <h3 class="profile-section-title">Manage account</h3>
+    <h3 class="profile-section-title">{% trans "Manage account" %}</h3>
     <div class="profile-actions">
-        <a href="{% url 'change_email' %}" class="profile-btn primary">✉️ Change email</a>
-        <a href="{% url 'password_change' %}" class="profile-btn primary">🔑 Change password</a>
-        <a href="{% url 'history' %}" class="profile-btn neutral">📜 View history</a>
+        <a href="{% url 'change_email' %}" class="profile-btn primary">✉️ {% trans "Change email" %}</a>
+        <a href="{% url 'password_change' %}" class="profile-btn primary">🔑 {% trans "Change password" %}</a>
+        <a href="{% url 'history' %}" class="profile-btn neutral">📜 {% trans "View history" %}</a>
     </div>
 
-    <h3 class="profile-section-title danger-section">Your data</h3>
+    <h3 class="profile-section-title danger-section">{% trans "Your data" %}</h3>
     <div class="profile-actions">
-        <a href="{% url 'export_data' %}" class="profile-btn neutral">⬇️ Export my data (JSON)</a>
-        <a href="{% url 'delete_account' %}" class="profile-btn danger">🗑️ Delete account</a>
+        <a href="{% url 'export_data' %}" class="profile-btn neutral">⬇️ {% trans "Export my data (JSON)" %}</a>
+        <a href="{% url 'delete_account' %}" class="profile-btn danger">🗑️ {% trans "Delete account" %}</a>
     </div>
 </div>
 
