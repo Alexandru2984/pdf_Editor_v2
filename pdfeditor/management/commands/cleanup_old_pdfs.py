@@ -40,6 +40,9 @@ class Command(BaseCommand):
         )
 
         orphans_deleted, orphans_bytes = self._delete_orphaned_files(cleanup_threshold)
+        thumbs_deleted = self._delete_orphan_thumbnails()
+        if thumbs_deleted:
+            orphans_deleted += thumbs_deleted
 
         summary = (
             f"Deleted {rows_deleted} DB rows, "
@@ -58,6 +61,27 @@ class Command(BaseCommand):
             row.delete()
             count += 1
         return count
+
+    def _delete_orphan_thumbnails(self) -> int:
+        """Remove thumbnails whose UploadedPDF row no longer exists."""
+        from pdfeditor.views.upload import THUMB_SUBDIR
+
+        thumbs_dir = os.path.join(settings.MEDIA_ROOT, THUMB_SUBDIR)
+        if not os.path.isdir(thumbs_dir):
+            return 0
+
+        live_ids = {str(pid) for pid in UploadedPDF.objects.values_list("id", flat=True)}
+        removed = 0
+        for entry in os.listdir(thumbs_dir):
+            stem, ext = os.path.splitext(entry)
+            if ext.lower() != ".jpg" or stem in live_ids:
+                continue
+            try:
+                os.remove(os.path.join(thumbs_dir, entry))
+                removed += 1
+            except OSError as e:
+                self.stdout.write(self.style.WARNING(f'thumb "{entry}": {e}'))
+        return removed
 
     def _delete_orphaned_files(self, cleanup_threshold):
         """Remove files on disk that no row references and are older than threshold."""

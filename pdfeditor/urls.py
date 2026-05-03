@@ -34,6 +34,7 @@ urlpatterns = [
     path("ocr-text/<str:pdf_id>/", views.ocr_text_ajax, name="ocr_text"),
     path("download-text/", views.download_text_view, name="download_text"),
     path("delete-pdf/<str:pdf_id>/", views.delete_pdf_view, name="delete_pdf"),
+    path("pdf/<str:pdf_id>/thumbnail/", views.thumbnail_view, name="pdf_thumbnail"),
     # AI Rephrase
     path("rephrase/", views.rephrase_view, name="rephrase"),
     path("rephrase/preview/", views.rephrase_preview_ajax, name="rephrase_preview"),

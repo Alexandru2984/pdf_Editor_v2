@@ -101,19 +101,25 @@
     </div>
 
     {% if uploaded_pdfs %}
-    <h2 class="section-title section-title-spaced">Your PDFs</h2>
+    <h2 class="section-title section-title-spaced">
+        Your PDFs
+        <span class="section-title-count">{{ uploaded_pdfs|length }}</span>
+    </h2>
 
     <div class="user-pdfs-wrapper">
         <div class="user-pdfs-grid">
             {% for pdf in uploaded_pdfs %}
             <div class="pdf-item-card">
-                <div class="pdf-item-head">
-                    <div class="pdf-item-icon">📄</div>
-                    <div class="pdf-item-meta">
-                        <h4 class="pdf-item-name" title="{{ pdf.name }}">{{ pdf.name }}</h4>
-                        <p class="pdf-item-size">Size: {{ pdf.size|filesizeformat }}</p>
-                        <p class="pdf-item-date">Uploaded: {{ pdf.uploaded_at|slice:":10" }}</p>
-                    </div>
+                <button type="button" onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="pdf-item-thumb" aria-label="Preview {{ pdf.name }}">
+                    <img src="{% url 'pdf_thumbnail' pdf.id %}" alt="" loading="lazy" onerror="this.remove()">
+                    <span class="pdf-item-thumb-overlay" aria-hidden="true">👁️ Preview</span>
+                </button>
+                <div class="pdf-item-body">
+                    <h4 class="pdf-item-name" title="{{ pdf.name }}">{{ pdf.name }}</h4>
+                    <p class="pdf-item-meta-row">
+                        <span><span aria-hidden="true">📦</span> {{ pdf.size|filesizeformat }}</span>
+                        <span><span aria-hidden="true">📅</span> {{ pdf.uploaded_at|slice:":10" }}</span>
+                    </p>
                 </div>
                 <div class="pdf-item-actions">
                     <button onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="btn btn-preview pdf-item-btn">👁️ Preview</button>
