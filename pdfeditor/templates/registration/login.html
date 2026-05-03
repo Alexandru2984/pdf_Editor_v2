@@ -1,12 +1,13 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Sign In{% endblock %}
+{% block title %}{% trans "Sign In" %}{% endblock %}
 
 {% block content %}
 <div class="auth-card">
-    <h2>🔐 Sign In</h2>
+    <h2>🔐 {% trans "Sign In" %}</h2>
     <p class="auth-sub">
-        Sign in to keep your PDFs across browsers, see your full history, and access password-protected features.
+        {% trans "Sign in to keep your PDFs across browsers, see your full history, and access password-protected features." %}
     </p>
 
     <form method="post" class="edit-form" novalidate>
@@ -17,14 +18,14 @@
         {% endif %}
 
         <div class="form-field">
-            <label class="form-field-label" for="{{ form.username.id_for_label }}">Username</label>
+            <label class="form-field-label" for="{{ form.username.id_for_label }}">{% trans "Username" %}</label>
             <input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}"
                    autocomplete="username" autofocus required>
             {% if form.username.errors %}<div class="form-field-error">{{ form.username.errors }}</div>{% endif %}
         </div>
 
         <div class="form-field">
-            <label class="form-field-label" for="{{ form.password.id_for_label }}">Password</label>
+            <label class="form-field-label" for="{{ form.password.id_for_label }}">{% trans "Password" %}</label>
             <input type="password" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}"
                    autocomplete="current-password" required>
             {% if form.password.errors %}<div class="form-field-error">{{ form.password.errors }}</div>{% endif %}
@@ -32,17 +33,17 @@
 
         <input type="hidden" name="next" value="{{ next }}">
 
-        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+        <button type="submit" class="btn btn-primary btn-block">{% trans "Sign In" %}</button>
 
         <p class="auth-footer">
-            Don't have an account?
-            <a href="{% url 'register' %}" class="auth-link-strong">Create one</a>
+            {% trans "Don't have an account?" %}
+            <a href="{% url 'register' %}" class="auth-link-strong">{% trans "Create one" %}</a>
             ·
-            <a href="{% url 'password_reset' %}">Forgot password?</a>
+            <a href="{% url 'password_reset' %}">{% trans "Forgot password?" %}</a>
         </p>
         <p class="auth-footer-sub">
-            Didn't get a confirmation email?
-            <a href="{% url 'resend_confirmation' %}">Resend it</a>
+            {% trans "Didn't get a confirmation email?" %}
+            <a href="{% url 'resend_confirmation' %}">{% trans "Resend it" %}</a>
         </p>
     </form>
 </div>

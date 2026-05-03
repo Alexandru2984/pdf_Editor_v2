@@ -2146,6 +2146,38 @@ footer {
     transform: rotate(15deg);
 }
 
+.lang-switcher-form {
+    display: inline-flex;
+    margin: 0;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.lang-switcher {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.5rem;
+    min-width: 2.5rem;
+    padding: 0 0.625rem;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    font-family: inherit;
+    transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.lang-switcher:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
 .theme-toggle .theme-toggle-icon-dark { display: none; }
 .theme-toggle .theme-toggle-icon-light { display: inline; }
 

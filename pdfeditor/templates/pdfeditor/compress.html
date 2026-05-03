@@ -1,6 +1,7 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Compress PDF{% endblock %}
+{% block title %}{% trans "Compress PDF" %}{% endblock %}
 
 {% block content %}
 <div class="preview-container" style="--tool-max-width: 900px;">
@@ -9,7 +10,7 @@
         {% if uploaded_pdfs|length > 1 %}
         <div class="tool-pdf-selector-bar">
             <label for="pdf-selector">
-                📂 Select PDF to Compress:
+                📂 {% trans "Select PDF to Compress:" %}
             </label>
             <select id="pdf-selector" onchange="window.location.href='{% url 'compress' %}?pdf=' + encodeURIComponent(this.value)">
                 {% for pdf in uploaded_pdfs %}
@@ -19,25 +20,25 @@
                 {% endfor %}
             </select>
             <p class="picker-hint">
-                💡 You have {{ uploaded_pdfs|length }} PDFs uploaded. Switch anytime!
+                💡 {% blocktrans with count=uploaded_pdfs|length %}You have {{ count }} PDFs uploaded. Switch anytime!{% endblocktrans %}
             </p>
         </div>
         {% endif %}
 
         <div class="text-center">
-            <h2 class="tool-page-title">📦 Compress PDF</h2>
-            <p class="tool-page-subtitle">Reduce file size while maintaining quality</p>
+            <h2 class="tool-page-title">📦 {% trans "Compress PDF" %}</h2>
+            <p class="tool-page-subtitle">{% trans "Reduce file size while maintaining quality" %}</p>
             <div class="tool-info-bar">
                 <div>
-                    <div class="tool-info-label">Current File:</div>
+                    <div class="tool-info-label">{% trans "Current File:" %}</div>
                     <div class="tool-info-value">{{ pdf_name }}</div>
                 </div>
                 <div>
-                    <div class="tool-info-label">Original Size:</div>
+                    <div class="tool-info-label">{% trans "Original Size:" %}</div>
                     <div class="tool-info-value">{{ original_size|filesizeformat }}</div>
                 </div>
                 <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview tool-info-bar-divider">
-                    👁️ Preview
+                    👁️ {% trans "Preview" %}
                 </button>
             </div>
         </div>
@@ -47,7 +48,7 @@
         <form method="post">
             {% csrf_token %}
 
-            <h3 class="tool-section-title">⚙️ Select Compression Level:</h3>
+            <h3 class="tool-section-title">⚙️ {% trans "Select Compression Level:" %}</h3>
 
             <div class="tool-options-list">
                 {% for value, label in form.quality.field.choices %}
@@ -71,10 +72,10 @@
 
             <div class="tool-form-actions">
                 <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-                    ← Back
+                    ← {% trans "Back" %}
                 </a>
                 <button type="submit" class="btn btn-primary">
-                    📦 Compress PDF
+                    📦 {% trans "Compress PDF" %}
                 </button>
             </div>
         </form>

@@ -23,5 +23,8 @@ from pdfeditor.views import serve_media_view
 urlpatterns = [
     path("admin/", admin.site.urls),
     re_path(r"^media/(?P<rel_path>.+)$", serve_media_view, name="serve_media"),
+    # Django's set_language view writes the chosen language to a cookie
+    # and redirects back; the LocaleMiddleware reads that cookie.
+    path("i18n/", include("django.conf.urls.i18n")),
     path("", include("pdfeditor.urls")),
 ]

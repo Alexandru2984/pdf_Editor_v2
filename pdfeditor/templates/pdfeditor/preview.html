@@ -1,6 +1,7 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}PDF Preview{% endblock %}
+{% block title %}{% trans "PDF Preview" %}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -126,9 +127,9 @@
 {% block content %}
 <div class="preview-container">
     <div class="preview-header">
-        <h2>📄 PDF Preview: {{ pdf_name }}</h2>
+        <h2>{% blocktrans with name=pdf_name %}📄 PDF Preview: {{ name }}{% endblocktrans %}</h2>
         <div class="preview-controls">
-            <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">{% trans "← Back to Dashboard" %}</a>
         </div>
     </div>
 
@@ -138,12 +139,12 @@
         </div>
 
         <div class="page-controls">
-            <button id="prev-page" class="icon-btn">← Previous</button>
+            <button id="prev-page" class="icon-btn">{% trans "← Previous" %}</button>
             <span class="page-info">
-                Page <span id="page-num"></span> of <span id="page-count"></span>
+                {% blocktrans %}Page <span id="page-num"></span> of <span id="page-count"></span>{% endblocktrans %}
             </span>
-            <button id="next-page" class="icon-btn">Next →</button>
-            
+            <button id="next-page" class="icon-btn">{% trans "Next →" %}</button>
+
             <div class="zoom-controls">
                 <button id="zoom-out" class="icon-btn">−</button>
                 <span class="page-info"><span id="zoom-level">100</span>%</span>

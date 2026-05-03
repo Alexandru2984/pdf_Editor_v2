@@ -1,36 +1,38 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Upload PDF - PDF Editor{% endblock %}
+{% block title %}{% trans "Upload PDF - PDF Editor" %}{% endblock %}
 
 {% block content %}
 <div class="card">
-    <h2>📤 Încarcă PDF</h2>
-    <p>Selectează fișierul PDF pe care vrei să îl editezi.</p>
-    
+    <h2>📤 {% trans "Upload PDF" %}</h2>
+    <p>{% trans "Select the PDF file you want to edit." %}</p>
+
     <form method="post" enctype="multipart/form-data" class="upload-form">
         {% csrf_token %}
-        
+
         <div class="form-group">
             <label for="pdf_file" class="file-label">
                 <span class="file-icon">📁</span>
-                <span class="file-text">Alege fișier PDF</span>
+                <span class="file-text">{% trans "Choose PDF file" %}</span>
             </label>
-            <input type="file" 
-                   name="pdf_file" 
-                   id="pdf_file" 
-                   accept=".pdf" 
+            <input type="file"
+                   name="pdf_file"
+                   id="pdf_file"
+                   accept=".pdf"
                    required
                    class="file-input">
-            <span class="file-name" id="fileName">Niciun fișier selectat</span>
+            <span class="file-name" id="fileName">{% trans "No file selected" %}</span>
         </div>
-        
-        <button type="submit" class="btn btn-primary">Încarcă și continuă →</button>
+
+        <button type="submit" class="btn btn-primary">{% trans "Upload and continue" %} →</button>
     </form>
 </div>
 
 <script>
+const noFileMsg = '{% trans "No file selected" %}';
 document.getElementById('pdf_file').addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name || 'Niciun fișier selectat';
+    const fileName = e.target.files[0]?.name || noFileMsg;
     document.getElementById('fileName').textContent = fileName;
 });
 </script>

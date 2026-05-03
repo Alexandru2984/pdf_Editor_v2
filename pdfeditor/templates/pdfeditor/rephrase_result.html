@@ -1,28 +1,29 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Rephrase Result - PDF Editor{% endblock %}
+{% block title %}{% trans "Rephrase Result - PDF Editor" %}{% endblock %}
 
 {% block content %}
 <div class="card">
-    <h2>✅ AI Rephrase Complete!</h2>
+    <h2>✅ {% trans "AI Rephrase Complete!" %}</h2>
 
     <div class="result-summary-banner">
         <div class="summary-icon">🤖</div>
         <div>
-            <h3>{{ replacement_count }} Replacement{% if replacement_count != 1 %}s{% endif %} Made</h3>
-            <p>Style: <strong>{{ style|title }}</strong> • Model: <strong>{{ model }}</strong></p>
+            <h3>{% blocktrans count counter=replacement_count %}{{ counter }} Replacement Made{% plural %}{{ counter }} Replacements Made{% endblocktrans %}</h3>
+            <p>{% trans "Style:" %} <strong>{{ style|title }}</strong> • {% trans "Model:" %} <strong>{{ model }}</strong></p>
         </div>
     </div>
 
     <div style="margin-bottom: 1.5rem;">
-        <h3 style="margin: 0 0 1rem 0; color: #374151;">📝 Text Transformation</h3>
+        <h3 style="margin: 0 0 1rem 0; color: #374151;">📝 {% trans "Text Transformation" %}</h3>
         <div class="text-compare-grid">
             <div class="text-compare-original">
-                <h4>❌ Original Text</h4>
+                <h4>❌ {% trans "Original Text" %}</h4>
                 <div class="text-block">{{ original_text }}</div>
             </div>
             <div class="text-compare-new">
-                <h4>✅ Rephrased Text</h4>
+                <h4>✅ {% trans "Rephrased Text" %}</h4>
                 <div class="text-block">{{ new_text }}</div>
             </div>
         </div>
@@ -34,7 +35,7 @@
 
     {% if has_warnings %}
     <div class="result-warning-box">
-        <strong>⚠️ Warnings</strong>
+        <strong>⚠️ {% trans "Warnings" %}</strong>
         <ul>
             {% for warning in warnings %}
             <li>{{ warning }}</li>
@@ -45,17 +46,17 @@
 
     <div style="margin-bottom: 1.5rem;">
         <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview" style="width: 100%; padding: 1rem;">
-            👁️ Preview Modified PDF
+            👁️ {% trans "Preview Modified PDF" %}
         </button>
     </div>
 
     <div class="button-group">
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">← {% trans "Back to Dashboard" %}</a>
         <a href="{% url 'rephrase' %}" class="btn btn-violet">
-            🤖 Rephrase More
+            🤖 {% trans "Rephrase More" %}
         </a>
         <a href="{% url 'download_rephrased' %}" class="btn btn-primary">
-            ⬇️ Download PDF
+            ⬇️ {% trans "Download PDF" %}
         </a>
     </div>
 </div>

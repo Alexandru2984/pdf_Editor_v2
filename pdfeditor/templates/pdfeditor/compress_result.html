@@ -1,38 +1,39 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Compression Result{% endblock %}
+{% block title %}{% trans "Compression Result" %}{% endblock %}
 
 {% block content %}
 <div class="preview-container" style="--tool-max-width: 900px;">
     <div class="preview-header result-success-header">
         <div class="result-success-icon">✅</div>
-        <h2>PDF Compressed Successfully!</h2>
-        <p>Reduced file size by <strong>{{ compression_ratio|floatformat:1 }}%</strong></p>
+        <h2>{% trans "PDF Compressed Successfully!" %}</h2>
+        <p>{% blocktrans with ratio=compression_ratio|floatformat:1 %}Reduced file size by <strong>{{ ratio }}%</strong>{% endblocktrans %}</p>
     </div>
 
     <div class="pdf-viewer-wrapper">
-        <h3 class="result-section-title">📊 Compression Results:</h3>
+        <h3 class="result-section-title">📊 {% trans "Compression Results:" %}</h3>
 
         <div class="result-stats-grid">
             <div class="result-stat-card result-stat-card--warm">
-                <div class="stat-label">📄 Original Size</div>
+                <div class="stat-label">📄 {% trans "Original Size" %}</div>
                 <div class="stat-value">{{ original_size|filesizeformat }}</div>
             </div>
 
             <div class="result-stat-card result-stat-card--success">
-                <div class="stat-label">📦 Compressed Size</div>
+                <div class="stat-label">📦 {% trans "Compressed Size" %}</div>
                 <div class="stat-value">{{ compressed_size|filesizeformat }}</div>
             </div>
 
             <div class="result-stat-card result-stat-card--violet">
-                <div class="stat-label">💾 Space Saved</div>
+                <div class="stat-label">💾 {% trans "Space Saved" %}</div>
                 <div class="stat-value">{{ saved_bytes|filesizeformat }}</div>
             </div>
         </div>
 
         <div class="result-progress-block">
             <div class="result-progress-row">
-                <span class="progress-label">Compression Progress:</span>
+                <span class="progress-label">{% trans "Compression Progress:" %}</span>
                 <span class="progress-value">{{ compression_ratio|floatformat:1 }}%</span>
             </div>
             <div class="result-progress-bar">
@@ -44,19 +45,19 @@
             <div class="result-file-icon">📄</div>
             <div class="result-file-info">
                 <div class="result-file-name">{{ compressed_filename }}</div>
-                <div class="result-file-meta">Ready to download</div>
+                <div class="result-file-meta">{% trans "Ready to download" %}</div>
             </div>
         </div>
 
         <div class="result-actions">
             <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-                ← Dashboard
+                ← {% trans "Dashboard" %}
             </a>
             <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
-                👁️ Preview Compressed PDF
+                👁️ {% trans "Preview Compressed PDF" %}
             </button>
             <a href="{% url 'download_compressed' %}" class="btn btn-primary">
-                📥 Download Compressed PDF
+                📥 {% trans "Download Compressed PDF" %}
             </a>
         </div>
     </div>

@@ -1,31 +1,32 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Split Result{% endblock %}
+{% block title %}{% trans "Split Result" %}{% endblock %}
 
 {% block content %}
 <div class="preview-container">
     <div class="preview-header result-success-header">
         <div class="result-success-icon">✅</div>
-        <h2>PDF Split Successfully!</h2>
-        <p>Created <strong>{{ split_count }}</strong> file{{ split_count|pluralize }}</p>
+        <h2>{% trans "PDF Split Successfully!" %}</h2>
+        <p>{% blocktrans count counter=split_count %}Created <strong>{{ counter }}</strong> file{% plural %}Created <strong>{{ counter }}</strong> files{% endblocktrans %}</p>
     </div>
 
     <div class="pdf-viewer-wrapper">
-        <h3 class="result-section-title" style="text-align: left;">📁 Generated Files:</h3>
+        <h3 class="result-section-title" style="text-align: left;">{% trans "📁 Generated Files:" %}</h3>
 
         <div class="file-card-list">
             {% for file in files_info %}
             <div class="file-card">
                 <div class="file-card-info">
                     <div class="file-card-name">📄 {{ file.name }}</div>
-                    <div class="file-card-meta">Size: {{ file.size|filesizeformat }}</div>
+                    <div class="file-card-meta">{% blocktrans with size=file.size|filesizeformat %}Size: {{ size }}{% endblocktrans %}</div>
                 </div>
                 <div class="file-card-actions">
                     <button onclick="pdfModal.open('/media/{{ file.path_relative }}')" class="btn btn-preview">
-                        👁️ Preview
+                        {% trans "👁️ Preview" %}
                     </button>
                     <a href="/download_split/?file={{ forloop.counter0 }}" class="btn btn-primary">
-                        📥 Download
+                        {% trans "📥 Download" %}
                     </a>
                 </div>
             </div>
@@ -34,10 +35,10 @@
 
         <div class="result-divider-actions">
             <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-                ← Dashboard
+                {% trans "← Dashboard" %}
             </a>
             <a href="{% url 'dashboard' %}" class="btn btn-primary">
-                Process Another PDF
+                {% trans "Process Another PDF" %}
             </a>
         </div>
     </div>

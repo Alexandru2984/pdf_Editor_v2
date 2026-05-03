@@ -1,35 +1,36 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Watermark Result{% endblock %}
+{% block title %}{% trans "Watermark Result" %}{% endblock %}
 
 {% block content %}
 <div class="preview-container" style="--tool-max-width: 900px;">
     <div class="preview-header result-success-header">
         <div class="result-success-icon">✅</div>
-        <h2>Watermark Added Successfully!</h2>
-        <p>Your PDF has been watermarked and is ready to download</p>
+        <h2>{% trans "Watermark Added Successfully!" %}</h2>
+        <p>{% trans "Your PDF has been watermarked and is ready to download" %}</p>
     </div>
 
     <div class="pdf-viewer-wrapper">
-        <h3 class="result-section-title">📄 Watermarked File:</h3>
+        <h3 class="result-section-title">📄 {% trans "Watermarked File:" %}</h3>
 
         <div class="result-file-row">
             <div class="result-file-icon">📄</div>
             <div class="result-file-info">
                 <div class="result-file-name">{{ watermarked_filename }}</div>
-                <div class="result-file-meta">Size: {{ watermarked_size|filesizeformat }}</div>
+                <div class="result-file-meta">{% trans "Size:" %} {{ watermarked_size|filesizeformat }}</div>
             </div>
         </div>
 
         <div class="result-actions">
             <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-                ← Dashboard
+                ← {% trans "Dashboard" %}
             </a>
             <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
-                👁️ Preview Watermarked PDF
+                👁️ {% trans "Preview Watermarked PDF" %}
             </button>
             <a href="{% url 'download_watermarked' %}" class="btn btn-primary">
-                📥 Download Watermarked PDF
+                📥 {% trans "Download Watermarked PDF" %}
             </a>
         </div>
     </div>

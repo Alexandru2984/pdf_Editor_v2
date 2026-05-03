@@ -1,108 +1,109 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}PDF Platform - Dashboard{% endblock %}
+{% block title %}{% trans "PDF Platform - Dashboard" %}{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
     <div class="hero-section">
-        <h1 class="hero-title">📄 PDF Platform</h1>
-        <p class="hero-subtitle">Professional PDF Tools - All in One Place</p>
+        <h1 class="hero-title">📄 {% trans "PDF Platform" %}</h1>
+        <p class="hero-subtitle">{% trans "Professional PDF Tools - All in One Place" %}</p>
     </div>
 
     <div class="upload-zone" id="drop-zone">
         <div class="upload-icon">📁</div>
-        <h2>Upload Your PDF</h2>
-        <p>Drag & drop your PDF here or click to browse</p>
+        <h2>{% trans "Upload Your PDF" %}</h2>
+        <p>{% trans "Drag & drop your PDF here or click to browse" %}</p>
         <form method="post" action="{% url 'upload' %}" enctype="multipart/form-data" id="upload-form">
             {% csrf_token %}
             <input type="file" name="pdf_file" id="file-input" accept=".pdf" multiple style="display: none;">
             <button type="button" class="btn btn-primary btn-large" onclick="document.getElementById('file-input').click()">
-                Choose File
+                {% trans "Choose File" %}
             </button>
         </form>
     </div>
 
-    <h2 class="section-title">PDF Operations</h2>
-    
+    <h2 class="section-title">{% trans "PDF Operations" %}</h2>
+
     <div class="operations-grid">
-        
+
         <div class="operation-card" data-feature="edit">
             <div class="card-icon">✏️</div>
-            <h3>Edit & Rephrase</h3>
-            <p>Find/replace text or use AI to rephrase content</p>
+            <h3>{% trans "Edit & Rephrase" %}</h3>
+            <p>{% trans "Find/replace text or use AI to rephrase content" %}</p>
             <div class="card-button-row">
-                <a href="{% url 'edit' %}" class="btn btn-secondary">Find & Replace</a>
-                <a href="{% url 'rephrase' %}" class="btn btn-ai">🤖 AI Rephrase</a>
+                <a href="{% url 'edit' %}" class="btn btn-secondary">{% trans "Find & Replace" %}</a>
+                <a href="{% url 'rephrase' %}" class="btn btn-ai">🤖 {% trans "AI Rephrase" %}</a>
             </div>
         </div>
 
         <div class="operation-card" data-feature="split">
             <div class="card-icon">✂️</div>
-            <h3>Split PDF</h3>
-            <p>Split your PDF into multiple files by pages</p>
-            <a href="{% url 'split' %}" class="btn btn-secondary">Get Started</a>
+            <h3>{% trans "Split PDF" %}</h3>
+            <p>{% trans "Split your PDF into multiple files by pages" %}</p>
+            <a href="{% url 'split' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
         <div class="operation-card" data-feature="merge">
             <div class="card-icon">🔗</div>
-            <h3>Merge PDFs</h3>
-            <p>Combine multiple PDFs into a single document</p>
-            <a href="{% url 'merge' %}" class="btn btn-secondary">Get Started</a>
+            <h3>{% trans "Merge PDFs" %}</h3>
+            <p>{% trans "Combine multiple PDFs into a single document" %}</p>
+            <a href="{% url 'merge' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
         <div class="operation-card" data-feature="compress">
             <div class="card-icon">📦</div>
-            <h3>Compress</h3>
-            <p>Reduce PDF file size without losing quality</p>
-            <a href="{% url 'compress' %}" class="btn btn-secondary">Get Started</a>
+            <h3>{% trans "Compress" %}</h3>
+            <p>{% trans "Reduce PDF file size without losing quality" %}</p>
+            <a href="{% url 'compress' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
         <div class="operation-card" data-feature="watermark">
             <div class="card-icon">💧</div>
-            <h3>Add Watermark</h3>
-            <p>Add text or image watermark to your PDF</p>
-            <a href="{% url 'watermark' %}" class="btn btn-secondary">Get Started</a>
+            <h3>{% trans "Add Watermark" %}</h3>
+            <p>{% trans "Add text or image watermark to your PDF" %}</p>
+            <a href="{% url 'watermark' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
         <div class="operation-card" data-feature="rotate">
             <div class="card-icon">🔄</div>
-            <h3>Rotate Pages</h3>
-            <p>Rotate PDF pages by 90, 180, or 270 degrees</p>
-            <a href="{% url 'rotate' %}" class="btn btn-secondary">Get Started</a>
+            <h3>{% trans "Rotate Pages" %}</h3>
+            <p>{% trans "Rotate PDF pages by 90, 180, or 270 degrees" %}</p>
+            <a href="{% url 'rotate' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
         <div class="operation-card" data-feature="page-numbers">
             <div class="card-icon">🔢</div>
-            <h3>Add Page Numbers</h3>
-            <p>Add customizable page numbers to your PDF</p>
-            <a href="{% url 'page_numbers' %}" class="btn btn-secondary">Get Started</a>
+            <h3>{% trans "Add Page Numbers" %}</h3>
+            <p>{% trans "Add customizable page numbers to your PDF" %}</p>
+            <a href="{% url 'page_numbers' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
         <div class="operation-card" data-feature="form_fill">
             <div class="card-icon">📝</div>
-            <h3>Fill Form</h3>
-            <p>Detect and fill AcroForm fields (text inputs, checkboxes, dropdowns)</p>
-            <a href="{% url 'form_fill' %}" class="btn btn-secondary">Get Started</a>
+            <h3>{% trans "Fill Form" %}</h3>
+            <p>{% trans "Detect and fill AcroForm fields (text inputs, checkboxes, dropdowns)" %}</p>
+            <a href="{% url 'form_fill' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
         <div class="operation-card" data-feature="history">
             <div class="card-icon">📜</div>
-            <h3>History</h3>
-            <p>See and re-download every output produced in this session</p>
-            <a href="{% url 'history' %}" class="btn btn-secondary">View History</a>
+            <h3>{% trans "History" %}</h3>
+            <p>{% trans "See and re-download every output produced in this session" %}</p>
+            <a href="{% url 'history' %}" class="btn btn-secondary">{% trans "View History" %}</a>
         </div>
 
         <div class="operation-card" data-feature="more">
             <div class="card-icon">🛠️</div>
-            <h3>More Tools</h3>
-            <p>Advanced PDF tools: Extract Text, OCR, and more</p>
-            <a href="{% url 'more_tools' %}" class="btn btn-secondary">Get Started</a>
+            <h3>{% trans "More Tools" %}</h3>
+            <p>{% trans "Advanced PDF tools: Extract Text, OCR, and more" %}</p>
+            <a href="{% url 'more_tools' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
     </div>
 
     {% if uploaded_pdfs %}
     <h2 class="section-title section-title-spaced">
-        Your PDFs
+        {% trans "Your PDFs" %}
         <span class="section-title-count">{{ uploaded_pdfs|length }}</span>
     </h2>
 
@@ -110,9 +111,9 @@
         <div class="user-pdfs-grid">
             {% for pdf in uploaded_pdfs %}
             <div class="pdf-item-card">
-                <button type="button" onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="pdf-item-thumb" aria-label="Preview {{ pdf.name }}">
+                <button type="button" onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="pdf-item-thumb" aria-label="{% blocktrans with name=pdf.name %}Preview {{ name }}{% endblocktrans %}">
                     <img src="{% url 'pdf_thumbnail' pdf.id %}" alt="" loading="lazy" onerror="this.remove()">
-                    <span class="pdf-item-thumb-overlay" aria-hidden="true">👁️ Preview</span>
+                    <span class="pdf-item-thumb-overlay" aria-hidden="true">👁️ {% trans "Preview" %}</span>
                 </button>
                 <div class="pdf-item-body">
                     <h4 class="pdf-item-name" title="{{ pdf.name }}">{{ pdf.name }}</h4>
@@ -122,8 +123,8 @@
                     </p>
                 </div>
                 <div class="pdf-item-actions">
-                    <button onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="btn btn-preview pdf-item-btn">👁️ Preview</button>
-                    <a href="{% url 'delete_pdf' pdf.id %}" onclick="return confirm('Delete this PDF?')" class="btn btn-delete pdf-item-btn">🗑️ Delete</a>
+                    <button onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="btn btn-preview pdf-item-btn">👁️ {% trans "Preview" %}</button>
+                    <a href="{% url 'delete_pdf' pdf.id %}" onclick="return confirm('{% trans "Delete this PDF?" %}')" class="btn btn-delete pdf-item-btn">🗑️ {% trans "Delete" %}</a>
                 </div>
             </div>
             {% endfor %}
@@ -132,27 +133,27 @@
     {% endif %}
 
     <div class="features-section">
-        <h2 class="section-title">Why Choose Our Platform?</h2>
+        <h2 class="section-title">{% trans "Why Choose Our Platform?" %}</h2>
         <div class="features-grid">
             <div class="feature-item">
                 <div class="feature-icon">🔒</div>
-                <h4>Secure</h4>
-                <p>Your files are automatically deleted after processing</p>
+                <h4>{% trans "Secure" %}</h4>
+                <p>{% trans "Your files are automatically deleted after processing" %}</p>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">⚡</div>
-                <h4>Fast</h4>
-                <p>Process PDFs in seconds with our optimized engine</p>
+                <h4>{% trans "Fast" %}</h4>
+                <p>{% trans "Process PDFs in seconds with our optimized engine" %}</p>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">🎯</div>
-                <h4>Accurate</h4>
-                <p>Preserve formatting and layout with precision</p>
+                <h4>{% trans "Accurate" %}</h4>
+                <p>{% trans "Preserve formatting and layout with precision" %}</p>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">🌐</div>
-                <h4>No Installation</h4>
-                <p>Work directly in your browser, no downloads needed</p>
+                <h4>{% trans "No Installation" %}</h4>
+                <p>{% trans "Work directly in your browser, no downloads needed" %}</p>
             </div>
         </div>
     </div>
@@ -183,12 +184,12 @@ dropZone.addEventListener('drop', (e) => {
         const pdfFiles = Array.from(files).filter(file => file.type === 'application/pdf');
         
         if (pdfFiles.length === 0) {
-            alert('Please drop PDF files only');
+            alert('{% trans "Please drop PDF files only" %}');
             return;
         }
-        
+
         if (pdfFiles.length < files.length) {
-            alert(`Uploading ${pdfFiles.length} PDF files (${files.length - pdfFiles.length} non-PDF files skipped)`);
+            alert('{% trans "Some files were skipped — only PDFs are accepted." %}');
         }
         
         // Set files and submit

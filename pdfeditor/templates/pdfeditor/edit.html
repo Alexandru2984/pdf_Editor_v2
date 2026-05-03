@@ -1,15 +1,16 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Edit PDF{% endblock %}
+{% block title %}{% trans "Edit PDF" %}{% endblock %}
 
 {% block content %}
 <div class="card">
-    <h2>✏️ Find and Replace Text</h2>
+    <h2>{% trans "✏️ Find and Replace Text" %}</h2>
 
     {% if uploaded_pdfs|length > 1 %}
     <div class="tool-pdf-selector-bar">
         <label for="pdf-selector">
-            📂 Select PDF to Edit:
+            {% trans "📂 Select PDF to Edit:" %}
         </label>
         <select id="pdf-selector" onchange="window.location.href='{% url 'edit' %}?pdf=' + encodeURIComponent(this.value)">
             {% for pdf in uploaded_pdfs %}
@@ -19,15 +20,15 @@
             {% endfor %}
         </select>
         <p class="picker-hint">
-            💡 You have {{ uploaded_pdfs|length }} PDFs uploaded. Switch anytime!
+            {% blocktrans with count=uploaded_pdfs|length %}💡 You have {{ count }} PDFs uploaded. Switch anytime!{% endblocktrans %}
         </p>
     </div>
     {% endif %}
 
     <p class="pdf-info">
-        Editing: <strong>{{ pdf_name }}</strong>
+        {% blocktrans with name=pdf_name %}Editing: <strong>{{ name }}</strong>{% endblocktrans %}
         <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
-            👁️ Preview PDF
+            {% trans "👁️ Preview PDF" %}
         </button>
     </p>
 
@@ -35,7 +36,7 @@
         {% csrf_token %}
 
         <div class="form-group">
-            <label for="{{ form.search_text.id_for_label }}">Search Text</label>
+            <label for="{{ form.search_text.id_for_label }}">{% trans "Search Text" %}</label>
             {{ form.search_text }}
             {% if form.search_text.errors %}
                 <div class="error">{{ form.search_text.errors }}</div>
@@ -43,7 +44,7 @@
         </div>
 
         <div class="form-group">
-            <label for="{{ form.replace_text.id_for_label }}">Replace With</label>
+            <label for="{{ form.replace_text.id_for_label }}">{% trans "Replace With" %}</label>
             {{ form.replace_text }}
             {% if form.replace_text.errors %}
                 <div class="error">{{ form.replace_text.errors }}</div>
@@ -52,21 +53,21 @@
 
         <div class="form-group checkbox-group">
             {{ form.case_sensitive }}
-            <label for="{{ form.case_sensitive.id_for_label }}">Case Sensitive</label>
+            <label for="{{ form.case_sensitive.id_for_label }}">{% trans "Case Sensitive" %}</label>
         </div>
 
         <div class="form-group">
-            <label for="{{ form.page_range.id_for_label }}">Page Range (optional)</label>
+            <label for="{{ form.page_range.id_for_label }}">{% trans "Page Range (optional)" %}</label>
             {{ form.page_range }}
-            <small class="help-text">Example: 1-3,5,7-10 or leave blank for all pages</small>
+            <small class="help-text">{% trans "Example: 1-3,5,7-10 or leave blank for all pages" %}</small>
             {% if form.page_range.errors %}
                 <div class="error">{{ form.page_range.errors }}</div>
             {% endif %}
         </div>
 
         <div class="button-group">
-            <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back</a>
-            <button type="submit" class="btn btn-primary">Apply Changes ✓</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">{% trans "← Back" %}</a>
+            <button type="submit" class="btn btn-primary">{% trans "Apply Changes ✓" %}</button>
         </div>
     </form>
 </div>

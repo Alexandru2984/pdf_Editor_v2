@@ -1,0 +1,1403 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-03 17:11+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: pdfeditor/password_validators.py:69
+msgid ""
+"This password has appeared in a public data breach. Choose a different one — "
+"using it puts your account at risk."
+msgstr ""
+
+#: pdfeditor/password_validators.py:77
+msgid "Your password must not appear in known public data breaches."
+msgstr ""
+
+#: pdfeditor/pdf_processor/_common.py:54
+#, python-format
+msgid "PDF not found: %(path)s"
+msgstr ""
+
+#: pdfeditor/pdf_processor/_common.py:59
+msgid "PDF contains selectable text."
+msgstr ""
+
+#: pdfeditor/pdf_processor/_common.py:60
+msgid ""
+"PDF does not contain selectable text (possibly a scanned image-only "
+"document)."
+msgstr ""
+
+#: pdfeditor/pdf_processor/_common.py:62
+#, python-format
+msgid "Error while checking PDF: %(err)s"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/base.html:7
+#: pdfeditor/templates/pdfeditor/dashboard.html:9
+msgid "PDF Platform"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/base.html:45
+msgid "Toggle dark mode"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/base.html:53
+msgid "Switch language"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/base.html:58
+msgid "Toggle navigation"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/base.html:64
+msgid "Dashboard"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/base.html:69
+msgid "Sign Out"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/base.html:72
+#: pdfeditor/templates/registration/login.html:4
+#: pdfeditor/templates/registration/login.html:8
+#: pdfeditor/templates/registration/login.html:36
+#: pdfeditor/templates/registration/password_reset_complete.html:11
+msgid "Sign In"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/base.html:73
+msgid "Register"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/compress.html:4
+#: pdfeditor/templates/pdfeditor/compress.html:29
+#: pdfeditor/templates/pdfeditor/compress.html:78
+#: pdfeditor/templates/pdfeditor/more_tools.html:126
+msgid "Compress PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/compress.html:13
+msgid "Select PDF to Compress:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/compress.html:23
+#, python-format
+msgid "You have %(count)s PDFs uploaded. Switch anytime!"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/compress.html:30
+msgid "Reduce file size while maintaining quality"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/compress.html:33
+msgid "Current File:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/compress.html:37
+msgid "Original Size:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/compress.html:41
+#: pdfeditor/templates/pdfeditor/dashboard.html:116
+#: pdfeditor/templates/pdfeditor/dashboard.html:126
+#: pdfeditor/templates/pdfeditor/rephrase.html:419
+msgid "Preview"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/compress.html:51
+msgid "Select Compression Level:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/compress.html:75
+msgid "Back"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:4
+msgid "PDF Platform - Dashboard"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:10
+msgid "Professional PDF Tools - All in One Place"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:15
+msgid "Upload Your PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:16
+msgid "Drag & drop your PDF here or click to browse"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:21
+msgid "Choose File"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:26
+msgid "PDF Operations"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:32
+msgid "Edit & Rephrase"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:33
+msgid "Find/replace text or use AI to rephrase content"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:35
+msgid "Find & Replace"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:36
+msgid "AI Rephrase"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:42
+#: pdfeditor/templates/pdfeditor/more_tools.html:121
+#: pdfeditor/templates/pdfeditor/split.html:4
+msgid "Split PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:43
+msgid "Split your PDF into multiple files by pages"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:44
+#: pdfeditor/templates/pdfeditor/dashboard.html:51
+#: pdfeditor/templates/pdfeditor/dashboard.html:58
+#: pdfeditor/templates/pdfeditor/dashboard.html:65
+#: pdfeditor/templates/pdfeditor/dashboard.html:72
+#: pdfeditor/templates/pdfeditor/dashboard.html:79
+#: pdfeditor/templates/pdfeditor/dashboard.html:86
+#: pdfeditor/templates/pdfeditor/dashboard.html:100
+msgid "Get Started"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:49
+#: pdfeditor/templates/pdfeditor/merge.html:4
+msgid "Merge PDFs"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:50
+msgid "Combine multiple PDFs into a single document"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:56
+#: pdfeditor/templates/pdfeditor/more_tools.html:67
+msgid "Compress"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:57
+msgid "Reduce PDF file size without losing quality"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:63
+#: pdfeditor/templates/pdfeditor/more_tools.html:131
+msgid "Add Watermark"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:64
+msgid "Add text or image watermark to your PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:70
+#: pdfeditor/templates/pdfeditor/more_tools.html:136
+msgid "Rotate Pages"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:71
+msgid "Rotate PDF pages by 90, 180, or 270 degrees"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:77
+#: pdfeditor/templates/pdfeditor/more_tools.html:141
+msgid "Add Page Numbers"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:78
+msgid "Add customizable page numbers to your PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:84
+msgid "Fill Form"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:85
+msgid "Detect and fill AcroForm fields (text inputs, checkboxes, dropdowns)"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:91
+msgid "History"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:92
+msgid "See and re-download every output produced in this session"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:93
+msgid "View History"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:98
+#: pdfeditor/templates/pdfeditor/more_tools.html:4
+msgid "More Tools"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:99
+msgid "Advanced PDF tools: Extract Text, OCR, and more"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:106
+msgid "Your PDFs"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:114
+#, python-format
+msgid "Preview %(name)s"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:127
+msgid "Delete this PDF?"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:127
+msgid "Delete"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:136
+msgid "Why Choose Our Platform?"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:140
+msgid "Secure"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:141
+msgid "Your files are automatically deleted after processing"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:145
+msgid "Fast"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:146
+msgid "Process PDFs in seconds with our optimized engine"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:150
+msgid "Accurate"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:151
+msgid "Preserve formatting and layout with precision"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:155
+msgid "No Installation"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:156
+msgid "Work directly in your browser, no downloads needed"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:187
+msgid "Please drop PDF files only"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:192
+msgid "Some files were skipped — only PDFs are accepted."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/delete_account.html:4
+#: pdfeditor/templates/pdfeditor/delete_account.html:8
+#: pdfeditor/templates/pdfeditor/profile.html:52
+msgid "Delete account"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/delete_account.html:10
+msgid ""
+"This will permanently delete your account, every PDF you've uploaded\n"
+"        and every output you've produced. <strong>This cannot be undone.</"
+"strong>"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/delete_account.html:15
+#, python-format
+msgid ""
+"If you just want a copy of your data first, you can\n"
+"        <a href=\"%(export_url)s\" style=\"color:#4f46e5;\">export it</a>."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/delete_account.html:38
+msgid "Cancel"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/delete_account.html:39
+msgid "Delete my account"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:4
+msgid "Edit PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:8
+msgid "✏️ Find and Replace Text"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:13
+msgid "📂 Select PDF to Edit:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:23
+#: pdfeditor/templates/pdfeditor/split.html:19
+#, python-format
+msgid "💡 You have %(count)s PDFs uploaded. Switch anytime!"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:29
+#, python-format
+msgid "Editing: <strong>%(name)s</strong>"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:31
+#: pdfeditor/templates/pdfeditor/result.html:36
+#: pdfeditor/templates/pdfeditor/split.html:29
+msgid "👁️ Preview PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:39
+msgid "Search Text"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:47
+msgid "Replace With"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:56
+msgid "Case Sensitive"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:60
+msgid "Page Range (optional)"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:62
+msgid "Example: 1-3,5,7-10 or leave blank for all pages"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:69
+#: pdfeditor/templates/pdfeditor/merge.html:57
+#: pdfeditor/templates/pdfeditor/split.html:58
+msgid "← Back"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/edit.html:70
+msgid "Apply Changes ✓"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/history.html:4
+#: pdfeditor/templates/pdfeditor/history.html:8
+msgid "Operation History"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/history.html:10
+#, python-format
+msgid ""
+"Every PDF this session has produced. Files are auto-deleted after %(hours)s "
+"hours."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/history.html:18
+#: pdfeditor/templates/pdfeditor/history.html:29
+msgid "Operation"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/history.html:19
+#: pdfeditor/templates/pdfeditor/history.html:32
+msgid "File"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/history.html:20
+#: pdfeditor/templates/pdfeditor/history.html:35
+msgid "Source"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/history.html:21
+#: pdfeditor/templates/pdfeditor/history.html:38
+msgid "Size"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/history.html:22
+#: pdfeditor/templates/pdfeditor/history.html:39
+msgid "Created"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/history.html:48
+msgid "Remove this output from history?"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/history.html:60
+msgid "No operations yet. Upload a PDF and run a tool to see history here."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/history.html:62
+#: pdfeditor/templates/pdfeditor/history.html:70
+#: pdfeditor/templates/pdfeditor/rephrase.html:434
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:54
+#: pdfeditor/templates/registration/password_change_done.html:11
+msgid "Back to Dashboard"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/merge.html:10
+#: pdfeditor/templates/pdfeditor/merge.html:60
+msgid "🔗 Merge PDFs"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/merge.html:11
+msgid "Select 2 or more PDFs to combine into one document"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/merge.html:21
+msgid "📂 Select PDFs to Merge:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/merge.html:23
+msgid ""
+"💡 <strong>Tip:</strong> Check at least 2 PDFs. Drag to reorder - they'll "
+"merge in this sequence!"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/merge.html:36
+#: pdfeditor/templates/pdfeditor/split_result.html:26
+msgid "👁️ Preview"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/merge.html:43
+msgid "No PDFs selected"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:13
+msgid "The Future of PDF Editing"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:27
+msgid "Advanced PDF Command Center"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:28
+msgid "All your PDF tools in one powerful interface"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:43
+msgid "Select & Preview"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:54
+msgid "Back to List"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:63
+#: pdfeditor/templates/pdfeditor/more_tools.html:93
+msgid "Extract Text"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:64
+msgid "OCR"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:65
+msgid "Edit"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:66
+msgid "Split"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:68
+msgid "Watermark"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:69
+msgid "Rotate"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:70
+msgid "Page Numbers"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:78
+#: pdfeditor/templates/pdfeditor/preview.html:4
+msgid "PDF Preview"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:80
+#: pdfeditor/templates/pdfeditor/rephrase.html:315
+msgid "Prev"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:81
+#, python-format
+msgid "Page %(current)s of %(total)s"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:82
+#: pdfeditor/templates/pdfeditor/rephrase.html:317
+msgid "Next"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:94
+msgid "Extract Now"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:96
+msgid "Click 'Extract Now' to extract text from PDF..."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:98
+#: pdfeditor/templates/pdfeditor/more_tools.html:110
+msgid "Copy"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:99
+#: pdfeditor/templates/pdfeditor/more_tools.html:111
+msgid "Download"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:105
+msgid "OCR to Text"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:106
+msgid "Start OCR"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:108
+msgid "Click 'Start OCR' to extract text via OCR..."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:116
+msgid "Edit Text"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:117
+#: pdfeditor/templates/pdfeditor/more_tools.html:122
+#: pdfeditor/templates/pdfeditor/more_tools.html:127
+#: pdfeditor/templates/pdfeditor/more_tools.html:132
+#: pdfeditor/templates/pdfeditor/more_tools.html:137
+#: pdfeditor/templates/pdfeditor/more_tools.html:142
+msgid "Coming soon..."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:147
+msgid "Processing... This may take a moment."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:282
+#: pdfeditor/templates/pdfeditor/more_tools.html:288
+#: pdfeditor/templates/pdfeditor/more_tools.html:319
+#: pdfeditor/templates/pdfeditor/more_tools.html:325
+msgid "Error"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:336
+#: pdfeditor/templates/pdfeditor/more_tools.html:347
+msgid "Copied!"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/more_tools.html:381
+#, python-format
+msgid "Page %%(current)s of %%(total)s"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/preview.html:130
+#, python-format
+msgid "📄 PDF Preview: %(name)s"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/preview.html:132
+msgid "← Back to Dashboard"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/preview.html:142
+msgid "← Previous"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/preview.html:144
+msgid "Page <span id=\"page-num\"></span> of <span id=\"page-count\"></span>"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/preview.html:146
+msgid "Next →"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:4
+msgid "Profile"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:12
+msgid "(no email on file)"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:16
+msgid "Account"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:18
+#: pdfeditor/templates/registration/login.html:21
+msgid "Username"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:20
+msgid "Email"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:22
+msgid "Member since"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:25
+msgid "Last login"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:30
+msgid "Activity"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:33
+msgid "PDFs uploaded"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:37
+msgid "Outputs produced"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:42
+msgid "Manage account"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:44
+msgid "Change email"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:45
+msgid "Change password"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:46
+msgid "View history"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:49
+msgid "Your data"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:51
+msgid "Export my data (JSON)"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:4
+#: pdfeditor/templates/pdfeditor/rephrase.html:338
+msgid "AI Text Rephrase"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:316
+msgid "Page 1 of ?"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:328
+msgid "Clear Selection"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:331
+#: pdfeditor/templates/pdfeditor/rephrase.html:729
+msgid "Instructions:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:331
+#: pdfeditor/templates/pdfeditor/rephrase.html:729
+msgid "Click on text lines to select them. Click again to deselect."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:342
+#, python-format
+msgid "Ollama connected! %(count)s models available."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:346
+msgid "Ollama not available. Please start Ollama server."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:352
+msgid "Select PDF:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:376
+msgid "Selected Text"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:377
+msgid "Select text from PDF viewer..."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:381
+msgid "Rephrase Style"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:383
+msgid "Formal/Professional"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:384
+msgid "Casual/Friendly"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:385
+msgid "Simplified"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:386
+msgid "Concise/Shorter"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:387
+msgid "Expanded/Detailed"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:392
+msgid "AI Model"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:394
+msgid "Select a model..."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:397
+msgid "Cloud (Groq - Fast)"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:405
+msgid "Local (Ollama)"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:413
+msgid "No models available. Check Ollama connection or Groq API key."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:422
+msgid "Apply Changes"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:427
+msgid "Rephrased Text:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:472
+#: pdfeditor/templates/pdfeditor/rephrase.html:660
+msgid "Page"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:472
+#: pdfeditor/templates/pdfeditor/rephrase.html:660
+msgid "of"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:476
+msgid "Error loading PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:718
+msgid "line(s) selected"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:718
+msgid "characters"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:779
+msgid "Please select text first by clicking on lines"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:787
+msgid "Generating..."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:802
+#: pdfeditor/templates/pdfeditor/rephrase.html:804
+msgid "Error:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase.html:802
+msgid "Unknown error"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:4
+msgid "Rephrase Result - PDF Editor"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:8
+msgid "AI Rephrase Complete!"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:13
+#, python-format
+msgid "%(counter)s Replacement Made"
+msgid_plural "%(counter)s Replacements Made"
+msgstr[0] ""
+msgstr[1] ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:14
+msgid "Style:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:14
+msgid "Model:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:19
+msgid "Text Transformation"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:22
+msgid "Original Text"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:26
+msgid "Rephrased Text"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:38
+msgid "Warnings"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:49
+msgid "Preview Modified PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:56
+msgid "Rephrase More"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:59
+msgid "Download PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/result.html:4
+msgid "Result"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/result.html:9
+msgid "Changes Applied Successfully!"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/result.html:15
+msgid "replacement made"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/result.html:17
+msgid "replacements made"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/result.html:24
+msgid "⚠️ Warning:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/result.html:34
+#: pdfeditor/templates/pdfeditor/split_result.html:38
+msgid "← Dashboard"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/result.html:38
+msgid "📥 Download Modified PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split.html:11
+msgid "📂 Select PDF to Split:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split.html:25
+#, python-format
+msgid "✂️ Split PDF: %(name)s"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split.html:26
+msgid "Split your PDF into multiple files based on page ranges."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split.html:39
+msgid "Page Ranges"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split.html:41
+msgid ""
+"Enter ranges separated by commas. Example: 1-5,10-15 will create 2 files"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split.html:48
+msgid "💡 Examples:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split.html:50
+msgid "→ One file with pages 1 to 5"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split.html:51
+msgid "→ Two files: pages 1-3 and 7-10"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split.html:52
+msgid "→ Three separate files, one page each"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split.html:53
+msgid "→ Two files: pages 1-5 and page 15"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split.html:59
+msgid "✂️ Split PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split_result.html:4
+msgid "Split Result"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split_result.html:10
+msgid "PDF Split Successfully!"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split_result.html:11
+#, python-format
+msgid "Created <strong>%(counter)s</strong> file"
+msgid_plural "Created <strong>%(counter)s</strong> files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: pdfeditor/templates/pdfeditor/split_result.html:15
+msgid "📁 Generated Files:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split_result.html:22
+#, python-format
+msgid "Size: %(size)s"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split_result.html:29
+msgid "📥 Download"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/split_result.html:41
+msgid "Process Another PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/upload.html:4
+msgid "Upload PDF - PDF Editor"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/upload.html:8
+msgid "Upload PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/upload.html:9
+msgid "Select the PDF file you want to edit."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/upload.html:17
+msgid "Choose PDF file"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/upload.html:25
+#: pdfeditor/templates/pdfeditor/upload.html:33
+msgid "No file selected"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/upload.html:28
+msgid "Upload and continue"
+msgstr ""
+
+#: pdfeditor/templates/registration/confirm_email_invalid.html:4
+msgid "Invalid Confirmation Link"
+msgstr ""
+
+#: pdfeditor/templates/registration/confirm_email_invalid.html:9
+msgid "Confirmation Link Invalid"
+msgstr ""
+
+#: pdfeditor/templates/registration/confirm_email_invalid.html:11
+msgid ""
+"This confirmation link is either expired or has already been used. Try "
+"registering again, or contact support if you think this is a mistake."
+msgstr ""
+
+#: pdfeditor/templates/registration/confirm_email_invalid.html:13
+msgid "Register again"
+msgstr ""
+
+#: pdfeditor/templates/registration/email_change_form.html:4
+#: pdfeditor/templates/registration/email_change_form.html:8
+msgid "Change Email"
+msgstr ""
+
+#: pdfeditor/templates/registration/email_change_form.html:10
+#, python-format
+msgid ""
+"Currently <strong>%(email)s</strong>. We'll send a confirmation link to your "
+"new address — your current email stays active until you click it."
+msgstr ""
+
+#: pdfeditor/templates/registration/email_change_form.html:34
+msgid "Send confirmation link"
+msgstr ""
+
+#: pdfeditor/templates/registration/email_change_invalid.html:4
+msgid "Email change link invalid"
+msgstr ""
+
+#: pdfeditor/templates/registration/email_change_invalid.html:9
+msgid "Link invalid or expired"
+msgstr ""
+
+#: pdfeditor/templates/registration/email_change_invalid.html:11
+msgid ""
+"This email-change link is no longer valid. It may have expired, already been "
+"used, or been replaced by a newer request."
+msgstr ""
+
+#: pdfeditor/templates/registration/email_change_invalid.html:13
+msgid "Start over"
+msgstr ""
+
+#: pdfeditor/templates/registration/login.html:10
+msgid ""
+"Sign in to keep your PDFs across browsers, see your full history, and access "
+"password-protected features."
+msgstr ""
+
+#: pdfeditor/templates/registration/login.html:28
+msgid "Password"
+msgstr ""
+
+#: pdfeditor/templates/registration/login.html:39
+msgid "Don't have an account?"
+msgstr ""
+
+#: pdfeditor/templates/registration/login.html:40
+msgid "Create one"
+msgstr ""
+
+#: pdfeditor/templates/registration/login.html:42
+msgid "Forgot password?"
+msgstr ""
+
+#: pdfeditor/templates/registration/login.html:45
+msgid "Didn't get a confirmation email?"
+msgstr ""
+
+#: pdfeditor/templates/registration/login.html:46
+msgid "Resend it"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_change_done.html:4
+#: pdfeditor/templates/registration/password_change_done.html:9
+msgid "Password Changed"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_change_done.html:10
+msgid "Your password was updated successfully."
+msgstr ""
+
+#: pdfeditor/templates/registration/password_change_form.html:4
+#: pdfeditor/templates/registration/password_change_form.html:8
+#: pdfeditor/templates/registration/password_change_form.html:23
+msgid "Change Password"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_complete.html:4
+msgid "Password Reset Complete"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_complete.html:9
+msgid "Password Updated"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_complete.html:10
+msgid "You can now sign in with your new password."
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_confirm.html:4
+msgid "Set New Password"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_confirm.html:9
+msgid "Set a New Password"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_confirm.html:20
+msgid "Save New Password"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_confirm.html:24
+msgid "Invalid or Expired Link"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_confirm.html:26
+msgid "This password reset link is no longer valid. Please request a new one."
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_confirm.html:28
+msgid "Request New Link"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_done.html:4
+msgid "Password Reset Email Sent"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_done.html:9
+#: pdfeditor/templates/registration/resend_confirmation_done.html:9
+msgid "Check Your Email"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_done.html:11
+msgid ""
+"We've sent you a password reset link. Click it to set a new password. It may "
+"take a couple of minutes to arrive — also check your spam folder."
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_done.html:13
+#: pdfeditor/templates/registration/resend_confirmation_done.html:13
+msgid "Back to Sign In"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_form.html:4
+msgid "Forgot Password"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_form.html:8
+msgid "Forgot Your Password?"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_form.html:10
+msgid ""
+"Enter the email address associated with your account. We'll send you a link "
+"to reset your password."
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_form.html:21
+msgid "Send Reset Link"
+msgstr ""
+
+#: pdfeditor/templates/registration/password_reset_form.html:23
+#: pdfeditor/templates/registration/resend_confirmation_form.html:24
+msgid "Back to sign in"
+msgstr ""
+
+#: pdfeditor/templates/registration/register.html:4
+#: pdfeditor/templates/registration/register.html:8
+#: pdfeditor/templates/registration/register.html:33
+msgid "Create Account"
+msgstr ""
+
+#: pdfeditor/templates/registration/register.html:10
+msgid ""
+"Once registered, your PDFs and operation history persist across devices and "
+"sessions."
+msgstr ""
+
+#: pdfeditor/templates/registration/register.html:36
+msgid "Already have an account?"
+msgstr ""
+
+#: pdfeditor/templates/registration/register.html:37
+msgid "Sign in"
+msgstr ""
+
+#: pdfeditor/templates/registration/resend_confirmation_done.html:4
+msgid "Confirmation Email Sent"
+msgstr ""
+
+#: pdfeditor/templates/registration/resend_confirmation_done.html:11
+msgid ""
+"If we have an account waiting on confirmation for that email, we've sent a "
+"fresh link. Check your inbox (and spam folder). The link is valid for a "
+"limited time."
+msgstr ""
+
+#: pdfeditor/templates/registration/resend_confirmation_form.html:4
+#: pdfeditor/templates/registration/resend_confirmation_form.html:8
+msgid "Resend Confirmation Email"
+msgstr ""
+
+#: pdfeditor/templates/registration/resend_confirmation_form.html:10
+msgid ""
+"Lost the confirmation email? Enter the address you registered with and we'll "
+"send a fresh link."
+msgstr ""
+
+#: pdfeditor/templates/registration/resend_confirmation_form.html:22
+msgid "Send Confirmation Email"
+msgstr ""
+
+#: pdfeditor/views/auth.py:50 pdfeditor/views/auth.py:141
+msgid "An account with this email already exists."
+msgstr ""
+
+#: pdfeditor/views/auth.py:77
+msgid ""
+"Account created! Check your email to confirm your address before signing in."
+msgstr ""
+
+#: pdfeditor/views/auth.py:83
+msgid ""
+"Account created, but we couldn't send the confirmation email. Contact "
+"support to activate your account."
+msgstr ""
+
+#: pdfeditor/views/auth.py:106
+msgid "Email confirmed! Welcome aboard."
+msgstr ""
+
+#: pdfeditor/views/auth.py:139
+msgid "That's already your current email."
+msgstr ""
+
+#: pdfeditor/views/auth.py:147
+msgid "That password doesn't match your account."
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:26
+msgid "No PDF found. Please upload a PDF first."
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:32
+msgid "Selected PDF not found."
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:64
+#, python-format
+msgid "PDF split successfully into %(count)s files!"
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:68 pdfeditor/views/basic_ops.py:179
+#, python-format
+msgid "Error: %(err)s"
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:70
+#, python-format
+msgid "Error splitting PDF: %(err)s"
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:99
+msgid "No split files found."
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:147
+msgid "You need at least 2 PDFs to merge. Please upload more files."
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:160
+#, python-format
+msgid "PDF with ID %(pdf_id)s not found."
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:166
+msgid "At least 2 PDFs are required for merging."
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:175
+#, python-format
+msgid "Successfully merged %(count)s PDFs!"
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:181
+#, python-format
+msgid "Error merging PDFs: %(err)s"
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:198
+msgid "Merged file not found."
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:216 pdfeditor/views/basic_ops.py:221
+#: pdfeditor/views/basic_ops.py:302 pdfeditor/views/basic_ops.py:307
+msgid "File not found."
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:255
+#, python-format
+msgid "PDF compressed successfully! Saved %(ratio).1f%% space."
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:259
+#, python-format
+msgid "Error compressing PDF: %(err)s"
+msgstr ""
+
+#: pdfeditor/views/basic_ops.py:280
+msgid "Compressed file not found."
+msgstr ""
+
+#: pdfeditor/views/upload.py:72
+msgid "Please select at least one PDF file."
+msgstr ""
+
+#: pdfeditor/views/upload.py:83
+#, python-format
+msgid "Skipped \"%(name)s\" - only PDF files are accepted."
+msgstr ""
+
+#: pdfeditor/views/upload.py:89
+#, python-format
+msgid "Skipped \"%(name)s\" - exceeds %(mb)d MB limit."
+msgstr ""
+
+#: pdfeditor/views/upload.py:99
+#, python-format
+msgid "Skipped \"%(name)s\" - not a valid PDF file."
+msgstr ""
+
+#: pdfeditor/views/upload.py:113
+#, python-format
+msgid "Skipped \"%(name)s\" - could not be parsed as a PDF."
+msgstr ""
+
+#: pdfeditor/views/upload.py:120
+#, python-format
+msgid "Skipped \"%(name)s\" - %(pages)d pages exceeds the %(max)d-page limit."
+msgstr ""
+
+#: pdfeditor/views/upload.py:143
+#, python-format
+msgid "PDF \"%(name)s\" uploaded successfully! Choose an operation below."
+msgstr ""
+
+#: pdfeditor/views/upload.py:150
+#, python-format
+msgid "%(count)d PDFs uploaded successfully! Choose an operation below."
+msgstr ""
+
+#: pdfeditor/views/upload.py:154
+msgid "No valid PDF files were uploaded."
+msgstr ""
+
+#: pdfeditor/views/upload.py:161
+msgid "PDF not found."
+msgstr ""
+
+#: pdfeditor/views/upload.py:172
+msgid "PDF removed successfully."
+msgstr ""
