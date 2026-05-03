@@ -159,7 +159,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "pdfeditor.password_validators.PwnedPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "ro"
+# Tests assert against English msgids; force English when running them.
+LANGUAGE_CODE = "en" if "test" in sys.argv else "ro"
 LANGUAGES = [
     ("ro", "Română"),
     ("en", "English"),

@@ -140,8 +140,7 @@ def upload_view(request):
     if len(created) == 1:
         messages.success(
             request,
-            _('PDF "%(name)s" uploaded successfully! Choose an operation below.')
-            % {"name": created[0].name},
+            _('PDF "%(name)s" uploaded successfully! Choose an operation below.') % {"name": created[0].name},
         )
         return redirect("dashboard")
     if len(created) > 1:
