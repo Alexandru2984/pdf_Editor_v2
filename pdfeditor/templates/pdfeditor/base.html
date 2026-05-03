@@ -28,6 +28,9 @@
     
     {% block extra_css %}{% endblock %}
 
+    <!-- Defines window.gettext()/ngettext() for static JS files (e.g. pdf-modal.js). -->
+    <script src="{% url 'javascript-catalog' %}"></script>
+
     <script defer src="https://analytics.micutu.com/script.js" data-website-id="ef923397-0031-4f2c-878c-2eb764c23513"></script>
 </head>
 <body>

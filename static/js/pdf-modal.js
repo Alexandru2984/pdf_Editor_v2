@@ -19,7 +19,7 @@ class PDFPreviewModal {
             <div id="pdf-preview-modal" class="pdf-modal">
                 <div class="pdf-modal-content">
                     <div class="pdf-modal-header">
-                        <h3>📄 PDF Preview</h3>
+                        <h3>📄 ${gettext('PDF Preview')}</h3>
                         <button class="pdf-modal-close" onclick="pdfModal.close()">&times;</button>
                     </div>
                     <div class="pdf-modal-body">
@@ -27,12 +27,12 @@ class PDFPreviewModal {
                             <canvas id="modal-pdf-canvas"></canvas>
                         </div>
                         <div class="pdf-modal-controls">
-                            <button id="modal-prev-page" class="icon-btn">← Previous</button>
+                            <button id="modal-prev-page" class="icon-btn">${gettext('← Previous')}</button>
                             <span class="page-info">
-                                Page <span id="modal-page-num"></span> of <span id="modal-page-count"></span>
+                                ${gettext('Page')} <span id="modal-page-num"></span> ${gettext('of')} <span id="modal-page-count"></span>
                             </span>
-                            <button id="modal-next-page" class="icon-btn">Next →</button>
-                            
+                            <button id="modal-next-page" class="icon-btn">${gettext('Next →')}</button>
+
                             <div class="zoom-controls">
                                 <button id="modal-zoom-out" class="icon-btn">−</button>
                                 <span class="page-info"><span id="modal-zoom-level">100</span>%</span>
@@ -145,7 +145,7 @@ class PDFPreviewModal {
             
         } catch (error) {
             console.error('Error loading PDF:', error);
-            alert('Error loading PDF preview: ' + error.message);
+            alert(gettext('Error loading PDF preview') + ': ' + error.message);
         }
     }
     

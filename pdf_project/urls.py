@@ -17,6 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import include, path, re_path
+from django.views.i18n import JavaScriptCatalog
 
 from pdfeditor.views import admin_health_view, serve_media_view
 
@@ -27,5 +28,8 @@ urlpatterns = [
     # Django's set_language view writes the chosen language to a cookie
     # and redirects back; the LocaleMiddleware reads that cookie.
     path("i18n/", include("django.conf.urls.i18n")),
+    # Serves a JS file that wires gettext()/ngettext() in the browser using
+    # the active locale; static JS files import from this.
+    path("jsi18n/", JavaScriptCatalog.as_view(packages=["pdfeditor"]), name="javascript-catalog"),
     path("", include("pdfeditor.urls")),
 ]
