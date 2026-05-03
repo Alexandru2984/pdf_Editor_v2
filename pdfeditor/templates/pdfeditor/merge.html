@@ -88,12 +88,13 @@ function updateSelection() {
 
     selectionCount.classList.remove('warning', 'ready');
     if (selected.length === 0) {
-        selectionCount.textContent = 'No PDFs selected';
+        selectionCount.textContent = '{% trans "No PDFs selected" %}';
     } else if (selected.length === 1) {
-        selectionCount.textContent = '1 PDF selected - Need at least 1 more';
+        selectionCount.textContent = '{% trans "1 PDF selected - Need at least 1 more" %}';
         selectionCount.classList.add('warning');
     } else {
-        selectionCount.textContent = `${selected.length} PDFs selected - Ready to merge!`;
+        selectionCount.textContent =
+            selected.length + ' ' + '{% trans "PDFs selected - Ready to merge!" %}';
         selectionCount.classList.add('ready');
     }
 }

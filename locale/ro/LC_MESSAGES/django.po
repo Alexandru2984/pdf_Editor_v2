@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-03 22:04+0000\n"
+"POT-Creation-Date: 2026-05-03 22:34+0000\n"
 "PO-Revision-Date: 2026-05-03 17:30+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -52,35 +52,173 @@ msgstr ""
 msgid "Error while checking PDF: %(err)s"
 msgstr "Eroare la verificarea PDF-ului: %(err)s"
 
-#: pdfeditor/templates/pdfeditor/base.html:7
+#: pdfeditor/templates/400.html:4 pdfeditor/templates/400.html:9
+msgid "Bad request"
+msgstr "Cerere invalidă"
+
+#: pdfeditor/templates/400.html:4 pdfeditor/templates/403.html:4
+#: pdfeditor/templates/404.html:4 pdfeditor/templates/pdfeditor/base.html:7
 #: pdfeditor/templates/pdfeditor/dashboard.html:9
 msgid "PDF Platform"
 msgstr "PDF Platform"
 
-#: pdfeditor/templates/pdfeditor/base.html:45
+#: pdfeditor/templates/400.html:11
+msgid "The request couldn't be understood. Please go back and try again."
+msgstr "Cererea nu a putut fi înțeleasă. Întoarce-te și încearcă din nou."
+
+#: pdfeditor/templates/400.html:14 pdfeditor/templates/403.html:14
+#: pdfeditor/templates/404.html:14 pdfeditor/templates/500.html:55
+#: pdfeditor/templates/pdfeditor/history.html:62
+#: pdfeditor/templates/pdfeditor/history.html:70
+#: pdfeditor/templates/pdfeditor/rephrase.html:434
+#: pdfeditor/templates/pdfeditor/rephrase_result.html:54
+#: pdfeditor/templates/registration/password_change_done.html:11
+msgid "Back to Dashboard"
+msgstr "Înapoi la Dashboard"
+
+#: pdfeditor/templates/403.html:4 pdfeditor/templates/403.html:9
+msgid "Access denied"
+msgstr "Acces refuzat"
+
+#: pdfeditor/templates/403.html:11
+msgid "You don't have permission to access this page."
+msgstr "Nu ai permisiunea să accesezi această pagină."
+
+#: pdfeditor/templates/404.html:4 pdfeditor/templates/404.html:9
+#, fuzzy
+#| msgid "PDF not found."
+msgid "Page not found"
+msgstr "PDF-ul nu a fost găsit."
+
+#: pdfeditor/templates/404.html:11
+msgid "The page you're looking for doesn't exist or has been moved."
+msgstr "Pagina pe care o cauți nu există sau a fost mutată."
+
+#: pdfeditor/templates/500.html:6
+msgid "Server error"
+msgstr "Eroare server"
+
+#: pdfeditor/templates/500.html:51
+msgid "Something went wrong"
+msgstr "Ceva n-a mers bine"
+
+#: pdfeditor/templates/500.html:53
+msgid ""
+"An unexpected error occurred. Our team has been notified. Please try again "
+"in a moment."
+msgstr "A apărut o eroare neașteptată. Echipa noastră a fost notificată. Încearcă din nou în câteva momente."
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:4
+#: pdfeditor/templates/pdfeditor/admin_health.html:9
+msgid "Platform health"
+msgstr "Starea platformei"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:11
+msgid "Database OK"
+msgstr "Bază de date OK"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:11
+msgid "Database error"
+msgstr "Eroare bază de date"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:18
+#, fuzzy
+#| msgid "Username"
+msgid "Users"
+msgstr "Nume utilizator"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:22
+#: pdfeditor/templates/pdfeditor/admin_health.html:38
+#: pdfeditor/templates/pdfeditor/admin_health.html:54
+msgid "Total"
+msgstr "Total"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:26
+#, fuzzy
+#| msgid "Activity"
+msgid "Active"
+msgstr "Activitate"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:30
+msgid "New (last 7 days)"
+msgstr "Noi (ultimele 7 zile)"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:34
+#: pdfeditor/templates/pdfeditor/profile.html:33
+msgid "PDFs uploaded"
+msgstr "PDF-uri încărcate"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:42
+#: pdfeditor/templates/pdfeditor/admin_health.html:58
+msgid "Last 7 days"
+msgstr "Ultimele 7 zile"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:46
+#: pdfeditor/templates/pdfeditor/admin_health.html:62
+msgid "Storage used"
+msgstr "Spațiu folosit"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:50
+#: pdfeditor/templates/pdfeditor/profile.html:37
+msgid "Outputs produced"
+msgstr "Rezultate produse"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:67
+#, fuzzy
+#| msgid "Operation"
+msgid "By operation"
+msgstr "Operațiune"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:71
+#: pdfeditor/templates/pdfeditor/history.html:18
+#: pdfeditor/templates/pdfeditor/history.html:29
+msgid "Operation"
+msgstr "Operațiune"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:72
+#, fuzzy
+#| msgid "Account"
+msgid "Count"
+msgstr "Cont"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:86
+msgid "Total storage"
+msgstr "Spațiu total"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:90
+msgid "Uploaded + processed"
+msgstr "Încărcate + procesate"
+
+#: pdfeditor/templates/pdfeditor/admin_health.html:95
+#, fuzzy
+#| msgid "Back to List"
+msgid "Back to admin"
+msgstr "Înapoi la listă"
+
+#: pdfeditor/templates/pdfeditor/base.html:48
 msgid "Toggle dark mode"
 msgstr "Comută modul întunecat"
 
-#: pdfeditor/templates/pdfeditor/base.html:53
+#: pdfeditor/templates/pdfeditor/base.html:56
 msgid "Switch language"
 msgstr "Schimbă limba"
 
-#: pdfeditor/templates/pdfeditor/base.html:58
+#: pdfeditor/templates/pdfeditor/base.html:61
 msgid "Toggle navigation"
 msgstr "Comută navigarea"
 
-#: pdfeditor/templates/pdfeditor/base.html:64
+#: pdfeditor/templates/pdfeditor/base.html:67
 #: pdfeditor/templates/pdfeditor/compress_result.html:54
 #: pdfeditor/templates/pdfeditor/rotate_result.html:27
 #: pdfeditor/templates/pdfeditor/watermark_result.html:27
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: pdfeditor/templates/pdfeditor/base.html:69
+#: pdfeditor/templates/pdfeditor/base.html:72
 msgid "Sign Out"
 msgstr "Deconectare"
 
-#: pdfeditor/templates/pdfeditor/base.html:72
+#: pdfeditor/templates/pdfeditor/base.html:75
 #: pdfeditor/templates/registration/login.html:4
 #: pdfeditor/templates/registration/login.html:8
 #: pdfeditor/templates/registration/login.html:36
@@ -88,7 +226,7 @@ msgstr "Deconectare"
 msgid "Sign In"
 msgstr "Autentificare"
 
-#: pdfeditor/templates/pdfeditor/base.html:73
+#: pdfeditor/templates/pdfeditor/base.html:76
 msgid "Register"
 msgstr "Înregistrare"
 
@@ -513,11 +651,6 @@ msgstr ""
 "Fiecare PDF produs în această sesiune. Fișierele sunt șterse automat după "
 "%(hours)s ore."
 
-#: pdfeditor/templates/pdfeditor/history.html:18
-#: pdfeditor/templates/pdfeditor/history.html:29
-msgid "Operation"
-msgstr "Operațiune"
-
 #: pdfeditor/templates/pdfeditor/history.html:19
 #: pdfeditor/templates/pdfeditor/history.html:32
 msgid "File"
@@ -548,14 +681,6 @@ msgstr ""
 "Nicio operațiune încă. Încarcă un PDF și rulează o unealtă pentru a vedea "
 "istoricul aici."
 
-#: pdfeditor/templates/pdfeditor/history.html:62
-#: pdfeditor/templates/pdfeditor/history.html:70
-#: pdfeditor/templates/pdfeditor/rephrase.html:434
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:54
-#: pdfeditor/templates/registration/password_change_done.html:11
-msgid "Back to Dashboard"
-msgstr "Înapoi la Dashboard"
-
 #: pdfeditor/templates/pdfeditor/merge.html:10
 #: pdfeditor/templates/pdfeditor/merge.html:60
 msgid "🔗 Merge PDFs"
@@ -585,8 +710,17 @@ msgid "👁️ Preview"
 msgstr "👁️ Previzualizare"
 
 #: pdfeditor/templates/pdfeditor/merge.html:43
+#: pdfeditor/templates/pdfeditor/merge.html:91
 msgid "No PDFs selected"
 msgstr "Niciun PDF selectat"
+
+#: pdfeditor/templates/pdfeditor/merge.html:93
+msgid "1 PDF selected - Need at least 1 more"
+msgstr "1 PDF selectat - mai e nevoie de cel puțin unul"
+
+#: pdfeditor/templates/pdfeditor/merge.html:97
+msgid "PDFs selected - Ready to merge!"
+msgstr "PDF-uri selectate - gata pentru unire!"
 
 #: pdfeditor/templates/pdfeditor/more_tools.html:13
 msgid "The Future of PDF Editing"
@@ -775,14 +909,6 @@ msgstr "Ultima autentificare"
 #: pdfeditor/templates/pdfeditor/profile.html:30
 msgid "Activity"
 msgstr "Activitate"
-
-#: pdfeditor/templates/pdfeditor/profile.html:33
-msgid "PDFs uploaded"
-msgstr "PDF-uri încărcate"
-
-#: pdfeditor/templates/pdfeditor/profile.html:37
-msgid "Outputs produced"
-msgstr "Rezultate produse"
 
 #: pdfeditor/templates/pdfeditor/profile.html:42
 msgid "Manage account"
@@ -1670,20 +1796,20 @@ msgid "PDF \"%(name)s\" uploaded successfully! Choose an operation below."
 msgstr ""
 "PDF-ul „%(name)s” a fost încărcat cu succes! Alege o operațiune mai jos."
 
-#: pdfeditor/views/upload.py:150
+#: pdfeditor/views/upload.py:149
 #, python-format
 msgid "%(count)d PDFs uploaded successfully! Choose an operation below."
 msgstr ""
 "%(count)d PDF-uri au fost încărcate cu succes! Alege o operațiune mai jos."
 
-#: pdfeditor/views/upload.py:154
+#: pdfeditor/views/upload.py:153
 msgid "No valid PDF files were uploaded."
 msgstr "Niciun fișier PDF valid nu a fost încărcat."
 
-#: pdfeditor/views/upload.py:161
+#: pdfeditor/views/upload.py:160
 msgid "PDF not found."
 msgstr "PDF-ul nu a fost găsit."
 
-#: pdfeditor/views/upload.py:172
+#: pdfeditor/views/upload.py:171
 msgid "PDF removed successfully."
 msgstr "PDF-ul a fost șters cu succes."
