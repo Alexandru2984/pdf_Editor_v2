@@ -17,8 +17,36 @@ from .pdf_processor.ops import (
     merge_pdfs,
     protect_pdf,
     rotate_pages,
+    sign_pdf,
     split_pdf,
 )
+
+
+def _make_self_signed_p12(passphrase: bytes = b"test123") -> bytes:
+    """Generate a self-signed PKCS#12 archive in memory for sign-flow tests."""
+    from datetime import UTC, datetime, timedelta
+
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives.serialization import pkcs12
+    from cryptography.x509.oid import NameOID
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Test Signer")])
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(subject)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.now(UTC) - timedelta(days=1))
+        .not_valid_after(datetime.now(UTC) + timedelta(days=30))
+        .sign(key, hashes.SHA256())
+    )
+    return pkcs12.serialize_key_and_certificates(
+        b"test", key, cert, [], serialization.BestAvailableEncryption(passphrase)
+    )
 
 
 class _MediaRootMixin:
@@ -304,6 +332,80 @@ class ProtectPdfTests(_MediaRootMixin, TestCase):
         finally:
             if os.path.exists(out):
                 os.remove(out)
+
+
+class SignPdfTests(_MediaRootMixin, TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Cert generation is slow (RSA key) — share one across tests.
+        cls.p12 = _make_self_signed_p12(b"test123")
+
+    def setUp(self):
+        self.pdf = _make_multipage_pdf(2)
+
+    def tearDown(self):
+        if os.path.exists(self.pdf):
+            os.remove(self.pdf)
+
+    def _cleanup(self, *paths):
+        for p in paths:
+            if p and os.path.exists(p):
+                os.remove(p)
+
+    def test_sign_produces_signed_pdf(self):
+        out = sign_pdf(self.pdf, p12_bytes=self.p12, p12_password="test123")
+        try:
+            self.assertTrue(os.path.exists(out))
+            self.assertGreater(os.path.getsize(out), os.path.getsize(self.pdf))
+        finally:
+            self._cleanup(out)
+
+    def test_signed_pdf_has_signature_object(self):
+        from pyhanko.pdf_utils.reader import PdfFileReader
+        from pyhanko.sign.validation import async_validate_pdf_signature  # noqa: F401
+
+        out = sign_pdf(self.pdf, p12_bytes=self.p12, p12_password="test123")
+        try:
+            with open(out, "rb") as f:
+                reader = PdfFileReader(f)
+                self.assertEqual(len(reader.embedded_signatures), 1)
+                emb = reader.embedded_signatures[0]
+                self.assertEqual(emb.field_name, "Signature1")
+        finally:
+            self._cleanup(out)
+
+    def test_wrong_password_raises(self):
+        with self.assertRaises(ValueError):
+            sign_pdf(self.pdf, p12_bytes=self.p12, p12_password="wrong-pass")
+
+    def test_empty_p12_raises(self):
+        with self.assertRaises(ValueError):
+            sign_pdf(self.pdf, p12_bytes=b"", p12_password="x")
+
+    def test_missing_pdf_raises(self):
+        with self.assertRaises(ValueError):
+            sign_pdf("/no/such/file.pdf", p12_bytes=self.p12, p12_password="test123")
+
+    def test_invalid_page_raises(self):
+        with self.assertRaises(ValueError):
+            sign_pdf(self.pdf, p12_bytes=self.p12, p12_password="test123", page=99)
+
+    def test_signing_encrypted_pdf_raises(self):
+        # Protect first, then attempt to sign — should refuse.
+        protected = protect_pdf(self.pdf, user_password="secret")
+        try:
+            with self.assertRaises(ValueError):
+                sign_pdf(protected, p12_bytes=self.p12, p12_password="test123")
+        finally:
+            self._cleanup(protected)
+
+    def test_sign_at_different_positions(self):
+        out = sign_pdf(self.pdf, p12_bytes=self.p12, p12_password="test123", position="top-left")
+        try:
+            self.assertTrue(os.path.exists(out))
+        finally:
+            self._cleanup(out)
 
 
 class AddWatermarkTests(_MediaRootMixin, TestCase):

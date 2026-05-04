@@ -1,4 +1,4 @@
-"""Split, merge, compress, password-protect views."""
+"""Split, merge, compress, password-protect, digital-sign views."""
 
 import os
 
@@ -8,9 +8,9 @@ from django.http import Http404
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 
-from ..forms import CompressPDFForm, MergePDFForm, ProtectPDFForm, SplitPDFForm
+from ..forms import CompressPDFForm, MergePDFForm, ProtectPDFForm, SignPDFForm, SplitPDFForm
 from ..models import ProcessedPDF
-from ..pdf_processor import compress_pdf, merge_pdfs, protect_pdf, split_pdf
+from ..pdf_processor import compress_pdf, merge_pdfs, protect_pdf, sign_pdf, split_pdf
 from ._common import (
     attachment_response,
     get_pdf_by_id,
@@ -371,6 +371,88 @@ def protect_result_view(request):
 
 def download_protected_view(request):
     output = _fetch_output(request, "protected_pdf_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+
+
+# ---------- Digital signature ----------
+
+
+def sign_view(request):
+    selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
+    if early:
+        return early
+
+    pdf_path = selected_pdf.path
+
+    if request.method == "POST":
+        form = SignPDFForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                p12_file = form.cleaned_data["p12_file"]
+                p12_bytes = p12_file.read()
+                output_path = sign_pdf(
+                    pdf_path,
+                    p12_bytes=p12_bytes,
+                    p12_password=form.cleaned_data["p12_password"],
+                    page=form.cleaned_data["page"],
+                    position=form.cleaned_data["position"],
+                    reason=form.cleaned_data.get("reason", ""),
+                    location=form.cleaned_data.get("location", ""),
+                )
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_SIGN,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session["signed_pdf_id"] = str(output.id)
+                messages.success(request, _("PDF signed successfully!"))
+                return redirect("sign_result")
+            except ValueError as e:
+                messages.error(request, _("Error signing PDF: %(err)s") % {"err": e})
+            except Exception as e:
+                messages.error(request, _("Error signing PDF: %(err)s") % {"err": e})
+    else:
+        form = SignPDFForm()
+
+    return render(
+        request,
+        "pdfeditor/sign.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+        },
+    )
+
+
+def sign_result_view(request):
+    output = _fetch_output(request, "signed_pdf_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("Signed file not found."))
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "pdfeditor/sign_result.html",
+        {
+            "signed_filename": output.name,
+            "size": os.path.getsize(output.path),
+        },
+    )
+
+
+def download_signed_view(request):
+    output = _fetch_output(request, "signed_pdf_id")
     if not output:
         messages.error(request, _("File not found."))
         return redirect("dashboard")

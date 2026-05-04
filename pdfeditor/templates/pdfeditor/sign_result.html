@@ -1,0 +1,50 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Signature Result" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header result-success-header">
+        <div class="result-success-icon">✍️</div>
+        <h2>{% trans "PDF Signed Successfully!" %}</h2>
+        <p>{% trans "Your PDF carries a cryptographic PKCS#7 signature." %}</p>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="result-info-box">
+            <strong>ℹ️ {% trans "Note:" %}</strong>
+            {% trans "Some PDF readers may show the signer as 'unknown' because we did not embed a CA chain. The signature is still cryptographically valid." %}
+        </div>
+
+        <div class="result-file-row">
+            <div class="result-file-icon">📄</div>
+            <div class="result-file-info">
+                <div class="result-file-name">{{ signed_filename }}</div>
+                <div class="result-file-meta">{{ size|filesizeformat }} · {% trans "Ready to download" %}</div>
+            </div>
+        </div>
+
+        <div class="result-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                ← {% trans "Dashboard" %}
+            </a>
+            <a href="{% url 'download_signed' %}" class="btn btn-primary">
+                📥 {% trans "Download Signed PDF" %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .result-info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+        line-height: 1.5;
+    }
+</style>
+{% endblock %}

@@ -164,6 +164,58 @@ class ProtectPDFForm(forms.Form):
         return cleaned
 
 
+class SignPDFForm(forms.Form):
+    """Form for signing a PDF with a user-supplied PKCS#12 certificate."""
+
+    POSITION_CHOICES = [
+        ("bottom-right", "Bottom right"),
+        ("bottom-left", "Bottom left"),
+        ("top-right", "Top right"),
+        ("top-left", "Top left"),
+        ("center", "Center"),
+    ]
+
+    p12_file = forms.FileField(
+        required=True,
+        label="Certificate (.p12 / .pfx)",
+        help_text="Your PKCS#12 archive containing the private key + certificate.",
+    )
+    p12_password = forms.CharField(
+        required=True,
+        max_length=256,
+        label="Certificate password",
+        widget=forms.PasswordInput(attrs={"autocomplete": "off"}),
+    )
+    page = forms.IntegerField(
+        required=True,
+        min_value=1,
+        initial=1,
+        label="Page",
+        help_text="Page number where the visible signature will appear.",
+    )
+    position = forms.ChoiceField(
+        choices=POSITION_CHOICES,
+        initial="bottom-right",
+        label="Position",
+    )
+    reason = forms.CharField(
+        required=False,
+        max_length=256,
+        label="Reason (optional)",
+    )
+    location = forms.CharField(
+        required=False,
+        max_length=256,
+        label="Location (optional)",
+    )
+
+    def clean_p12_file(self):
+        f = self.cleaned_data.get("p12_file")
+        if f and f.size > 1024 * 1024:  # 1 MB cap is plenty for a .p12
+            raise forms.ValidationError("Certificate file is too large (max 1 MB).")
+        return f
+
+
 class WatermarkForm(forms.Form):
     """Form for adding watermark to PDF."""
 
