@@ -24,7 +24,7 @@ from .pdf_processor.ops import (
 
 def _make_self_signed_p12(passphrase: bytes = b"test123") -> bytes:
     """Generate a self-signed PKCS#12 archive in memory for sign-flow tests."""
-    from datetime import UTC, datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
     from cryptography import x509
     from cryptography.hazmat.primitives import hashes, serialization
@@ -34,14 +34,15 @@ def _make_self_signed_p12(passphrase: bytes = b"test123") -> bytes:
 
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Test Signer")])
+    now = datetime.now(timezone.utc)
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)
         .issuer_name(subject)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.now(UTC) - timedelta(days=1))
-        .not_valid_after(datetime.now(UTC) + timedelta(days=30))
+        .not_valid_before(now - timedelta(days=1))
+        .not_valid_after(now + timedelta(days=30))
         .sign(key, hashes.SHA256())
     )
     return pkcs12.serialize_key_and_certificates(
