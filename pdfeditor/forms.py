@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 
 class FindReplaceForm(forms.Form):
@@ -211,20 +212,39 @@ class SignPDFForm(forms.Form):
     add_timestamp = forms.BooleanField(
         required=False,
         initial=True,
-        label="Embed trusted timestamp (RFC 3161)",
-        help_text="Adds a verifiable signing time fetched from a public TSA.",
+        label=_("Embed trusted timestamp (RFC 3161)"),
+        help_text=_("Adds a verifiable signing time fetched from a public TSA."),
     )
     embed_validation_info = forms.BooleanField(
         required=False,
         initial=False,
-        label="Embed long-term validation info (PAdES B-LT)",
-        help_text=(
+        label=_("Embed long-term validation info (PAdES B-LT)"),
+        help_text=_(
             "Fetches OCSP/CRL responses for the signing chain and embeds them in "
             "the PDF, so the signature stays verifiable even if the CA goes offline. "
             "Only works with certificates issued by a public CA — self-signed "
             "certificates will fail."
         ),
     )
+    add_doc_timestamp = forms.BooleanField(
+        required=False,
+        initial=False,
+        label=_("Append archival timestamp (PAdES B-LTA)"),
+        help_text=_(
+            "Adds a document-level RFC 3161 timestamp after the signature so the "
+            "PDF can be re-validated even after the signing certificate expires. "
+            "Requires the trusted timestamp option above."
+        ),
+    )
+
+    def clean(self) -> dict:
+        cleaned = super().clean()
+        if cleaned.get("add_doc_timestamp") and not cleaned.get("add_timestamp"):
+            self.add_error(
+                "add_doc_timestamp",
+                "Archival timestamp requires the trusted timestamp option to be on.",
+            )
+        return cleaned
 
     def clean_p12_file(self):
         f = self.cleaned_data.get("p12_file")

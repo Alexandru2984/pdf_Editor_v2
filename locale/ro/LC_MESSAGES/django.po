@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-04 17:37+0000\n"
+"POT-Creation-Date: 2026-05-04 17:47+0000\n"
 "PO-Revision-Date: 2026-05-03 17:30+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,36 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?"
 "2:1));\n"
+
+#: pdfeditor/forms.py:215
+msgid "Embed trusted timestamp (RFC 3161)"
+msgstr "Atașează marcaj de timp de încredere (RFC 3161)"
+
+#: pdfeditor/forms.py:216
+msgid "Adds a verifiable signing time fetched from a public TSA."
+msgstr "Adaugă o oră de semnare verificabilă obținută de la o autoritate publică (TSA)."
+
+#: pdfeditor/forms.py:221
+msgid "Embed long-term validation info (PAdES B-LT)"
+msgstr "Atașează informații pentru validare pe termen lung (PAdES B-LT)"
+
+#: pdfeditor/forms.py:223
+msgid ""
+"Fetches OCSP/CRL responses for the signing chain and embeds them in the PDF, "
+"so the signature stays verifiable even if the CA goes offline. Only works "
+"with certificates issued by a public CA — self-signed certificates will fail."
+msgstr "Obține răspunsuri OCSP/CRL pentru lanțul de semnare și le include în PDF, astfel încât semnătura rămâne verificabilă chiar dacă CA-ul iese din funcțiune. Funcționează doar cu certificate emise de o CA publică — certificatele self-signed vor eșua."
+
+#: pdfeditor/forms.py:232
+msgid "Append archival timestamp (PAdES B-LTA)"
+msgstr "Adaugă marcaj de timp arhival (PAdES B-LTA)"
+
+#: pdfeditor/forms.py:234
+msgid ""
+"Adds a document-level RFC 3161 timestamp after the signature so the PDF can "
+"be re-validated even after the signing certificate expires. Requires the "
+"trusted timestamp option above."
+msgstr "Adaugă un marcaj de timp RFC 3161 la nivel de document după semnătură, astfel încât PDF-ul poate fi revalidat chiar și după expirarea certificatului de semnare. Necesită opțiunea de marcaj de timp de încredere de mai sus."
 
 #: pdfeditor/password_validators.py:69
 msgid ""
@@ -270,7 +300,7 @@ msgstr "Selectează nivelul de comprimare:"
 #: pdfeditor/templates/pdfeditor/compress.html:75
 #: pdfeditor/templates/pdfeditor/protect.html:74
 #: pdfeditor/templates/pdfeditor/rotate.html:62
-#: pdfeditor/templates/pdfeditor/sign.html:130
+#: pdfeditor/templates/pdfeditor/sign.html:141
 #: pdfeditor/templates/pdfeditor/watermark.html:97
 msgid "Back"
 msgstr "Înapoi"
@@ -1335,7 +1365,7 @@ msgstr "Motiv (opțional)"
 msgid "Location (optional)"
 msgstr "Locație (opțional)"
 
-#: pdfeditor/templates/pdfeditor/sign.html:133
+#: pdfeditor/templates/pdfeditor/sign.html:144
 msgid "Sign PDF"
 msgstr "Semnează PDF"
 
@@ -1478,7 +1508,9 @@ msgstr "Încarcă și continuă"
 msgid ""
 "Upload a signed PDF to validate every embedded signature: integrity, signer, "
 "signing time, timestamp, trust."
-msgstr "Încarcă un PDF semnat pentru a valida fiecare semnătură: integritate, semnatar, oră, marcaj de timp, încredere."
+msgstr ""
+"Încarcă un PDF semnat pentru a valida fiecare semnătură: integritate, "
+"semnatar, oră, marcaj de timp, încredere."
 
 #: pdfeditor/templates/pdfeditor/verify_signature.html:53
 msgid "Verify"
@@ -1944,7 +1976,7 @@ msgstr "Fișierul unit nu a fost găsit."
 #: pdfeditor/views/basic_ops.py:232 pdfeditor/views/basic_ops.py:237
 #: pdfeditor/views/basic_ops.py:318 pdfeditor/views/basic_ops.py:323
 #: pdfeditor/views/basic_ops.py:392 pdfeditor/views/basic_ops.py:397
-#: pdfeditor/views/basic_ops.py:478 pdfeditor/views/basic_ops.py:483
+#: pdfeditor/views/basic_ops.py:479 pdfeditor/views/basic_ops.py:484
 msgid "File not found."
 msgstr "Fișierul nu a fost găsit."
 
@@ -1975,29 +2007,30 @@ msgstr "Eroare la protejarea PDF-ului: %(err)s"
 msgid "Protected file not found."
 msgstr "Fișierul protejat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:437
+#: pdfeditor/views/basic_ops.py:438
 msgid "PDF signed successfully!"
 msgstr "PDF semnat cu succes!"
 
-#: pdfeditor/views/basic_ops.py:440 pdfeditor/views/basic_ops.py:442
+#: pdfeditor/views/basic_ops.py:441 pdfeditor/views/basic_ops.py:443
 #, python-format
 msgid "Error signing PDF: %(err)s"
 msgstr "Eroare la semnarea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:462
+#: pdfeditor/views/basic_ops.py:463
 msgid "Signed file not found."
 msgstr "Fișierul semnat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:534
+#: pdfeditor/views/basic_ops.py:535
 #, python-format
 msgid "Error generating certificate: %(err)s"
 msgstr "Eroare la generarea certificatului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:573
+#: pdfeditor/views/basic_ops.py:577
+#, python-format
 msgid "Error verifying signatures: %(err)s"
 msgstr "Eroare la verificarea semnăturilor: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:579
+#: pdfeditor/views/basic_ops.py:583
 msgid "No signatures found in this PDF."
 msgstr "Nicio semnătură găsită în acest PDF."
 

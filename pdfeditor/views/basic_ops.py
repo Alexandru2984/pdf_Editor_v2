@@ -17,7 +17,7 @@ from ..forms import (
     SplitPDFForm,
     VerifyPDFForm,
 )
-from ..models import ProcessedPDF
+from ..models import ProcessedPDF, TrustAnchor
 from ..pdf_processor import (
     compress_pdf,
     merge_pdfs,
@@ -426,6 +426,7 @@ def sign_view(request):
                     location=form.cleaned_data.get("location", ""),
                     tsa_url=tsa_url,
                     embed_validation_info=form.cleaned_data.get("embed_validation_info", False),
+                    add_doc_timestamp=form.cleaned_data.get("add_doc_timestamp", False),
                 )
                 output = record_output(
                     request,
@@ -559,6 +560,9 @@ def verify_signature_view(request):
             extra_certs: list[bytes] = []
             if trust_file:
                 extra_certs.append(trust_file.read())
+            # Merge in every globally-active trust anchor stored by an admin.
+            for anchor in TrustAnchor.objects.filter(is_active=True):
+                extra_certs.append(anchor.cert_pem.encode("utf-8"))
 
             import tempfile
 
