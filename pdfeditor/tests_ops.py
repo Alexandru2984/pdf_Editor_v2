@@ -19,11 +19,12 @@ from .pdf_processor.ops import (
     rotate_pages,
     sign_pdf,
     split_pdf,
+    verify_pdf_signatures,
 )
 
 
-def _make_self_signed_p12(passphrase: bytes = b"test123") -> bytes:
-    """Generate a self-signed PKCS#12 archive in memory for sign-flow tests."""
+def _make_self_signed_p12(passphrase: bytes = b"test123") -> tuple[bytes, bytes]:
+    """Generate self-signed PKCS#12 archive + cert PEM. Returns (p12_bytes, cert_pem)."""
     from datetime import datetime, timedelta, timezone
 
     from cryptography import x509
@@ -45,9 +46,11 @@ def _make_self_signed_p12(passphrase: bytes = b"test123") -> bytes:
         .not_valid_after(now + timedelta(days=30))
         .sign(key, hashes.SHA256())
     )
-    return pkcs12.serialize_key_and_certificates(
+    pfx = pkcs12.serialize_key_and_certificates(
         b"test", key, cert, [], serialization.BestAvailableEncryption(passphrase)
     )
+    cert_pem = cert.public_bytes(serialization.Encoding.PEM)
+    return pfx, cert_pem
 
 
 class _MediaRootMixin:
@@ -340,7 +343,7 @@ class SignPdfTests(_MediaRootMixin, TestCase):
     def setUpClass(cls):
         super().setUpClass()
         # Cert generation is slow (RSA key) — share one across tests.
-        cls.p12 = _make_self_signed_p12(b"test123")
+        cls.p12, cls.cert_pem = _make_self_signed_p12(b"test123")
 
     def setUp(self):
         self.pdf = _make_multipage_pdf(2)
@@ -419,6 +422,77 @@ class SignPdfTests(_MediaRootMixin, TestCase):
                 p12_password="test123",
                 tsa_url="http://127.0.0.1:1/",
             )
+
+    def test_ltv_with_self_signed_cert_raises(self):
+        # PAdES B-LT requires a verifiable chain — self-signed must error out.
+        with self.assertRaises(ValueError):
+            sign_pdf(
+                self.pdf,
+                p12_bytes=self.p12,
+                p12_password="test123",
+                embed_validation_info=True,
+            )
+
+
+class VerifyPdfSignaturesTests(_MediaRootMixin, TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.p12, cls.cert_pem = _make_self_signed_p12(b"test123")
+
+    def setUp(self):
+        self.pdf = _make_multipage_pdf(2)
+        self.signed = sign_pdf(self.pdf, p12_bytes=self.p12, p12_password="test123")
+
+    def tearDown(self):
+        for p in (self.pdf, self.signed):
+            if p and os.path.exists(p):
+                os.remove(p)
+
+    def test_unsigned_pdf_returns_empty_report(self):
+        reports = verify_pdf_signatures(self.pdf)
+        self.assertEqual(reports, [])
+
+    def test_signed_pdf_intact_but_untrusted_without_anchor(self):
+        reports = verify_pdf_signatures(self.signed)
+        self.assertEqual(len(reports), 1)
+        r = reports[0]
+        self.assertTrue(r["intact"])
+        self.assertFalse(r["trusted"])  # self-signed → no chain
+        self.assertEqual(r["field_name"], "Signature1")
+        self.assertIn("Test Signer", r["signer_name"])
+        self.assertIsNotNone(r["signing_time"])
+
+    def test_signed_pdf_trusted_when_anchor_provided(self):
+        reports = verify_pdf_signatures(self.signed, extra_trust_certs=[self.cert_pem])
+        self.assertEqual(len(reports), 1)
+        r = reports[0]
+        self.assertTrue(r["intact"])
+        self.assertTrue(r["trusted"])
+
+    def test_tampered_pdf_loses_integrity(self):
+        # Flip a byte in the middle of the signed file. The original byte range
+        # covered by the signature includes most of the body (excluding only the
+        # signature blob itself), so any mid-file mutation breaks `intact`.
+        with open(self.signed, "rb") as f:
+            data = bytearray(f.read())
+        mid = len(data) // 2
+        # Pick a byte that we can safely mutate (anything other than '\n' near
+        # the middle works; binary content here makes any flip a real corruption).
+        original = data[mid]
+        data[mid] = (original + 1) % 256
+        with open(self.signed, "wb") as f:
+            f.write(bytes(data))
+        reports = verify_pdf_signatures(self.signed, extra_trust_certs=[self.cert_pem])
+        self.assertEqual(len(reports), 1)
+        # Tampering breaks integrity OR coverage OR raises errors during
+        # validation; no path should yield "intact AND trusted AND no errors".
+        r = reports[0]
+        self.assertFalse(r["intact"] and r["trusted"] and not r["errors"])
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            verify_pdf_signatures("/no/such/file.pdf")
 
 
 class AddWatermarkTests(_MediaRootMixin, TestCase):

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-04 11:47+0000\n"
+"POT-Creation-Date: 2026-05-04 17:37+0000\n"
 "PO-Revision-Date: 2026-05-03 17:30+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -270,7 +270,7 @@ msgstr "Selectează nivelul de comprimare:"
 #: pdfeditor/templates/pdfeditor/compress.html:75
 #: pdfeditor/templates/pdfeditor/protect.html:74
 #: pdfeditor/templates/pdfeditor/rotate.html:62
-#: pdfeditor/templates/pdfeditor/sign.html:120
+#: pdfeditor/templates/pdfeditor/sign.html:130
 #: pdfeditor/templates/pdfeditor/watermark.html:97
 msgid "Back"
 msgstr "Înapoi"
@@ -644,7 +644,9 @@ msgstr "Generează certificat de test"
 msgid ""
 "Self-signed PKCS#12 archive for testing the signing flow. Not suitable for "
 "legally binding signatures."
-msgstr "Arhivă PKCS#12 self-signed pentru testarea fluxului de semnare. Nu este potrivită pentru semnături cu valoare legală."
+msgstr ""
+"Arhivă PKCS#12 self-signed pentru testarea fluxului de semnare. Nu este "
+"potrivită pentru semnături cu valoare legală."
 
 #: pdfeditor/templates/pdfeditor/generate_cert.html:58
 #: pdfeditor/templates/pdfeditor/sign_result.html:16
@@ -655,9 +657,12 @@ msgstr "Notă:"
 msgid ""
 "The generated certificate is valid for 1 year. The .p12 file will be "
 "downloaded automatically — keep it safe; we don't store it."
-msgstr "Certificatul generat este valabil 1 an. Fișierul .p12 va fi descărcat automat — păstrează-l într-un loc sigur; noi nu îl stocăm."
+msgstr ""
+"Certificatul generat este valabil 1 an. Fișierul .p12 va fi descărcat "
+"automat — păstrează-l într-un loc sigur; noi nu îl stocăm."
 
 #: pdfeditor/templates/pdfeditor/generate_cert.html:64
+#: pdfeditor/templates/pdfeditor/verify_signature.html:50
 msgid "Back to signing"
 msgstr "Înapoi la semnare"
 
@@ -1330,7 +1335,7 @@ msgstr "Motiv (opțional)"
 msgid "Location (optional)"
 msgstr "Locație (opțional)"
 
-#: pdfeditor/templates/pdfeditor/sign.html:123
+#: pdfeditor/templates/pdfeditor/sign.html:133
 msgid "Sign PDF"
 msgstr "Semnează PDF"
 
@@ -1355,6 +1360,12 @@ msgstr ""
 "inclus un lanț CA. Semnătura este în continuare validă criptografic."
 
 #: pdfeditor/templates/pdfeditor/sign_result.html:33
+#: pdfeditor/templates/pdfeditor/verify_signature.html:4
+#: pdfeditor/templates/pdfeditor/verify_signature.html:10
+msgid "Verify signature"
+msgstr "Verifică semnătura"
+
+#: pdfeditor/templates/pdfeditor/sign_result.html:36
 msgid "Download Signed PDF"
 msgstr "Descarcă PDF-ul semnat"
 
@@ -1462,6 +1473,80 @@ msgstr "Niciun fișier selectat"
 #: pdfeditor/templates/pdfeditor/upload.html:28
 msgid "Upload and continue"
 msgstr "Încarcă și continuă"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:12
+msgid ""
+"Upload a signed PDF to validate every embedded signature: integrity, signer, "
+"signing time, timestamp, trust."
+msgstr "Încarcă un PDF semnat pentru a valida fiecare semnătură: integritate, semnatar, oră, marcaj de timp, încredere."
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:53
+msgid "Verify"
+msgstr "Verifică"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:59
+msgid "Validation report"
+msgstr "Raport de validare"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:65
+msgid "Valid & trusted"
+msgstr "Valid și de încredere"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:66
+msgid "Intact but untrusted"
+msgstr "Intact dar fără încredere"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:67
+msgid "Invalid"
+msgstr "Invalid"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:71
+msgid "Signer"
+msgstr "Semnatar"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:72
+msgid "Signing time"
+msgstr "Ora semnării"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:73
+msgid "Integrity"
+msgstr "Integritate"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:74
+msgid "Trusted chain"
+msgstr "Lanț de încredere"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:75
+msgid "Revoked"
+msgstr "Revocat"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:75
+msgid "no"
+msgstr "nu"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:76
+msgid "Timestamp"
+msgstr "Marcaj de timp"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:79
+msgid "valid"
+msgstr "valid"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:79
+msgid "invalid"
+msgstr "invalid"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:80
+msgid "none"
+msgstr "lipsă"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:82
+msgid "Summary"
+msgstr "Sumar"
+
+#: pdfeditor/templates/pdfeditor/verify_signature.html:86
+msgid "Errors:"
+msgstr "Erori:"
 
 #: pdfeditor/templates/pdfeditor/watermark.html:27
 #, python-format
@@ -1801,111 +1886,120 @@ msgstr "Acesta este deja emailul tău actual."
 msgid "That password doesn't match your account."
 msgstr "Parola nu corespunde cu contul tău."
 
-#: pdfeditor/views/basic_ops.py:34
+#: pdfeditor/views/basic_ops.py:42
 msgid "No PDF found. Please upload a PDF first."
 msgstr "Niciun PDF găsit. Te rugăm să încarci mai întâi un PDF."
 
-#: pdfeditor/views/basic_ops.py:40
+#: pdfeditor/views/basic_ops.py:48
 msgid "Selected PDF not found."
 msgstr "PDF-ul selectat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:72
+#: pdfeditor/views/basic_ops.py:80
 #, python-format
 msgid "PDF split successfully into %(count)s files!"
 msgstr "PDF-ul a fost împărțit cu succes în %(count)s fișiere!"
 
-#: pdfeditor/views/basic_ops.py:76 pdfeditor/views/basic_ops.py:187
+#: pdfeditor/views/basic_ops.py:84 pdfeditor/views/basic_ops.py:195
 #, python-format
 msgid "Error: %(err)s"
 msgstr "Eroare: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:78
+#: pdfeditor/views/basic_ops.py:86
 #, python-format
 msgid "Error splitting PDF: %(err)s"
 msgstr "Eroare la împărțirea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:107
+#: pdfeditor/views/basic_ops.py:115
 msgid "No split files found."
 msgstr "Nu s-au găsit fișiere împărțite."
 
-#: pdfeditor/views/basic_ops.py:155
+#: pdfeditor/views/basic_ops.py:163
 msgid "You need at least 2 PDFs to merge. Please upload more files."
 msgstr ""
 "Ai nevoie de cel puțin 2 PDF-uri pentru a le uni. Încarcă mai multe fișiere."
 
-#: pdfeditor/views/basic_ops.py:168
+#: pdfeditor/views/basic_ops.py:176
 #, python-format
 msgid "PDF with ID %(pdf_id)s not found."
 msgstr "PDF-ul cu ID-ul %(pdf_id)s nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:174
+#: pdfeditor/views/basic_ops.py:182
 msgid "At least 2 PDFs are required for merging."
 msgstr "Sunt necesare cel puțin 2 PDF-uri pentru unire."
 
-#: pdfeditor/views/basic_ops.py:183
+#: pdfeditor/views/basic_ops.py:191
 #, python-format
 msgid "Successfully merged %(count)s PDFs!"
 msgstr "%(count)s PDF-uri unite cu succes!"
 
-#: pdfeditor/views/basic_ops.py:189
+#: pdfeditor/views/basic_ops.py:197
 #, python-format
 msgid "Error merging PDFs: %(err)s"
 msgstr "Eroare la unirea PDF-urilor: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:206
+#: pdfeditor/views/basic_ops.py:214
 msgid "Merged file not found."
 msgstr "Fișierul unit nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:224 pdfeditor/views/basic_ops.py:229
-#: pdfeditor/views/basic_ops.py:310 pdfeditor/views/basic_ops.py:315
-#: pdfeditor/views/basic_ops.py:384 pdfeditor/views/basic_ops.py:389
-#: pdfeditor/views/basic_ops.py:469 pdfeditor/views/basic_ops.py:474
+#: pdfeditor/views/basic_ops.py:232 pdfeditor/views/basic_ops.py:237
+#: pdfeditor/views/basic_ops.py:318 pdfeditor/views/basic_ops.py:323
+#: pdfeditor/views/basic_ops.py:392 pdfeditor/views/basic_ops.py:397
+#: pdfeditor/views/basic_ops.py:478 pdfeditor/views/basic_ops.py:483
 msgid "File not found."
 msgstr "Fișierul nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:263
+#: pdfeditor/views/basic_ops.py:271
 #, python-format
 msgid "PDF compressed successfully! Saved %(ratio).1f%% space."
 msgstr "PDF comprimat cu succes! Spațiu economisit: %(ratio).1f%%."
 
-#: pdfeditor/views/basic_ops.py:267
+#: pdfeditor/views/basic_ops.py:275
 #, python-format
 msgid "Error compressing PDF: %(err)s"
 msgstr "Eroare la comprimarea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:288
+#: pdfeditor/views/basic_ops.py:296
 msgid "Compressed file not found."
 msgstr "Fișierul comprimat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:345
+#: pdfeditor/views/basic_ops.py:353
 msgid "PDF protected successfully!"
 msgstr "PDF protejat cu succes!"
 
-#: pdfeditor/views/basic_ops.py:348
+#: pdfeditor/views/basic_ops.py:356
 #, python-format
 msgid "Error protecting PDF: %(err)s"
 msgstr "Eroare la protejarea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:368
+#: pdfeditor/views/basic_ops.py:376
 msgid "Protected file not found."
 msgstr "Fișierul protejat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:428
+#: pdfeditor/views/basic_ops.py:437
 msgid "PDF signed successfully!"
 msgstr "PDF semnat cu succes!"
 
-#: pdfeditor/views/basic_ops.py:431 pdfeditor/views/basic_ops.py:433
+#: pdfeditor/views/basic_ops.py:440 pdfeditor/views/basic_ops.py:442
 #, python-format
 msgid "Error signing PDF: %(err)s"
 msgstr "Eroare la semnarea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:453
+#: pdfeditor/views/basic_ops.py:462
 msgid "Signed file not found."
 msgstr "Fișierul semnat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:525
+#: pdfeditor/views/basic_ops.py:534
+#, python-format
 msgid "Error generating certificate: %(err)s"
 msgstr "Eroare la generarea certificatului: %(err)s"
+
+#: pdfeditor/views/basic_ops.py:573
+msgid "Error verifying signatures: %(err)s"
+msgstr "Eroare la verificarea semnăturilor: %(err)s"
+
+#: pdfeditor/views/basic_ops.py:579
+msgid "No signatures found in this PDF."
+msgstr "Nicio semnătură găsită în acest PDF."
 
 #: pdfeditor/views/upload.py:72
 msgid "Please select at least one PDF file."

@@ -867,6 +867,59 @@ class HistoryViewTests(_ViewTestBase):
         self.assertTrue(ProcessedPDF.objects.filter(id=other.id).exists())
 
 
+class VerifySignatureViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_get_renders_form(self):
+        resp = self.client.get(reverse("verify_signature"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Verify signature")
+
+    def test_post_unsigned_pdf_warns(self):
+        unsigned = SimpleUploadedFile("x.pdf", _multipage_pdf_bytes(1), content_type="application/pdf")
+        resp = self.client.post(reverse("verify_signature"), {"pdf_file": unsigned}, follow=False)
+        self.assertEqual(resp.status_code, 200)
+        # Empty report → user sees a warning message
+        self.assertContains(resp, "No signatures found")
+
+    def test_post_signed_pdf_renders_report(self):
+        # Build a signed PDF on disk
+        import os
+        import tempfile
+
+        from .pdf_processor.ops import sign_pdf
+        from .tests_ops import _make_self_signed_p12
+
+        fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        with open(path, "wb") as f:
+            f.write(_multipage_pdf_bytes(1))
+        try:
+            p12, cert_pem = _make_self_signed_p12(b"pw")
+            signed_path = sign_pdf(path, p12_bytes=p12, p12_password="pw")
+            try:
+                with open(signed_path, "rb") as sf:
+                    pdf_blob = sf.read()
+                upload = SimpleUploadedFile("signed.pdf", pdf_blob, content_type="application/pdf")
+                trust = SimpleUploadedFile("trust.pem", cert_pem, content_type="application/x-pem-file")
+                resp = self.client.post(
+                    reverse("verify_signature"),
+                    {"pdf_file": upload, "trust_certs": trust},
+                )
+                self.assertEqual(resp.status_code, 200)
+                self.assertContains(resp, "Signature1")
+                self.assertContains(resp, "Test Signer")
+                # With trust anchor provided → "Valid & trusted"
+                self.assertContains(resp, "Valid & trusted")
+            finally:
+                if os.path.exists(signed_path):
+                    os.remove(signed_path)
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
+
+
 class GenerateCertViewTests(TestCase):
     def setUp(self):
         self.client = Client()

@@ -15,9 +15,17 @@ from ..forms import (
     ProtectPDFForm,
     SignPDFForm,
     SplitPDFForm,
+    VerifyPDFForm,
 )
 from ..models import ProcessedPDF
-from ..pdf_processor import compress_pdf, merge_pdfs, protect_pdf, sign_pdf, split_pdf
+from ..pdf_processor import (
+    compress_pdf,
+    merge_pdfs,
+    protect_pdf,
+    sign_pdf,
+    split_pdf,
+    verify_pdf_signatures,
+)
 from ..ratelimiting import auth_aware_ratelimit
 from ._common import (
     attachment_response,
@@ -417,6 +425,7 @@ def sign_view(request):
                     reason=form.cleaned_data.get("reason", ""),
                     location=form.cleaned_data.get("location", ""),
                     tsa_url=tsa_url,
+                    embed_validation_info=form.cleaned_data.get("embed_validation_info", False),
                 )
                 output = record_output(
                     request,
@@ -533,3 +542,49 @@ def generate_cert_view(request):
         form = GenerateCertForm()
 
     return render(request, "pdfeditor/generate_cert.html", {"form": form})
+
+
+# ---------- Verify signatures ----------
+
+
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
+def verify_signature_view(request):
+    """Upload a signed PDF and report on its embedded signatures."""
+    reports = None
+    if request.method == "POST":
+        form = VerifyPDFForm(request.POST, request.FILES)
+        if form.is_valid():
+            pdf_file = form.cleaned_data["pdf_file"]
+            trust_file = form.cleaned_data.get("trust_certs")
+            extra_certs: list[bytes] = []
+            if trust_file:
+                extra_certs.append(trust_file.read())
+
+            import tempfile
+
+            fd, tmp_path = tempfile.mkstemp(suffix=".pdf")
+            try:
+                with os.fdopen(fd, "wb") as out:
+                    for chunk in pdf_file.chunks():
+                        out.write(chunk)
+                try:
+                    reports = verify_pdf_signatures(tmp_path, extra_trust_certs=extra_certs)
+                except Exception as e:
+                    messages.error(request, _("Error verifying signatures: %(err)s") % {"err": e})
+            finally:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+
+            if reports is not None and not reports:
+                messages.warning(request, _("No signatures found in this PDF."))
+    else:
+        form = VerifyPDFForm()
+
+    return render(
+        request,
+        "pdfeditor/verify_signature.html",
+        {
+            "form": form,
+            "reports": reports,
+        },
+    )
