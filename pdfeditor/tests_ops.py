@@ -15,6 +15,7 @@ from .pdf_processor.ops import (
     add_watermark,
     compress_pdf,
     merge_pdfs,
+    protect_pdf,
     rotate_pages,
     split_pdf,
 )
@@ -244,6 +245,65 @@ class CompressPdfTests(_MediaRootMixin, TestCase):
     def test_missing_file_raises(self):
         with self.assertRaises(ValueError):
             compress_pdf("/no/such/file.pdf")
+
+
+class ProtectPdfTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.path = _make_multipage_pdf(2)
+
+    def tearDown(self):
+        if os.path.exists(self.path):
+            os.remove(self.path)
+
+    def test_protect_produces_encrypted_pdf(self):
+        out = protect_pdf(self.path, user_password="hunter2")
+        try:
+            self.assertTrue(os.path.exists(out))
+            doc = fitz.open(out)
+            self.assertTrue(doc.is_encrypted)
+            self.assertTrue(doc.needs_pass)
+            doc.close()
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_protected_pdf_opens_with_correct_password(self):
+        out = protect_pdf(self.path, user_password="hunter2")
+        try:
+            doc = fitz.open(out)
+            self.assertEqual(doc.authenticate("hunter2"), 6)  # owner+user auth success
+            self.assertGreater(doc.page_count, 0)
+            doc.close()
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_protected_pdf_rejects_wrong_password(self):
+        out = protect_pdf(self.path, user_password="hunter2")
+        try:
+            doc = fitz.open(out)
+            self.assertEqual(doc.authenticate("wrong"), 0)
+            doc.close()
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_empty_password_raises(self):
+        with self.assertRaises(ValueError):
+            protect_pdf(self.path, user_password="")
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            protect_pdf("/no/such/file.pdf", user_password="x")
+
+    def test_already_encrypted_raises(self):
+        out = protect_pdf(self.path, user_password="hunter2")
+        try:
+            with self.assertRaises(ValueError):
+                protect_pdf(out, user_password="another")
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
 
 
 class AddWatermarkTests(_MediaRootMixin, TestCase):

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-03 22:34+0000\n"
+"POT-Creation-Date: 2026-05-04 11:17+0000\n"
 "PO-Revision-Date: 2026-05-03 17:30+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -106,7 +106,9 @@ msgstr "Ceva n-a mers bine"
 msgid ""
 "An unexpected error occurred. Our team has been notified. Please try again "
 "in a moment."
-msgstr "A apărut o eroare neașteptată. Echipa noastră a fost notificată. Încearcă din nou în câteva momente."
+msgstr ""
+"A apărut o eroare neașteptată. Echipa noastră a fost notificată. Încearcă "
+"din nou în câteva momente."
 
 #: pdfeditor/templates/pdfeditor/admin_health.html:4
 #: pdfeditor/templates/pdfeditor/admin_health.html:9
@@ -209,6 +211,7 @@ msgstr "Comută navigarea"
 
 #: pdfeditor/templates/pdfeditor/base.html:67
 #: pdfeditor/templates/pdfeditor/compress_result.html:54
+#: pdfeditor/templates/pdfeditor/protect_result.html:30
 #: pdfeditor/templates/pdfeditor/rotate_result.html:27
 #: pdfeditor/templates/pdfeditor/watermark_result.html:27
 msgid "Dashboard"
@@ -244,6 +247,7 @@ msgid "Select PDF to Compress:"
 msgstr "📂 Selectează PDF-urile de unit:"
 
 #: pdfeditor/templates/pdfeditor/compress.html:23
+#: pdfeditor/templates/pdfeditor/protect.html:23
 #, fuzzy, python-format
 #| msgid "💡 You have %(count)s PDFs uploaded. Switch anytime!"
 msgid "You have %(count)s PDFs uploaded. Switch anytime!"
@@ -256,6 +260,7 @@ msgid "Reduce file size while maintaining quality"
 msgstr "Reduce dimensiunea fișierului fără pierdere de calitate"
 
 #: pdfeditor/templates/pdfeditor/compress.html:33
+#: pdfeditor/templates/pdfeditor/protect.html:35
 msgid "Current File:"
 msgstr "Fișierul curent:"
 
@@ -266,8 +271,9 @@ msgid "Original Size:"
 msgstr "Text original"
 
 #: pdfeditor/templates/pdfeditor/compress.html:41
-#: pdfeditor/templates/pdfeditor/dashboard.html:116
-#: pdfeditor/templates/pdfeditor/dashboard.html:126
+#: pdfeditor/templates/pdfeditor/dashboard.html:123
+#: pdfeditor/templates/pdfeditor/dashboard.html:133
+#: pdfeditor/templates/pdfeditor/protect.html:39
 #: pdfeditor/templates/pdfeditor/rephrase.html:419
 msgid "Preview"
 msgstr "Previzualizare"
@@ -277,6 +283,7 @@ msgid "Select Compression Level:"
 msgstr "Selectează nivelul de comprimare:"
 
 #: pdfeditor/templates/pdfeditor/compress.html:75
+#: pdfeditor/templates/pdfeditor/protect.html:74
 #: pdfeditor/templates/pdfeditor/rotate.html:62
 #: pdfeditor/templates/pdfeditor/watermark.html:97
 #, fuzzy
@@ -329,6 +336,7 @@ msgid "Compression Progress:"
 msgstr "Comprimă PDF"
 
 #: pdfeditor/templates/pdfeditor/compress_result.html:48
+#: pdfeditor/templates/pdfeditor/protect_result.html:24
 msgid "Ready to download"
 msgstr "Gata pentru descărcare"
 
@@ -401,7 +409,8 @@ msgstr "Împarte PDF-ul în mai multe fișiere după pagini"
 #: pdfeditor/templates/pdfeditor/dashboard.html:72
 #: pdfeditor/templates/pdfeditor/dashboard.html:79
 #: pdfeditor/templates/pdfeditor/dashboard.html:86
-#: pdfeditor/templates/pdfeditor/dashboard.html:100
+#: pdfeditor/templates/pdfeditor/dashboard.html:93
+#: pdfeditor/templates/pdfeditor/dashboard.html:107
 msgid "Get Started"
 msgstr "Începe"
 
@@ -424,17 +433,25 @@ msgid "Reduce PDF file size without losing quality"
 msgstr "Reduce dimensiunea fișierului fără pierdere de calitate"
 
 #: pdfeditor/templates/pdfeditor/dashboard.html:63
+msgid "Password Protect"
+msgstr "Protejează cu parolă"
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:64
+msgid "Encrypt your PDF with a password (AES-256)"
+msgstr "Criptează PDF-ul cu o parolă (AES-256)"
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:70
 #: pdfeditor/templates/pdfeditor/more_tools.html:131
 #: pdfeditor/templates/pdfeditor/watermark.html:4
 #: pdfeditor/templates/pdfeditor/watermark.html:26
 msgid "Add Watermark"
 msgstr "Adaugă filigran"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:64
+#: pdfeditor/templates/pdfeditor/dashboard.html:71
 msgid "Add text or image watermark to your PDF"
 msgstr "Adaugă filigran text sau imagine pe PDF"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:70
+#: pdfeditor/templates/pdfeditor/dashboard.html:77
 #: pdfeditor/templates/pdfeditor/more_tools.html:136
 #: pdfeditor/templates/pdfeditor/rotate.html:4
 #: pdfeditor/templates/pdfeditor/rotate.html:26
@@ -442,106 +459,106 @@ msgstr "Adaugă filigran text sau imagine pe PDF"
 msgid "Rotate Pages"
 msgstr "Rotește paginile"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:71
+#: pdfeditor/templates/pdfeditor/dashboard.html:78
 msgid "Rotate PDF pages by 90, 180, or 270 degrees"
 msgstr "Rotește paginile cu 90, 180 sau 270 de grade"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:77
+#: pdfeditor/templates/pdfeditor/dashboard.html:84
 #: pdfeditor/templates/pdfeditor/more_tools.html:141
 msgid "Add Page Numbers"
 msgstr "Adaugă numere de pagină"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:78
+#: pdfeditor/templates/pdfeditor/dashboard.html:85
 msgid "Add customizable page numbers to your PDF"
 msgstr "Adaugă numere de pagină personalizabile pe PDF"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:84
+#: pdfeditor/templates/pdfeditor/dashboard.html:91
 msgid "Fill Form"
 msgstr "Completează formular"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:85
+#: pdfeditor/templates/pdfeditor/dashboard.html:92
 msgid "Detect and fill AcroForm fields (text inputs, checkboxes, dropdowns)"
 msgstr "Detectează și completează câmpuri AcroForm (text, bifări, liste)"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:91
+#: pdfeditor/templates/pdfeditor/dashboard.html:98
 msgid "History"
 msgstr "Istoric"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:92
+#: pdfeditor/templates/pdfeditor/dashboard.html:99
 msgid "See and re-download every output produced in this session"
 msgstr "Vezi și redescarcă fiecare rezultat produs în această sesiune"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:93
+#: pdfeditor/templates/pdfeditor/dashboard.html:100
 msgid "View History"
 msgstr "Vezi istoricul"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:98
+#: pdfeditor/templates/pdfeditor/dashboard.html:105
 #: pdfeditor/templates/pdfeditor/more_tools.html:4
 msgid "More Tools"
 msgstr "Mai multe unelte"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:99
+#: pdfeditor/templates/pdfeditor/dashboard.html:106
 msgid "Advanced PDF tools: Extract Text, OCR, and more"
 msgstr "Unelte avansate PDF: extragere text, OCR și mai multe"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:106
+#: pdfeditor/templates/pdfeditor/dashboard.html:113
 msgid "Your PDFs"
 msgstr "PDF-urile tale"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:114
+#: pdfeditor/templates/pdfeditor/dashboard.html:121
 #, python-format
 msgid "Preview %(name)s"
 msgstr "Previzualizare %(name)s"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:127
+#: pdfeditor/templates/pdfeditor/dashboard.html:134
 msgid "Delete this PDF?"
 msgstr "Ștergi acest PDF?"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:127
+#: pdfeditor/templates/pdfeditor/dashboard.html:134
 msgid "Delete"
 msgstr "Șterge"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:136
+#: pdfeditor/templates/pdfeditor/dashboard.html:143
 msgid "Why Choose Our Platform?"
 msgstr "De ce să alegi platforma noastră?"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:140
+#: pdfeditor/templates/pdfeditor/dashboard.html:147
 msgid "Secure"
 msgstr "Sigur"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:141
+#: pdfeditor/templates/pdfeditor/dashboard.html:148
 msgid "Your files are automatically deleted after processing"
 msgstr "Fișierele tale sunt șterse automat după procesare"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:145
+#: pdfeditor/templates/pdfeditor/dashboard.html:152
 msgid "Fast"
 msgstr "Rapid"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:146
+#: pdfeditor/templates/pdfeditor/dashboard.html:153
 msgid "Process PDFs in seconds with our optimized engine"
 msgstr "Procesează PDF-uri în secunde cu motorul nostru optimizat"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:150
+#: pdfeditor/templates/pdfeditor/dashboard.html:157
 msgid "Accurate"
 msgstr "Precis"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:151
+#: pdfeditor/templates/pdfeditor/dashboard.html:158
 msgid "Preserve formatting and layout with precision"
 msgstr "Păstrează formatarea și aspectul cu precizie"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:155
+#: pdfeditor/templates/pdfeditor/dashboard.html:162
 msgid "No Installation"
 msgstr "Fără instalare"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:156
+#: pdfeditor/templates/pdfeditor/dashboard.html:163
 msgid "Work directly in your browser, no downloads needed"
 msgstr "Lucrează direct în browser, fără descărcări"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:187
+#: pdfeditor/templates/pdfeditor/dashboard.html:194
 msgid "Please drop PDF files only"
 msgstr "Te rugăm să tragi numai fișiere PDF"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:192
+#: pdfeditor/templates/pdfeditor/dashboard.html:199
 msgid "Some files were skipped — only PDFs are accepted."
 msgstr "Unele fișiere au fost omise — sunt acceptate doar PDF-uri."
 
@@ -933,6 +950,65 @@ msgstr "Datele tale"
 #: pdfeditor/templates/pdfeditor/profile.html:51
 msgid "Export my data (JSON)"
 msgstr "Exportă datele mele (JSON)"
+
+#: pdfeditor/templates/pdfeditor/protect.html:4
+#: pdfeditor/templates/pdfeditor/protect.html:29
+msgid "Password Protect PDF"
+msgstr "Protejează PDF-ul cu parolă"
+
+#: pdfeditor/templates/pdfeditor/protect.html:13
+msgid "Select PDF to Protect:"
+msgstr "Selectează PDF-ul de protejat:"
+
+#: pdfeditor/templates/pdfeditor/protect.html:31
+msgid ""
+"Encrypt your PDF with AES-256. The reader will require this password to open "
+"it."
+msgstr "Criptează PDF-ul cu AES-256. Cititorul va cere această parolă pentru a-l deschide."
+
+#: pdfeditor/templates/pdfeditor/protect.html:55
+#: pdfeditor/templates/registration/login.html:28
+msgid "Password"
+msgstr "Parolă"
+
+#: pdfeditor/templates/pdfeditor/protect.html:59
+msgid ""
+"At least 4 characters. Don't lose it — we can't recover an encrypted PDF."
+msgstr "Cel puțin 4 caractere. Nu o pierde — nu putem recupera un PDF criptat."
+
+#: pdfeditor/templates/pdfeditor/protect.html:66
+msgid "Confirm password"
+msgstr "Confirmă parola"
+
+#: pdfeditor/templates/pdfeditor/protect.html:77
+msgid "Protect PDF"
+msgstr "Protejează PDF"
+
+#: pdfeditor/templates/pdfeditor/protect_result.html:4
+msgid "Protection Result"
+msgstr "Rezultat protejare"
+
+#: pdfeditor/templates/pdfeditor/protect_result.html:10
+msgid "PDF Protected Successfully!"
+msgstr "PDF protejat cu succes!"
+
+#: pdfeditor/templates/pdfeditor/protect_result.html:11
+msgid "Your PDF is now encrypted with AES-256."
+msgstr "PDF-ul tău este acum criptat cu AES-256."
+
+#: pdfeditor/templates/pdfeditor/protect_result.html:16
+msgid "Important:"
+msgstr "Important:"
+
+#: pdfeditor/templates/pdfeditor/protect_result.html:17
+msgid ""
+"Save the password somewhere safe. We can't recover an encrypted PDF if you "
+"lose it."
+msgstr "Salvează parola într-un loc sigur. Nu putem recupera un PDF criptat dacă o pierzi."
+
+#: pdfeditor/templates/pdfeditor/protect_result.html:33
+msgid "Download Protected PDF"
+msgstr "Descarcă PDF-ul protejat"
 
 #: pdfeditor/templates/pdfeditor/rephrase.html:4
 #: pdfeditor/templates/pdfeditor/rephrase.html:338
@@ -1480,10 +1556,6 @@ msgstr ""
 "Autentifică-te pentru a-ți păstra PDF-urile în orice browser, a vedea "
 "istoricul complet și a accesa funcționalități protejate prin parolă."
 
-#: pdfeditor/templates/registration/login.html:28
-msgid "Password"
-msgstr "Parolă"
-
 #: pdfeditor/templates/registration/login.html:39
 msgid "Don't have an account?"
 msgstr "Nu ai cont?"
@@ -1743,6 +1815,7 @@ msgstr "Fișierul unit nu a fost găsit."
 
 #: pdfeditor/views/basic_ops.py:216 pdfeditor/views/basic_ops.py:221
 #: pdfeditor/views/basic_ops.py:302 pdfeditor/views/basic_ops.py:307
+#: pdfeditor/views/basic_ops.py:375 pdfeditor/views/basic_ops.py:380
 msgid "File not found."
 msgstr "Fișierul nu a fost găsit."
 
@@ -1759,6 +1832,18 @@ msgstr "Eroare la comprimarea PDF-ului: %(err)s"
 #: pdfeditor/views/basic_ops.py:280
 msgid "Compressed file not found."
 msgstr "Fișierul comprimat nu a fost găsit."
+
+#: pdfeditor/views/basic_ops.py:336
+msgid "PDF protected successfully!"
+msgstr "PDF protejat cu succes!"
+
+#: pdfeditor/views/basic_ops.py:339
+msgid "Error protecting PDF: %(err)s"
+msgstr "Eroare la protejarea PDF-ului: %(err)s"
+
+#: pdfeditor/views/basic_ops.py:359
+msgid "Protected file not found."
+msgstr "Fișierul protejat nu a fost găsit."
 
 #: pdfeditor/views/upload.py:72
 msgid "Please select at least one PDF file."

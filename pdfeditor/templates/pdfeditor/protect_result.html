@@ -1,0 +1,50 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Protection Result" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header result-success-header">
+        <div class="result-success-icon">🔒</div>
+        <h2>{% trans "PDF Protected Successfully!" %}</h2>
+        <p>{% trans "Your PDF is now encrypted with AES-256." %}</p>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="result-warning-box">
+            <strong>⚠️ {% trans "Important:" %}</strong>
+            {% trans "Save the password somewhere safe. We can't recover an encrypted PDF if you lose it." %}
+        </div>
+
+        <div class="result-file-row">
+            <div class="result-file-icon">📄</div>
+            <div class="result-file-info">
+                <div class="result-file-name">{{ protected_filename }}</div>
+                <div class="result-file-meta">{{ size|filesizeformat }} · {% trans "Ready to download" %}</div>
+            </div>
+        </div>
+
+        <div class="result-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                ← {% trans "Dashboard" %}
+            </a>
+            <a href="{% url 'download_protected' %}" class="btn btn-primary">
+                📥 {% trans "Download Protected PDF" %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .result-warning-box {
+        background: #fef3c7;
+        border: 1px solid #fde68a;
+        color: #92400e;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+        line-height: 1.5;
+    }
+</style>
+{% endblock %}

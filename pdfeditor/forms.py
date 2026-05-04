@@ -138,6 +138,32 @@ class CompressPDFForm(forms.Form):
     )
 
 
+class ProtectPDFForm(forms.Form):
+    """Form for password-protecting a PDF (AES-256)."""
+
+    user_password = forms.CharField(
+        min_length=4,
+        max_length=128,
+        required=True,
+        label="Password",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+    user_password_confirm = forms.CharField(
+        max_length=128,
+        required=True,
+        label="Confirm password",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+
+    def clean(self) -> dict:
+        cleaned = super().clean()
+        pw = cleaned.get("user_password") or ""
+        confirm = cleaned.get("user_password_confirm") or ""
+        if pw and confirm and pw != confirm:
+            self.add_error("user_password_confirm", "Passwords do not match.")
+        return cleaned
+
+
 class WatermarkForm(forms.Form):
     """Form for adding watermark to PDF."""
 

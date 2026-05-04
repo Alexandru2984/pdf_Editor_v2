@@ -1,4 +1,4 @@
-"""Split, merge, compress views."""
+"""Split, merge, compress, password-protect views."""
 
 import os
 
@@ -8,9 +8,9 @@ from django.http import Http404
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 
-from ..forms import CompressPDFForm, MergePDFForm, SplitPDFForm
+from ..forms import CompressPDFForm, MergePDFForm, ProtectPDFForm, SplitPDFForm
 from ..models import ProcessedPDF
-from ..pdf_processor import compress_pdf, merge_pdfs, split_pdf
+from ..pdf_processor import compress_pdf, merge_pdfs, protect_pdf, split_pdf
 from ._common import (
     attachment_response,
     get_pdf_by_id,
@@ -298,6 +298,79 @@ def compress_result_view(request):
 
 def download_compressed_view(request):
     output = _fetch_output(request, "compressed_pdf_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+
+
+# ---------- Password protect ----------
+
+
+def protect_view(request):
+    selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
+    if early:
+        return early
+
+    pdf_path = selected_pdf.path
+
+    if request.method == "POST":
+        form = ProtectPDFForm(request.POST)
+        if form.is_valid():
+            try:
+                output_path = protect_pdf(
+                    pdf_path,
+                    user_password=form.cleaned_data["user_password"],
+                )
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_PROTECT,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session["protected_pdf_id"] = str(output.id)
+                messages.success(request, _("PDF protected successfully!"))
+                return redirect("protect_result")
+            except Exception as e:
+                messages.error(request, _("Error protecting PDF: %(err)s") % {"err": e})
+    else:
+        form = ProtectPDFForm()
+
+    return render(
+        request,
+        "pdfeditor/protect.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+        },
+    )
+
+
+def protect_result_view(request):
+    output = _fetch_output(request, "protected_pdf_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("Protected file not found."))
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "pdfeditor/protect_result.html",
+        {
+            "protected_filename": output.name,
+            "size": os.path.getsize(output.path),
+        },
+    )
+
+
+def download_protected_view(request):
+    output = _fetch_output(request, "protected_pdf_id")
     if not output:
         messages.error(request, _("File not found."))
         return redirect("dashboard")
