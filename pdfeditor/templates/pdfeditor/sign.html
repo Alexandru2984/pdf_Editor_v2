@@ -125,6 +125,17 @@
                 </label>
             </div>
 
+            <div class="form-field form-field--checkbox">
+                <label class="checkbox-row">
+                    {{ form.add_doc_timestamp }}
+                    <span>
+                        🗓️ {{ form.add_doc_timestamp.label }}
+                        <small class="form-field-help">{{ form.add_doc_timestamp.help_text }}</small>
+                    </span>
+                </label>
+                {% if form.add_doc_timestamp.errors %}<div class="form-field-error">{{ form.add_doc_timestamp.errors }}</div>{% endif %}
+            </div>
+
             <div class="tool-form-actions">
                 <a href="{% url 'dashboard' %}" class="btn btn-secondary">
                     ← {% trans "Back" %}

@@ -433,6 +433,26 @@ class SignPdfTests(_MediaRootMixin, TestCase):
                 embed_validation_info=True,
             )
 
+    def test_doc_timestamp_requires_tsa_url(self):
+        # Asking for an archival timestamp without a TSA must error explicitly.
+        with self.assertRaises(ValueError):
+            sign_pdf(
+                self.pdf,
+                p12_bytes=self.p12,
+                p12_password="test123",
+                add_doc_timestamp=True,
+            )
+
+    def test_doc_timestamp_unreachable_tsa_raises(self):
+        with self.assertRaises((ValueError, OSError)):
+            sign_pdf(
+                self.pdf,
+                p12_bytes=self.p12,
+                p12_password="test123",
+                tsa_url="http://127.0.0.1:1/",
+                add_doc_timestamp=True,
+            )
+
 
 class VerifyPdfSignaturesTests(_MediaRootMixin, TestCase):
     @classmethod

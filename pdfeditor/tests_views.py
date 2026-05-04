@@ -919,6 +919,75 @@ class VerifySignatureViewTests(TestCase):
             if os.path.exists(path):
                 os.remove(path)
 
+    def test_global_trust_anchor_makes_signature_trusted(self):
+        import os
+        import tempfile
+
+        from .models import TrustAnchor
+        from .pdf_processor.ops import sign_pdf
+        from .tests_ops import _make_self_signed_p12
+
+        fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        with open(path, "wb") as f:
+            f.write(_multipage_pdf_bytes(1))
+        try:
+            p12, cert_pem = _make_self_signed_p12(b"pw")
+            signed_path = sign_pdf(path, p12_bytes=p12, p12_password="pw")
+            try:
+                TrustAnchor.objects.create(
+                    name="Test Signer (global)",
+                    cert_pem=cert_pem.decode("utf-8"),
+                    is_active=True,
+                )
+                with open(signed_path, "rb") as sf:
+                    pdf_blob = sf.read()
+                upload = SimpleUploadedFile("signed.pdf", pdf_blob, content_type="application/pdf")
+                # No per-request trust file — the global anchor must be enough.
+                resp = self.client.post(reverse("verify_signature"), {"pdf_file": upload})
+                self.assertEqual(resp.status_code, 200)
+                self.assertContains(resp, "Valid & trusted")
+            finally:
+                if os.path.exists(signed_path):
+                    os.remove(signed_path)
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
+
+    def test_inactive_trust_anchor_does_not_trust(self):
+        import os
+        import tempfile
+
+        from .models import TrustAnchor
+        from .pdf_processor.ops import sign_pdf
+        from .tests_ops import _make_self_signed_p12
+
+        fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        with open(path, "wb") as f:
+            f.write(_multipage_pdf_bytes(1))
+        try:
+            p12, cert_pem = _make_self_signed_p12(b"pw")
+            signed_path = sign_pdf(path, p12_bytes=p12, p12_password="pw")
+            try:
+                TrustAnchor.objects.create(
+                    name="Disabled anchor",
+                    cert_pem=cert_pem.decode("utf-8"),
+                    is_active=False,
+                )
+                with open(signed_path, "rb") as sf:
+                    pdf_blob = sf.read()
+                upload = SimpleUploadedFile("signed.pdf", pdf_blob, content_type="application/pdf")
+                resp = self.client.post(reverse("verify_signature"), {"pdf_file": upload})
+                self.assertEqual(resp.status_code, 200)
+                self.assertContains(resp, "Intact but untrusted")
+            finally:
+                if os.path.exists(signed_path):
+                    os.remove(signed_path)
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
+
 
 class GenerateCertViewTests(TestCase):
     def setUp(self):

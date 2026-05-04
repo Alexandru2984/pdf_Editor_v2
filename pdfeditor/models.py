@@ -108,3 +108,31 @@ class ProcessedPDF(models.Model):
 
     def exists_on_disk(self) -> bool:
         return bool(self.path) and os.path.exists(self.path)
+
+
+class TrustAnchor(models.Model):
+    """A globally-trusted X.509 certificate used by the signature verifier.
+
+    Anchors are merged with any per-request anchors uploaded at verify time.
+    Managed via the Django admin (staff only).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, help_text="Friendly label for this anchor.")
+    cert_pem = models.TextField(help_text="PEM-encoded X.509 certificate.")
+    is_active = models.BooleanField(default=True)
+    added_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="trust_anchors",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        status = "active" if self.is_active else "disabled"
+        return f"{self.name} ({status})"

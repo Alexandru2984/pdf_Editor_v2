@@ -114,6 +114,7 @@ def sign_pdf(
     field_name: str = "Signature1",
     tsa_url: str | None = None,
     embed_validation_info: bool = False,
+    add_doc_timestamp: bool = False,
 ) -> str:
     """Apply a cryptographic PKCS#7 signature to a PDF using a user-supplied .p12.
 
@@ -126,6 +127,10 @@ def sign_pdf(
     When ``embed_validation_info`` is True, fetches OCSP/CRL responses for the
     signing chain and embeds them in a Document Security Store (PAdES B-LT).
     Self-signed or otherwise unverifiable certificates will raise ``ValueError``.
+
+    When ``add_doc_timestamp`` is True (and ``tsa_url`` is set), appends a
+    document-level RFC 3161 timestamp after the main signature (PAdES B-LTA when
+    combined with LTV). Requires ``tsa_url`` — raises ``ValueError`` otherwise.
     """
     from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
     from pyhanko.sign import fields, signers
@@ -241,6 +246,34 @@ def sign_pdf(
             if tsa_url and ("timestamp" in err_msg or "tsa" in err_msg):
                 raise ValueError(f"Timestamp authority error: {exc}") from exc
             raise
+
+    if add_doc_timestamp:
+        if not tsa_url:
+            raise ValueError("Document timestamp requires a TSA URL")
+        # Re-open the just-signed PDF for an incremental update that appends
+        # a DocTimeStamp signature (PAdES B-LTA).
+        ts_out_path = os.path.join(out_dir, f"signed_lta_{safe_basename(pdf_path)}_{timestamp()}.pdf")
+        try:
+            with open(out_path, "rb") as inf:
+                ts_writer = IncrementalPdfFileWriter(inf)
+                ts_stamper = signers.PdfTimeStamper(timestamper=HTTPTimeStamper(tsa_url, timeout=10))
+                with open(ts_out_path, "wb") as outf:
+                    ts_stamper.timestamp_pdf(
+                        ts_writer,
+                        md_algorithm="sha256",
+                        output=outf,
+                    )
+        except Exception as exc:
+            err_msg = str(exc).lower()
+            if "timestamp" in err_msg or "tsa" in err_msg:
+                raise ValueError(f"Document timestamp authority error: {exc}") from exc
+            raise
+        # Replace the B-LT output with the B-LTA one.
+        import contextlib
+
+        with contextlib.suppress(OSError):
+            os.remove(out_path)
+        out_path = ts_out_path
 
     return out_path
 
