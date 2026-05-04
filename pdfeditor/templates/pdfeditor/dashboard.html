@@ -58,6 +58,13 @@
             <a href="{% url 'compress' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="protect">
+            <div class="card-icon">🔒</div>
+            <h3>{% trans "Password Protect" %}</h3>
+            <p>{% trans "Encrypt your PDF with a password (AES-256)" %}</p>
+            <a href="{% url 'protect' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="watermark">
             <div class="card-icon">💧</div>
             <h3>{% trans "Add Watermark" %}</h3>

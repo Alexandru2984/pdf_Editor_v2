@@ -103,6 +103,40 @@ def compress_pdf(
     return out_path, original_size, compressed_size, ratio
 
 
+def protect_pdf(
+    pdf_path: str,
+    user_password: str,
+    owner_password: str | None = None,
+) -> str:
+    """Encrypt a PDF with AES-256. Without owner_password, owner == user."""
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    if not user_password:
+        raise ValueError("user_password is required")
+
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    out_path = os.path.join(out_dir, f"{base}_protected_{timestamp()}.pdf")
+
+    perm = fitz.PDF_PERM_ACCESSIBILITY | fitz.PDF_PERM_PRINT | fitz.PDF_PERM_COPY | fitz.PDF_PERM_ANNOTATE
+
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("PDF is already encrypted")
+        doc.save(
+            out_path,
+            encryption=fitz.PDF_ENCRYPT_AES_256,
+            user_pw=user_password,
+            owner_pw=owner_password or user_password,
+            permissions=perm,
+            garbage=4,
+            deflate=True,
+            clean=True,
+        )
+
+    return out_path
+
+
 def _calculate_position(
     position: str,
     page_width: float,
