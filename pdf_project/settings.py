@@ -179,6 +179,10 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 PDF_CLEANUP_HOURS = 24
 
+# RFC 3161 timestamp authority used when signing with `add_timestamp` toggled.
+# freetsa.org is free, public, and supports anonymous requests over HTTPS.
+PDF_SIGN_TSA_URL = os.getenv("PDF_SIGN_TSA_URL", "https://freetsa.org/tsr")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Auth flow URLs.

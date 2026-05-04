@@ -55,7 +55,12 @@
                     📎 {{ form.p12_file.label }}
                 </label>
                 {{ form.p12_file }}
-                <small class="form-field-help">{{ form.p12_file.help_text }}</small>
+                <small class="form-field-help">
+                    {{ form.p12_file.help_text }}
+                    <br>
+                    {% url 'generate_cert' as gen_url %}
+                    {% blocktrans %}No certificate yet? <a href="{{ gen_url }}">Generate a test one</a>.{% endblocktrans %}
+                </small>
                 {% if form.p12_file.errors %}<div class="form-field-error">{{ form.p12_file.errors }}</div>{% endif %}
             </div>
 
@@ -100,6 +105,16 @@
                 {% if form.location.errors %}<div class="form-field-error">{{ form.location.errors }}</div>{% endif %}
             </div>
 
+            <div class="form-field form-field--checkbox">
+                <label class="checkbox-row">
+                    {{ form.add_timestamp }}
+                    <span>
+                        ⏱️ {{ form.add_timestamp.label }}
+                        <small class="form-field-help">{{ form.add_timestamp.help_text }}</small>
+                    </span>
+                </label>
+            </div>
+
             <div class="tool-form-actions">
                 <a href="{% url 'dashboard' %}" class="btn btn-secondary">
                     ← {% trans "Back" %}
@@ -140,5 +155,12 @@
         display: flex; gap: 0.75rem; flex-wrap: wrap;
     }
     .form-field--half { flex: 1 1 240px; }
+    .checkbox-row {
+        display: flex; gap: 0.625rem; align-items: flex-start;
+        cursor: pointer;
+    }
+    .checkbox-row input[type="checkbox"] {
+        margin-top: 0.25rem;
+    }
 </style>
 {% endblock %}

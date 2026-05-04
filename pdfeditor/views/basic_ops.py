@@ -8,9 +8,17 @@ from django.http import Http404
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 
-from ..forms import CompressPDFForm, MergePDFForm, ProtectPDFForm, SignPDFForm, SplitPDFForm
+from ..forms import (
+    CompressPDFForm,
+    GenerateCertForm,
+    MergePDFForm,
+    ProtectPDFForm,
+    SignPDFForm,
+    SplitPDFForm,
+)
 from ..models import ProcessedPDF
 from ..pdf_processor import compress_pdf, merge_pdfs, protect_pdf, sign_pdf, split_pdf
+from ..ratelimiting import auth_aware_ratelimit
 from ._common import (
     attachment_response,
     get_pdf_by_id,
@@ -311,6 +319,7 @@ def download_compressed_view(request):
 # ---------- Password protect ----------
 
 
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
 def protect_view(request):
     selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
     if early:
@@ -384,6 +393,7 @@ def download_protected_view(request):
 # ---------- Digital signature ----------
 
 
+@auth_aware_ratelimit(anon_rate="10/h", user_rate="40/h", method="POST")
 def sign_view(request):
     selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
     if early:
@@ -397,6 +407,7 @@ def sign_view(request):
             try:
                 p12_file = form.cleaned_data["p12_file"]
                 p12_bytes = p12_file.read()
+                tsa_url = settings.PDF_SIGN_TSA_URL if form.cleaned_data.get("add_timestamp") else None
                 output_path = sign_pdf(
                     pdf_path,
                     p12_bytes=p12_bytes,
@@ -405,6 +416,7 @@ def sign_view(request):
                     position=form.cleaned_data["position"],
                     reason=form.cleaned_data.get("reason", ""),
                     location=form.cleaned_data.get("location", ""),
+                    tsa_url=tsa_url,
                 )
                 output = record_output(
                     request,
@@ -461,3 +473,63 @@ def download_signed_view(request):
     except Http404:
         messages.error(request, _("File not found."))
         return redirect("dashboard")
+
+
+# ---------- Self-signed certificate generator ----------
+
+
+def _build_self_signed_p12(common_name: str, passphrase: str) -> bytes:
+    """Generate a self-signed PKCS#12 archive (test/demo use only)."""
+    from datetime import datetime, timedelta, timezone
+
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives.serialization import pkcs12
+    from cryptography.x509.oid import NameOID
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
+    now = datetime.now(timezone.utc)
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(subject)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - timedelta(minutes=5))
+        .not_valid_after(now + timedelta(days=365))
+        .sign(key, hashes.SHA256())
+    )
+    return pkcs12.serialize_key_and_certificates(
+        common_name.encode("utf-8")[:64] or b"signer",
+        key,
+        cert,
+        [],
+        serialization.BestAvailableEncryption(passphrase.encode("utf-8")),
+    )
+
+
+@auth_aware_ratelimit(anon_rate="5/h", user_rate="20/h", method="POST")
+def generate_cert_view(request):
+    """Generate a self-signed PKCS#12 archive and return it as a download."""
+    if request.method == "POST":
+        form = GenerateCertForm(request.POST)
+        if form.is_valid():
+            try:
+                pfx = _build_self_signed_p12(
+                    common_name=form.cleaned_data["common_name"],
+                    passphrase=form.cleaned_data["passphrase"],
+                )
+            except Exception as e:
+                messages.error(request, _("Error generating certificate: %(err)s") % {"err": e})
+            else:
+                from django.http import HttpResponse
+
+                resp = HttpResponse(pfx, content_type="application/x-pkcs12")
+                resp["Content-Disposition"] = 'attachment; filename="signer.p12"'
+                return resp
+    else:
+        form = GenerateCertForm()
+
+    return render(request, "pdfeditor/generate_cert.html", {"form": form})
