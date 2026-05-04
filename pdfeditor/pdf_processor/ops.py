@@ -112,15 +112,19 @@ def sign_pdf(
     reason: str = "",
     location: str = "",
     field_name: str = "Signature1",
+    tsa_url: str | None = None,
 ) -> str:
     """Apply a cryptographic PKCS#7 signature to a PDF using a user-supplied .p12.
 
     A visible signature widget is added to ``page`` (1-indexed) at ``position``.
     Returns the path to the signed PDF. ``p12_bytes`` is the raw PKCS#12 archive,
-    ``p12_password`` decrypts the private key inside it.
+    ``p12_password`` decrypts the private key inside it. When ``tsa_url`` is set,
+    pyHanko fetches an RFC 3161 timestamp from that authority and embeds it in the
+    signature (``signature-time-stamp`` attribute).
     """
     from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
     from pyhanko.sign import fields, signers
+    from pyhanko.sign.timestamps import HTTPTimeStamper
 
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
@@ -190,6 +194,7 @@ def sign_pdf(
                 box=box_int,
             ),
         )
+        timestamper = HTTPTimeStamper(tsa_url, timeout=10) if tsa_url else None
         pdf_signer = signers.PdfSigner(
             signers.PdfSignatureMetadata(
                 field_name=field_name,
@@ -197,9 +202,17 @@ def sign_pdf(
                 location=location or None,
             ),
             signer=signer,
+            timestamper=timestamper,
         )
-        with open(out_path, "wb") as outf:
-            pdf_signer.sign_pdf(writer, output=outf)
+        try:
+            with open(out_path, "wb") as outf:
+                pdf_signer.sign_pdf(writer, output=outf)
+        except Exception as exc:
+            # Surface TSA failures with a friendlier message; pyHanko raises
+            # generic IOError/HTTPError which are not user-actionable.
+            if tsa_url and ("timestamp" in str(exc).lower() or "tsa" in str(exc).lower()):
+                raise ValueError(f"Timestamp authority error: {exc}") from exc
+            raise
 
     return out_path
 

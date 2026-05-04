@@ -45,6 +45,7 @@ def history_view(request):
         "pdfeditor/history.html",
         {
             "history_items": history_items,
+            "PDF_CLEANUP_HOURS": getattr(settings, "PDF_CLEANUP_HOURS", 24),
         },
     )
 

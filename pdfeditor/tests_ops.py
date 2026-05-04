@@ -408,6 +408,18 @@ class SignPdfTests(_MediaRootMixin, TestCase):
         finally:
             self._cleanup(out)
 
+    def test_unreachable_tsa_raises(self):
+        # Port 1 on loopback has nothing listening — pyHanko's HTTP timestamp
+        # call fails fast. Either our wrapped ValueError or an OSError-family
+        # connection error is acceptable; signing must not silently succeed.
+        with self.assertRaises((ValueError, OSError)):
+            sign_pdf(
+                self.pdf,
+                p12_bytes=self.p12,
+                p12_password="test123",
+                tsa_url="http://127.0.0.1:1/",
+            )
+
 
 class AddWatermarkTests(_MediaRootMixin, TestCase):
     def setUp(self):

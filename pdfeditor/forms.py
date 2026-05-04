@@ -208,12 +208,51 @@ class SignPDFForm(forms.Form):
         max_length=256,
         label="Location (optional)",
     )
+    add_timestamp = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Embed trusted timestamp (RFC 3161)",
+        help_text="Adds a verifiable signing time fetched from a public TSA.",
+    )
 
     def clean_p12_file(self):
         f = self.cleaned_data.get("p12_file")
         if f and f.size > 1024 * 1024:  # 1 MB cap is plenty for a .p12
             raise forms.ValidationError("Certificate file is too large (max 1 MB).")
         return f
+
+
+class GenerateCertForm(forms.Form):
+    """Form for generating a self-signed PKCS#12 archive (test/demo use only)."""
+
+    common_name = forms.CharField(
+        max_length=128,
+        required=True,
+        label="Common name (CN)",
+        help_text="The name printed on the certificate, e.g. your full name.",
+    )
+    passphrase = forms.CharField(
+        min_length=4,
+        max_length=128,
+        required=True,
+        label="Passphrase",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        help_text="Encrypts the private key inside the .p12 archive.",
+    )
+    passphrase_confirm = forms.CharField(
+        max_length=128,
+        required=True,
+        label="Confirm passphrase",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+
+    def clean(self) -> dict:
+        cleaned = super().clean()
+        p = cleaned.get("passphrase") or ""
+        c = cleaned.get("passphrase_confirm") or ""
+        if p and c and p != c:
+            self.add_error("passphrase_confirm", "Passphrases do not match.")
+        return cleaned
 
 
 class WatermarkForm(forms.Form):

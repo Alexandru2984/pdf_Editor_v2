@@ -865,3 +865,39 @@ class HistoryViewTests(_ViewTestBase):
         self.client.get(reverse("history_delete", args=[other.id]))
         # The row still exists — we only deleted within our session scope.
         self.assertTrue(ProcessedPDF.objects.filter(id=other.id).exists())
+
+
+class GenerateCertViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_get_renders_form(self):
+        resp = self.client.get(reverse("generate_cert"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Generate test certificate")
+
+    def test_post_returns_p12_download(self):
+        resp = self.client.post(
+            reverse("generate_cert"),
+            {
+                "common_name": "Test User",
+                "passphrase": "test1234",
+                "passphrase_confirm": "test1234",
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/x-pkcs12")
+        self.assertIn("attachment", resp["Content-Disposition"])
+        self.assertGreater(len(resp.content), 1000)  # a real .p12 archive
+
+    def test_post_passphrase_mismatch_errors(self):
+        resp = self.client.post(
+            reverse("generate_cert"),
+            {
+                "common_name": "Test User",
+                "passphrase": "test1234",
+                "passphrase_confirm": "different",
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "do not match")

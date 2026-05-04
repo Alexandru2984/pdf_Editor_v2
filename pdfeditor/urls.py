@@ -25,6 +25,7 @@ urlpatterns = [
     path("download_protected/", views.download_protected_view, name="download_protected"),
     path("sign/", views.sign_view, name="sign"),
     path("sign/result/", views.sign_result_view, name="sign_result"),
+    path("sign/generate-cert/", views.generate_cert_view, name="generate_cert"),
     path("download_signed/", views.download_signed_view, name="download_signed"),
     path("watermark/", views.watermark_view, name="watermark"),
     path("watermark/result/", views.watermark_result_view, name="watermark_result"),

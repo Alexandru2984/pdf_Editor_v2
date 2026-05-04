@@ -1,0 +1,100 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Generate test certificate" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 600px;">
+    <div class="preview-header">
+        <div class="text-center">
+            <h2 class="tool-page-title">🪪 {% trans "Generate test certificate" %}</h2>
+            <p class="tool-page-subtitle">
+                {% trans "Self-signed PKCS#12 archive for testing the signing flow. Not suitable for legally binding signatures." %}
+            </p>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert-box alert-box--error">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-field">
+                <label class="form-field-label" for="{{ form.common_name.id_for_label }}">
+                    👤 {{ form.common_name.label }}
+                </label>
+                {{ form.common_name }}
+                <small class="form-field-help">{{ form.common_name.help_text }}</small>
+                {% if form.common_name.errors %}<div class="form-field-error">{{ form.common_name.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-field">
+                <label class="form-field-label" for="{{ form.passphrase.id_for_label }}">
+                    🔑 {{ form.passphrase.label }}
+                </label>
+                {{ form.passphrase }}
+                <small class="form-field-help">{{ form.passphrase.help_text }}</small>
+                {% if form.passphrase.errors %}<div class="form-field-error">{{ form.passphrase.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-field">
+                <label class="form-field-label" for="{{ form.passphrase_confirm.id_for_label }}">
+                    🔐 {{ form.passphrase_confirm.label }}
+                </label>
+                {{ form.passphrase_confirm }}
+                {% if form.passphrase_confirm.errors %}<div class="form-field-error">{{ form.passphrase_confirm.errors }}</div>{% endif %}
+            </div>
+
+            <div class="result-info-box">
+                <strong>ℹ️ {% trans "Note:" %}</strong>
+                {% trans "The generated certificate is valid for 1 year. The .p12 file will be downloaded automatically — keep it safe; we don't store it." %}
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'sign' %}" class="btn btn-secondary">
+                    ← {% trans "Back to signing" %}
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    🪪 {% trans "Generate and download" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-field { margin-bottom: 1.25rem; }
+    .form-field-label {
+        display: block; font-weight: 600; margin-bottom: 0.4rem;
+        color: var(--text-primary, #1f2937);
+    }
+    .form-field input[type="password"], .form-field input[type="text"] {
+        width: 100%; padding: 0.625rem; border: 1px solid #d1d5db;
+        border-radius: 0.5rem; font-size: 1rem; box-sizing: border-box;
+    }
+    .form-field-help {
+        display: block; margin-top: 0.35rem; color: #6b7280; font-size: 0.875rem;
+    }
+    .form-field-error {
+        color: #b91c1c; font-size: 0.875rem; margin-top: 0.25rem;
+    }
+    .alert-box--error {
+        background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
+        padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1rem;
+    }
+    .result-info-box {
+        background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+        padding: 0.875rem 1rem; border-radius: 0.5rem; margin-bottom: 1.25rem;
+        line-height: 1.5;
+    }
+</style>
+{% endblock %}
