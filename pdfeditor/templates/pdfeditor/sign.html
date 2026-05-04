@@ -1,0 +1,144 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Digital Signature" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header">
+
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
+                📂 {% trans "Select PDF to Sign:" %}
+            </label>
+            <select id="pdf-selector" onchange="window.location.href='{% url 'sign' %}?pdf=' + encodeURIComponent(this.value)">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+            <p class="picker-hint">
+                💡 {% blocktrans with count=uploaded_pdfs|length %}You have {{ count }} PDFs uploaded. Switch anytime!{% endblocktrans %}
+            </p>
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="tool-page-title">✍️ {% trans "Digital Signature" %}</h2>
+            <p class="tool-page-subtitle">
+                {% trans "Sign your PDF cryptographically with a PKCS#7 signature using your own .p12 certificate." %}
+            </p>
+            <div class="tool-info-bar">
+                <div>
+                    <div class="tool-info-label">{% trans "Current File:" %}</div>
+                    <div class="tool-info-value">{{ pdf_name }}</div>
+                </div>
+                <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview tool-info-bar-divider">
+                    👁️ {% trans "Preview" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-field">
+                <label class="form-field-label" for="{{ form.p12_file.id_for_label }}">
+                    📎 {{ form.p12_file.label }}
+                </label>
+                {{ form.p12_file }}
+                <small class="form-field-help">{{ form.p12_file.help_text }}</small>
+                {% if form.p12_file.errors %}<div class="form-field-error">{{ form.p12_file.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-field">
+                <label class="form-field-label" for="{{ form.p12_password.id_for_label }}">
+                    🔑 {% trans "Certificate password" %}
+                </label>
+                {{ form.p12_password }}
+                {% if form.p12_password.errors %}<div class="form-field-error">{{ form.p12_password.errors }}</div>{% endif %}
+            </div>
+
+            <div class="sign-row">
+                <div class="form-field form-field--half">
+                    <label class="form-field-label" for="{{ form.page.id_for_label }}">
+                        📄 {% trans "Page" %}
+                    </label>
+                    {{ form.page }}
+                    {% if form.page.errors %}<div class="form-field-error">{{ form.page.errors }}</div>{% endif %}
+                </div>
+                <div class="form-field form-field--half">
+                    <label class="form-field-label" for="{{ form.position.id_for_label }}">
+                        📍 {% trans "Position" %}
+                    </label>
+                    {{ form.position }}
+                    {% if form.position.errors %}<div class="form-field-error">{{ form.position.errors }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label class="form-field-label" for="{{ form.reason.id_for_label }}">
+                    {% trans "Reason (optional)" %}
+                </label>
+                {{ form.reason }}
+                {% if form.reason.errors %}<div class="form-field-error">{{ form.reason.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-field">
+                <label class="form-field-label" for="{{ form.location.id_for_label }}">
+                    {% trans "Location (optional)" %}
+                </label>
+                {{ form.location }}
+                {% if form.location.errors %}<div class="form-field-error">{{ form.location.errors }}</div>{% endif %}
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                    ← {% trans "Back" %}
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    ✍️ {% trans "Sign PDF" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-field { margin-bottom: 1.25rem; }
+    .form-field-label {
+        display: block; font-weight: 600; margin-bottom: 0.4rem;
+        color: var(--text-primary, #1f2937);
+    }
+    .form-field input[type="password"],
+    .form-field input[type="number"],
+    .form-field input[type="text"],
+    .form-field input[type="file"],
+    .form-field select {
+        width: 100%; padding: 0.625rem; border: 1px solid #d1d5db;
+        border-radius: 0.5rem; font-size: 1rem; box-sizing: border-box;
+    }
+    .form-field-help {
+        display: block; margin-top: 0.35rem; color: #6b7280; font-size: 0.875rem;
+    }
+    .form-field-error {
+        color: #b91c1c; font-size: 0.875rem; margin-top: 0.25rem;
+    }
+    .alert-box--error {
+        background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
+        padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1rem;
+    }
+    .sign-row {
+        display: flex; gap: 0.75rem; flex-wrap: wrap;
+    }
+    .form-field--half { flex: 1 1 240px; }
+</style>
+{% endblock %}

@@ -65,6 +65,13 @@
             <a href="{% url 'protect' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="sign">
+            <div class="card-icon">✍️</div>
+            <h3>{% trans "Digital Signature" %}</h3>
+            <p>{% trans "Sign your PDF cryptographically (PKCS#7) with your own certificate" %}</p>
+            <a href="{% url 'sign' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="watermark">
             <div class="card-icon">💧</div>
             <h3>{% trans "Add Watermark" %}</h3>

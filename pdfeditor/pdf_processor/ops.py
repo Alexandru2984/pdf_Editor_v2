@@ -103,6 +103,107 @@ def compress_pdf(
     return out_path, original_size, compressed_size, ratio
 
 
+def sign_pdf(
+    pdf_path: str,
+    p12_bytes: bytes,
+    p12_password: str,
+    page: int = 1,
+    position: str = "bottom-right",
+    reason: str = "",
+    location: str = "",
+    field_name: str = "Signature1",
+) -> str:
+    """Apply a cryptographic PKCS#7 signature to a PDF using a user-supplied .p12.
+
+    A visible signature widget is added to ``page`` (1-indexed) at ``position``.
+    Returns the path to the signed PDF. ``p12_bytes`` is the raw PKCS#12 archive,
+    ``p12_password`` decrypts the private key inside it.
+    """
+    from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+    from pyhanko.sign import fields, signers
+
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    if not p12_bytes:
+        raise ValueError("p12 archive is empty")
+
+    try:
+        signer = signers.SimpleSigner.load_pkcs12_data(
+            pkcs12_bytes=p12_bytes,
+            other_certs=[],
+            passphrase=(p12_password or "").encode("utf-8"),
+        )
+    except Exception as exc:
+        raise ValueError(f"Could not load certificate: {exc}") from exc
+
+    # Compute widget box in PDF coords for the requested page.
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("Cannot sign an encrypted PDF — remove the password first")
+        if page < 1 or page > len(doc):
+            raise ValueError(f"Page {page} out of range (1-{len(doc)})")
+        rect = doc[page - 1].rect
+        page_w, page_h = float(rect.width), float(rect.height)
+
+    widget_w, widget_h = 200, 60
+    margin = 24
+    positions = {
+        "top-left": (margin, page_h - margin - widget_h, margin + widget_w, page_h - margin),
+        "top-right": (
+            page_w - margin - widget_w,
+            page_h - margin - widget_h,
+            page_w - margin,
+            page_h - margin,
+        ),
+        "bottom-left": (margin, margin, margin + widget_w, margin + widget_h),
+        "bottom-right": (
+            page_w - margin - widget_w,
+            margin,
+            page_w - margin,
+            margin + widget_h,
+        ),
+        "center": (
+            (page_w - widget_w) / 2,
+            (page_h - widget_h) / 2,
+            (page_w + widget_w) / 2,
+            (page_h + widget_h) / 2,
+        ),
+    }
+    box = positions.get(position, positions["bottom-right"])
+    box_int: tuple[int, int, int, int] = (
+        int(round(box[0])),
+        int(round(box[1])),
+        int(round(box[2])),
+        int(round(box[3])),
+    )
+
+    out_dir = processed_dir()
+    out_path = os.path.join(out_dir, f"signed_{safe_basename(pdf_path)}_{timestamp()}.pdf")
+
+    with open(pdf_path, "rb") as inf:
+        writer = IncrementalPdfFileWriter(inf)
+        fields.append_signature_field(
+            writer,
+            sig_field_spec=fields.SigFieldSpec(
+                sig_field_name=field_name,
+                on_page=page - 1,
+                box=box_int,
+            ),
+        )
+        pdf_signer = signers.PdfSigner(
+            signers.PdfSignatureMetadata(
+                field_name=field_name,
+                reason=reason or None,
+                location=location or None,
+            ),
+            signer=signer,
+        )
+        with open(out_path, "wb") as outf:
+            pdf_signer.sign_pdf(writer, output=outf)
+
+    return out_path
+
+
 def protect_pdf(
     pdf_path: str,
     user_password: str,

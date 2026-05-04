@@ -21,6 +21,7 @@ from .ops import (
     merge_pdfs,
     protect_pdf,
     rotate_pages,
+    sign_pdf,
     split_pdf,
 )
 
@@ -31,6 +32,7 @@ __all__ = [
     "merge_pdfs",
     "compress_pdf",
     "protect_pdf",
+    "sign_pdf",
     "add_watermark",
     "rotate_pages",
     "add_page_numbers",
