@@ -443,9 +443,8 @@ msgid ""
 msgstr "Aspectul în Word poate diferi ușor de PDF-ul original — în special pentru pagini multi-coloană, tabele sau formule. O ajustare vizuală rapidă este normală."
 
 #: pdfeditor/templates/pdfeditor/convert_result.html:40
-#| msgid "Download Compressed PDF"
 msgid "Download Word Document"
-msgstr "Descarcă PDF-ul comprimat"
+msgstr "Descarcă documentul Word"
 
 #: pdfeditor/templates/pdfeditor/dashboard.html:4
 msgid "PDF Platform - Dashboard"
