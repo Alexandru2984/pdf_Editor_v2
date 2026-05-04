@@ -58,6 +58,7 @@ class ProcessedPDF(models.Model):
     KIND_FORM_FILL = "form_fill"
     KIND_PROTECT = "protect"
     KIND_SIGN = "sign"
+    KIND_CONVERT = "convert"
 
     KIND_CHOICES = [
         (KIND_FIND_REPLACE, "Find & Replace"),
@@ -71,6 +72,7 @@ class ProcessedPDF(models.Model):
         (KIND_FORM_FILL, "Form Fill"),
         (KIND_PROTECT, "Password Protect"),
         (KIND_SIGN, "Digital Signature"),
+        (KIND_CONVERT, "Convert to Word"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

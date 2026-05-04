@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import logging
 import os
 
 import fitz
@@ -315,8 +316,28 @@ def verify_pdf_signatures(pdf_path: str, extra_trust_certs: list[bytes] | None =
     async def _do() -> list[dict]:
         out: list[dict] = []
         with open(pdf_path, "rb") as f:
-            reader = PdfFileReader(f)
-            for sig in reader.embedded_signatures:
+            try:
+                reader = PdfFileReader(f)
+                signatures = list(reader.embedded_signatures)
+            except Exception as exc:
+                # Corrupted PDF (mid-file mutation can break xref/trailer parsing
+                # before pyHanko reaches the signatures). Report a single
+                # synthetic failure entry rather than propagating the parse error.
+                return [
+                    {
+                        "field_name": "",
+                        "signer_name": "",
+                        "signing_time": None,
+                        "has_timestamp": False,
+                        "timestamp_valid": False,
+                        "trusted": False,
+                        "intact": False,
+                        "revoked": False,
+                        "summary": "Could not parse PDF",
+                        "errors": [str(exc)],
+                    }
+                ]
+            for sig in signatures:
                 report = {
                     "field_name": sig.field_name,
                     "signer_name": "",
@@ -397,6 +418,50 @@ def protect_pdf(
         )
 
     return out_path
+
+
+def convert_pdf_to_docx(pdf_path: str) -> tuple[str, bool]:
+    """Convert a PDF to a .docx file using pdf2docx.
+
+    Returns ``(output_path, has_extractable_text)``. When ``has_extractable_text``
+    is False, the source PDF is image-only (likely a scan) and the resulting
+    .docx will be near-empty — the caller should warn the user to OCR first.
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+
+    has_text = False
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("Cannot convert an encrypted PDF — remove the password first")
+        for page in doc:
+            if page.get_text("text").strip():
+                has_text = True
+                break
+
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    out_path = os.path.join(out_dir, f"{base}_{timestamp()}.docx")
+
+    # pdf2docx writes progress lines via `logging.info(...)` on the root
+    # logger, which floods callers' logs. Bump the root threshold while
+    # converting and restore it afterwards.
+    from pdf2docx import Converter
+
+    root_logger = logging.getLogger()
+    prev_level = root_logger.level
+    if prev_level < logging.WARNING:
+        root_logger.setLevel(logging.WARNING)
+    try:
+        cv = Converter(pdf_path)
+        try:
+            cv.convert(out_path)
+        finally:
+            cv.close()
+    finally:
+        root_logger.setLevel(prev_level)
+
+    return out_path, has_text
 
 
 def _calculate_position(

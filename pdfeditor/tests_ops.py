@@ -14,6 +14,7 @@ from .pdf_processor.ops import (
     add_page_numbers,
     add_watermark,
     compress_pdf,
+    convert_pdf_to_docx,
     merge_pdfs,
     protect_pdf,
     rotate_pages,
@@ -333,6 +334,59 @@ class ProtectPdfTests(_MediaRootMixin, TestCase):
         try:
             with self.assertRaises(ValueError):
                 protect_pdf(out, user_password="another")
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+
+class ConvertPdfToDocxTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.path = _make_multipage_pdf(2)
+
+    def tearDown(self):
+        if os.path.exists(self.path):
+            os.remove(self.path)
+
+    def test_convert_returns_docx_with_text(self):
+        out, has_text = convert_pdf_to_docx(self.path)
+        try:
+            self.assertTrue(out.endswith(".docx"))
+            self.assertTrue(os.path.exists(out))
+            self.assertGreater(os.path.getsize(out), 0)
+            self.assertTrue(has_text)
+            from docx import Document
+
+            doc = Document(out)
+            full = "\n".join(p.text for p in doc.paragraphs)
+            self.assertIn("This is page 1", full)
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_image_only_pdf_reports_no_text(self):
+        # PDF with image but no text → has_text False
+        img_path = _make_pdf_with_image()
+        try:
+            out, has_text = convert_pdf_to_docx(img_path)
+            try:
+                self.assertTrue(os.path.exists(out))
+                self.assertFalse(has_text)
+            finally:
+                if os.path.exists(out):
+                    os.remove(out)
+        finally:
+            if os.path.exists(img_path):
+                os.remove(img_path)
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            convert_pdf_to_docx("/no/such/file.pdf")
+
+    def test_encrypted_pdf_raises(self):
+        out = protect_pdf(self.path, user_password="hunter2")
+        try:
+            with self.assertRaises(ValueError):
+                convert_pdf_to_docx(out)
         finally:
             if os.path.exists(out):
                 os.remove(out)

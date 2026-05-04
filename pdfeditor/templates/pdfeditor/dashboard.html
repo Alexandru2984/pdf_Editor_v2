@@ -58,6 +58,13 @@
             <a href="{% url 'compress' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="convert">
+            <div class="card-icon">📝</div>
+            <h3>{% trans "Convert to Word" %}</h3>
+            <p>{% trans "Export your PDF as an editable .docx file" %}</p>
+            <a href="{% url 'convert' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="protect">
             <div class="card-icon">🔒</div>
             <h3>{% trans "Password Protect" %}</h3>

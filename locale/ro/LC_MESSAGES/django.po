@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-04 17:47+0000\n"
+"POT-Creation-Date: 2026-05-04 22:46+0000\n"
 "PO-Revision-Date: 2026-05-03 17:30+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,7 +24,9 @@ msgstr "Atașează marcaj de timp de încredere (RFC 3161)"
 
 #: pdfeditor/forms.py:216
 msgid "Adds a verifiable signing time fetched from a public TSA."
-msgstr "Adaugă o oră de semnare verificabilă obținută de la o autoritate publică (TSA)."
+msgstr ""
+"Adaugă o oră de semnare verificabilă obținută de la o autoritate publică "
+"(TSA)."
 
 #: pdfeditor/forms.py:221
 msgid "Embed long-term validation info (PAdES B-LT)"
@@ -35,7 +37,11 @@ msgid ""
 "Fetches OCSP/CRL responses for the signing chain and embeds them in the PDF, "
 "so the signature stays verifiable even if the CA goes offline. Only works "
 "with certificates issued by a public CA — self-signed certificates will fail."
-msgstr "Obține răspunsuri OCSP/CRL pentru lanțul de semnare și le include în PDF, astfel încât semnătura rămâne verificabilă chiar dacă CA-ul iese din funcțiune. Funcționează doar cu certificate emise de o CA publică — certificatele self-signed vor eșua."
+msgstr ""
+"Obține răspunsuri OCSP/CRL pentru lanțul de semnare și le include în PDF, "
+"astfel încât semnătura rămâne verificabilă chiar dacă CA-ul iese din "
+"funcțiune. Funcționează doar cu certificate emise de o CA publică — "
+"certificatele self-signed vor eșua."
 
 #: pdfeditor/forms.py:232
 msgid "Append archival timestamp (PAdES B-LTA)"
@@ -46,7 +52,11 @@ msgid ""
 "Adds a document-level RFC 3161 timestamp after the signature so the PDF can "
 "be re-validated even after the signing certificate expires. Requires the "
 "trusted timestamp option above."
-msgstr "Adaugă un marcaj de timp RFC 3161 la nivel de document după semnătură, astfel încât PDF-ul poate fi revalidat chiar și după expirarea certificatului de semnare. Necesită opțiunea de marcaj de timp de încredere de mai sus."
+msgstr ""
+"Adaugă un marcaj de timp RFC 3161 la nivel de document după semnătură, "
+"astfel încât PDF-ul poate fi revalidat chiar și după expirarea "
+"certificatului de semnare. Necesită opțiunea de marcaj de timp de încredere "
+"de mai sus."
 
 #: pdfeditor/password_validators.py:69
 msgid ""
@@ -229,6 +239,7 @@ msgstr "Comută navigarea"
 
 #: pdfeditor/templates/pdfeditor/base.html:67
 #: pdfeditor/templates/pdfeditor/compress_result.html:54
+#: pdfeditor/templates/pdfeditor/convert_result.html:37
 #: pdfeditor/templates/pdfeditor/protect_result.html:30
 #: pdfeditor/templates/pdfeditor/rotate_result.html:27
 #: pdfeditor/templates/pdfeditor/sign_result.html:30
@@ -264,6 +275,7 @@ msgid "Select PDF to Compress:"
 msgstr "Selectează PDF-ul de comprimat:"
 
 #: pdfeditor/templates/pdfeditor/compress.html:23
+#: pdfeditor/templates/pdfeditor/convert.html:23
 #: pdfeditor/templates/pdfeditor/protect.html:23
 #: pdfeditor/templates/pdfeditor/sign.html:23
 #, python-format
@@ -275,6 +287,7 @@ msgid "Reduce file size while maintaining quality"
 msgstr "Reduce dimensiunea fișierului păstrând calitatea"
 
 #: pdfeditor/templates/pdfeditor/compress.html:33
+#: pdfeditor/templates/pdfeditor/convert.html:35
 #: pdfeditor/templates/pdfeditor/protect.html:35
 #: pdfeditor/templates/pdfeditor/sign.html:35
 msgid "Current File:"
@@ -285,8 +298,9 @@ msgid "Original Size:"
 msgstr "Dimensiune originală:"
 
 #: pdfeditor/templates/pdfeditor/compress.html:41
-#: pdfeditor/templates/pdfeditor/dashboard.html:130
-#: pdfeditor/templates/pdfeditor/dashboard.html:140
+#: pdfeditor/templates/pdfeditor/convert.html:39
+#: pdfeditor/templates/pdfeditor/dashboard.html:137
+#: pdfeditor/templates/pdfeditor/dashboard.html:147
 #: pdfeditor/templates/pdfeditor/protect.html:39
 #: pdfeditor/templates/pdfeditor/rephrase.html:419
 #: pdfeditor/templates/pdfeditor/sign.html:39
@@ -298,6 +312,7 @@ msgid "Select Compression Level:"
 msgstr "Selectează nivelul de comprimare:"
 
 #: pdfeditor/templates/pdfeditor/compress.html:75
+#: pdfeditor/templates/pdfeditor/convert.html:66
 #: pdfeditor/templates/pdfeditor/protect.html:74
 #: pdfeditor/templates/pdfeditor/rotate.html:62
 #: pdfeditor/templates/pdfeditor/sign.html:141
@@ -339,6 +354,7 @@ msgid "Compression Progress:"
 msgstr "Progres comprimare:"
 
 #: pdfeditor/templates/pdfeditor/compress_result.html:48
+#: pdfeditor/templates/pdfeditor/convert_result.html:31
 #: pdfeditor/templates/pdfeditor/protect_result.html:24
 #: pdfeditor/templates/pdfeditor/sign_result.html:24
 msgid "Ready to download"
@@ -350,6 +366,85 @@ msgstr "Previzualizează PDF-ul comprimat"
 
 #: pdfeditor/templates/pdfeditor/compress_result.html:60
 msgid "Download Compressed PDF"
+msgstr "Descarcă PDF-ul comprimat"
+
+#: pdfeditor/templates/pdfeditor/convert.html:4
+#: pdfeditor/templates/pdfeditor/convert.html:29
+msgid "Convert PDF to Word"
+msgstr "Convertește PDF în Word"
+
+#: pdfeditor/templates/pdfeditor/convert.html:13
+#| msgid "Select PDF to Protect:"
+msgid "Select PDF to Convert:"
+msgstr "Selectează PDF-ul de protejat:"
+
+#: pdfeditor/templates/pdfeditor/convert.html:31
+msgid ""
+"Export your PDF as a .docx file you can edit in Word, LibreOffice, or Google "
+"Docs."
+msgstr "Exportă PDF-ul ca fișier .docx pe care îl poți edita în Word, LibreOffice sau Google Docs."
+
+#: pdfeditor/templates/pdfeditor/convert.html:48
+msgid "About this conversion:"
+msgstr "Despre această conversie:"
+
+#: pdfeditor/templates/pdfeditor/convert.html:49
+msgid ""
+"Layout is preserved best on simple, text-based documents. Complex layouts "
+"(multi-column, tables, equations) may need cleanup after conversion."
+msgstr "Aspectul este păstrat cel mai bine pe documente simple, bazate pe text. Aspectele complexe (multi-coloană, tabele, formule) pot necesita ajustări după conversie."
+
+#: pdfeditor/templates/pdfeditor/convert.html:52
+msgid "Scanned PDFs:"
+msgstr "PDF-uri scanate:"
+
+#: pdfeditor/templates/pdfeditor/convert.html:53
+msgid ""
+"If your PDF has no extractable text (it's a scan), run OCR first — otherwise "
+"the .docx will be empty."
+msgstr "Dacă PDF-ul tău nu are text extragibil (e o scanare), rulează OCR-ul mai întâi — altfel .docx-ul va fi gol."
+
+#: pdfeditor/templates/pdfeditor/convert.html:69
+#: pdfeditor/templates/pdfeditor/dashboard.html:63
+msgid "Convert to Word"
+msgstr "Convertește în Word"
+
+#: pdfeditor/templates/pdfeditor/convert_result.html:4
+#| msgid "Compression Result"
+msgid "Conversion Result"
+msgstr "Rezultat comprimare"
+
+#: pdfeditor/templates/pdfeditor/convert_result.html:10
+msgid "PDF Converted to Word!"
+msgstr "PDF convertit în Word!"
+
+#: pdfeditor/templates/pdfeditor/convert_result.html:11
+msgid "Your .docx is ready — open it in Word, LibreOffice, or Google Docs."
+msgstr "Fișierul .docx este gata — deschide-l în Word, LibreOffice sau Google Docs."
+
+#: pdfeditor/templates/pdfeditor/convert_result.html:17
+msgid "Heads-up:"
+msgstr "Atenție:"
+
+#: pdfeditor/templates/pdfeditor/convert_result.html:18
+msgid ""
+"The source PDF appears to be image-only (a scan), so the .docx is likely "
+"empty. Run OCR on the PDF first, then convert again for usable text."
+msgstr "PDF-ul sursă pare să fie doar imagine (scanare), așa că .docx-ul e probabil gol. Rulează OCR pe PDF mai întâi, apoi convertește din nou pentru text utilizabil."
+
+#: pdfeditor/templates/pdfeditor/convert_result.html:22
+msgid "Tip:"
+msgstr "Sfat:"
+
+#: pdfeditor/templates/pdfeditor/convert_result.html:23
+msgid ""
+"Layout in Word may differ slightly from the original PDF — especially for "
+"multi-column pages, tables, or equations. A quick visual cleanup is normal."
+msgstr "Aspectul în Word poate diferi ușor de PDF-ul original — în special pentru pagini multi-coloană, tabele sau formule. O ajustare vizuală rapidă este normală."
+
+#: pdfeditor/templates/pdfeditor/convert_result.html:40
+#| msgid "Download Compressed PDF"
+msgid "Download Word Document"
 msgstr "Descarcă PDF-ul comprimat"
 
 #: pdfeditor/templates/pdfeditor/dashboard.html:4
@@ -411,7 +506,8 @@ msgstr "Împarte PDF-ul în mai multe fișiere după pagini"
 #: pdfeditor/templates/pdfeditor/dashboard.html:86
 #: pdfeditor/templates/pdfeditor/dashboard.html:93
 #: pdfeditor/templates/pdfeditor/dashboard.html:100
-#: pdfeditor/templates/pdfeditor/dashboard.html:114
+#: pdfeditor/templates/pdfeditor/dashboard.html:107
+#: pdfeditor/templates/pdfeditor/dashboard.html:121
 msgid "Get Started"
 msgstr "Începe"
 
@@ -433,36 +529,40 @@ msgstr "Comprimă"
 msgid "Reduce PDF file size without losing quality"
 msgstr "Reduce dimensiunea fișierului fără pierdere de calitate"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:63
+#: pdfeditor/templates/pdfeditor/dashboard.html:64
+msgid "Export your PDF as an editable .docx file"
+msgstr "Exportă PDF-ul ca fișier .docx editabil"
+
+#: pdfeditor/templates/pdfeditor/dashboard.html:70
 msgid "Password Protect"
 msgstr "Protejează cu parolă"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:64
+#: pdfeditor/templates/pdfeditor/dashboard.html:71
 msgid "Encrypt your PDF with a password (AES-256)"
 msgstr "Criptează PDF-ul cu o parolă (AES-256)"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:70
+#: pdfeditor/templates/pdfeditor/dashboard.html:77
 #: pdfeditor/templates/pdfeditor/sign.html:4
 #: pdfeditor/templates/pdfeditor/sign.html:29
 msgid "Digital Signature"
 msgstr "Semnătură digitală"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:71
+#: pdfeditor/templates/pdfeditor/dashboard.html:78
 msgid "Sign your PDF cryptographically (PKCS#7) with your own certificate"
 msgstr "Semnează PDF-ul criptografic (PKCS#7) cu propriul tău certificat"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:77
+#: pdfeditor/templates/pdfeditor/dashboard.html:84
 #: pdfeditor/templates/pdfeditor/more_tools.html:131
 #: pdfeditor/templates/pdfeditor/watermark.html:4
 #: pdfeditor/templates/pdfeditor/watermark.html:26
 msgid "Add Watermark"
 msgstr "Adaugă filigran"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:78
+#: pdfeditor/templates/pdfeditor/dashboard.html:85
 msgid "Add text or image watermark to your PDF"
 msgstr "Adaugă filigran text sau imagine pe PDF"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:84
+#: pdfeditor/templates/pdfeditor/dashboard.html:91
 #: pdfeditor/templates/pdfeditor/more_tools.html:136
 #: pdfeditor/templates/pdfeditor/rotate.html:4
 #: pdfeditor/templates/pdfeditor/rotate.html:26
@@ -470,106 +570,106 @@ msgstr "Adaugă filigran text sau imagine pe PDF"
 msgid "Rotate Pages"
 msgstr "Rotește paginile"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:85
+#: pdfeditor/templates/pdfeditor/dashboard.html:92
 msgid "Rotate PDF pages by 90, 180, or 270 degrees"
 msgstr "Rotește paginile cu 90, 180 sau 270 de grade"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:91
+#: pdfeditor/templates/pdfeditor/dashboard.html:98
 #: pdfeditor/templates/pdfeditor/more_tools.html:141
 msgid "Add Page Numbers"
 msgstr "Adaugă numere de pagină"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:92
+#: pdfeditor/templates/pdfeditor/dashboard.html:99
 msgid "Add customizable page numbers to your PDF"
 msgstr "Adaugă numere de pagină personalizabile pe PDF"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:98
+#: pdfeditor/templates/pdfeditor/dashboard.html:105
 msgid "Fill Form"
 msgstr "Completează formular"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:99
+#: pdfeditor/templates/pdfeditor/dashboard.html:106
 msgid "Detect and fill AcroForm fields (text inputs, checkboxes, dropdowns)"
 msgstr "Detectează și completează câmpuri AcroForm (text, bifări, liste)"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:105
+#: pdfeditor/templates/pdfeditor/dashboard.html:112
 msgid "History"
 msgstr "Istoric"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:106
+#: pdfeditor/templates/pdfeditor/dashboard.html:113
 msgid "See and re-download every output produced in this session"
 msgstr "Vezi și redescarcă fiecare rezultat produs în această sesiune"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:107
+#: pdfeditor/templates/pdfeditor/dashboard.html:114
 msgid "View History"
 msgstr "Vezi istoricul"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:112
+#: pdfeditor/templates/pdfeditor/dashboard.html:119
 #: pdfeditor/templates/pdfeditor/more_tools.html:4
 msgid "More Tools"
 msgstr "Mai multe unelte"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:113
+#: pdfeditor/templates/pdfeditor/dashboard.html:120
 msgid "Advanced PDF tools: Extract Text, OCR, and more"
 msgstr "Unelte avansate PDF: extragere text, OCR și mai multe"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:120
+#: pdfeditor/templates/pdfeditor/dashboard.html:127
 msgid "Your PDFs"
 msgstr "PDF-urile tale"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:128
+#: pdfeditor/templates/pdfeditor/dashboard.html:135
 #, python-format
 msgid "Preview %(name)s"
 msgstr "Previzualizare %(name)s"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:141
+#: pdfeditor/templates/pdfeditor/dashboard.html:148
 msgid "Delete this PDF?"
 msgstr "Ștergi acest PDF?"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:141
+#: pdfeditor/templates/pdfeditor/dashboard.html:148
 msgid "Delete"
 msgstr "Șterge"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:150
+#: pdfeditor/templates/pdfeditor/dashboard.html:157
 msgid "Why Choose Our Platform?"
 msgstr "De ce să alegi platforma noastră?"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:154
+#: pdfeditor/templates/pdfeditor/dashboard.html:161
 msgid "Secure"
 msgstr "Sigur"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:155
+#: pdfeditor/templates/pdfeditor/dashboard.html:162
 msgid "Your files are automatically deleted after processing"
 msgstr "Fișierele tale sunt șterse automat după procesare"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:159
+#: pdfeditor/templates/pdfeditor/dashboard.html:166
 msgid "Fast"
 msgstr "Rapid"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:160
+#: pdfeditor/templates/pdfeditor/dashboard.html:167
 msgid "Process PDFs in seconds with our optimized engine"
 msgstr "Procesează PDF-uri în secunde cu motorul nostru optimizat"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:164
+#: pdfeditor/templates/pdfeditor/dashboard.html:171
 msgid "Accurate"
 msgstr "Precis"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:165
+#: pdfeditor/templates/pdfeditor/dashboard.html:172
 msgid "Preserve formatting and layout with precision"
 msgstr "Păstrează formatarea și aspectul cu precizie"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:169
+#: pdfeditor/templates/pdfeditor/dashboard.html:176
 msgid "No Installation"
 msgstr "Fără instalare"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:170
+#: pdfeditor/templates/pdfeditor/dashboard.html:177
 msgid "Work directly in your browser, no downloads needed"
 msgstr "Lucrează direct în browser, fără descărcări"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:201
+#: pdfeditor/templates/pdfeditor/dashboard.html:208
 msgid "Please drop PDF files only"
 msgstr "Te rugăm să tragi numai fișiere PDF"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:206
+#: pdfeditor/templates/pdfeditor/dashboard.html:213
 msgid "Some files were skipped — only PDFs are accepted."
 msgstr "Unele fișiere au fost omise — sunt acceptate doar PDF-uri."
 
@@ -1918,119 +2018,143 @@ msgstr "Acesta este deja emailul tău actual."
 msgid "That password doesn't match your account."
 msgstr "Parola nu corespunde cu contul tău."
 
-#: pdfeditor/views/basic_ops.py:42
+#: pdfeditor/views/basic_ops.py:44
 msgid "No PDF found. Please upload a PDF first."
 msgstr "Niciun PDF găsit. Te rugăm să încarci mai întâi un PDF."
 
-#: pdfeditor/views/basic_ops.py:48
+#: pdfeditor/views/basic_ops.py:50
 msgid "Selected PDF not found."
 msgstr "PDF-ul selectat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:80
+#: pdfeditor/views/basic_ops.py:82
 #, python-format
 msgid "PDF split successfully into %(count)s files!"
 msgstr "PDF-ul a fost împărțit cu succes în %(count)s fișiere!"
 
-#: pdfeditor/views/basic_ops.py:84 pdfeditor/views/basic_ops.py:195
+#: pdfeditor/views/basic_ops.py:86 pdfeditor/views/basic_ops.py:197
+#: pdfeditor/views/basic_ops.py:586
 #, python-format
 msgid "Error: %(err)s"
 msgstr "Eroare: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:86
+#: pdfeditor/views/basic_ops.py:88
 #, python-format
 msgid "Error splitting PDF: %(err)s"
 msgstr "Eroare la împărțirea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:115
+#: pdfeditor/views/basic_ops.py:117
 msgid "No split files found."
 msgstr "Nu s-au găsit fișiere împărțite."
 
-#: pdfeditor/views/basic_ops.py:163
+#: pdfeditor/views/basic_ops.py:165
 msgid "You need at least 2 PDFs to merge. Please upload more files."
 msgstr ""
 "Ai nevoie de cel puțin 2 PDF-uri pentru a le uni. Încarcă mai multe fișiere."
 
-#: pdfeditor/views/basic_ops.py:176
+#: pdfeditor/views/basic_ops.py:178
 #, python-format
 msgid "PDF with ID %(pdf_id)s not found."
 msgstr "PDF-ul cu ID-ul %(pdf_id)s nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:182
+#: pdfeditor/views/basic_ops.py:184
 msgid "At least 2 PDFs are required for merging."
 msgstr "Sunt necesare cel puțin 2 PDF-uri pentru unire."
 
-#: pdfeditor/views/basic_ops.py:191
+#: pdfeditor/views/basic_ops.py:193
 #, python-format
 msgid "Successfully merged %(count)s PDFs!"
 msgstr "%(count)s PDF-uri unite cu succes!"
 
-#: pdfeditor/views/basic_ops.py:197
+#: pdfeditor/views/basic_ops.py:199
 #, python-format
 msgid "Error merging PDFs: %(err)s"
 msgstr "Eroare la unirea PDF-urilor: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:214
+#: pdfeditor/views/basic_ops.py:216
 msgid "Merged file not found."
 msgstr "Fișierul unit nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:232 pdfeditor/views/basic_ops.py:237
-#: pdfeditor/views/basic_ops.py:318 pdfeditor/views/basic_ops.py:323
-#: pdfeditor/views/basic_ops.py:392 pdfeditor/views/basic_ops.py:397
-#: pdfeditor/views/basic_ops.py:479 pdfeditor/views/basic_ops.py:484
+#: pdfeditor/views/basic_ops.py:234 pdfeditor/views/basic_ops.py:239
+#: pdfeditor/views/basic_ops.py:320 pdfeditor/views/basic_ops.py:325
+#: pdfeditor/views/basic_ops.py:394 pdfeditor/views/basic_ops.py:399
+#: pdfeditor/views/basic_ops.py:481 pdfeditor/views/basic_ops.py:486
+#: pdfeditor/views/basic_ops.py:625 pdfeditor/views/basic_ops.py:630
 msgid "File not found."
 msgstr "Fișierul nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:271
+#: pdfeditor/views/basic_ops.py:273
 #, python-format
 msgid "PDF compressed successfully! Saved %(ratio).1f%% space."
 msgstr "PDF comprimat cu succes! Spațiu economisit: %(ratio).1f%%."
 
-#: pdfeditor/views/basic_ops.py:275
+#: pdfeditor/views/basic_ops.py:277
 #, python-format
 msgid "Error compressing PDF: %(err)s"
 msgstr "Eroare la comprimarea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:296
+#: pdfeditor/views/basic_ops.py:298
 msgid "Compressed file not found."
 msgstr "Fișierul comprimat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:353
+#: pdfeditor/views/basic_ops.py:355
 msgid "PDF protected successfully!"
 msgstr "PDF protejat cu succes!"
 
-#: pdfeditor/views/basic_ops.py:356
+#: pdfeditor/views/basic_ops.py:358
 #, python-format
 msgid "Error protecting PDF: %(err)s"
 msgstr "Eroare la protejarea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:376
+#: pdfeditor/views/basic_ops.py:378
 msgid "Protected file not found."
 msgstr "Fișierul protejat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:438
+#: pdfeditor/views/basic_ops.py:440
 msgid "PDF signed successfully!"
 msgstr "PDF semnat cu succes!"
 
-#: pdfeditor/views/basic_ops.py:441 pdfeditor/views/basic_ops.py:443
+#: pdfeditor/views/basic_ops.py:443 pdfeditor/views/basic_ops.py:445
 #, python-format
 msgid "Error signing PDF: %(err)s"
 msgstr "Eroare la semnarea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:463
+#: pdfeditor/views/basic_ops.py:465
 msgid "Signed file not found."
 msgstr "Fișierul semnat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:535
+#: pdfeditor/views/basic_ops.py:537
 #, python-format
 msgid "Error generating certificate: %(err)s"
 msgstr "Eroare la generarea certificatului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:577
+#: pdfeditor/views/basic_ops.py:575
+#| msgid "PDF protected successfully!"
+msgid "PDF converted to Word successfully!"
+msgstr "PDF protejat cu succes!"
+
+#: pdfeditor/views/basic_ops.py:580
+msgid ""
+"Conversion done, but the source PDF appears to be image-only (scan). The ."
+"docx will be near-empty — run OCR first for better results."
+msgstr "Conversia s-a făcut, dar PDF-ul sursă pare să fie doar imagine (scanare). .docx-ul va fi aproape gol — rulează OCR mai întâi pentru rezultate mai bune."
+
+#: pdfeditor/views/basic_ops.py:588
+#, fuzzy, python-format
+#| msgid "Error protecting PDF: %(err)s"
+msgid "Error converting PDF: %(err)s"
+msgstr "Eroare la protejarea PDF-ului: %(err)s"
+
+#: pdfeditor/views/basic_ops.py:608
+#| msgid "Merged file not found."
+msgid "Converted file not found."
+msgstr "Fișierul unit nu a fost găsit."
+
+#: pdfeditor/views/basic_ops.py:663
 #, python-format
 msgid "Error verifying signatures: %(err)s"
 msgstr "Eroare la verificarea semnăturilor: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:583
+#: pdfeditor/views/basic_ops.py:669
 msgid "No signatures found in this PDF."
 msgstr "Nicio semnătură găsită în acest PDF."
 

@@ -315,6 +315,10 @@ class GenerateCertForm(forms.Form):
         return cleaned
 
 
+class ConvertToDocxForm(forms.Form):
+    """No-fields form for the PDF → DOCX conversion (CSRF-only)."""
+
+
 class WatermarkForm(forms.Form):
     """Form for adding watermark to PDF."""
 

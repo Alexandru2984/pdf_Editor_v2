@@ -318,6 +318,45 @@ class CompressViewTests(_ViewTestBase):
         self.assertEqual(download.status_code, 200)
 
 
+# ---- Convert to DOCX -------------------------------------------------------
+
+
+class ConvertViewTests(_ViewTestBase):
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("convert"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_renders(self):
+        self.upload()
+        resp = self.client.get(reverse("convert"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_full_convert_workflow(self):
+        self.upload()
+        resp = self.client.post(reverse("convert"), {})
+        self.assertEqual(resp.status_code, 302)
+
+        result = self.client.get(reverse("convert_result"))
+        self.assertEqual(result.status_code, 200)
+        # Filename ends with .docx and is offered as a download.
+        download = self.client.get(reverse("download_converted"))
+        self.assertEqual(download.status_code, 200)
+        # Recorded ProcessedPDF has the right kind and a .docx path.
+        from .models import ProcessedPDF
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_CONVERT)
+        self.assertTrue(latest.path.endswith(".docx"))
+
+    def test_convert_result_without_session_redirects(self):
+        resp = self.client.get(reverse("convert_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_converted"))
+        self.assertEqual(resp.status_code, 302)
+
+
 # ---- Watermark / Rotate / Page numbers --------------------------------------
 
 
