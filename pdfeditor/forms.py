@@ -214,11 +214,51 @@ class SignPDFForm(forms.Form):
         label="Embed trusted timestamp (RFC 3161)",
         help_text="Adds a verifiable signing time fetched from a public TSA.",
     )
+    embed_validation_info = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Embed long-term validation info (PAdES B-LT)",
+        help_text=(
+            "Fetches OCSP/CRL responses for the signing chain and embeds them in "
+            "the PDF, so the signature stays verifiable even if the CA goes offline. "
+            "Only works with certificates issued by a public CA — self-signed "
+            "certificates will fail."
+        ),
+    )
 
     def clean_p12_file(self):
         f = self.cleaned_data.get("p12_file")
         if f and f.size > 1024 * 1024:  # 1 MB cap is plenty for a .p12
             raise forms.ValidationError("Certificate file is too large (max 1 MB).")
+        return f
+
+
+class VerifyPDFForm(forms.Form):
+    """Form for verifying signatures on an uploaded PDF."""
+
+    pdf_file = forms.FileField(
+        required=True,
+        label="Signed PDF",
+    )
+    trust_certs = forms.FileField(
+        required=False,
+        label="Additional trust anchors (optional)",
+        help_text=(
+            "PEM or DER certificate(s) to treat as trusted. Use this for self-signed "
+            "or test certificates that aren't issued by a public CA."
+        ),
+    )
+
+    def clean_pdf_file(self):
+        f = self.cleaned_data.get("pdf_file")
+        if f and f.size > 50 * 1024 * 1024:
+            raise forms.ValidationError("PDF too large (max 50 MB).")
+        return f
+
+    def clean_trust_certs(self):
+        f = self.cleaned_data.get("trust_certs")
+        if f and f.size > 256 * 1024:
+            raise forms.ValidationError("Trust anchor file too large (max 256 KB).")
         return f
 
 

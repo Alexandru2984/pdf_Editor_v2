@@ -113,6 +113,7 @@ def sign_pdf(
     location: str = "",
     field_name: str = "Signature1",
     tsa_url: str | None = None,
+    embed_validation_info: bool = False,
 ) -> str:
     """Apply a cryptographic PKCS#7 signature to a PDF using a user-supplied .p12.
 
@@ -121,10 +122,16 @@ def sign_pdf(
     ``p12_password`` decrypts the private key inside it. When ``tsa_url`` is set,
     pyHanko fetches an RFC 3161 timestamp from that authority and embeds it in the
     signature (``signature-time-stamp`` attribute).
+
+    When ``embed_validation_info`` is True, fetches OCSP/CRL responses for the
+    signing chain and embeds them in a Document Security Store (PAdES B-LT).
+    Self-signed or otherwise unverifiable certificates will raise ``ValueError``.
     """
     from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
     from pyhanko.sign import fields, signers
+    from pyhanko.sign.fields import SigSeedSubFilter
     from pyhanko.sign.timestamps import HTTPTimeStamper
+    from pyhanko_certvalidator.context import ValidationContext
 
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
@@ -195,26 +202,134 @@ def sign_pdf(
             ),
         )
         timestamper = HTTPTimeStamper(tsa_url, timeout=10) if tsa_url else None
+
+        validation_context = None
+        meta_kwargs: dict = {
+            "field_name": field_name,
+            "reason": reason or None,
+            "location": location or None,
+        }
+        if embed_validation_info:
+            # PAdES B-LT requires the PAdES subfilter; ValidationContext fetches
+            # OCSP/CRL for the signer chain at signing time and we embed it.
+            validation_context = ValidationContext(allow_fetching=True)
+            meta_kwargs["subfilter"] = SigSeedSubFilter.PADES
+            meta_kwargs["embed_validation_info"] = True
+            meta_kwargs["validation_context"] = validation_context
+
         pdf_signer = signers.PdfSigner(
-            signers.PdfSignatureMetadata(
-                field_name=field_name,
-                reason=reason or None,
-                location=location or None,
-            ),
+            signers.PdfSignatureMetadata(**meta_kwargs),
             signer=signer,
             timestamper=timestamper,
         )
+        from pyhanko_certvalidator.errors import (
+            InvalidCertificateError,
+            PathBuildingError,
+            PathValidationError,
+        )
+
         try:
             with open(out_path, "wb") as outf:
                 pdf_signer.sign_pdf(writer, output=outf)
+        except (InvalidCertificateError, PathBuildingError, PathValidationError) as exc:
+            raise ValueError(
+                f"Cannot embed validation info — certificate chain could not be "
+                f"verified (likely self-signed or unknown CA): {exc}"
+            ) from exc
         except Exception as exc:
-            # Surface TSA failures with a friendlier message; pyHanko raises
-            # generic IOError/HTTPError which are not user-actionable.
-            if tsa_url and ("timestamp" in str(exc).lower() or "tsa" in str(exc).lower()):
+            err_msg = str(exc).lower()
+            if tsa_url and ("timestamp" in err_msg or "tsa" in err_msg):
                 raise ValueError(f"Timestamp authority error: {exc}") from exc
             raise
 
     return out_path
+
+
+def verify_pdf_signatures(pdf_path: str, extra_trust_certs: list[bytes] | None = None) -> list[dict]:
+    """Validate every embedded signature in a PDF and return a per-signature report.
+
+    ``extra_trust_certs`` is a list of additional PEM/DER certificate blobs to
+    treat as trust anchors — useful for self-signed or test certificates that
+    would otherwise be rejected.
+
+    Each report dict contains: ``field_name``, ``signer_name``, ``signing_time``
+    (ISO8601 or None), ``has_timestamp``, ``timestamp_valid``, ``trusted``,
+    ``intact`` (signature integrity), ``revoked``, ``summary`` (human-readable
+    one-liner), and ``errors`` (list of error strings).
+    """
+    import asyncio
+
+    from asn1crypto import pem, x509
+    from pyhanko.pdf_utils.reader import PdfFileReader
+    from pyhanko.sign.validation import async_validate_pdf_signature
+    from pyhanko_certvalidator.context import ValidationContext
+
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+
+    extra_anchors: list[x509.Certificate] = []
+    for blob in extra_trust_certs or []:
+        try:
+            if pem.detect(blob):
+                _, _, der = pem.unarmor(blob)
+            else:
+                der = blob
+            extra_anchors.append(x509.Certificate.load(der))
+        except Exception:
+            # Ignore malformed extras; the report will reflect failures.
+            continue
+
+    async def _do() -> list[dict]:
+        out: list[dict] = []
+        with open(pdf_path, "rb") as f:
+            reader = PdfFileReader(f)
+            for sig in reader.embedded_signatures:
+                report = {
+                    "field_name": sig.field_name,
+                    "signer_name": "",
+                    "signing_time": None,
+                    "has_timestamp": False,
+                    "timestamp_valid": False,
+                    "trusted": False,
+                    "intact": False,
+                    "revoked": False,
+                    "summary": "",
+                    "errors": [],
+                }
+                try:
+                    import contextlib
+
+                    cn = ""
+                    with contextlib.suppress(Exception):
+                        cn = sig.signer_cert.subject.human_friendly
+                    report["signer_name"] = cn
+
+                    vc = ValidationContext(
+                        allow_fetching=True,
+                        extra_trust_roots=extra_anchors or None,
+                        revocation_mode="soft-fail",
+                    )
+                    status = await async_validate_pdf_signature(sig, signer_validation_context=vc)
+                    report["intact"] = bool(status.intact)
+                    report["trusted"] = bool(status.trusted)
+                    report["revoked"] = bool(getattr(status, "revoked", False))
+                    if status.signer_reported_dt:
+                        report["signing_time"] = status.signer_reported_dt.isoformat()
+                    if status.timestamp_validity is not None:
+                        report["has_timestamp"] = True
+                        report["timestamp_valid"] = bool(status.timestamp_validity.intact)
+                    report["summary"] = (
+                        str(status.bottom_line)
+                        if status.bottom_line
+                        else ("Valid" if (status.intact and status.trusted) else "Invalid")
+                    )
+                except Exception as exc:
+                    report["errors"].append(str(exc))
+                    report["summary"] = "Could not validate"
+                out.append(report)
+        return out
+
+    return asyncio.run(_do())
 
 
 def protect_pdf(

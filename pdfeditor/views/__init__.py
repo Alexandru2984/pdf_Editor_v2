@@ -29,6 +29,7 @@ from .basic_ops import (
     sign_view,
     split_result_view,
     split_view,
+    verify_signature_view,
 )
 from .edit import (
     download_view,
@@ -95,6 +96,7 @@ __all__ = [
     "sign_result_view",
     "download_signed_view",
     "generate_cert_view",
+    "verify_signature_view",
     "watermark_view",
     "watermark_result_view",
     "download_watermarked_view",

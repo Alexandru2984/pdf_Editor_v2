@@ -115,6 +115,16 @@
                 </label>
             </div>
 
+            <div class="form-field form-field--checkbox">
+                <label class="checkbox-row">
+                    {{ form.embed_validation_info }}
+                    <span>
+                        🔐 {{ form.embed_validation_info.label }}
+                        <small class="form-field-help">{{ form.embed_validation_info.help_text }}</small>
+                    </span>
+                </label>
+            </div>
+
             <div class="tool-form-actions">
                 <a href="{% url 'dashboard' %}" class="btn btn-secondary">
                     ← {% trans "Back" %}

@@ -23,6 +23,7 @@ from .ops import (
     rotate_pages,
     sign_pdf,
     split_pdf,
+    verify_pdf_signatures,
 )
 
 __all__ = [
@@ -33,6 +34,7 @@ __all__ = [
     "compress_pdf",
     "protect_pdf",
     "sign_pdf",
+    "verify_pdf_signatures",
     "add_watermark",
     "rotate_pages",
     "add_page_numbers",
