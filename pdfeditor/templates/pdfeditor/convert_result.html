@@ -1,0 +1,66 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Conversion Result" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header result-success-header">
+        <div class="result-success-icon">📝</div>
+        <h2>{% trans "PDF Converted to Word!" %}</h2>
+        <p>{% trans "Your .docx is ready — open it in Word, LibreOffice, or Google Docs." %}</p>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        {% if not has_text %}
+        <div class="result-warning-box">
+            <strong>⚠️ {% trans "Heads-up:" %}</strong>
+            {% trans "The source PDF appears to be image-only (a scan), so the .docx is likely empty. Run OCR on the PDF first, then convert again for usable text." %}
+        </div>
+        {% else %}
+        <div class="result-tip-box">
+            <strong>💡 {% trans "Tip:" %}</strong>
+            {% trans "Layout in Word may differ slightly from the original PDF — especially for multi-column pages, tables, or equations. A quick visual cleanup is normal." %}
+        </div>
+        {% endif %}
+
+        <div class="result-file-row">
+            <div class="result-file-icon">📄</div>
+            <div class="result-file-info">
+                <div class="result-file-name">{{ converted_filename }}</div>
+                <div class="result-file-meta">{{ size|filesizeformat }} · {% trans "Ready to download" %}</div>
+            </div>
+        </div>
+
+        <div class="result-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                ← {% trans "Dashboard" %}
+            </a>
+            <a href="{% url 'download_converted' %}" class="btn btn-primary">
+                📥 {% trans "Download Word Document" %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .result-warning-box {
+        background: #fef3c7;
+        border: 1px solid #fde68a;
+        color: #92400e;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+        line-height: 1.5;
+    }
+    .result-tip-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+        line-height: 1.5;
+    }
+</style>
+{% endblock %}

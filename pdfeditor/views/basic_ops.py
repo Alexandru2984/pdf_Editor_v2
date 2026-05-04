@@ -10,6 +10,7 @@ from django.utils.translation import gettext as _
 
 from ..forms import (
     CompressPDFForm,
+    ConvertToDocxForm,
     GenerateCertForm,
     MergePDFForm,
     ProtectPDFForm,
@@ -20,6 +21,7 @@ from ..forms import (
 from ..models import ProcessedPDF, TrustAnchor
 from ..pdf_processor import (
     compress_pdf,
+    convert_pdf_to_docx,
     merge_pdfs,
     protect_pdf,
     sign_pdf,
@@ -543,6 +545,90 @@ def generate_cert_view(request):
         form = GenerateCertForm()
 
     return render(request, "pdfeditor/generate_cert.html", {"form": form})
+
+
+# ---------- Convert to DOCX ----------
+
+
+@auth_aware_ratelimit(anon_rate="10/h", user_rate="40/h", method="POST")
+def convert_view(request):
+    selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
+    if early:
+        return early
+
+    pdf_path = selected_pdf.path
+
+    if request.method == "POST":
+        form = ConvertToDocxForm(request.POST)
+        if form.is_valid():
+            try:
+                output_path, has_text = convert_pdf_to_docx(pdf_path)
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_CONVERT,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session["converted_docx_id"] = str(output.id)
+                request.session["converted_has_text"] = has_text
+                if has_text:
+                    messages.success(request, _("PDF converted to Word successfully!"))
+                else:
+                    messages.warning(
+                        request,
+                        _(
+                            "Conversion done, but the source PDF appears to be image-only "
+                            "(scan). The .docx will be near-empty — run OCR first for better results."
+                        ),
+                    )
+                return redirect("convert_result")
+            except ValueError as e:
+                messages.error(request, _("Error: %(err)s") % {"err": e})
+            except Exception as e:
+                messages.error(request, _("Error converting PDF: %(err)s") % {"err": e})
+    else:
+        form = ConvertToDocxForm()
+
+    return render(
+        request,
+        "pdfeditor/convert.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+        },
+    )
+
+
+def convert_result_view(request):
+    output = _fetch_output(request, "converted_docx_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("Converted file not found."))
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "pdfeditor/convert_result.html",
+        {
+            "converted_filename": output.name,
+            "size": os.path.getsize(output.path),
+            "has_text": request.session.get("converted_has_text", True),
+        },
+    )
+
+
+def download_converted_view(request):
+    output = _fetch_output(request, "converted_docx_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
 
 
 # ---------- Verify signatures ----------
