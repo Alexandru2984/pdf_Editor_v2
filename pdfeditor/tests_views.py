@@ -357,6 +357,99 @@ class ConvertViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 302)
 
 
+class ReorderViewTests(_ViewTestBase):
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("reorder"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_renders_with_thumbnails(self):
+        pdf = self.upload_and_get_pdf(num_pages=3)
+        resp = self.client.get(reverse("reorder"))
+        self.assertEqual(resp.status_code, 200)
+        # Each page should produce a thumbnail URL with the right page number.
+        thumb_url_1 = reverse("page_thumbnail", args=[pdf.id, 1])
+        thumb_url_3 = reverse("page_thumbnail", args=[pdf.id, 3])
+        self.assertContains(resp, thumb_url_1)
+        self.assertContains(resp, thumb_url_3)
+
+    def test_full_reorder_workflow_keeps_subset(self):
+        from .models import ProcessedPDF
+
+        self.upload(num_pages=4)
+        resp = self.client.post(reverse("reorder"), {"page_order": "4,2"})
+        self.assertEqual(resp.status_code, 302)
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_REORDER)
+        # Output should contain only 2 pages.
+        import fitz
+
+        with fitz.open(latest.path) as d:
+            self.assertEqual(len(d), 2)
+            self.assertIn("Page 4", d[0].get_text())
+            self.assertIn("Page 2", d[1].get_text())
+
+        result = self.client.get(reverse("reorder_result"))
+        self.assertEqual(result.status_code, 200)
+        self.assertContains(result, "2")  # kept_count
+
+        download = self.client.get(reverse("download_reordered"))
+        self.assertEqual(download.status_code, 200)
+
+    def test_empty_page_order_rejected(self):
+        self.upload(num_pages=2)
+        resp = self.client.post(reverse("reorder"), {"page_order": ""})
+        # Form re-rendered with error, no redirect.
+        self.assertEqual(resp.status_code, 200)
+        from .models import ProcessedPDF
+
+        self.assertFalse(ProcessedPDF.objects.exists())
+
+    def test_out_of_range_page_rejected(self):
+        self.upload(num_pages=2)
+        resp = self.client.post(reverse("reorder"), {"page_order": "1,5"})
+        # Form valid (syntax-wise) but range check fails — view re-renders.
+        self.assertEqual(resp.status_code, 200)
+        from .models import ProcessedPDF
+
+        self.assertFalse(ProcessedPDF.objects.exists())
+
+    def test_duplicate_page_rejected(self):
+        self.upload(num_pages=3)
+        resp = self.client.post(reverse("reorder"), {"page_order": "1,2,2"})
+        self.assertEqual(resp.status_code, 200)
+        from .models import ProcessedPDF
+
+        self.assertFalse(ProcessedPDF.objects.exists())
+
+    def test_thumbnail_endpoint_returns_png(self):
+        pdf = self.upload_and_get_pdf(num_pages=2)
+        resp = self.client.get(reverse("page_thumbnail", args=[pdf.id, 1]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "image/png")
+        self.assertTrue(resp.content.startswith(b"\x89PNG\r\n\x1a\n"))
+
+    def test_thumbnail_endpoint_invalid_page_returns_404(self):
+        pdf = self.upload_and_get_pdf(num_pages=2)
+        resp = self.client.get(reverse("page_thumbnail", args=[pdf.id, 99]))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_thumbnail_endpoint_other_user_returns_404(self):
+        # An unknown UUID should 404.
+        import uuid as _uuid
+
+        resp = self.client.get(reverse("page_thumbnail", args=[_uuid.uuid4(), 1]))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_reorder_result_without_session_redirects(self):
+        resp = self.client.get(reverse("reorder_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_reordered"))
+        self.assertEqual(resp.status_code, 302)
+
+
 # ---- Watermark / Rotate / Page numbers --------------------------------------
 
 

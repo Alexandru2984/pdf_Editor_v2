@@ -17,6 +17,8 @@ from .pdf_processor.ops import (
     convert_pdf_to_docx,
     merge_pdfs,
     protect_pdf,
+    render_page_thumbnail,
+    reorder_pages,
     rotate_pages,
     sign_pdf,
     split_pdf,
@@ -723,3 +725,93 @@ class AddPageNumbersTests(_MediaRootMixin, TestCase):
     def test_missing_file_raises(self):
         with self.assertRaises(ValueError):
             add_page_numbers("/no/such/file.pdf")
+
+
+class ReorderPagesTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.path = _make_multipage_pdf(4)
+
+    def tearDown(self):
+        if os.path.exists(self.path):
+            os.remove(self.path)
+
+    def _read_pages_text(self, path):
+        with fitz.open(path) as d:
+            return [p.get_text("text").strip() for p in d]
+
+    def test_reverse_order(self):
+        out = reorder_pages(self.path, [4, 3, 2, 1])
+        try:
+            texts = self._read_pages_text(out)
+            self.assertIn("page 4", texts[0])
+            self.assertIn("page 3", texts[1])
+            self.assertIn("page 2", texts[2])
+            self.assertIn("page 1", texts[3])
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_delete_some_pages(self):
+        out = reorder_pages(self.path, [1, 3])
+        try:
+            with fitz.open(out) as d:
+                self.assertEqual(len(d), 2)
+            texts = self._read_pages_text(out)
+            self.assertIn("page 1", texts[0])
+            self.assertIn("page 3", texts[1])
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_keep_only_one_page(self):
+        out = reorder_pages(self.path, [2])
+        try:
+            with fitz.open(out) as d:
+                self.assertEqual(len(d), 1)
+            texts = self._read_pages_text(out)
+            self.assertIn("page 2", texts[0])
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_empty_order_raises(self):
+        with self.assertRaises(ValueError):
+            reorder_pages(self.path, [])
+
+    def test_duplicate_page_raises(self):
+        with self.assertRaises(ValueError):
+            reorder_pages(self.path, [1, 2, 2])
+
+    def test_out_of_range_page_raises(self):
+        with self.assertRaises(ValueError):
+            reorder_pages(self.path, [1, 5])
+        with self.assertRaises(ValueError):
+            reorder_pages(self.path, [0, 1])
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            reorder_pages("/no/such/file.pdf", [1])
+
+
+class RenderPageThumbnailTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.path = _make_multipage_pdf(3)
+
+    def tearDown(self):
+        if os.path.exists(self.path):
+            os.remove(self.path)
+
+    def test_returns_png_bytes(self):
+        png = render_page_thumbnail(self.path, 1, max_width=120)
+        self.assertTrue(png.startswith(b"\x89PNG\r\n\x1a\n"))
+        self.assertGreater(len(png), 100)
+
+    def test_invalid_page_raises(self):
+        with self.assertRaises(ValueError):
+            render_page_thumbnail(self.path, 0)
+        with self.assertRaises(ValueError):
+            render_page_thumbnail(self.path, 99)
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            render_page_thumbnail("/no/such/file.pdf", 1)

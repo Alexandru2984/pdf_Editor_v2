@@ -1,0 +1,42 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Reorder Result" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header result-success-header">
+        <div class="result-success-icon">📑</div>
+        <h2>{% trans "Pages Reordered!" %}</h2>
+        <p>
+            {% if original_count and kept_count and kept_count != original_count %}
+                {% blocktrans with kept=kept_count total=original_count %}Kept {{ kept }} of {{ total }} pages, in your chosen order.{% endblocktrans %}
+            {% else %}
+                {% trans "Your PDF has been saved with the new page order." %}
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="result-file-row">
+            <div class="result-file-icon">📄</div>
+            <div class="result-file-info">
+                <div class="result-file-name">{{ reordered_filename }}</div>
+                <div class="result-file-meta">{{ reordered_size|filesizeformat }} · {% trans "Ready to download" %}</div>
+            </div>
+        </div>
+
+        <div class="result-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                ← {% trans "Dashboard" %}
+            </a>
+            <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
+                👁️ {% trans "Preview" %}
+            </button>
+            <a href="{% url 'download_reordered' %}" class="btn btn-primary">
+                📥 {% trans "Download Reordered PDF" %}
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

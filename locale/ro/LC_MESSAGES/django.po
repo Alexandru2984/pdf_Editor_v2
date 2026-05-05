@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-04 22:46+0000\n"
+"POT-Creation-Date: 2026-05-05 16:32+0000\n"
 "PO-Revision-Date: 2026-05-03 17:30+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,21 +18,17 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?"
 "2:1));\n"
 
-#: pdfeditor/forms.py:215
 msgid "Embed trusted timestamp (RFC 3161)"
 msgstr "Atașează marcaj de timp de încredere (RFC 3161)"
 
-#: pdfeditor/forms.py:216
 msgid "Adds a verifiable signing time fetched from a public TSA."
 msgstr ""
 "Adaugă o oră de semnare verificabilă obținută de la o autoritate publică "
 "(TSA)."
 
-#: pdfeditor/forms.py:221
 msgid "Embed long-term validation info (PAdES B-LT)"
 msgstr "Atașează informații pentru validare pe termen lung (PAdES B-LT)"
 
-#: pdfeditor/forms.py:223
 msgid ""
 "Fetches OCSP/CRL responses for the signing chain and embeds them in the PDF, "
 "so the signature stays verifiable even if the CA goes offline. Only works "
@@ -43,11 +39,9 @@ msgstr ""
 "funcțiune. Funcționează doar cu certificate emise de o CA publică — "
 "certificatele self-signed vor eșua."
 
-#: pdfeditor/forms.py:232
 msgid "Append archival timestamp (PAdES B-LTA)"
 msgstr "Adaugă marcaj de timp arhival (PAdES B-LTA)"
 
-#: pdfeditor/forms.py:234
 msgid ""
 "Adds a document-level RFC 3161 timestamp after the signature so the PDF can "
 "be re-validated even after the signing certificate expires. Requires the "
@@ -58,7 +52,18 @@ msgstr ""
 "certificatului de semnare. Necesită opțiunea de marcaj de timp de încredere "
 "de mai sus."
 
-#: pdfeditor/password_validators.py:69
+msgid "You must keep at least one page."
+msgstr "Trebuie să păstrezi cel puțin o pagină."
+
+msgid "Invalid page order format."
+msgstr "Format invalid pentru ordinea paginilor."
+
+msgid "Page numbers must be 1 or greater."
+msgstr "Numerele paginilor trebuie să fie 1 sau mai mari."
+
+msgid "Page order cannot contain duplicates."
+msgstr "Ordinea paginilor nu poate conține duplicate."
+
 msgid ""
 "This password has appeared in a public data breach. Choose a different one — "
 "using it puts your account at risk."
@@ -66,20 +71,16 @@ msgstr ""
 "Această parolă a apărut într-o scurgere publică de date. Alege alta — "
 "folosirea ei îți pune contul în pericol."
 
-#: pdfeditor/password_validators.py:77
 msgid "Your password must not appear in known public data breaches."
 msgstr "Parola ta nu trebuie să apară în scurgeri publice de date cunoscute."
 
-#: pdfeditor/pdf_processor/_common.py:54
 #, python-format
 msgid "PDF not found: %(path)s"
 msgstr "PDF-ul nu a fost găsit: %(path)s"
 
-#: pdfeditor/pdf_processor/_common.py:59
 msgid "PDF contains selectable text."
 msgstr "PDF-ul conține text selectabil."
 
-#: pdfeditor/pdf_processor/_common.py:60
 msgid ""
 "PDF does not contain selectable text (possibly a scanned image-only "
 "document)."
@@ -87,60 +88,40 @@ msgstr ""
 "PDF-ul nu conține text selectabil (posibil un document scanat doar cu "
 "imagini)."
 
-#: pdfeditor/pdf_processor/_common.py:62
 #, python-format
 msgid "Error while checking PDF: %(err)s"
 msgstr "Eroare la verificarea PDF-ului: %(err)s"
 
-#: pdfeditor/templates/400.html:4 pdfeditor/templates/400.html:9
 msgid "Bad request"
 msgstr "Cerere invalidă"
 
-#: pdfeditor/templates/400.html:4 pdfeditor/templates/403.html:4
-#: pdfeditor/templates/404.html:4 pdfeditor/templates/pdfeditor/base.html:7
-#: pdfeditor/templates/pdfeditor/dashboard.html:9
 msgid "PDF Platform"
 msgstr "PDF Platform"
 
-#: pdfeditor/templates/400.html:11
 msgid "The request couldn't be understood. Please go back and try again."
 msgstr "Cererea nu a putut fi înțeleasă. Întoarce-te și încearcă din nou."
 
-#: pdfeditor/templates/400.html:14 pdfeditor/templates/403.html:14
-#: pdfeditor/templates/404.html:14 pdfeditor/templates/500.html:55
-#: pdfeditor/templates/pdfeditor/history.html:62
-#: pdfeditor/templates/pdfeditor/history.html:70
-#: pdfeditor/templates/pdfeditor/rephrase.html:434
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:54
-#: pdfeditor/templates/registration/password_change_done.html:11
 msgid "Back to Dashboard"
 msgstr "Înapoi la Dashboard"
 
-#: pdfeditor/templates/403.html:4 pdfeditor/templates/403.html:9
 msgid "Access denied"
 msgstr "Acces refuzat"
 
-#: pdfeditor/templates/403.html:11
 msgid "You don't have permission to access this page."
 msgstr "Nu ai permisiunea să accesezi această pagină."
 
-#: pdfeditor/templates/404.html:4 pdfeditor/templates/404.html:9
 msgid "Page not found"
 msgstr "Pagina nu a fost găsită"
 
-#: pdfeditor/templates/404.html:11
 msgid "The page you're looking for doesn't exist or has been moved."
 msgstr "Pagina pe care o cauți nu există sau a fost mutată."
 
-#: pdfeditor/templates/500.html:6
 msgid "Server error"
 msgstr "Eroare server"
 
-#: pdfeditor/templates/500.html:51
 msgid "Something went wrong"
 msgstr "Ceva n-a mers bine"
 
-#: pdfeditor/templates/500.html:53
 msgid ""
 "An unexpected error occurred. Our team has been notified. Please try again "
 "in a moment."
@@ -148,537 +129,372 @@ msgstr ""
 "A apărut o eroare neașteptată. Echipa noastră a fost notificată. Încearcă "
 "din nou în câteva momente."
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:4
-#: pdfeditor/templates/pdfeditor/admin_health.html:9
 msgid "Platform health"
 msgstr "Starea platformei"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:11
 msgid "Database OK"
 msgstr "Bază de date OK"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:11
 msgid "Database error"
 msgstr "Eroare bază de date"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:18
 msgid "Users"
 msgstr "Utilizatori"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:22
-#: pdfeditor/templates/pdfeditor/admin_health.html:38
-#: pdfeditor/templates/pdfeditor/admin_health.html:54
 msgid "Total"
 msgstr "Total"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:26
 msgid "Active"
 msgstr "Active"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:30
 msgid "New (last 7 days)"
 msgstr "Noi (ultimele 7 zile)"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:34
-#: pdfeditor/templates/pdfeditor/profile.html:33
 msgid "PDFs uploaded"
 msgstr "PDF-uri încărcate"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:42
-#: pdfeditor/templates/pdfeditor/admin_health.html:58
 msgid "Last 7 days"
 msgstr "Ultimele 7 zile"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:46
-#: pdfeditor/templates/pdfeditor/admin_health.html:62
 msgid "Storage used"
 msgstr "Spațiu folosit"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:50
-#: pdfeditor/templates/pdfeditor/profile.html:37
 msgid "Outputs produced"
 msgstr "Rezultate produse"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:67
 msgid "By operation"
 msgstr "Pe operație"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:71
-#: pdfeditor/templates/pdfeditor/history.html:18
-#: pdfeditor/templates/pdfeditor/history.html:29
 msgid "Operation"
 msgstr "Operațiune"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:72
 msgid "Count"
 msgstr "Număr"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:86
 msgid "Total storage"
 msgstr "Spațiu total"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:90
 msgid "Uploaded + processed"
 msgstr "Încărcate + procesate"
 
-#: pdfeditor/templates/pdfeditor/admin_health.html:95
 msgid "Back to admin"
 msgstr "Înapoi la admin"
 
-#: pdfeditor/templates/pdfeditor/base.html:48
 msgid "Toggle dark mode"
 msgstr "Comută modul întunecat"
 
-#: pdfeditor/templates/pdfeditor/base.html:56
 msgid "Switch language"
 msgstr "Schimbă limba"
 
-#: pdfeditor/templates/pdfeditor/base.html:61
 msgid "Toggle navigation"
 msgstr "Comută navigarea"
 
-#: pdfeditor/templates/pdfeditor/base.html:67
-#: pdfeditor/templates/pdfeditor/compress_result.html:54
-#: pdfeditor/templates/pdfeditor/convert_result.html:37
-#: pdfeditor/templates/pdfeditor/protect_result.html:30
-#: pdfeditor/templates/pdfeditor/rotate_result.html:27
-#: pdfeditor/templates/pdfeditor/sign_result.html:30
-#: pdfeditor/templates/pdfeditor/watermark_result.html:27
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: pdfeditor/templates/pdfeditor/base.html:72
 msgid "Sign Out"
 msgstr "Deconectare"
 
-#: pdfeditor/templates/pdfeditor/base.html:75
-#: pdfeditor/templates/registration/login.html:4
-#: pdfeditor/templates/registration/login.html:8
-#: pdfeditor/templates/registration/login.html:36
-#: pdfeditor/templates/registration/password_reset_complete.html:11
 msgid "Sign In"
 msgstr "Autentificare"
 
-#: pdfeditor/templates/pdfeditor/base.html:76
 msgid "Register"
 msgstr "Înregistrare"
 
-#: pdfeditor/templates/pdfeditor/compress.html:4
-#: pdfeditor/templates/pdfeditor/compress.html:29
-#: pdfeditor/templates/pdfeditor/compress.html:78
-#: pdfeditor/templates/pdfeditor/more_tools.html:126
 msgid "Compress PDF"
 msgstr "Comprimă PDF"
 
-#: pdfeditor/templates/pdfeditor/compress.html:13
 msgid "Select PDF to Compress:"
 msgstr "Selectează PDF-ul de comprimat:"
 
-#: pdfeditor/templates/pdfeditor/compress.html:23
-#: pdfeditor/templates/pdfeditor/convert.html:23
-#: pdfeditor/templates/pdfeditor/protect.html:23
-#: pdfeditor/templates/pdfeditor/sign.html:23
 #, python-format
 msgid "You have %(count)s PDFs uploaded. Switch anytime!"
 msgstr "Ai %(count)s PDF-uri încărcate. Schimbă oricând!"
 
-#: pdfeditor/templates/pdfeditor/compress.html:30
 msgid "Reduce file size while maintaining quality"
 msgstr "Reduce dimensiunea fișierului păstrând calitatea"
 
-#: pdfeditor/templates/pdfeditor/compress.html:33
-#: pdfeditor/templates/pdfeditor/convert.html:35
-#: pdfeditor/templates/pdfeditor/protect.html:35
-#: pdfeditor/templates/pdfeditor/sign.html:35
 msgid "Current File:"
 msgstr "Fișierul curent:"
 
-#: pdfeditor/templates/pdfeditor/compress.html:37
 msgid "Original Size:"
 msgstr "Dimensiune originală:"
 
-#: pdfeditor/templates/pdfeditor/compress.html:41
-#: pdfeditor/templates/pdfeditor/convert.html:39
-#: pdfeditor/templates/pdfeditor/dashboard.html:137
-#: pdfeditor/templates/pdfeditor/dashboard.html:147
-#: pdfeditor/templates/pdfeditor/protect.html:39
-#: pdfeditor/templates/pdfeditor/rephrase.html:419
-#: pdfeditor/templates/pdfeditor/sign.html:39
 msgid "Preview"
 msgstr "Previzualizare"
 
-#: pdfeditor/templates/pdfeditor/compress.html:51
 msgid "Select Compression Level:"
 msgstr "Selectează nivelul de comprimare:"
 
-#: pdfeditor/templates/pdfeditor/compress.html:75
-#: pdfeditor/templates/pdfeditor/convert.html:66
-#: pdfeditor/templates/pdfeditor/protect.html:74
-#: pdfeditor/templates/pdfeditor/rotate.html:62
-#: pdfeditor/templates/pdfeditor/sign.html:141
-#: pdfeditor/templates/pdfeditor/watermark.html:97
 msgid "Back"
 msgstr "Înapoi"
 
-#: pdfeditor/templates/pdfeditor/compress_result.html:4
 msgid "Compression Result"
 msgstr "Rezultat comprimare"
 
-#: pdfeditor/templates/pdfeditor/compress_result.html:10
 msgid "PDF Compressed Successfully!"
 msgstr "PDF comprimat cu succes!"
 
-#: pdfeditor/templates/pdfeditor/compress_result.html:11
 #, python-format
 msgid "Reduced file size by <strong>%(ratio)s%%</strong>"
 msgstr "Dimensiune redusă cu <strong>%(ratio)s%%</strong>"
 
-#: pdfeditor/templates/pdfeditor/compress_result.html:15
 msgid "Compression Results:"
 msgstr "Rezultatele comprimării:"
 
-#: pdfeditor/templates/pdfeditor/compress_result.html:19
 msgid "Original Size"
 msgstr "Dimensiune originală"
 
-#: pdfeditor/templates/pdfeditor/compress_result.html:24
 msgid "Compressed Size"
 msgstr "Dimensiune comprimată"
 
-#: pdfeditor/templates/pdfeditor/compress_result.html:29
 msgid "Space Saved"
 msgstr "Spațiu economisit"
 
-#: pdfeditor/templates/pdfeditor/compress_result.html:36
 msgid "Compression Progress:"
 msgstr "Progres comprimare:"
 
-#: pdfeditor/templates/pdfeditor/compress_result.html:48
-#: pdfeditor/templates/pdfeditor/convert_result.html:31
-#: pdfeditor/templates/pdfeditor/protect_result.html:24
-#: pdfeditor/templates/pdfeditor/sign_result.html:24
 msgid "Ready to download"
 msgstr "Gata pentru descărcare"
 
-#: pdfeditor/templates/pdfeditor/compress_result.html:57
 msgid "Preview Compressed PDF"
 msgstr "Previzualizează PDF-ul comprimat"
 
-#: pdfeditor/templates/pdfeditor/compress_result.html:60
 msgid "Download Compressed PDF"
 msgstr "Descarcă PDF-ul comprimat"
 
-#: pdfeditor/templates/pdfeditor/convert.html:4
-#: pdfeditor/templates/pdfeditor/convert.html:29
 msgid "Convert PDF to Word"
 msgstr "Convertește PDF în Word"
 
-#: pdfeditor/templates/pdfeditor/convert.html:13
-#| msgid "Select PDF to Protect:"
 msgid "Select PDF to Convert:"
 msgstr "Selectează PDF-ul de protejat:"
 
-#: pdfeditor/templates/pdfeditor/convert.html:31
 msgid ""
 "Export your PDF as a .docx file you can edit in Word, LibreOffice, or Google "
 "Docs."
-msgstr "Exportă PDF-ul ca fișier .docx pe care îl poți edita în Word, LibreOffice sau Google Docs."
+msgstr ""
+"Exportă PDF-ul ca fișier .docx pe care îl poți edita în Word, LibreOffice "
+"sau Google Docs."
 
-#: pdfeditor/templates/pdfeditor/convert.html:48
 msgid "About this conversion:"
 msgstr "Despre această conversie:"
 
-#: pdfeditor/templates/pdfeditor/convert.html:49
 msgid ""
 "Layout is preserved best on simple, text-based documents. Complex layouts "
 "(multi-column, tables, equations) may need cleanup after conversion."
-msgstr "Aspectul este păstrat cel mai bine pe documente simple, bazate pe text. Aspectele complexe (multi-coloană, tabele, formule) pot necesita ajustări după conversie."
+msgstr ""
+"Aspectul este păstrat cel mai bine pe documente simple, bazate pe text. "
+"Aspectele complexe (multi-coloană, tabele, formule) pot necesita ajustări "
+"după conversie."
 
-#: pdfeditor/templates/pdfeditor/convert.html:52
 msgid "Scanned PDFs:"
 msgstr "PDF-uri scanate:"
 
-#: pdfeditor/templates/pdfeditor/convert.html:53
 msgid ""
 "If your PDF has no extractable text (it's a scan), run OCR first — otherwise "
 "the .docx will be empty."
-msgstr "Dacă PDF-ul tău nu are text extragibil (e o scanare), rulează OCR-ul mai întâi — altfel .docx-ul va fi gol."
+msgstr ""
+"Dacă PDF-ul tău nu are text extragibil (e o scanare), rulează OCR-ul mai "
+"întâi — altfel .docx-ul va fi gol."
 
-#: pdfeditor/templates/pdfeditor/convert.html:69
-#: pdfeditor/templates/pdfeditor/dashboard.html:63
 msgid "Convert to Word"
 msgstr "Convertește în Word"
 
-#: pdfeditor/templates/pdfeditor/convert_result.html:4
-#| msgid "Compression Result"
 msgid "Conversion Result"
 msgstr "Rezultat comprimare"
 
-#: pdfeditor/templates/pdfeditor/convert_result.html:10
 msgid "PDF Converted to Word!"
 msgstr "PDF convertit în Word!"
 
-#: pdfeditor/templates/pdfeditor/convert_result.html:11
 msgid "Your .docx is ready — open it in Word, LibreOffice, or Google Docs."
-msgstr "Fișierul .docx este gata — deschide-l în Word, LibreOffice sau Google Docs."
+msgstr ""
+"Fișierul .docx este gata — deschide-l în Word, LibreOffice sau Google Docs."
 
-#: pdfeditor/templates/pdfeditor/convert_result.html:17
 msgid "Heads-up:"
 msgstr "Atenție:"
 
-#: pdfeditor/templates/pdfeditor/convert_result.html:18
 msgid ""
 "The source PDF appears to be image-only (a scan), so the .docx is likely "
 "empty. Run OCR on the PDF first, then convert again for usable text."
-msgstr "PDF-ul sursă pare să fie doar imagine (scanare), așa că .docx-ul e probabil gol. Rulează OCR pe PDF mai întâi, apoi convertește din nou pentru text utilizabil."
+msgstr ""
+"PDF-ul sursă pare să fie doar imagine (scanare), așa că .docx-ul e probabil "
+"gol. Rulează OCR pe PDF mai întâi, apoi convertește din nou pentru text "
+"utilizabil."
 
-#: pdfeditor/templates/pdfeditor/convert_result.html:22
 msgid "Tip:"
 msgstr "Sfat:"
 
-#: pdfeditor/templates/pdfeditor/convert_result.html:23
 msgid ""
 "Layout in Word may differ slightly from the original PDF — especially for "
 "multi-column pages, tables, or equations. A quick visual cleanup is normal."
-msgstr "Aspectul în Word poate diferi ușor de PDF-ul original — în special pentru pagini multi-coloană, tabele sau formule. O ajustare vizuală rapidă este normală."
+msgstr ""
+"Aspectul în Word poate diferi ușor de PDF-ul original — în special pentru "
+"pagini multi-coloană, tabele sau formule. O ajustare vizuală rapidă este "
+"normală."
 
-#: pdfeditor/templates/pdfeditor/convert_result.html:40
 msgid "Download Word Document"
 msgstr "Descarcă documentul Word"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:4
 msgid "PDF Platform - Dashboard"
 msgstr "PDF Platform - Dashboard"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:10
 msgid "Professional PDF Tools - All in One Place"
 msgstr "Unelte PDF profesionale - toate într-un singur loc"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:15
 msgid "Upload Your PDF"
 msgstr "Încarcă PDF-ul"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:16
 msgid "Drag & drop your PDF here or click to browse"
 msgstr "Trage și plasează PDF-ul aici sau apasă pentru a alege"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:21
 msgid "Choose File"
 msgstr "Alege fișier"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:26
 msgid "PDF Operations"
 msgstr "Operațiuni PDF"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:32
 msgid "Edit & Rephrase"
 msgstr "Editare și reformulare"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:33
 msgid "Find/replace text or use AI to rephrase content"
 msgstr "Caută/înlocuiește text sau folosește AI pentru a reformula conținut"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:35
 msgid "Find & Replace"
 msgstr "Caută și înlocuiește"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:36
 msgid "AI Rephrase"
 msgstr "Reformulare AI"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:42
-#: pdfeditor/templates/pdfeditor/more_tools.html:121
-#: pdfeditor/templates/pdfeditor/split.html:4
 msgid "Split PDF"
 msgstr "Împarte PDF"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:43
 msgid "Split your PDF into multiple files by pages"
 msgstr "Împarte PDF-ul în mai multe fișiere după pagini"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:44
-#: pdfeditor/templates/pdfeditor/dashboard.html:51
-#: pdfeditor/templates/pdfeditor/dashboard.html:58
-#: pdfeditor/templates/pdfeditor/dashboard.html:65
-#: pdfeditor/templates/pdfeditor/dashboard.html:72
-#: pdfeditor/templates/pdfeditor/dashboard.html:79
-#: pdfeditor/templates/pdfeditor/dashboard.html:86
-#: pdfeditor/templates/pdfeditor/dashboard.html:93
-#: pdfeditor/templates/pdfeditor/dashboard.html:100
-#: pdfeditor/templates/pdfeditor/dashboard.html:107
-#: pdfeditor/templates/pdfeditor/dashboard.html:121
 msgid "Get Started"
 msgstr "Începe"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:49
-#: pdfeditor/templates/pdfeditor/merge.html:4
 msgid "Merge PDFs"
 msgstr "Unește PDF-uri"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:50
 msgid "Combine multiple PDFs into a single document"
 msgstr "Combină mai multe PDF-uri într-un singur document"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:56
-#: pdfeditor/templates/pdfeditor/more_tools.html:67
 msgid "Compress"
 msgstr "Comprimă"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:57
 msgid "Reduce PDF file size without losing quality"
 msgstr "Reduce dimensiunea fișierului fără pierdere de calitate"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:64
 msgid "Export your PDF as an editable .docx file"
 msgstr "Exportă PDF-ul ca fișier .docx editabil"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:70
 msgid "Password Protect"
 msgstr "Protejează cu parolă"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:71
 msgid "Encrypt your PDF with a password (AES-256)"
 msgstr "Criptează PDF-ul cu o parolă (AES-256)"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:77
-#: pdfeditor/templates/pdfeditor/sign.html:4
-#: pdfeditor/templates/pdfeditor/sign.html:29
 msgid "Digital Signature"
 msgstr "Semnătură digitală"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:78
 msgid "Sign your PDF cryptographically (PKCS#7) with your own certificate"
 msgstr "Semnează PDF-ul criptografic (PKCS#7) cu propriul tău certificat"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:84
-#: pdfeditor/templates/pdfeditor/more_tools.html:131
-#: pdfeditor/templates/pdfeditor/watermark.html:4
-#: pdfeditor/templates/pdfeditor/watermark.html:26
 msgid "Add Watermark"
 msgstr "Adaugă filigran"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:85
 msgid "Add text or image watermark to your PDF"
 msgstr "Adaugă filigran text sau imagine pe PDF"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:91
-#: pdfeditor/templates/pdfeditor/more_tools.html:136
-#: pdfeditor/templates/pdfeditor/rotate.html:4
-#: pdfeditor/templates/pdfeditor/rotate.html:26
-#: pdfeditor/templates/pdfeditor/rotate.html:63
 msgid "Rotate Pages"
 msgstr "Rotește paginile"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:92
 msgid "Rotate PDF pages by 90, 180, or 270 degrees"
 msgstr "Rotește paginile cu 90, 180 sau 270 de grade"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:98
-#: pdfeditor/templates/pdfeditor/more_tools.html:141
+msgid "Reorder & Delete Pages"
+msgstr "Reordonează și șterge pagini"
+
+msgid "Drag pages to reorder, or remove the ones you don't need"
+msgstr "Trage paginile pentru a le reordona, sau elimină-le pe cele de care nu ai nevoie"
+
 msgid "Add Page Numbers"
 msgstr "Adaugă numere de pagină"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:99
 msgid "Add customizable page numbers to your PDF"
 msgstr "Adaugă numere de pagină personalizabile pe PDF"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:105
 msgid "Fill Form"
 msgstr "Completează formular"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:106
 msgid "Detect and fill AcroForm fields (text inputs, checkboxes, dropdowns)"
 msgstr "Detectează și completează câmpuri AcroForm (text, bifări, liste)"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:112
 msgid "History"
 msgstr "Istoric"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:113
 msgid "See and re-download every output produced in this session"
 msgstr "Vezi și redescarcă fiecare rezultat produs în această sesiune"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:114
 msgid "View History"
 msgstr "Vezi istoricul"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:119
-#: pdfeditor/templates/pdfeditor/more_tools.html:4
 msgid "More Tools"
 msgstr "Mai multe unelte"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:120
 msgid "Advanced PDF tools: Extract Text, OCR, and more"
 msgstr "Unelte avansate PDF: extragere text, OCR și mai multe"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:127
 msgid "Your PDFs"
 msgstr "PDF-urile tale"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:135
 #, python-format
 msgid "Preview %(name)s"
 msgstr "Previzualizare %(name)s"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:148
 msgid "Delete this PDF?"
 msgstr "Ștergi acest PDF?"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:148
 msgid "Delete"
 msgstr "Șterge"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:157
 msgid "Why Choose Our Platform?"
 msgstr "De ce să alegi platforma noastră?"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:161
 msgid "Secure"
 msgstr "Sigur"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:162
 msgid "Your files are automatically deleted after processing"
 msgstr "Fișierele tale sunt șterse automat după procesare"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:166
 msgid "Fast"
 msgstr "Rapid"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:167
 msgid "Process PDFs in seconds with our optimized engine"
 msgstr "Procesează PDF-uri în secunde cu motorul nostru optimizat"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:171
 msgid "Accurate"
 msgstr "Precis"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:172
 msgid "Preserve formatting and layout with precision"
 msgstr "Păstrează formatarea și aspectul cu precizie"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:176
 msgid "No Installation"
 msgstr "Fără instalare"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:177
 msgid "Work directly in your browser, no downloads needed"
 msgstr "Lucrează direct în browser, fără descărcări"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:208
 msgid "Please drop PDF files only"
 msgstr "Te rugăm să tragi numai fișiere PDF"
 
-#: pdfeditor/templates/pdfeditor/dashboard.html:213
 msgid "Some files were skipped — only PDFs are accepted."
 msgstr "Unele fișiere au fost omise — sunt acceptate doar PDF-uri."
 
-#: pdfeditor/templates/pdfeditor/delete_account.html:4
-#: pdfeditor/templates/pdfeditor/delete_account.html:8
-#: pdfeditor/templates/pdfeditor/profile.html:52
 msgid "Delete account"
 msgstr "Șterge contul"
 
-#: pdfeditor/templates/pdfeditor/delete_account.html:10
 msgid ""
 "This will permanently delete your account, every PDF you've uploaded\n"
 "        and every output you've produced. <strong>This cannot be undone.</"
@@ -687,7 +503,6 @@ msgstr ""
 "Aceasta va șterge definitiv contul tău, fiecare PDF pe care l-ai încărcat\n"
 "        și fiecare rezultat produs. <strong>Nu se poate anula.</strong>"
 
-#: pdfeditor/templates/pdfeditor/delete_account.html:15
 #, python-format
 msgid ""
 "If you just want a copy of your data first, you can\n"
@@ -697,79 +512,56 @@ msgstr ""
 "        <a href=\"%(export_url)s\" style=\"color:#4f46e5;\">să le exporți</"
 "a>."
 
-#: pdfeditor/templates/pdfeditor/delete_account.html:38
 msgid "Cancel"
 msgstr "Anulează"
 
-#: pdfeditor/templates/pdfeditor/delete_account.html:39
 msgid "Delete my account"
 msgstr "Șterge contul meu"
 
-#: pdfeditor/templates/pdfeditor/edit.html:4
 msgid "Edit PDF"
 msgstr "Editează PDF"
 
-#: pdfeditor/templates/pdfeditor/edit.html:8
 msgid "✏️ Find and Replace Text"
 msgstr "✏️ Caută și înlocuiește text"
 
-#: pdfeditor/templates/pdfeditor/edit.html:13
 msgid "📂 Select PDF to Edit:"
 msgstr "📂 Selectează PDF-ul de editat:"
 
-#: pdfeditor/templates/pdfeditor/edit.html:23
-#: pdfeditor/templates/pdfeditor/split.html:19
 #, python-format
 msgid "💡 You have %(count)s PDFs uploaded. Switch anytime!"
 msgstr "💡 Ai %(count)s PDF-uri încărcate. Poți schimba oricând!"
 
-#: pdfeditor/templates/pdfeditor/edit.html:29
 #, python-format
 msgid "Editing: <strong>%(name)s</strong>"
 msgstr "Editezi: <strong>%(name)s</strong>"
 
-#: pdfeditor/templates/pdfeditor/edit.html:31
-#: pdfeditor/templates/pdfeditor/result.html:36
-#: pdfeditor/templates/pdfeditor/split.html:29
 msgid "👁️ Preview PDF"
 msgstr "👁️ Previzualizează PDF"
 
-#: pdfeditor/templates/pdfeditor/edit.html:39
 msgid "Search Text"
 msgstr "Caută text"
 
-#: pdfeditor/templates/pdfeditor/edit.html:47
 msgid "Replace With"
 msgstr "Înlocuiește cu"
 
-#: pdfeditor/templates/pdfeditor/edit.html:56
 msgid "Case Sensitive"
 msgstr "Sensibil la majuscule"
 
-#: pdfeditor/templates/pdfeditor/edit.html:60
 msgid "Page Range (optional)"
 msgstr "Interval de pagini (opțional)"
 
-#: pdfeditor/templates/pdfeditor/edit.html:62
 msgid "Example: 1-3,5,7-10 or leave blank for all pages"
 msgstr "Exemplu: 1-3,5,7-10 sau lasă gol pentru toate paginile"
 
-#: pdfeditor/templates/pdfeditor/edit.html:69
-#: pdfeditor/templates/pdfeditor/merge.html:57
-#: pdfeditor/templates/pdfeditor/split.html:58
 msgid "← Back"
 msgstr "← Înapoi"
 
-#: pdfeditor/templates/pdfeditor/edit.html:70
 msgid "Apply Changes ✓"
 msgstr "Aplică modificările ✓"
 
-#: pdfeditor/templates/pdfeditor/generate_cert.html:4
-#: pdfeditor/templates/pdfeditor/generate_cert.html:10
 msgid "Generate test certificate"
 msgstr "Generează certificat de test"
 
-#: pdfeditor/templates/pdfeditor/generate_cert.html:12
 msgid ""
 "Self-signed PKCS#12 archive for testing the signing flow. Not suitable for "
 "legally binding signatures."
@@ -777,12 +569,9 @@ msgstr ""
 "Arhivă PKCS#12 self-signed pentru testarea fluxului de semnare. Nu este "
 "potrivită pentru semnături cu valoare legală."
 
-#: pdfeditor/templates/pdfeditor/generate_cert.html:58
-#: pdfeditor/templates/pdfeditor/sign_result.html:16
 msgid "Note:"
 msgstr "Notă:"
 
-#: pdfeditor/templates/pdfeditor/generate_cert.html:59
 msgid ""
 "The generated certificate is valid for 1 year. The .p12 file will be "
 "downloaded automatically — keep it safe; we don't store it."
@@ -790,21 +579,15 @@ msgstr ""
 "Certificatul generat este valabil 1 an. Fișierul .p12 va fi descărcat "
 "automat — păstrează-l într-un loc sigur; noi nu îl stocăm."
 
-#: pdfeditor/templates/pdfeditor/generate_cert.html:64
-#: pdfeditor/templates/pdfeditor/verify_signature.html:50
 msgid "Back to signing"
 msgstr "Înapoi la semnare"
 
-#: pdfeditor/templates/pdfeditor/generate_cert.html:67
 msgid "Generate and download"
 msgstr "Generează și descarcă"
 
-#: pdfeditor/templates/pdfeditor/history.html:4
-#: pdfeditor/templates/pdfeditor/history.html:8
 msgid "Operation History"
 msgstr "Istoric operațiuni"
 
-#: pdfeditor/templates/pdfeditor/history.html:10
 #, python-format
 msgid ""
 "Every PDF this session has produced. Files are auto-deleted after %(hours)s "
@@ -813,52 +596,37 @@ msgstr ""
 "Fiecare PDF produs în această sesiune. Fișierele sunt șterse automat după "
 "%(hours)s ore."
 
-#: pdfeditor/templates/pdfeditor/history.html:19
-#: pdfeditor/templates/pdfeditor/history.html:32
 msgid "File"
 msgstr "Fișier"
 
-#: pdfeditor/templates/pdfeditor/history.html:20
-#: pdfeditor/templates/pdfeditor/history.html:35
 msgid "Source"
 msgstr "Sursă"
 
-#: pdfeditor/templates/pdfeditor/history.html:21
-#: pdfeditor/templates/pdfeditor/history.html:38
 msgid "Size"
 msgstr "Dimensiune"
 
-#: pdfeditor/templates/pdfeditor/history.html:22
-#: pdfeditor/templates/pdfeditor/history.html:39
 msgid "Created"
 msgstr "Creat"
 
-#: pdfeditor/templates/pdfeditor/history.html:48
 msgid "Remove this output from history?"
 msgstr "Ștergi acest rezultat din istoric?"
 
-#: pdfeditor/templates/pdfeditor/history.html:60
 msgid "No operations yet. Upload a PDF and run a tool to see history here."
 msgstr ""
 "Nicio operațiune încă. Încarcă un PDF și rulează o unealtă pentru a vedea "
 "istoricul aici."
 
-#: pdfeditor/templates/pdfeditor/merge.html:10
-#: pdfeditor/templates/pdfeditor/merge.html:60
 msgid "🔗 Merge PDFs"
 msgstr "🔗 Unește PDF-uri"
 
-#: pdfeditor/templates/pdfeditor/merge.html:11
 msgid "Select 2 or more PDFs to combine into one document"
 msgstr ""
 "Selectează 2 sau mai multe PDF-uri pentru a le combina într-un singur "
 "document"
 
-#: pdfeditor/templates/pdfeditor/merge.html:21
 msgid "📂 Select PDFs to Merge:"
 msgstr "📂 Selectează PDF-urile de unit:"
 
-#: pdfeditor/templates/pdfeditor/merge.html:23
 msgid ""
 "💡 <strong>Tip:</strong> Check at least 2 PDFs. Drag to reorder - they'll "
 "merge in this sequence!"
@@ -866,246 +634,172 @@ msgstr ""
 "💡 <strong>Sfat:</strong> Bifează cel puțin 2 PDF-uri. Trage pentru a "
 "reordona — vor fi unite în această ordine!"
 
-#: pdfeditor/templates/pdfeditor/merge.html:36
-#: pdfeditor/templates/pdfeditor/split_result.html:26
 msgid "👁️ Preview"
 msgstr "👁️ Previzualizare"
 
-#: pdfeditor/templates/pdfeditor/merge.html:43
-#: pdfeditor/templates/pdfeditor/merge.html:91
 msgid "No PDFs selected"
 msgstr "Niciun PDF selectat"
 
-#: pdfeditor/templates/pdfeditor/merge.html:93
 msgid "1 PDF selected - Need at least 1 more"
 msgstr "1 PDF selectat - mai e nevoie de cel puțin unul"
 
-#: pdfeditor/templates/pdfeditor/merge.html:97
 msgid "PDFs selected - Ready to merge!"
 msgstr "PDF-uri selectate - gata pentru unire!"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:13
 msgid "The Future of PDF Editing"
 msgstr "Viitorul editării PDF"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:27
 msgid "Advanced PDF Command Center"
 msgstr "Centru de comandă PDF avansat"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:28
 msgid "All your PDF tools in one powerful interface"
 msgstr "Toate uneltele tale PDF într-o singură interfață puternică"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:43
 msgid "Select & Preview"
 msgstr "Selectează și previzualizează"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:54
 msgid "Back to List"
 msgstr "Înapoi la listă"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:63
-#: pdfeditor/templates/pdfeditor/more_tools.html:93
 msgid "Extract Text"
 msgstr "Extrage text"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:64
 msgid "OCR"
 msgstr "OCR"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:65
 msgid "Edit"
 msgstr "Editează"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:66
 msgid "Split"
 msgstr "Împarte"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:68
 msgid "Watermark"
 msgstr "Filigran"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:69
 msgid "Rotate"
 msgstr "Rotește"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:70
 msgid "Page Numbers"
 msgstr "Numere pagină"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:78
-#: pdfeditor/templates/pdfeditor/preview.html:4
 msgid "PDF Preview"
 msgstr "Previzualizare PDF"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:80
-#: pdfeditor/templates/pdfeditor/rephrase.html:315
 msgid "Prev"
 msgstr "Anterior"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:81
 #, python-format
 msgid "Page %(current)s of %(total)s"
 msgstr "Pagina %(current)s din %(total)s"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:82
-#: pdfeditor/templates/pdfeditor/rephrase.html:317
 msgid "Next"
 msgstr "Următor"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:94
 msgid "Extract Now"
 msgstr "Extrage acum"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:96
 msgid "Click 'Extract Now' to extract text from PDF..."
 msgstr "Apasă „Extrage acum” pentru a extrage textul din PDF..."
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:98
-#: pdfeditor/templates/pdfeditor/more_tools.html:110
 msgid "Copy"
 msgstr "Copiază"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:99
-#: pdfeditor/templates/pdfeditor/more_tools.html:111
 msgid "Download"
 msgstr "Descarcă"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:105
 msgid "OCR to Text"
 msgstr "OCR în text"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:106
 msgid "Start OCR"
 msgstr "Începe OCR"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:108
 msgid "Click 'Start OCR' to extract text via OCR..."
 msgstr "Apasă „Începe OCR” pentru a extrage textul prin OCR..."
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:116
 msgid "Edit Text"
 msgstr "Editează text"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:117
-#: pdfeditor/templates/pdfeditor/more_tools.html:122
-#: pdfeditor/templates/pdfeditor/more_tools.html:127
-#: pdfeditor/templates/pdfeditor/more_tools.html:132
-#: pdfeditor/templates/pdfeditor/more_tools.html:137
-#: pdfeditor/templates/pdfeditor/more_tools.html:142
 msgid "Coming soon..."
 msgstr "În curând..."
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:147
 msgid "Processing... This may take a moment."
 msgstr "Se procesează... Poate dura un moment."
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:282
-#: pdfeditor/templates/pdfeditor/more_tools.html:288
-#: pdfeditor/templates/pdfeditor/more_tools.html:319
-#: pdfeditor/templates/pdfeditor/more_tools.html:325
 msgid "Error"
 msgstr "Eroare"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:336
-#: pdfeditor/templates/pdfeditor/more_tools.html:347
 msgid "Copied!"
 msgstr "Copiat!"
 
-#: pdfeditor/templates/pdfeditor/more_tools.html:381
 #, python-format
 msgid "Page %%(current)s of %%(total)s"
 msgstr "Pagina %%(current)s din %%(total)s"
 
-#: pdfeditor/templates/pdfeditor/preview.html:130
 #, python-format
 msgid "📄 PDF Preview: %(name)s"
 msgstr "📄 Previzualizare PDF: %(name)s"
 
-#: pdfeditor/templates/pdfeditor/preview.html:132
 msgid "← Back to Dashboard"
 msgstr "← Înapoi la Dashboard"
 
-#: pdfeditor/templates/pdfeditor/preview.html:142
 msgid "← Previous"
 msgstr "← Anterior"
 
-#: pdfeditor/templates/pdfeditor/preview.html:144
 msgid "Page <span id=\"page-num\"></span> of <span id=\"page-count\"></span>"
 msgstr ""
 "Pagina <span id=\"page-num\"></span> din <span id=\"page-count\"></span>"
 
-#: pdfeditor/templates/pdfeditor/preview.html:146
 msgid "Next →"
 msgstr "Următor →"
 
-#: pdfeditor/templates/pdfeditor/profile.html:4
 msgid "Profile"
 msgstr "Profil"
 
-#: pdfeditor/templates/pdfeditor/profile.html:12
 msgid "(no email on file)"
 msgstr "(niciun email înregistrat)"
 
-#: pdfeditor/templates/pdfeditor/profile.html:16
 msgid "Account"
 msgstr "Cont"
 
-#: pdfeditor/templates/pdfeditor/profile.html:18
-#: pdfeditor/templates/registration/login.html:21
 msgid "Username"
 msgstr "Nume utilizator"
 
-#: pdfeditor/templates/pdfeditor/profile.html:20
 msgid "Email"
 msgstr "Email"
 
-#: pdfeditor/templates/pdfeditor/profile.html:22
 msgid "Member since"
 msgstr "Membru din"
 
-#: pdfeditor/templates/pdfeditor/profile.html:25
 msgid "Last login"
 msgstr "Ultima autentificare"
 
-#: pdfeditor/templates/pdfeditor/profile.html:30
 msgid "Activity"
 msgstr "Activitate"
 
-#: pdfeditor/templates/pdfeditor/profile.html:42
 msgid "Manage account"
 msgstr "Gestionează contul"
 
-#: pdfeditor/templates/pdfeditor/profile.html:44
 msgid "Change email"
 msgstr "Schimbă emailul"
 
-#: pdfeditor/templates/pdfeditor/profile.html:45
 msgid "Change password"
 msgstr "Schimbă parola"
 
-#: pdfeditor/templates/pdfeditor/profile.html:46
 msgid "View history"
 msgstr "Vezi istoricul"
 
-#: pdfeditor/templates/pdfeditor/profile.html:49
 msgid "Your data"
 msgstr "Datele tale"
 
-#: pdfeditor/templates/pdfeditor/profile.html:51
 msgid "Export my data (JSON)"
 msgstr "Exportă datele mele (JSON)"
 
-#: pdfeditor/templates/pdfeditor/protect.html:4
-#: pdfeditor/templates/pdfeditor/protect.html:29
 msgid "Password Protect PDF"
 msgstr "Protejează PDF-ul cu parolă"
 
-#: pdfeditor/templates/pdfeditor/protect.html:13
 msgid "Select PDF to Protect:"
 msgstr "Selectează PDF-ul de protejat:"
 
-#: pdfeditor/templates/pdfeditor/protect.html:31
 msgid ""
 "Encrypt your PDF with AES-256. The reader will require this password to open "
 "it."
@@ -1113,41 +807,31 @@ msgstr ""
 "Criptează PDF-ul cu AES-256. Cititorul va cere această parolă pentru a-l "
 "deschide."
 
-#: pdfeditor/templates/pdfeditor/protect.html:55
-#: pdfeditor/templates/registration/login.html:28
 msgid "Password"
 msgstr "Parolă"
 
-#: pdfeditor/templates/pdfeditor/protect.html:59
 msgid ""
 "At least 4 characters. Don't lose it — we can't recover an encrypted PDF."
 msgstr "Cel puțin 4 caractere. Nu o pierde — nu putem recupera un PDF criptat."
 
-#: pdfeditor/templates/pdfeditor/protect.html:66
 msgid "Confirm password"
 msgstr "Confirmă parola"
 
-#: pdfeditor/templates/pdfeditor/protect.html:77
 msgid "Protect PDF"
 msgstr "Protejează PDF"
 
-#: pdfeditor/templates/pdfeditor/protect_result.html:4
 msgid "Protection Result"
 msgstr "Rezultat protejare"
 
-#: pdfeditor/templates/pdfeditor/protect_result.html:10
 msgid "PDF Protected Successfully!"
 msgstr "PDF protejat cu succes!"
 
-#: pdfeditor/templates/pdfeditor/protect_result.html:11
 msgid "Your PDF is now encrypted with AES-256."
 msgstr "PDF-ul tău este acum criptat cu AES-256."
 
-#: pdfeditor/templates/pdfeditor/protect_result.html:16
 msgid "Important:"
 msgstr "Important:"
 
-#: pdfeditor/templates/pdfeditor/protect_result.html:17
 msgid ""
 "Save the password somewhere safe. We can't recover an encrypted PDF if you "
 "lose it."
@@ -1155,159 +839,170 @@ msgstr ""
 "Salvează parola într-un loc sigur. Nu putem recupera un PDF criptat dacă o "
 "pierzi."
 
-#: pdfeditor/templates/pdfeditor/protect_result.html:33
 msgid "Download Protected PDF"
 msgstr "Descarcă PDF-ul protejat"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:4
-#: pdfeditor/templates/pdfeditor/rephrase.html:338
+msgid "Select PDF:"
+msgstr "Selectează PDF:"
+
+#, python-format
+msgid "<strong>%(name)s</strong> · %(count)s pages"
+msgstr "<strong>%(name)s</strong> · %(count)s pagini"
+
+msgid "How to use:"
+msgstr "Cum folosești:"
+
+msgid ""
+"Drag pages to reorder them. Click the ✕ on a page to remove it. Use the "
+"controls below for quick actions."
+msgstr ""
+"Trage paginile pentru a le reordona. Apasă ✕ pe o pagină pentru a o "
+"elimina. Folosește butoanele de mai jos pentru acțiuni rapide."
+
+msgid "pages kept"
+msgstr "pagini păstrate"
+
+msgid "Reset"
+msgstr "Resetează"
+
+msgid "Reverse Order"
+msgstr "Inversează ordinea"
+
+msgid "Remove this page"
+msgstr "Elimină această pagină"
+
+msgid "Remove"
+msgstr "Elimină"
+
+#, python-format
+msgid "Page %(n)s"
+msgstr "Pagina %(n)s"
+
+#, python-format
+msgid "was page %(n)s"
+msgstr "era pagina %(n)s"
+
+msgid "Apply Changes"
+msgstr "Aplică modificările"
+
+msgid "Reset to the original page order? Any deletions will be undone."
+msgstr "Resetezi la ordinea inițială a paginilor? Orice ștergere va fi anulată."
+
+msgid "Reorder Result"
+msgstr "Rezultat reordonare"
+
+msgid "Pages Reordered!"
+msgstr "Pagini reordonate!"
+
+#, python-format
+msgid "Kept %(kept)s of %(total)s pages, in your chosen order."
+msgstr "Ai păstrat %(kept)s din %(total)s pagini, în ordinea aleasă."
+
+msgid "Your PDF has been saved with the new page order."
+msgstr "PDF-ul tău a fost salvat cu noua ordine a paginilor."
+
+msgid "Download Reordered PDF"
+msgstr "Descarcă PDF-ul reordonat"
+
 msgid "AI Text Rephrase"
 msgstr "Reformulare text cu AI"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:316
 msgid "Page 1 of ?"
 msgstr "Pagina 1 din ?"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:328
 msgid "Clear Selection"
 msgstr "Șterge selecția"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:331
-#: pdfeditor/templates/pdfeditor/rephrase.html:729
 msgid "Instructions:"
 msgstr "Instrucțiuni:"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:331
-#: pdfeditor/templates/pdfeditor/rephrase.html:729
 msgid "Click on text lines to select them. Click again to deselect."
 msgstr ""
 "Apasă pe linii de text pentru a le selecta. Apasă din nou pentru a deselecta."
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:342
 #, python-format
 msgid "Ollama connected! %(count)s models available."
 msgstr "Ollama conectat! %(count)s modele disponibile."
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:346
 msgid "Ollama not available. Please start Ollama server."
 msgstr "Ollama indisponibil. Pornește serverul Ollama."
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:352
-#: pdfeditor/templates/pdfeditor/rotate.html:13
-#: pdfeditor/templates/pdfeditor/watermark.html:13
-msgid "Select PDF:"
-msgstr "Selectează PDF:"
-
-#: pdfeditor/templates/pdfeditor/rephrase.html:376
 msgid "Selected Text"
 msgstr "Text selectat"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:377
 msgid "Select text from PDF viewer..."
 msgstr "Selectează text din vizualizatorul PDF..."
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:381
 msgid "Rephrase Style"
 msgstr "Stil de reformulare"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:383
 msgid "Formal/Professional"
 msgstr "Formal/Profesional"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:384
 msgid "Casual/Friendly"
 msgstr "Casual/Prietenos"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:385
 msgid "Simplified"
 msgstr "Simplificat"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:386
 msgid "Concise/Shorter"
 msgstr "Concis/Mai scurt"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:387
 msgid "Expanded/Detailed"
 msgstr "Extins/Detaliat"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:392
 msgid "AI Model"
 msgstr "Model AI"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:394
 msgid "Select a model..."
 msgstr "Selectează un model..."
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:397
 msgid "Cloud (Groq - Fast)"
 msgstr "Cloud (Groq - Rapid)"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:405
 msgid "Local (Ollama)"
 msgstr "Local (Ollama)"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:413
 msgid "No models available. Check Ollama connection or Groq API key."
 msgstr ""
 "Niciun model disponibil. Verifică conexiunea Ollama sau cheia API Groq."
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:422
-msgid "Apply Changes"
-msgstr "Aplică modificările"
-
-#: pdfeditor/templates/pdfeditor/rephrase.html:427
 msgid "Rephrased Text:"
 msgstr "Text reformulat:"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:472
-#: pdfeditor/templates/pdfeditor/rephrase.html:660
-#: pdfeditor/templates/pdfeditor/sign.html:78
 msgid "Page"
 msgstr "Pagina"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:472
-#: pdfeditor/templates/pdfeditor/rephrase.html:660
 msgid "of"
 msgstr "din"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:476
 msgid "Error loading PDF"
 msgstr "Eroare la încărcarea PDF"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:718
 msgid "line(s) selected"
 msgstr "linii selectate"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:718
 msgid "characters"
 msgstr "caractere"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:779
 msgid "Please select text first by clicking on lines"
 msgstr "Selectează mai întâi textul apăsând pe linii"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:787
 msgid "Generating..."
 msgstr "Se generează..."
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:802
-#: pdfeditor/templates/pdfeditor/rephrase.html:804
 msgid "Error:"
 msgstr "Eroare:"
 
-#: pdfeditor/templates/pdfeditor/rephrase.html:802
 msgid "Unknown error"
 msgstr "Eroare necunoscută"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:4
 msgid "Rephrase Result - PDF Editor"
 msgstr "Rezultat reformulare - PDF Editor"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:8
 msgid "AI Rephrase Complete!"
 msgstr "Reformulare AI finalizată!"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:13
 #, python-format
 msgid "%(counter)s Replacement Made"
 msgid_plural "%(counter)s Replacements Made"
@@ -1315,127 +1010,95 @@ msgstr[0] "%(counter)s înlocuire făcută"
 msgstr[1] "%(counter)s înlocuiri făcute"
 msgstr[2] "%(counter)s de înlocuiri făcute"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:14
 msgid "Style:"
 msgstr "Stil:"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:14
 msgid "Model:"
 msgstr "Model:"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:19
 msgid "Text Transformation"
 msgstr "Transformare text"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:22
 msgid "Original Text"
 msgstr "Text original"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:26
 msgid "Rephrased Text"
 msgstr "Text reformulat"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:38
 msgid "Warnings"
 msgstr "Avertismente"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:49
 msgid "Preview Modified PDF"
 msgstr "Previzualizează PDF-ul modificat"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:56
 msgid "Rephrase More"
 msgstr "Reformulează mai mult"
 
-#: pdfeditor/templates/pdfeditor/rephrase_result.html:59
 msgid "Download PDF"
 msgstr "Descarcă PDF"
 
-#: pdfeditor/templates/pdfeditor/result.html:4
 msgid "Result"
 msgstr "Rezultat"
 
-#: pdfeditor/templates/pdfeditor/result.html:9
 msgid "Changes Applied Successfully!"
 msgstr "Modificări aplicate cu succes!"
 
-#: pdfeditor/templates/pdfeditor/result.html:15
 msgid "replacement made"
 msgstr "înlocuire făcută"
 
-#: pdfeditor/templates/pdfeditor/result.html:17
 msgid "replacements made"
 msgstr "înlocuiri făcute"
 
-#: pdfeditor/templates/pdfeditor/result.html:24
 msgid "⚠️ Warning:"
 msgstr "⚠️ Avertisment:"
 
-#: pdfeditor/templates/pdfeditor/result.html:34
-#: pdfeditor/templates/pdfeditor/split_result.html:38
 msgid "← Dashboard"
 msgstr "← Dashboard"
 
-#: pdfeditor/templates/pdfeditor/result.html:38
 msgid "📥 Download Modified PDF"
 msgstr "📥 Descarcă PDF-ul modificat"
 
-#: pdfeditor/templates/pdfeditor/rotate.html:27
 #, python-format
 msgid "Rotate pages in: <strong>%(name)s</strong>"
 msgstr "Rotește paginile din: <strong>%(name)s</strong>"
 
-#: pdfeditor/templates/pdfeditor/rotate.html:35
 msgid "Select Rotation Angle:"
 msgstr "Selectează unghiul de rotație:"
 
-#: pdfeditor/templates/pdfeditor/rotate.html:46
 msgid "Rotate right (portrait → landscape right)"
 msgstr "Rotește la dreapta (portret → peisaj dreapta)"
 
-#: pdfeditor/templates/pdfeditor/rotate.html:47
 msgid "Flip upside down"
 msgstr "Răstoarnă cu susul în jos"
 
-#: pdfeditor/templates/pdfeditor/rotate.html:48
 msgid "Rotate left (portrait → landscape left)"
 msgstr "Rotește la stânga (portret → peisaj stânga)"
 
-#: pdfeditor/templates/pdfeditor/rotate_result.html:4
 msgid "Rotation Result"
 msgstr "Rezultat rotație"
 
-#: pdfeditor/templates/pdfeditor/rotate_result.html:10
 msgid "Pages Rotated Successfully!"
 msgstr "Pagini rotite cu succes!"
 
-#: pdfeditor/templates/pdfeditor/rotate_result.html:11
 #, python-format
 msgid "Rotated <strong>%(angle)s°</strong> clockwise"
 msgstr "Rotit <strong>%(angle)s°</strong> în sensul acelor de ceasornic"
 
-#: pdfeditor/templates/pdfeditor/rotate_result.html:15
 msgid "Rotated File:"
 msgstr "Fișier rotit:"
 
-#: pdfeditor/templates/pdfeditor/rotate_result.html:21
-#: pdfeditor/templates/pdfeditor/watermark_result.html:21
 msgid "Size:"
 msgstr "Dimensiune:"
 
-#: pdfeditor/templates/pdfeditor/rotate_result.html:30
 msgid "Preview Rotated PDF"
 msgstr "Previzualizează PDF-ul rotit"
 
-#: pdfeditor/templates/pdfeditor/rotate_result.html:33
 msgid "Download Rotated PDF"
 msgstr "Descarcă PDF-ul rotit"
 
-#: pdfeditor/templates/pdfeditor/sign.html:13
 msgid "Select PDF to Sign:"
 msgstr "Selectează PDF-ul de semnat:"
 
-#: pdfeditor/templates/pdfeditor/sign.html:31
 msgid ""
 "Sign your PDF cryptographically with a PKCS#7 signature using your own .p12 "
 "certificate."
@@ -1443,44 +1106,34 @@ msgstr ""
 "Semnează PDF-ul criptografic cu o semnătură PKCS#7 folosind propriul tău "
 "certificat .p12."
 
-#: pdfeditor/templates/pdfeditor/sign.html:62
 #, python-format
 msgid "No certificate yet? <a href=\"%(gen_url)s\">Generate a test one</a>."
 msgstr "Nu ai certificat? <a href=\"%(gen_url)s\">Generează unul de test</a>."
 
-#: pdfeditor/templates/pdfeditor/sign.html:69
 msgid "Certificate password"
 msgstr "Parola certificatului"
 
-#: pdfeditor/templates/pdfeditor/sign.html:85
 msgid "Position"
 msgstr "Poziție"
 
-#: pdfeditor/templates/pdfeditor/sign.html:94
 msgid "Reason (optional)"
 msgstr "Motiv (opțional)"
 
-#: pdfeditor/templates/pdfeditor/sign.html:102
 msgid "Location (optional)"
 msgstr "Locație (opțional)"
 
-#: pdfeditor/templates/pdfeditor/sign.html:144
 msgid "Sign PDF"
 msgstr "Semnează PDF"
 
-#: pdfeditor/templates/pdfeditor/sign_result.html:4
 msgid "Signature Result"
 msgstr "Rezultat semnare"
 
-#: pdfeditor/templates/pdfeditor/sign_result.html:10
 msgid "PDF Signed Successfully!"
 msgstr "PDF semnat cu succes!"
 
-#: pdfeditor/templates/pdfeditor/sign_result.html:11
 msgid "Your PDF carries a cryptographic PKCS#7 signature."
 msgstr "PDF-ul tău conține o semnătură criptografică PKCS#7."
 
-#: pdfeditor/templates/pdfeditor/sign_result.html:17
 msgid ""
 "Some PDF readers may show the signer as 'unknown' because we did not embed a "
 "CA chain. The signature is still cryptographically valid."
@@ -1488,72 +1141,54 @@ msgstr ""
 "Unele cititoare PDF pot afișa semnatarul ca 'necunoscut' pentru că nu am "
 "inclus un lanț CA. Semnătura este în continuare validă criptografic."
 
-#: pdfeditor/templates/pdfeditor/sign_result.html:33
-#: pdfeditor/templates/pdfeditor/verify_signature.html:4
-#: pdfeditor/templates/pdfeditor/verify_signature.html:10
 msgid "Verify signature"
 msgstr "Verifică semnătura"
 
-#: pdfeditor/templates/pdfeditor/sign_result.html:36
 msgid "Download Signed PDF"
 msgstr "Descarcă PDF-ul semnat"
 
-#: pdfeditor/templates/pdfeditor/split.html:11
 msgid "📂 Select PDF to Split:"
 msgstr "📂 Selectează PDF-ul de împărțit:"
 
-#: pdfeditor/templates/pdfeditor/split.html:25
 #, python-format
 msgid "✂️ Split PDF: %(name)s"
 msgstr "✂️ Împarte PDF: %(name)s"
 
-#: pdfeditor/templates/pdfeditor/split.html:26
 msgid "Split your PDF into multiple files based on page ranges."
 msgstr "Împarte PDF-ul în mai multe fișiere pe baza intervalelor de pagini."
 
-#: pdfeditor/templates/pdfeditor/split.html:39
 msgid "Page Ranges"
 msgstr "Intervale de pagini"
 
-#: pdfeditor/templates/pdfeditor/split.html:41
 msgid ""
 "Enter ranges separated by commas. Example: 1-5,10-15 will create 2 files"
 msgstr ""
 "Introdu intervale separate prin virgule. Exemplu: 1-5,10-15 va crea 2 fișiere"
 
-#: pdfeditor/templates/pdfeditor/split.html:48
 msgid "💡 Examples:"
 msgstr "💡 Exemple:"
 
-#: pdfeditor/templates/pdfeditor/split.html:50
 msgid "→ One file with pages 1 to 5"
 msgstr "→ Un fișier cu paginile 1 până la 5"
 
-#: pdfeditor/templates/pdfeditor/split.html:51
 msgid "→ Two files: pages 1-3 and 7-10"
 msgstr "→ Două fișiere: paginile 1-3 și 7-10"
 
-#: pdfeditor/templates/pdfeditor/split.html:52
 msgid "→ Three separate files, one page each"
 msgstr "→ Trei fișiere separate, câte o pagină fiecare"
 
-#: pdfeditor/templates/pdfeditor/split.html:53
 msgid "→ Two files: pages 1-5 and page 15"
 msgstr "→ Două fișiere: paginile 1-5 și pagina 15"
 
-#: pdfeditor/templates/pdfeditor/split.html:59
 msgid "✂️ Split PDF"
 msgstr "✂️ Împarte PDF"
 
-#: pdfeditor/templates/pdfeditor/split_result.html:4
 msgid "Split Result"
 msgstr "Rezultat împărțire"
 
-#: pdfeditor/templates/pdfeditor/split_result.html:10
 msgid "PDF Split Successfully!"
 msgstr "PDF împărțit cu succes!"
 
-#: pdfeditor/templates/pdfeditor/split_result.html:11
 #, python-format
 msgid "Created <strong>%(counter)s</strong> file"
 msgid_plural "Created <strong>%(counter)s</strong> files"
@@ -1561,49 +1196,37 @@ msgstr[0] "S-a creat <strong>%(counter)s</strong> fișier"
 msgstr[1] "S-au creat <strong>%(counter)s</strong> fișiere"
 msgstr[2] "S-au creat <strong>%(counter)s</strong> de fișiere"
 
-#: pdfeditor/templates/pdfeditor/split_result.html:15
 msgid "📁 Generated Files:"
 msgstr "📁 Fișiere generate:"
 
-#: pdfeditor/templates/pdfeditor/split_result.html:22
 #, python-format
 msgid "Size: %(size)s"
 msgstr "Dimensiune: %(size)s"
 
-#: pdfeditor/templates/pdfeditor/split_result.html:29
 msgid "📥 Download"
 msgstr "📥 Descarcă"
 
-#: pdfeditor/templates/pdfeditor/split_result.html:41
 msgid "Process Another PDF"
 msgstr "Procesează un alt PDF"
 
-#: pdfeditor/templates/pdfeditor/upload.html:4
 msgid "Upload PDF - PDF Editor"
 msgstr "Încarcă PDF - PDF Editor"
 
-#: pdfeditor/templates/pdfeditor/upload.html:8
 msgid "Upload PDF"
 msgstr "Încarcă PDF"
 
-#: pdfeditor/templates/pdfeditor/upload.html:9
 msgid "Select the PDF file you want to edit."
 msgstr "Selectează fișierul PDF pe care vrei să îl editezi."
 
-#: pdfeditor/templates/pdfeditor/upload.html:17
 msgid "Choose PDF file"
 msgstr "Alege fișier PDF"
 
-#: pdfeditor/templates/pdfeditor/upload.html:25
-#: pdfeditor/templates/pdfeditor/upload.html:33
 msgid "No file selected"
 msgstr "Niciun fișier selectat"
 
-#: pdfeditor/templates/pdfeditor/upload.html:28
 msgid "Upload and continue"
 msgstr "Încarcă și continuă"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:12
 msgid ""
 "Upload a signed PDF to validate every embedded signature: integrity, signer, "
 "signing time, timestamp, trust."
@@ -1611,152 +1234,115 @@ msgstr ""
 "Încarcă un PDF semnat pentru a valida fiecare semnătură: integritate, "
 "semnatar, oră, marcaj de timp, încredere."
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:53
 msgid "Verify"
 msgstr "Verifică"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:59
 msgid "Validation report"
 msgstr "Raport de validare"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:65
 msgid "Valid & trusted"
 msgstr "Valid și de încredere"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:66
 msgid "Intact but untrusted"
 msgstr "Intact dar fără încredere"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:67
 msgid "Invalid"
 msgstr "Invalid"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:71
 msgid "Signer"
 msgstr "Semnatar"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:72
 msgid "Signing time"
 msgstr "Ora semnării"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:73
 msgid "Integrity"
 msgstr "Integritate"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:74
 msgid "Trusted chain"
 msgstr "Lanț de încredere"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:75
 msgid "Revoked"
 msgstr "Revocat"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:75
 msgid "no"
 msgstr "nu"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:76
 msgid "Timestamp"
 msgstr "Marcaj de timp"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:79
 msgid "valid"
 msgstr "valid"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:79
 msgid "invalid"
 msgstr "invalid"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:80
 msgid "none"
 msgstr "lipsă"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:82
 msgid "Summary"
 msgstr "Sumar"
 
-#: pdfeditor/templates/pdfeditor/verify_signature.html:86
 msgid "Errors:"
 msgstr "Erori:"
 
-#: pdfeditor/templates/pdfeditor/watermark.html:27
 #, python-format
 msgid "Add text or image watermark to: <strong>%(name)s</strong>"
 msgstr "Adaugă filigran text sau imagine la: <strong>%(name)s</strong>"
 
-#: pdfeditor/templates/pdfeditor/watermark.html:35
 msgid "Choose Watermark Type:"
 msgstr "Alege tipul de filigran:"
 
-#: pdfeditor/templates/pdfeditor/watermark.html:46
 msgid "Text Settings:"
 msgstr "Setări text:"
 
-#: pdfeditor/templates/pdfeditor/watermark.html:58
 msgid "Upload Watermark Image:"
 msgstr "Încarcă imaginea pentru filigran:"
 
-#: pdfeditor/templates/pdfeditor/watermark.html:65
 msgid "Preview:"
 msgstr "Previzualizare:"
 
-#: pdfeditor/templates/pdfeditor/watermark.html:67
 msgid "Watermark preview"
 msgstr "Previzualizare filigran"
 
-#: pdfeditor/templates/pdfeditor/watermark.html:72
 msgid "Position & Style:"
 msgstr "Poziție și stil:"
 
-#: pdfeditor/templates/pdfeditor/watermark.html:75
 msgid "Position:"
 msgstr "Poziție:"
 
-#: pdfeditor/templates/pdfeditor/watermark.html:87
 msgid "Opacity:"
 msgstr "Opacitate:"
 
-#: pdfeditor/templates/pdfeditor/watermark.html:92
 msgid "Rotation:"
 msgstr "Rotație:"
 
-#: pdfeditor/templates/pdfeditor/watermark.html:98
 msgid "Apply Watermark"
 msgstr "Aplică filigranul"
 
-#: pdfeditor/templates/pdfeditor/watermark_result.html:4
 msgid "Watermark Result"
 msgstr "Rezultat filigran"
 
-#: pdfeditor/templates/pdfeditor/watermark_result.html:10
 msgid "Watermark Added Successfully!"
 msgstr "Filigran adăugat cu succes!"
 
-#: pdfeditor/templates/pdfeditor/watermark_result.html:11
 msgid "Your PDF has been watermarked and is ready to download"
 msgstr "PDF-ul tău a fost marcat cu filigran și este gata pentru descărcare"
 
-#: pdfeditor/templates/pdfeditor/watermark_result.html:15
 msgid "Watermarked File:"
 msgstr "Fișier cu filigran:"
 
-#: pdfeditor/templates/pdfeditor/watermark_result.html:30
 msgid "Preview Watermarked PDF"
 msgstr "Previzualizează PDF-ul cu filigran"
 
-#: pdfeditor/templates/pdfeditor/watermark_result.html:33
 msgid "Download Watermarked PDF"
 msgstr "Descarcă PDF-ul cu filigran"
 
-#: pdfeditor/templates/registration/confirm_email_invalid.html:4
 msgid "Invalid Confirmation Link"
 msgstr "Link de confirmare invalid"
 
-#: pdfeditor/templates/registration/confirm_email_invalid.html:9
 msgid "Confirmation Link Invalid"
 msgstr "Link de confirmare invalid"
 
-#: pdfeditor/templates/registration/confirm_email_invalid.html:11
 msgid ""
 "This confirmation link is either expired or has already been used. Try "
 "registering again, or contact support if you think this is a mistake."
@@ -1765,16 +1351,12 @@ msgstr ""
 "te înregistrezi din nou sau contactează suportul dacă crezi că este o "
 "greșeală."
 
-#: pdfeditor/templates/registration/confirm_email_invalid.html:13
 msgid "Register again"
 msgstr "Înregistrează-te din nou"
 
-#: pdfeditor/templates/registration/email_change_form.html:4
-#: pdfeditor/templates/registration/email_change_form.html:8
 msgid "Change Email"
 msgstr "Schimbă emailul"
 
-#: pdfeditor/templates/registration/email_change_form.html:10
 #, python-format
 msgid ""
 "Currently <strong>%(email)s</strong>. We'll send a confirmation link to your "
@@ -1783,19 +1365,15 @@ msgstr ""
 "În prezent <strong>%(email)s</strong>. Vom trimite un link de confirmare la "
 "noua adresă — emailul tău actual rămâne activ până apeși pe el."
 
-#: pdfeditor/templates/registration/email_change_form.html:34
 msgid "Send confirmation link"
 msgstr "Trimite linkul de confirmare"
 
-#: pdfeditor/templates/registration/email_change_invalid.html:4
 msgid "Email change link invalid"
 msgstr "Link de schimbare email invalid"
 
-#: pdfeditor/templates/registration/email_change_invalid.html:9
 msgid "Link invalid or expired"
 msgstr "Link invalid sau expirat"
 
-#: pdfeditor/templates/registration/email_change_invalid.html:11
 msgid ""
 "This email-change link is no longer valid. It may have expired, already been "
 "used, or been replaced by a newer request."
@@ -1803,11 +1381,9 @@ msgstr ""
 "Acest link de schimbare email nu mai este valid. Poate să fi expirat, să fi "
 "fost deja folosit sau să fi fost înlocuit de o solicitare mai recentă."
 
-#: pdfeditor/templates/registration/email_change_invalid.html:13
 msgid "Start over"
 msgstr "Începe din nou"
 
-#: pdfeditor/templates/registration/login.html:10
 msgid ""
 "Sign in to keep your PDFs across browsers, see your full history, and access "
 "password-protected features."
@@ -1815,87 +1391,63 @@ msgstr ""
 "Autentifică-te pentru a-ți păstra PDF-urile în orice browser, a vedea "
 "istoricul complet și a accesa funcționalități protejate prin parolă."
 
-#: pdfeditor/templates/registration/login.html:39
 msgid "Don't have an account?"
 msgstr "Nu ai cont?"
 
-#: pdfeditor/templates/registration/login.html:40
 msgid "Create one"
 msgstr "Creează unul"
 
-#: pdfeditor/templates/registration/login.html:42
 msgid "Forgot password?"
 msgstr "Ai uitat parola?"
 
-#: pdfeditor/templates/registration/login.html:45
 msgid "Didn't get a confirmation email?"
 msgstr "Nu ai primit email-ul de confirmare?"
 
-#: pdfeditor/templates/registration/login.html:46
 msgid "Resend it"
 msgstr "Retrimite"
 
-#: pdfeditor/templates/registration/password_change_done.html:4
-#: pdfeditor/templates/registration/password_change_done.html:9
 msgid "Password Changed"
 msgstr "Parolă schimbată"
 
-#: pdfeditor/templates/registration/password_change_done.html:10
 msgid "Your password was updated successfully."
 msgstr "Parola ta a fost actualizată cu succes."
 
-#: pdfeditor/templates/registration/password_change_form.html:4
-#: pdfeditor/templates/registration/password_change_form.html:8
-#: pdfeditor/templates/registration/password_change_form.html:23
 msgid "Change Password"
 msgstr "Schimbă parola"
 
-#: pdfeditor/templates/registration/password_reset_complete.html:4
 msgid "Password Reset Complete"
 msgstr "Resetare parolă finalizată"
 
-#: pdfeditor/templates/registration/password_reset_complete.html:9
 msgid "Password Updated"
 msgstr "Parolă actualizată"
 
-#: pdfeditor/templates/registration/password_reset_complete.html:10
 msgid "You can now sign in with your new password."
 msgstr "Te poți autentifica acum cu parola nouă."
 
-#: pdfeditor/templates/registration/password_reset_confirm.html:4
 msgid "Set New Password"
 msgstr "Setează parola nouă"
 
-#: pdfeditor/templates/registration/password_reset_confirm.html:9
 msgid "Set a New Password"
 msgstr "Setează o parolă nouă"
 
-#: pdfeditor/templates/registration/password_reset_confirm.html:20
 msgid "Save New Password"
 msgstr "Salvează parola nouă"
 
-#: pdfeditor/templates/registration/password_reset_confirm.html:24
 msgid "Invalid or Expired Link"
 msgstr "Link invalid sau expirat"
 
-#: pdfeditor/templates/registration/password_reset_confirm.html:26
 msgid "This password reset link is no longer valid. Please request a new one."
 msgstr "Acest link de resetare parolă nu mai este valid. Solicită unul nou."
 
-#: pdfeditor/templates/registration/password_reset_confirm.html:28
 msgid "Request New Link"
 msgstr "Solicită link nou"
 
-#: pdfeditor/templates/registration/password_reset_done.html:4
 msgid "Password Reset Email Sent"
 msgstr "Email de resetare parolă trimis"
 
-#: pdfeditor/templates/registration/password_reset_done.html:9
-#: pdfeditor/templates/registration/resend_confirmation_done.html:9
 msgid "Check Your Email"
 msgstr "Verifică emailul"
 
-#: pdfeditor/templates/registration/password_reset_done.html:11
 msgid ""
 "We've sent you a password reset link. Click it to set a new password. It may "
 "take a couple of minutes to arrive — also check your spam folder."
@@ -1903,20 +1455,15 @@ msgstr ""
 "Ți-am trimis un link de resetare a parolei. Apasă pe el pentru a seta o "
 "parolă nouă. Poate dura câteva minute să ajungă — verifică și folderul spam."
 
-#: pdfeditor/templates/registration/password_reset_done.html:13
-#: pdfeditor/templates/registration/resend_confirmation_done.html:13
 msgid "Back to Sign In"
 msgstr "Înapoi la autentificare"
 
-#: pdfeditor/templates/registration/password_reset_form.html:4
 msgid "Forgot Password"
 msgstr "Am uitat parola"
 
-#: pdfeditor/templates/registration/password_reset_form.html:8
 msgid "Forgot Your Password?"
 msgstr "Ai uitat parola?"
 
-#: pdfeditor/templates/registration/password_reset_form.html:10
 msgid ""
 "Enter the email address associated with your account. We'll send you a link "
 "to reset your password."
@@ -1924,22 +1471,15 @@ msgstr ""
 "Introdu adresa de email asociată contului tău. Îți vom trimite un link "
 "pentru a-ți reseta parola."
 
-#: pdfeditor/templates/registration/password_reset_form.html:21
 msgid "Send Reset Link"
 msgstr "Trimite link de resetare"
 
-#: pdfeditor/templates/registration/password_reset_form.html:23
-#: pdfeditor/templates/registration/resend_confirmation_form.html:24
 msgid "Back to sign in"
 msgstr "Înapoi la autentificare"
 
-#: pdfeditor/templates/registration/register.html:4
-#: pdfeditor/templates/registration/register.html:8
-#: pdfeditor/templates/registration/register.html:33
 msgid "Create Account"
 msgstr "Creează cont"
 
-#: pdfeditor/templates/registration/register.html:10
 msgid ""
 "Once registered, your PDFs and operation history persist across devices and "
 "sessions."
@@ -1947,19 +1487,15 @@ msgstr ""
 "După înregistrare, PDF-urile și istoricul operațiunilor persistă între "
 "dispozitive și sesiuni."
 
-#: pdfeditor/templates/registration/register.html:36
 msgid "Already have an account?"
 msgstr "Ai deja cont?"
 
-#: pdfeditor/templates/registration/register.html:37
 msgid "Sign in"
 msgstr "Autentificare"
 
-#: pdfeditor/templates/registration/resend_confirmation_done.html:4
 msgid "Confirmation Email Sent"
 msgstr "Email de confirmare trimis"
 
-#: pdfeditor/templates/registration/resend_confirmation_done.html:11
 msgid ""
 "If we have an account waiting on confirmation for that email, we've sent a "
 "fresh link. Check your inbox (and spam folder). The link is valid for a "
@@ -1969,12 +1505,9 @@ msgstr ""
 "link nou. Verifică inbox-ul (și folderul spam). Linkul este valid pentru o "
 "perioadă limitată."
 
-#: pdfeditor/templates/registration/resend_confirmation_form.html:4
-#: pdfeditor/templates/registration/resend_confirmation_form.html:8
 msgid "Resend Confirmation Email"
 msgstr "Retrimite emailul de confirmare"
 
-#: pdfeditor/templates/registration/resend_confirmation_form.html:10
 msgid ""
 "Lost the confirmation email? Enter the address you registered with and we'll "
 "send a fresh link."
@@ -1982,22 +1515,18 @@ msgstr ""
 "Ai pierdut emailul de confirmare? Introdu adresa cu care te-ai înregistrat "
 "și îți vom trimite un link nou."
 
-#: pdfeditor/templates/registration/resend_confirmation_form.html:22
 msgid "Send Confirmation Email"
 msgstr "Trimite emailul de confirmare"
 
-#: pdfeditor/views/auth.py:50 pdfeditor/views/auth.py:141
 msgid "An account with this email already exists."
 msgstr "Există deja un cont cu acest email."
 
-#: pdfeditor/views/auth.py:77
 msgid ""
 "Account created! Check your email to confirm your address before signing in."
 msgstr ""
 "Cont creat! Verifică emailul pentru a-ți confirma adresa înainte de "
 "autentificare."
 
-#: pdfeditor/views/auth.py:83
 msgid ""
 "Account created, but we couldn't send the confirmation email. Contact "
 "support to activate your account."
@@ -2005,208 +1534,1391 @@ msgstr ""
 "Cont creat, dar nu am putut trimite emailul de confirmare. Contactează "
 "suportul pentru a-ți activa contul."
 
-#: pdfeditor/views/auth.py:106
 msgid "Email confirmed! Welcome aboard."
 msgstr "Email confirmat! Bun venit!"
 
-#: pdfeditor/views/auth.py:139
 msgid "That's already your current email."
 msgstr "Acesta este deja emailul tău actual."
 
-#: pdfeditor/views/auth.py:147
 msgid "That password doesn't match your account."
 msgstr "Parola nu corespunde cu contul tău."
 
-#: pdfeditor/views/basic_ops.py:44
 msgid "No PDF found. Please upload a PDF first."
 msgstr "Niciun PDF găsit. Te rugăm să încarci mai întâi un PDF."
 
-#: pdfeditor/views/basic_ops.py:50
 msgid "Selected PDF not found."
 msgstr "PDF-ul selectat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:82
 #, python-format
 msgid "PDF split successfully into %(count)s files!"
 msgstr "PDF-ul a fost împărțit cu succes în %(count)s fișiere!"
 
-#: pdfeditor/views/basic_ops.py:86 pdfeditor/views/basic_ops.py:197
-#: pdfeditor/views/basic_ops.py:586
 #, python-format
 msgid "Error: %(err)s"
 msgstr "Eroare: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:88
 #, python-format
 msgid "Error splitting PDF: %(err)s"
 msgstr "Eroare la împărțirea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:117
 msgid "No split files found."
 msgstr "Nu s-au găsit fișiere împărțite."
 
-#: pdfeditor/views/basic_ops.py:165
 msgid "You need at least 2 PDFs to merge. Please upload more files."
 msgstr ""
 "Ai nevoie de cel puțin 2 PDF-uri pentru a le uni. Încarcă mai multe fișiere."
 
-#: pdfeditor/views/basic_ops.py:178
 #, python-format
 msgid "PDF with ID %(pdf_id)s not found."
 msgstr "PDF-ul cu ID-ul %(pdf_id)s nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:184
 msgid "At least 2 PDFs are required for merging."
 msgstr "Sunt necesare cel puțin 2 PDF-uri pentru unire."
 
-#: pdfeditor/views/basic_ops.py:193
 #, python-format
 msgid "Successfully merged %(count)s PDFs!"
 msgstr "%(count)s PDF-uri unite cu succes!"
 
-#: pdfeditor/views/basic_ops.py:199
 #, python-format
 msgid "Error merging PDFs: %(err)s"
 msgstr "Eroare la unirea PDF-urilor: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:216
 msgid "Merged file not found."
 msgstr "Fișierul unit nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:234 pdfeditor/views/basic_ops.py:239
-#: pdfeditor/views/basic_ops.py:320 pdfeditor/views/basic_ops.py:325
-#: pdfeditor/views/basic_ops.py:394 pdfeditor/views/basic_ops.py:399
-#: pdfeditor/views/basic_ops.py:481 pdfeditor/views/basic_ops.py:486
-#: pdfeditor/views/basic_ops.py:625 pdfeditor/views/basic_ops.py:630
 msgid "File not found."
 msgstr "Fișierul nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:273
 #, python-format
 msgid "PDF compressed successfully! Saved %(ratio).1f%% space."
 msgstr "PDF comprimat cu succes! Spațiu economisit: %(ratio).1f%%."
 
-#: pdfeditor/views/basic_ops.py:277
 #, python-format
 msgid "Error compressing PDF: %(err)s"
 msgstr "Eroare la comprimarea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:298
 msgid "Compressed file not found."
 msgstr "Fișierul comprimat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:355
 msgid "PDF protected successfully!"
 msgstr "PDF protejat cu succes!"
 
-#: pdfeditor/views/basic_ops.py:358
 #, python-format
 msgid "Error protecting PDF: %(err)s"
 msgstr "Eroare la protejarea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:378
 msgid "Protected file not found."
 msgstr "Fișierul protejat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:440
 msgid "PDF signed successfully!"
 msgstr "PDF semnat cu succes!"
 
-#: pdfeditor/views/basic_ops.py:443 pdfeditor/views/basic_ops.py:445
 #, python-format
 msgid "Error signing PDF: %(err)s"
 msgstr "Eroare la semnarea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:465
 msgid "Signed file not found."
 msgstr "Fișierul semnat nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:537
 #, python-format
 msgid "Error generating certificate: %(err)s"
 msgstr "Eroare la generarea certificatului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:575
-#| msgid "PDF protected successfully!"
 msgid "PDF converted to Word successfully!"
 msgstr "PDF protejat cu succes!"
 
-#: pdfeditor/views/basic_ops.py:580
 msgid ""
 "Conversion done, but the source PDF appears to be image-only (scan). The ."
 "docx will be near-empty — run OCR first for better results."
-msgstr "Conversia s-a făcut, dar PDF-ul sursă pare să fie doar imagine (scanare). .docx-ul va fi aproape gol — rulează OCR mai întâi pentru rezultate mai bune."
+msgstr ""
+"Conversia s-a făcut, dar PDF-ul sursă pare să fie doar imagine (scanare). ."
+"docx-ul va fi aproape gol — rulează OCR mai întâi pentru rezultate mai bune."
 
-#: pdfeditor/views/basic_ops.py:588
-#, fuzzy, python-format
-#| msgid "Error protecting PDF: %(err)s"
+#, python-format
 msgid "Error converting PDF: %(err)s"
-msgstr "Eroare la protejarea PDF-ului: %(err)s"
+msgstr "Eroare la convertirea PDF-ului: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:608
-#| msgid "Merged file not found."
 msgid "Converted file not found."
-msgstr "Fișierul unit nu a fost găsit."
+msgstr "Fișierul convertit nu a fost găsit."
 
-#: pdfeditor/views/basic_ops.py:663
 #, python-format
 msgid "Error verifying signatures: %(err)s"
 msgstr "Eroare la verificarea semnăturilor: %(err)s"
 
-#: pdfeditor/views/basic_ops.py:669
 msgid "No signatures found in this PDF."
 msgstr "Nicio semnătură găsită în acest PDF."
 
-#: pdfeditor/views/upload.py:72
+msgid "Could not open the selected PDF."
+msgstr "Nu s-a putut deschide PDF-ul selectat."
+
+#, python-format
+msgid "Page numbers must be between 1 and %(total)d."
+msgstr "Numerele paginilor trebuie să fie între 1 și %(total)d."
+
+msgid "Pages reordered successfully!"
+msgstr "Pagini reordonate cu succes!"
+
+#, python-format
+msgid "Error reordering pages: %(err)s"
+msgstr "Eroare la reordonarea paginilor: %(err)s"
+
+msgid "Reordered file not found."
+msgstr "Fișierul reordonat nu a fost găsit."
+
 msgid "Please select at least one PDF file."
 msgstr "Te rugăm să selectezi cel puțin un fișier PDF."
 
-#: pdfeditor/views/upload.py:83
 #, python-format
 msgid "Skipped \"%(name)s\" - only PDF files are accepted."
 msgstr "S-a omis „%(name)s” — sunt acceptate doar fișiere PDF."
 
-#: pdfeditor/views/upload.py:89
 #, python-format
 msgid "Skipped \"%(name)s\" - exceeds %(mb)d MB limit."
 msgstr "S-a omis „%(name)s” — depășește limita de %(mb)d MB."
 
-#: pdfeditor/views/upload.py:99
 #, python-format
 msgid "Skipped \"%(name)s\" - not a valid PDF file."
 msgstr "S-a omis „%(name)s” — nu este un fișier PDF valid."
 
-#: pdfeditor/views/upload.py:113
 #, python-format
 msgid "Skipped \"%(name)s\" - could not be parsed as a PDF."
 msgstr "S-a omis „%(name)s” — nu a putut fi citit ca PDF."
 
-#: pdfeditor/views/upload.py:120
 #, python-format
 msgid "Skipped \"%(name)s\" - %(pages)d pages exceeds the %(max)d-page limit."
 msgstr ""
 "S-a omis „%(name)s” — %(pages)d pagini depășesc limita de %(max)d pagini."
 
-#: pdfeditor/views/upload.py:143
 #, python-format
 msgid "PDF \"%(name)s\" uploaded successfully! Choose an operation below."
 msgstr ""
 "PDF-ul „%(name)s” a fost încărcat cu succes! Alege o operațiune mai jos."
 
-#: pdfeditor/views/upload.py:149
 #, python-format
 msgid "%(count)d PDFs uploaded successfully! Choose an operation below."
 msgstr ""
 "%(count)d PDF-uri au fost încărcate cu succes! Alege o operațiune mai jos."
 
-#: pdfeditor/views/upload.py:153
 msgid "No valid PDF files were uploaded."
 msgstr "Niciun fișier PDF valid nu a fost încărcat."
 
-#: pdfeditor/views/upload.py:160
 msgid "PDF not found."
 msgstr "PDF-ul nu a fost găsit."
 
-#: pdfeditor/views/upload.py:171
 msgid "PDF removed successfully."
 msgstr "PDF-ul a fost șters cu succes."
+
+#, python-brace-format
+msgid "{editor}: Editing failed"
+msgstr ""
+
+#, python-brace-format
+msgid "{editor}: Editing failed: {e}"
+msgstr ""
+
+#, python-brace-format
+msgid "{text} {deprecated_message}"
+msgstr ""
+
+#, fuzzy
+#| msgid "Operation"
+msgid "Options"
+msgstr "Operațiune"
+
+#, python-brace-format
+msgid "Got unexpected extra argument ({args})"
+msgid_plural "Got unexpected extra arguments ({args})"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "DeprecationWarning: The command {name!r} is deprecated.{extra_message}"
+msgstr ""
+
+msgid "Aborted!"
+msgstr ""
+
+msgid "Commands"
+msgstr ""
+
+msgid "Missing command."
+msgstr ""
+
+msgid "No such command {name!r}."
+msgstr ""
+
+msgid "Value must be an iterable."
+msgstr ""
+
+#, python-brace-format
+msgid "Takes {nargs} values but 1 was given."
+msgid_plural "Takes {nargs} values but {len} were given."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid ""
+"DeprecationWarning: The {param_type} {name!r} is deprecated.{extra_message}"
+msgstr ""
+
+#, python-brace-format
+msgid "env var: {var}"
+msgstr ""
+
+#, python-brace-format
+msgid "default: {default}"
+msgstr ""
+
+msgid "(dynamic)"
+msgstr ""
+
+#, python-format
+msgid "%(prog)s, version %(version)s"
+msgstr ""
+
+msgid "Show the version and exit."
+msgstr ""
+
+msgid "Show this message and exit."
+msgstr ""
+
+#, fuzzy, python-brace-format
+#| msgid "Error: %(err)s"
+msgid "Error: {message}"
+msgstr "Eroare: %(err)s"
+
+#, python-brace-format
+msgid "Try '{command} {option}' for help."
+msgstr ""
+
+#, python-brace-format
+msgid "Invalid value: {message}"
+msgstr ""
+
+#, python-brace-format
+msgid "Invalid value for {param_hint}: {message}"
+msgstr ""
+
+msgid "Missing argument"
+msgstr ""
+
+msgid "Missing option"
+msgstr ""
+
+msgid "Missing parameter"
+msgstr ""
+
+#, python-brace-format
+msgid "Missing {param_type}"
+msgstr ""
+
+#, python-brace-format
+msgid "Missing parameter: {param_name}"
+msgstr ""
+
+#, python-brace-format
+msgid "No such option: {name}"
+msgstr ""
+
+#, python-brace-format
+msgid "Did you mean {possibility}?"
+msgid_plural "(Possible options: {possibilities})"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, fuzzy
+#| msgid "Unknown error"
+msgid "unknown error"
+msgstr "Eroare necunoscută"
+
+msgid "Could not open file {filename!r}: {message}"
+msgstr ""
+
+msgid "Argument {name!r} takes {nargs} values."
+msgstr ""
+
+msgid "Option {name!r} does not take a value."
+msgstr ""
+
+msgid "Option {name!r} requires an argument."
+msgid_plural "Option {name!r} requires {nargs} arguments."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "Shell completion is not supported for Bash versions older than 4.4."
+msgstr ""
+
+msgid "Couldn't detect Bash version, shell completion is not supported."
+msgstr ""
+
+#, fuzzy
+#| msgid "Resend Confirmation Email"
+msgid "Repeat for confirmation"
+msgstr "Retrimite emailul de confirmare"
+
+msgid "Error: The value you entered was invalid."
+msgstr ""
+
+#, python-brace-format
+msgid "Error: {e.message}"
+msgstr ""
+
+msgid "Error: The two entered values do not match."
+msgstr ""
+
+msgid "Error: invalid input"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"Choose from:\n"
+"\t{choices}"
+msgstr ""
+
+msgid "{value!r} is not {choice}."
+msgid_plural "{value!r} is not one of {choices}."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "{value!r} does not match the format {format}."
+msgid_plural "{value!r} does not match the formats {formats}."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "{value!r} is not a valid {number_type}."
+msgstr ""
+
+#, python-brace-format
+msgid "{value} is not in the range {range}."
+msgstr ""
+
+msgid "{value!r} is not a valid boolean. Recognized values: {states}"
+msgstr ""
+
+msgid "{value!r} is not a valid UUID."
+msgstr ""
+
+#, fuzzy
+#| msgid "Profile"
+msgid "file"
+msgstr "Profil"
+
+#, fuzzy
+#| msgid "History"
+msgid "directory"
+msgstr "Istoric"
+
+msgid "path"
+msgstr ""
+
+msgid "{name} {filename!r} does not exist."
+msgstr ""
+
+msgid "{name} {filename!r} is a file."
+msgstr ""
+
+msgid "{name} {filename!r} is a directory."
+msgstr ""
+
+msgid "{name} {filename!r} is not readable."
+msgstr ""
+
+msgid "{name} {filename!r} is not writable."
+msgstr ""
+
+msgid "{name} {filename!r} is not executable."
+msgstr ""
+
+#, python-brace-format
+msgid "{len_type} values are required, but {len_value} was given."
+msgid_plural "{len_type} values are required, but {len_value} were given."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "Messages"
+msgstr ""
+
+msgid "Site Maps"
+msgstr ""
+
+#, fuzzy
+#| msgid "Rotated File:"
+msgid "Static Files"
+msgstr "Fișier rotit:"
+
+msgid "Syndication"
+msgstr ""
+
+#. Translators: String used to replace omitted page numbers in elided page
+#. range generated by paginators, e.g. [1, 2, '…', 5, 6, 7, '…', 9, 10].
+msgid "…"
+msgstr ""
+
+msgid "That page number is not an integer"
+msgstr ""
+
+msgid "That page number is less than 1"
+msgstr ""
+
+msgid "That page contains no results"
+msgstr ""
+
+msgid "Enter a valid value."
+msgstr ""
+
+msgid "Enter a valid URL."
+msgstr ""
+
+msgid "Enter a valid integer."
+msgstr ""
+
+msgid "Enter a valid email address."
+msgstr ""
+
+#. Translators: "letters" means latin letters: a-z and A-Z.
+msgid ""
+"Enter a valid “slug” consisting of letters, numbers, underscores or hyphens."
+msgstr ""
+
+msgid ""
+"Enter a valid “slug” consisting of Unicode letters, numbers, underscores, or "
+"hyphens."
+msgstr ""
+
+msgid "Enter a valid IPv4 address."
+msgstr ""
+
+msgid "Enter a valid IPv6 address."
+msgstr ""
+
+msgid "Enter a valid IPv4 or IPv6 address."
+msgstr ""
+
+msgid "Enter only digits separated by commas."
+msgstr ""
+
+#, python-format
+msgid "Ensure this value is %(limit_value)s (it is %(show_value)s)."
+msgstr ""
+
+#, python-format
+msgid "Ensure this value is less than or equal to %(limit_value)s."
+msgstr ""
+
+#, python-format
+msgid "Ensure this value is greater than or equal to %(limit_value)s."
+msgstr ""
+
+#, python-format
+msgid "Ensure this value is a multiple of step size %(limit_value)s."
+msgstr ""
+
+#, python-format
+msgid ""
+"Ensure this value has at least %(limit_value)d character (it has "
+"%(show_value)d)."
+msgid_plural ""
+"Ensure this value has at least %(limit_value)d characters (it has "
+"%(show_value)d)."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, python-format
+msgid ""
+"Ensure this value has at most %(limit_value)d character (it has "
+"%(show_value)d)."
+msgid_plural ""
+"Ensure this value has at most %(limit_value)d characters (it has "
+"%(show_value)d)."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "Enter a number."
+msgstr ""
+
+#, python-format
+msgid "Ensure that there are no more than %(max)s digit in total."
+msgid_plural "Ensure that there are no more than %(max)s digits in total."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, python-format
+msgid "Ensure that there are no more than %(max)s decimal place."
+msgid_plural "Ensure that there are no more than %(max)s decimal places."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, python-format
+msgid ""
+"Ensure that there are no more than %(max)s digit before the decimal point."
+msgid_plural ""
+"Ensure that there are no more than %(max)s digits before the decimal point."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, python-format
+msgid ""
+"File extension “%(extension)s” is not allowed. Allowed extensions are: "
+"%(allowed_extensions)s."
+msgstr ""
+
+msgid "Null characters are not allowed."
+msgstr ""
+
+msgid "and"
+msgstr ""
+
+#, fuzzy, python-format
+#| msgid "An account with this email already exists."
+msgid "%(model_name)s with this %(field_labels)s already exists."
+msgstr "Există deja un cont cu acest email."
+
+#, python-format
+msgid "Constraint “%(name)s” is violated."
+msgstr ""
+
+#, fuzzy, python-format
+#| msgid "Skipped \"%(name)s\" - not a valid PDF file."
+msgid "Value %(value)r is not a valid choice."
+msgstr "S-a omis „%(name)s” — nu este un fișier PDF valid."
+
+msgid "This field cannot be null."
+msgstr ""
+
+msgid "This field cannot be blank."
+msgstr ""
+
+#, fuzzy, python-format
+#| msgid "An account with this email already exists."
+msgid "%(model_name)s with this %(field_label)s already exists."
+msgstr "Există deja un cont cu acest email."
+
+#. Translators: The 'lookup_type' is one of 'date', 'year' or
+#. 'month'. Eg: "Title must be unique for pub_date year"
+#, python-format
+msgid ""
+"%(field_label)s must be unique for %(date_field_label)s %(lookup_type)s."
+msgstr ""
+
+#, python-format
+msgid "Field of type: %(field_type)s"
+msgstr ""
+
+#, python-format
+msgid "“%(value)s” value must be either True or False."
+msgstr ""
+
+#, python-format
+msgid "“%(value)s” value must be either True, False, or None."
+msgstr ""
+
+msgid "Boolean (Either True or False)"
+msgstr ""
+
+#, python-format
+msgid "String (up to %(max_length)s)"
+msgstr ""
+
+msgid "String (unlimited)"
+msgstr ""
+
+msgid "Comma-separated integers"
+msgstr ""
+
+#, python-format
+msgid ""
+"“%(value)s” value has an invalid date format. It must be in YYYY-MM-DD "
+"format."
+msgstr ""
+
+#, python-format
+msgid ""
+"“%(value)s” value has the correct format (YYYY-MM-DD) but it is an invalid "
+"date."
+msgstr ""
+
+msgid "Date (without time)"
+msgstr ""
+
+#, python-format
+msgid ""
+"“%(value)s” value has an invalid format. It must be in YYYY-MM-DD HH:MM[:ss[."
+"uuuuuu]][TZ] format."
+msgstr ""
+
+#, python-format
+msgid ""
+"“%(value)s” value has the correct format (YYYY-MM-DD HH:MM[:ss[.uuuuuu]]"
+"[TZ]) but it is an invalid date/time."
+msgstr ""
+
+msgid "Date (with time)"
+msgstr ""
+
+#, python-format
+msgid "“%(value)s” value must be a decimal number."
+msgstr ""
+
+msgid "Decimal number"
+msgstr ""
+
+#, python-format
+msgid ""
+"“%(value)s” value has an invalid format. It must be in [DD] [[HH:]MM:]ss[."
+"uuuuuu] format."
+msgstr ""
+
+#, fuzzy
+#| msgid "Operation"
+msgid "Duration"
+msgstr "Operațiune"
+
+msgid "Email address"
+msgstr ""
+
+#, fuzzy
+#| msgid "File"
+msgid "File path"
+msgstr "Fișier"
+
+#, python-format
+msgid "“%(value)s” value must be a float."
+msgstr ""
+
+msgid "Floating point number"
+msgstr ""
+
+#, python-format
+msgid "“%(value)s” value must be an integer."
+msgstr ""
+
+#, fuzzy
+#| msgid "Integrity"
+msgid "Integer"
+msgstr "Integritate"
+
+msgid "Big (8 byte) integer"
+msgstr ""
+
+msgid "Small integer"
+msgstr ""
+
+msgid "IPv4 address"
+msgstr ""
+
+msgid "IP address"
+msgstr ""
+
+#, python-format
+msgid "“%(value)s” value must be either None, True or False."
+msgstr ""
+
+msgid "Boolean (Either True, False or None)"
+msgstr ""
+
+msgid "Positive big integer"
+msgstr ""
+
+msgid "Positive integer"
+msgstr ""
+
+msgid "Positive small integer"
+msgstr ""
+
+#, python-format
+msgid "Slug (up to %(max_length)s)"
+msgstr ""
+
+#, fuzzy
+#| msgid "Edit Text"
+msgid "Text"
+msgstr "Editează text"
+
+#, python-format
+msgid ""
+"“%(value)s” value has an invalid format. It must be in HH:MM[:ss[.uuuuuu]] "
+"format."
+msgstr ""
+
+#, python-format
+msgid ""
+"“%(value)s” value has the correct format (HH:MM[:ss[.uuuuuu]]) but it is an "
+"invalid time."
+msgstr ""
+
+#, fuzzy
+#| msgid "Timestamp"
+msgid "Time"
+msgstr "Marcaj de timp"
+
+msgid "URL"
+msgstr ""
+
+msgid "Raw binary data"
+msgstr ""
+
+#, python-format
+msgid "“%(value)s” is not a valid UUID."
+msgstr ""
+
+msgid "Universally unique identifier"
+msgstr ""
+
+msgid "Image"
+msgstr ""
+
+msgid "A JSON object"
+msgstr ""
+
+msgid "Value must be valid JSON."
+msgstr ""
+
+#, python-format
+msgid "%(model)s instance with %(field)s %(value)r does not exist."
+msgstr ""
+
+msgid "Foreign Key (type determined by related field)"
+msgstr ""
+
+msgid "One-to-one relationship"
+msgstr ""
+
+#, python-format
+msgid "%(from)s-%(to)s relationship"
+msgstr ""
+
+#, python-format
+msgid "%(from)s-%(to)s relationships"
+msgstr ""
+
+msgid "Many-to-many relationship"
+msgstr ""
+
+#. Translators: If found as last label character, these punctuation
+#. characters will prevent the default label_suffix to be appended to the label
+msgid ":?.!"
+msgstr ""
+
+msgid "This field is required."
+msgstr ""
+
+msgid "Enter a whole number."
+msgstr ""
+
+msgid "Enter a valid date."
+msgstr ""
+
+msgid "Enter a valid time."
+msgstr ""
+
+msgid "Enter a valid date/time."
+msgstr ""
+
+msgid "Enter a valid duration."
+msgstr ""
+
+#, python-brace-format
+msgid "The number of days must be between {min_days} and {max_days}."
+msgstr ""
+
+msgid "No file was submitted. Check the encoding type on the form."
+msgstr ""
+
+#, fuzzy
+#| msgid "No file selected"
+msgid "No file was submitted."
+msgstr "Niciun fișier selectat"
+
+msgid "The submitted file is empty."
+msgstr ""
+
+#, python-format
+msgid "Ensure this filename has at most %(max)d character (it has %(length)d)."
+msgid_plural ""
+"Ensure this filename has at most %(max)d characters (it has %(length)d)."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "Please either submit a file or check the clear checkbox, not both."
+msgstr ""
+
+msgid ""
+"Upload a valid image. The file you uploaded was either not an image or a "
+"corrupted image."
+msgstr ""
+
+#, python-format
+msgid "Select a valid choice. %(value)s is not one of the available choices."
+msgstr ""
+
+msgid "Enter a list of values."
+msgstr ""
+
+msgid "Enter a complete value."
+msgstr ""
+
+msgid "Enter a valid UUID."
+msgstr ""
+
+msgid "Enter a valid JSON."
+msgstr ""
+
+#. Translators: This is the default suffix added to form field labels
+msgid ":"
+msgstr ""
+
+#, python-format
+msgid "(Hidden field %(name)s) %(error)s"
+msgstr ""
+
+#, python-format
+msgid ""
+"ManagementForm data is missing or has been tampered with. Missing fields: "
+"%(field_names)s. You may need to file a bug report if the issue persists."
+msgstr ""
+
+#, python-format
+msgid "Please submit at most %(num)d form."
+msgid_plural "Please submit at most %(num)d forms."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, fuzzy, python-format
+#| msgid "Please select at least one PDF file."
+msgid "Please submit at least %(num)d form."
+msgid_plural "Please submit at least %(num)d forms."
+msgstr[0] "Te rugăm să selectezi cel puțin un fișier PDF."
+msgstr[1] "Te rugăm să selectezi cel puțin un fișier PDF."
+msgstr[2] "Te rugăm să selectezi cel puțin un fișier PDF."
+
+msgid "Order"
+msgstr ""
+
+#, python-format
+msgid "Please correct the duplicate data for %(field)s."
+msgstr ""
+
+#, python-format
+msgid "Please correct the duplicate data for %(field)s, which must be unique."
+msgstr ""
+
+#, python-format
+msgid ""
+"Please correct the duplicate data for %(field_name)s which must be unique "
+"for the %(lookup)s in %(date_field)s."
+msgstr ""
+
+msgid "Please correct the duplicate values below."
+msgstr ""
+
+msgid "The inline value did not match the parent instance."
+msgstr ""
+
+msgid "Select a valid choice. That choice is not one of the available choices."
+msgstr ""
+
+#, python-format
+msgid "“%(pk)s” is not a valid value."
+msgstr ""
+
+#, python-format
+msgid ""
+"%(datetime)s couldn’t be interpreted in time zone %(current_timezone)s; it "
+"may be ambiguous or it may not exist."
+msgstr ""
+
+msgid "Clear"
+msgstr ""
+
+#, fuzzy
+#| msgid "Current File:"
+msgid "Currently"
+msgstr "Fișierul curent:"
+
+#, fuzzy
+#| msgid "Change email"
+msgid "Change"
+msgstr "Schimbă emailul"
+
+#, fuzzy
+#| msgid "Unknown error"
+msgid "Unknown"
+msgstr "Eroare necunoscută"
+
+msgid "Yes"
+msgstr ""
+
+msgid "No"
+msgstr ""
+
+#. Translators: Please do not add spaces around commas.
+msgid "yes,no,maybe"
+msgstr ""
+
+#, python-format
+msgid "%(size)d byte"
+msgid_plural "%(size)d bytes"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, python-format
+msgid "%s KB"
+msgstr ""
+
+#, python-format
+msgid "%s MB"
+msgstr ""
+
+#, python-format
+msgid "%s GB"
+msgstr ""
+
+#, python-format
+msgid "%s TB"
+msgstr ""
+
+#, python-format
+msgid "%s PB"
+msgstr ""
+
+msgid "p.m."
+msgstr ""
+
+msgid "a.m."
+msgstr ""
+
+msgid "PM"
+msgstr ""
+
+msgid "AM"
+msgstr ""
+
+msgid "midnight"
+msgstr ""
+
+msgid "noon"
+msgstr ""
+
+msgid "Monday"
+msgstr ""
+
+msgid "Tuesday"
+msgstr ""
+
+msgid "Wednesday"
+msgstr ""
+
+msgid "Thursday"
+msgstr ""
+
+msgid "Friday"
+msgstr ""
+
+msgid "Saturday"
+msgstr ""
+
+msgid "Sunday"
+msgstr ""
+
+msgid "Mon"
+msgstr ""
+
+msgid "Tue"
+msgstr ""
+
+msgid "Wed"
+msgstr ""
+
+msgid "Thu"
+msgstr ""
+
+msgid "Fri"
+msgstr ""
+
+msgid "Sat"
+msgstr ""
+
+msgid "Sun"
+msgstr ""
+
+msgid "January"
+msgstr ""
+
+msgid "February"
+msgstr ""
+
+msgid "March"
+msgstr ""
+
+msgid "April"
+msgstr ""
+
+msgid "May"
+msgstr ""
+
+msgid "June"
+msgstr ""
+
+msgid "July"
+msgstr ""
+
+msgid "August"
+msgstr ""
+
+msgid "September"
+msgstr ""
+
+msgid "October"
+msgstr ""
+
+msgid "November"
+msgstr ""
+
+msgid "December"
+msgstr ""
+
+msgid "jan"
+msgstr ""
+
+msgid "feb"
+msgstr ""
+
+#, fuzzy
+#| msgid "Summary"
+msgid "mar"
+msgstr "Sumar"
+
+msgid "apr"
+msgstr ""
+
+#, fuzzy
+#| msgid "Summary"
+msgid "may"
+msgstr "Sumar"
+
+msgid "jun"
+msgstr ""
+
+msgid "jul"
+msgstr ""
+
+msgid "aug"
+msgstr ""
+
+msgid "sep"
+msgstr ""
+
+msgid "oct"
+msgstr ""
+
+#, fuzzy
+#| msgid "no"
+msgid "nov"
+msgstr "nu"
+
+msgid "dec"
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "Jan."
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "Feb."
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "March"
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "April"
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "May"
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "June"
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "July"
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "Aug."
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "Sept."
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "Oct."
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "Nov."
+msgstr ""
+
+msgctxt "abbrev. month"
+msgid "Dec."
+msgstr ""
+
+msgctxt "alt. month"
+msgid "January"
+msgstr ""
+
+msgctxt "alt. month"
+msgid "February"
+msgstr ""
+
+msgctxt "alt. month"
+msgid "March"
+msgstr ""
+
+msgctxt "alt. month"
+msgid "April"
+msgstr ""
+
+msgctxt "alt. month"
+msgid "May"
+msgstr ""
+
+msgctxt "alt. month"
+msgid "June"
+msgstr ""
+
+msgctxt "alt. month"
+msgid "July"
+msgstr ""
+
+msgctxt "alt. month"
+msgid "August"
+msgstr ""
+
+msgctxt "alt. month"
+msgid "September"
+msgstr ""
+
+msgctxt "alt. month"
+msgid "October"
+msgstr ""
+
+msgctxt "alt. month"
+msgid "November"
+msgstr ""
+
+msgctxt "alt. month"
+msgid "December"
+msgstr ""
+
+msgid "This is not a valid IPv6 address."
+msgstr ""
+
+#, python-format
+msgctxt "String to return when truncating text"
+msgid "%(truncated_text)s…"
+msgstr ""
+
+msgid "or"
+msgstr ""
+
+#. Translators: This string is used as a separator between list elements
+msgid ", "
+msgstr ""
+
+#, python-format
+msgid "%(num)d year"
+msgid_plural "%(num)d years"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, python-format
+msgid "%(num)d month"
+msgid_plural "%(num)d months"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, python-format
+msgid "%(num)d week"
+msgid_plural "%(num)d weeks"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, python-format
+msgid "%(num)d day"
+msgid_plural "%(num)d days"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, python-format
+msgid "%(num)d hour"
+msgid_plural "%(num)d hours"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#, python-format
+msgid "%(num)d minute"
+msgid_plural "%(num)d minutes"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "Forbidden"
+msgstr ""
+
+msgid "CSRF verification failed. Request aborted."
+msgstr ""
+
+msgid ""
+"You are seeing this message because this HTTPS site requires a “Referer "
+"header” to be sent by your web browser, but none was sent. This header is "
+"required for security reasons, to ensure that your browser is not being "
+"hijacked by third parties."
+msgstr ""
+
+msgid ""
+"If you have configured your browser to disable “Referer” headers, please re-"
+"enable them, at least for this site, or for HTTPS connections, or for “same-"
+"origin” requests."
+msgstr ""
+
+msgid ""
+"If you are using the <meta name=\"referrer\" content=\"no-referrer\"> tag or "
+"including the “Referrer-Policy: no-referrer” header, please remove them. The "
+"CSRF protection requires the “Referer” header to do strict referer checking. "
+"If you’re concerned about privacy, use alternatives like <a "
+"rel=\"noreferrer\" …> for links to third-party sites."
+msgstr ""
+
+msgid ""
+"You are seeing this message because this site requires a CSRF cookie when "
+"submitting forms. This cookie is required for security reasons, to ensure "
+"that your browser is not being hijacked by third parties."
+msgstr ""
+
+msgid ""
+"If you have configured your browser to disable cookies, please re-enable "
+"them, at least for this site, or for “same-origin” requests."
+msgstr ""
+
+msgid "More information is available with DEBUG=True."
+msgstr ""
+
+msgid "No year specified"
+msgstr ""
+
+msgid "Date out of range"
+msgstr ""
+
+msgid "No month specified"
+msgstr ""
+
+msgid "No day specified"
+msgstr ""
+
+msgid "No week specified"
+msgstr ""
+
+#, python-format
+msgid "No %(verbose_name_plural)s available"
+msgstr ""
+
+#, python-format
+msgid ""
+"Future %(verbose_name_plural)s not available because %(class_name)s."
+"allow_future is False."
+msgstr ""
+
+#, python-format
+msgid "Invalid date string “%(datestr)s” given format “%(format)s”"
+msgstr ""
+
+#, python-format
+msgid "No %(verbose_name)s found matching the query"
+msgstr ""
+
+msgid "Page is not “last”, nor can it be converted to an int."
+msgstr ""
+
+#, python-format
+msgid "Invalid page (%(page_number)s): %(message)s"
+msgstr ""
+
+#, python-format
+msgid "Empty list and “%(class_name)s.allow_empty” is False."
+msgstr ""
+
+msgid "Directory indexes are not allowed here."
+msgstr ""
+
+#, python-format
+msgid "“%(path)s” does not exist"
+msgstr ""
+
+#, python-format
+msgid "Index of %(directory)s"
+msgstr ""
+
+msgid "The install worked successfully! Congratulations!"
+msgstr ""
+
+#, python-format
+msgid ""
+"View <a href=\"https://docs.djangoproject.com/en/%(version)s/releases/\" "
+"target=\"_blank\" rel=\"noopener\">release notes</a> for Django %(version)s"
+msgstr ""
+
+#, python-format
+msgid ""
+"You are seeing this page because <a href=\"https://docs.djangoproject.com/en/"
+"%(version)s/ref/settings/#debug\" target=\"_blank\" "
+"rel=\"noopener\">DEBUG=True</a> is in your settings file and you have not "
+"configured any URLs."
+msgstr ""
+
+msgid "Django Documentation"
+msgstr ""
+
+msgid "Topics, references, &amp; how-to’s"
+msgstr ""
+
+msgid "Tutorial: A Polling App"
+msgstr ""
+
+msgid "Get started with Django"
+msgstr ""
+
+msgid "Django Community"
+msgstr ""
+
+msgid "Connect, get help, or contribute"
+msgstr ""
+
+#, python-format
+msgid "%(prog)s: error: %(message)s\n"
+msgstr ""

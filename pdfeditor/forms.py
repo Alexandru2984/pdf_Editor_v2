@@ -319,6 +319,32 @@ class ConvertToDocxForm(forms.Form):
     """No-fields form for the PDF → DOCX conversion (CSRF-only)."""
 
 
+class ReorderPagesForm(forms.Form):
+    """Form for reordering / deleting PDF pages.
+
+    ``page_order`` is a comma-separated list of 1-indexed page numbers in
+    the desired final order. Pages omitted from the list are deleted.
+    """
+
+    page_order = forms.CharField(widget=forms.HiddenInput(), required=True)
+
+    def clean_page_order(self):
+        raw = self.cleaned_data["page_order"].strip()
+        if not raw:
+            raise forms.ValidationError(_("You must keep at least one page."))
+        try:
+            order = [int(x.strip()) for x in raw.split(",") if x.strip()]
+        except ValueError:
+            raise forms.ValidationError(_("Invalid page order format."))
+        if not order:
+            raise forms.ValidationError(_("You must keep at least one page."))
+        if any(n < 1 for n in order):
+            raise forms.ValidationError(_("Page numbers must be 1 or greater."))
+        if len(set(order)) != len(order):
+            raise forms.ValidationError(_("Page order cannot contain duplicates."))
+        return order
+
+
 class WatermarkForm(forms.Form):
     """Form for adding watermark to PDF."""
 

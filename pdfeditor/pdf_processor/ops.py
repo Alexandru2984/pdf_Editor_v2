@@ -464,6 +464,58 @@ def convert_pdf_to_docx(pdf_path: str) -> tuple[str, bool]:
     return out_path, has_text
 
 
+def reorder_pages(pdf_path: str, page_order: list[int]) -> str:
+    """Produce a new PDF containing only the pages in ``page_order``.
+
+    ``page_order`` is a list of 1-indexed page numbers in the desired final
+    order. Pages omitted from the list are deleted; pages may not be
+    duplicated. The list must be non-empty.
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    if not page_order:
+        raise ValueError("Page order must contain at least one page")
+    if len(set(page_order)) != len(page_order):
+        raise ValueError("Page order cannot contain duplicates")
+
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    out_path = os.path.join(out_dir, f"{base}_reordered_{timestamp()}.pdf")
+
+    with fitz.open(pdf_path) as doc:
+        total = len(doc)
+        for n in page_order:
+            if n < 1 or n > total:
+                raise ValueError(f"Invalid page number: {n} (PDF has {total} pages)")
+
+        new_doc = fitz.open()
+        try:
+            for n in page_order:
+                new_doc.insert_pdf(doc, from_page=n - 1, to_page=n - 1)
+            new_doc.save(out_path, garbage=4, deflate=True, clean=True)
+        finally:
+            new_doc.close()
+
+    return out_path
+
+
+def render_page_thumbnail(pdf_path: str, page_number: int, max_width: int = 200) -> bytes:
+    """Render a single page as a PNG thumbnail. ``page_number`` is 1-indexed."""
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+
+    with fitz.open(pdf_path) as doc:
+        total = len(doc)
+        if page_number < 1 or page_number > total:
+            raise ValueError(f"Invalid page number: {page_number} (PDF has {total} pages)")
+        page = doc[page_number - 1]
+        rect = page.rect
+        zoom = max_width / rect.width if rect.width > 0 else 1.0
+        matrix = fitz.Matrix(zoom, zoom)
+        pix = page.get_pixmap(matrix=matrix, alpha=False)
+        return pix.tobytes("png")
+
+
 def _calculate_position(
     position: str,
     page_width: float,
