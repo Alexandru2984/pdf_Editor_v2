@@ -59,6 +59,7 @@ class ProcessedPDF(models.Model):
     KIND_PROTECT = "protect"
     KIND_SIGN = "sign"
     KIND_CONVERT = "convert"
+    KIND_REORDER = "reorder"
 
     KIND_CHOICES = [
         (KIND_FIND_REPLACE, "Find & Replace"),
@@ -73,6 +74,7 @@ class ProcessedPDF(models.Model):
         (KIND_PROTECT, "Password Protect"),
         (KIND_SIGN, "Digital Signature"),
         (KIND_CONVERT, "Convert to Word"),
+        (KIND_REORDER, "Reorder/Delete Pages"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

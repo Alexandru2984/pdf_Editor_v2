@@ -93,6 +93,13 @@
             <a href="{% url 'rotate' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="reorder">
+            <div class="card-icon">📑</div>
+            <h3>{% trans "Reorder & Delete Pages" %}</h3>
+            <p>{% trans "Drag pages to reorder, or remove the ones you don't need" %}</p>
+            <a href="{% url 'reorder' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="page-numbers">
             <div class="card-icon">🔢</div>
             <h3>{% trans "Add Page Numbers" %}</h3>
