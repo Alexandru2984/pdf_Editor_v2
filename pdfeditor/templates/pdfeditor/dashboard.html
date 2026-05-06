@@ -65,6 +65,13 @@
             <a href="{% url 'convert' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="to_images">
+            <div class="card-icon">🖼️</div>
+            <h3>{% trans "PDF to Images" %}</h3>
+            <p>{% trans "Export each page as PNG or JPG, packaged in a ZIP" %}</p>
+            <a href="{% url 'to_images' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="protect">
             <div class="card-icon">🔒</div>
             <h3>{% trans "Password Protect" %}</h3>

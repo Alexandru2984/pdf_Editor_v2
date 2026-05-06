@@ -1,0 +1,50 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Images Export Result" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header result-success-header">
+        <div class="result-success-icon">🖼️</div>
+        <h2>{% trans "PDF Exported to Images!" %}</h2>
+        <p>{% blocktrans count count=page_count %}Your ZIP contains {{ count }} image, ready to download.{% plural %}Your ZIP contains {{ count }} images, ready to download.{% endblocktrans %}</p>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="result-tip-box">
+            <strong>💡 {% trans "Tip:" %}</strong>
+            {% blocktrans with format=fmt|upper %}Each page is a separate {{ format }} file inside the ZIP, named in page order.{% endblocktrans %}
+        </div>
+
+        <div class="result-file-row">
+            <div class="result-file-icon">📦</div>
+            <div class="result-file-info">
+                <div class="result-file-name">{{ zip_filename }}</div>
+                <div class="result-file-meta">{{ size|filesizeformat }} · {% blocktrans count count=page_count %}{{ count }} image{% plural %}{{ count }} images{% endblocktrans %}</div>
+            </div>
+        </div>
+
+        <div class="result-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                ← {% trans "Dashboard" %}
+            </a>
+            <a href="{% url 'download_images' %}" class="btn btn-primary">
+                📥 {% trans "Download ZIP" %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .result-tip-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+        line-height: 1.5;
+    }
+</style>
+{% endblock %}

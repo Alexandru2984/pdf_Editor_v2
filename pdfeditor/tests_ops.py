@@ -4,6 +4,7 @@ import io
 import os
 import shutil
 import tempfile
+import zipfile
 
 import fitz
 from django.test import TestCase, override_settings
@@ -15,6 +16,7 @@ from .pdf_processor.ops import (
     add_watermark,
     compress_pdf,
     convert_pdf_to_docx,
+    convert_pdf_to_images,
     merge_pdfs,
     protect_pdf,
     render_page_thumbnail,
@@ -815,3 +817,82 @@ class RenderPageThumbnailTests(_MediaRootMixin, TestCase):
     def test_missing_file_raises(self):
         with self.assertRaises(ValueError):
             render_page_thumbnail("/no/such/file.pdf", 1)
+
+
+class ConvertPdfToImagesTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.path = _make_multipage_pdf(3)
+
+    def tearDown(self):
+        if os.path.exists(self.path):
+            os.remove(self.path)
+
+    def test_png_export_creates_zip_with_one_image_per_page(self):
+        zip_path, count = convert_pdf_to_images(self.path, fmt="png", dpi=72)
+        try:
+            self.assertEqual(count, 3)
+            self.assertTrue(zip_path.endswith(".zip"))
+            with zipfile.ZipFile(zip_path) as zf:
+                names = zf.namelist()
+                self.assertEqual(len(names), 3)
+                self.assertTrue(all(n.endswith(".png") for n in names))
+                # Page numbering is 1-indexed and zero-padded.
+                self.assertTrue(any("_page_001.png" in n for n in names))
+                # PNG magic.
+                self.assertTrue(zf.read(names[0]).startswith(b"\x89PNG\r\n\x1a\n"))
+        finally:
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+
+    def test_jpg_export_writes_jpeg_files(self):
+        zip_path, count = convert_pdf_to_images(self.path, fmt="jpg", dpi=72)
+        try:
+            self.assertEqual(count, 3)
+            with zipfile.ZipFile(zip_path) as zf:
+                names = zf.namelist()
+                self.assertTrue(all(n.endswith(".jpg") for n in names))
+                # JPEG starts with FF D8 FF.
+                self.assertTrue(zf.read(names[0]).startswith(b"\xff\xd8\xff"))
+        finally:
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+
+    def test_jpeg_alias_normalizes_to_jpg(self):
+        zip_path, _ = convert_pdf_to_images(self.path, fmt="jpeg", dpi=72)
+        try:
+            with zipfile.ZipFile(zip_path) as zf:
+                self.assertTrue(all(n.endswith(".jpg") for n in zf.namelist()))
+        finally:
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+
+    def test_unsupported_format_raises(self):
+        with self.assertRaises(ValueError):
+            convert_pdf_to_images(self.path, fmt="bmp")
+
+    def test_dpi_out_of_range_raises(self):
+        with self.assertRaises(ValueError):
+            convert_pdf_to_images(self.path, dpi=10)
+        with self.assertRaises(ValueError):
+            convert_pdf_to_images(self.path, dpi=900)
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            convert_pdf_to_images("/no/such/file.pdf")
+
+    def test_higher_dpi_produces_larger_image_dimensions(self):
+        low_zip, _ = convert_pdf_to_images(self.path, fmt="png", dpi=72)
+        high_zip, _ = convert_pdf_to_images(self.path, fmt="png", dpi=300)
+        try:
+            with zipfile.ZipFile(low_zip) as zf:
+                low_img = PILImage.open(io.BytesIO(zf.read(zf.namelist()[0])))
+                low_w, low_h = low_img.size
+            with zipfile.ZipFile(high_zip) as zf:
+                high_img = PILImage.open(io.BytesIO(zf.read(zf.namelist()[0])))
+                high_w, high_h = high_img.size
+            self.assertGreater(high_w, low_w)
+            self.assertGreater(high_h, low_h)
+        finally:
+            for p in (low_zip, high_zip):
+                if os.path.exists(p):
+                    os.remove(p)

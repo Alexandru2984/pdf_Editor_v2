@@ -1,0 +1,129 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "PDF to Images" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header">
+
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
+                📂 {% trans "Select PDF to Export:" %}
+            </label>
+            <select id="pdf-selector" onchange="window.location.href='{% url 'to_images' %}?pdf=' + encodeURIComponent(this.value)">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+            <p class="picker-hint">
+                💡 {% blocktrans with count=uploaded_pdfs|length %}You have {{ count }} PDFs uploaded. Switch anytime!{% endblocktrans %}
+            </p>
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="tool-page-title">🖼️ {% trans "PDF to Images" %}</h2>
+            <p class="tool-page-subtitle">
+                {% trans "Render every page as an image. Multi-page PDFs are bundled into a ZIP." %}
+            </p>
+            <div class="tool-info-bar">
+                <div>
+                    <div class="tool-info-label">{% trans "Current File:" %}</div>
+                    <div class="tool-info-value">{{ pdf_name }}</div>
+                </div>
+                <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview tool-info-bar-divider">
+                    👁️ {% trans "Preview" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="to-images-info-box">
+            <p>
+                <strong>ℹ️ {% trans "Tip:" %}</strong>
+                {% trans "Use PNG for diagrams, screenshots, or anything with sharp edges. Use JPG for photos and scans where smaller files matter more than pixel-perfect output." %}
+            </p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-group">
+                <label class="form-label">{{ form.fmt.label }}</label>
+                <div class="radio-group">
+                    {% for radio in form.fmt %}
+                    <label class="radio-option">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">{{ form.dpi.label }}</label>
+                <div class="radio-group">
+                    {% for radio in form.dpi %}
+                    <label class="radio-option">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                    ← {% trans "Back" %}
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    🖼️ {% trans "Export to Images" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .to-images-info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 1rem 1.25rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .alert-box--error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+    .form-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .radio-option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}

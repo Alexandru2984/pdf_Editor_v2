@@ -19,6 +19,7 @@ from .basic_ops import (
     convert_view,
     download_compressed_view,
     download_converted_view,
+    download_images_view,
     download_merged_view,
     download_protected_view,
     download_signed_view,
@@ -32,6 +33,8 @@ from .basic_ops import (
     sign_view,
     split_result_view,
     split_view,
+    to_images_result_view,
+    to_images_view,
     verify_signature_view,
 )
 from .edit import (
@@ -99,6 +102,9 @@ __all__ = [
     "convert_view",
     "convert_result_view",
     "download_converted_view",
+    "to_images_view",
+    "to_images_result_view",
+    "download_images_view",
     "protect_view",
     "protect_result_view",
     "download_protected_view",

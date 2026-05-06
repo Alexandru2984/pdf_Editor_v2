@@ -319,6 +319,35 @@ class ConvertToDocxForm(forms.Form):
     """No-fields form for the PDF → DOCX conversion (CSRF-only)."""
 
 
+class PdfToImagesForm(forms.Form):
+    """Form for the PDF → images export (one image per page, packaged as ZIP)."""
+
+    FORMAT_CHOICES = [
+        ("png", _("PNG (lossless, larger files)")),
+        ("jpg", _("JPG (smaller files, good for photos/scans)")),
+    ]
+
+    DPI_CHOICES = [
+        (72, _("Low (72 DPI — screen)")),
+        (150, _("Medium (150 DPI — recommended)")),
+        (300, _("High (300 DPI — print quality)")),
+    ]
+
+    fmt = forms.ChoiceField(
+        choices=FORMAT_CHOICES,
+        initial="png",
+        widget=forms.RadioSelect,
+        label=_("Image format"),
+    )
+    dpi = forms.TypedChoiceField(
+        choices=DPI_CHOICES,
+        coerce=int,
+        initial=150,
+        widget=forms.RadioSelect,
+        label=_("Resolution"),
+    )
+
+
 class ReorderPagesForm(forms.Form):
     """Form for reordering / deleting PDF pages.
 

@@ -357,6 +357,56 @@ class ConvertViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 302)
 
 
+class ToImagesViewTests(_ViewTestBase):
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("to_images"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_renders(self):
+        self.upload()
+        resp = self.client.get(reverse("to_images"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_full_to_images_workflow_png(self):
+        self.upload(num_pages=2)
+        resp = self.client.post(reverse("to_images"), {"fmt": "png", "dpi": 72})
+        self.assertEqual(resp.status_code, 302)
+
+        result = self.client.get(reverse("to_images_result"))
+        self.assertEqual(result.status_code, 200)
+
+        download = self.client.get(reverse("download_images"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
+
+        from .models import ProcessedPDF
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_TO_IMAGES)
+        self.assertTrue(latest.path.endswith(".zip"))
+
+    def test_full_to_images_workflow_jpg(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(reverse("to_images"), {"fmt": "jpg", "dpi": 150})
+        self.assertEqual(resp.status_code, 302)
+        result = self.client.get(reverse("to_images_result"))
+        self.assertEqual(result.status_code, 200)
+
+    def test_invalid_format_shows_error(self):
+        self.upload()
+        resp = self.client.post(reverse("to_images"), {"fmt": "bmp", "dpi": 150})
+        # Form validation rejects → re-render with form errors (200).
+        self.assertEqual(resp.status_code, 200)
+
+    def test_to_images_result_without_session_redirects(self):
+        resp = self.client.get(reverse("to_images_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_images"))
+        self.assertEqual(resp.status_code, 302)
+
+
 class ReorderViewTests(_ViewTestBase):
     def test_get_without_upload_redirects(self):
         resp = self.client.get(reverse("reorder"))
@@ -999,7 +1049,7 @@ class HistoryViewTests(_ViewTestBase):
         self.assertTrue(ProcessedPDF.objects.filter(id=other.id).exists())
 
 
-class VerifySignatureViewTests(TestCase):
+class VerifySignatureViewTests(_ViewTestBase):
     def setUp(self):
         self.client = Client()
 
