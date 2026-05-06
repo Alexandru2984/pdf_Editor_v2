@@ -32,9 +32,9 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-pdfeditor}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-pdfeditor}
       SENTRY_DSN: ${SENTRY_DSN:-}
     volumes:
-      - media:/app/media
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
     restart: unless-stopped
 
 volumes:
-  media:
   pgdata:

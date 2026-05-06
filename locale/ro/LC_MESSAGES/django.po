@@ -2922,3 +2922,78 @@ msgstr ""
 #, python-format
 msgid "%(prog)s: error: %(message)s\n"
 msgstr ""
+
+# PDF → Images
+msgid "PDF to Images"
+msgstr "PDF în imagini"
+
+msgid "Export each page as PNG or JPG, packaged in a ZIP"
+msgstr "Exportă fiecare pagină ca PNG sau JPG, împachetate într-un ZIP"
+
+msgid "Select PDF to Export:"
+msgstr "Selectează PDF-ul pentru export:"
+
+msgid "Render every page as an image. Multi-page PDFs are bundled into a ZIP."
+msgstr "Randează fiecare pagină ca imagine. PDF-urile cu mai multe pagini sunt împachetate într-un ZIP."
+
+msgid "Use PNG for diagrams, screenshots, or anything with sharp edges. Use JPG for photos and scans where smaller files matter more than pixel-perfect output."
+msgstr "Folosește PNG pentru diagrame, screenshot-uri sau orice cu margini clare. Folosește JPG pentru fotografii și scanări, când fișierele mai mici contează mai mult decât perfecțiunea pixelilor."
+
+msgid "PNG (lossless, larger files)"
+msgstr "PNG (fără pierderi, fișiere mai mari)"
+
+msgid "JPG (smaller files, good for photos/scans)"
+msgstr "JPG (fișiere mai mici, bun pentru fotografii/scanări)"
+
+msgid "Low (72 DPI — screen)"
+msgstr "Joasă (72 DPI — pentru ecran)"
+
+msgid "Medium (150 DPI — recommended)"
+msgstr "Medie (150 DPI — recomandat)"
+
+msgid "High (300 DPI — print quality)"
+msgstr "Înaltă (300 DPI — calitate de tipar)"
+
+msgid "Image format"
+msgstr "Format imagine"
+
+msgid "Resolution"
+msgstr "Rezoluție"
+
+msgid "Export to Images"
+msgstr "Exportă în imagini"
+
+msgid "Images Export Result"
+msgstr "Rezultat export imagini"
+
+msgid "PDF Exported to Images!"
+msgstr "PDF exportat în imagini!"
+
+msgid "Image bundle not found."
+msgstr "Arhiva cu imagini nu a fost găsită."
+
+msgid "Error exporting PDF to images: %(err)s"
+msgstr "Eroare la exportul PDF-ului în imagini: %(err)s"
+
+#, python-format
+msgid "PDF exported to %(count)s image(s)!"
+msgstr "PDF exportat în %(count)s imagine/imagini!"
+
+msgid "Your ZIP contains %(count)s image, ready to download."
+msgid_plural "Your ZIP contains %(count)s images, ready to download."
+msgstr[0] "Arhiva ZIP conține %(count)s imagine, gata de descărcare."
+msgstr[1] "Arhiva ZIP conține %(count)s imagini, gata de descărcare."
+msgstr[2] "Arhiva ZIP conține %(count)s de imagini, gata de descărcare."
+
+#, python-format
+msgid "Each page is a separate %(format)s file inside the ZIP, named in page order."
+msgstr "Fiecare pagină e un fișier %(format)s separat în ZIP, numite în ordinea paginilor."
+
+msgid "%(count)s image"
+msgid_plural "%(count)s images"
+msgstr[0] "%(count)s imagine"
+msgstr[1] "%(count)s imagini"
+msgstr[2] "%(count)s de imagini"
+
+msgid "Download ZIP"
+msgstr "Descarcă ZIP"

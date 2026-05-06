@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import logging
 import os
+import zipfile
 
 import fitz
 from PIL import Image as PILImage
@@ -497,6 +498,49 @@ def reorder_pages(pdf_path: str, page_order: list[int]) -> str:
             new_doc.close()
 
     return out_path
+
+
+def convert_pdf_to_images(pdf_path: str, fmt: str = "png", dpi: int = 150) -> tuple[str, int]:
+    """Render every page as an image and bundle the results into a ZIP.
+
+    ``fmt`` is one of ``"png"`` or ``"jpg"``. ``dpi`` controls render resolution
+    (72 = screen, 150 = balanced, 300 = print). Returns ``(zip_path, page_count)``.
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    fmt = (fmt or "png").lower()
+    if fmt not in ("png", "jpg", "jpeg"):
+        raise ValueError(f"Unsupported image format: {fmt}")
+    if fmt == "jpeg":
+        fmt = "jpg"
+    if dpi < 36 or dpi > 600:
+        raise ValueError("dpi must be between 36 and 600")
+
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    zip_path = os.path.join(out_dir, f"{base}_images_{fmt}_{dpi}dpi_{timestamp()}.zip")
+    zoom = dpi / 72.0
+    matrix = fitz.Matrix(zoom, zoom)
+
+    page_count = 0
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("Cannot render an encrypted PDF — remove the password first")
+        with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for idx, page in enumerate(doc, 1):
+                pix = page.get_pixmap(matrix=matrix, alpha=(fmt == "png"))
+                if fmt == "png":
+                    data = pix.tobytes("png")
+                else:
+                    # PyMuPDF can emit JPEG directly via Pillow.
+                    img = PILImage.frombytes("RGB", (pix.width, pix.height), pix.samples)
+                    buf = io.BytesIO()
+                    img.save(buf, format="JPEG", quality=90, optimize=True)
+                    data = buf.getvalue()
+                zf.writestr(f"{base}_page_{idx:03d}.{fmt}", data)
+                page_count += 1
+
+    return zip_path, page_count
 
 
 def render_page_thumbnail(pdf_path: str, page_number: int, max_width: int = 200) -> bytes:

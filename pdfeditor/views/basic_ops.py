@@ -13,6 +13,7 @@ from ..forms import (
     ConvertToDocxForm,
     GenerateCertForm,
     MergePDFForm,
+    PdfToImagesForm,
     ProtectPDFForm,
     SignPDFForm,
     SplitPDFForm,
@@ -22,6 +23,7 @@ from ..models import ProcessedPDF, TrustAnchor
 from ..pdf_processor import (
     compress_pdf,
     convert_pdf_to_docx,
+    convert_pdf_to_images,
     merge_pdfs,
     protect_pdf,
     sign_pdf,
@@ -621,6 +623,90 @@ def convert_result_view(request):
 
 def download_converted_view(request):
     output = _fetch_output(request, "converted_docx_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+
+
+# ---------- PDF → images ----------
+
+
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
+def to_images_view(request):
+    selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
+    if early:
+        return early
+
+    pdf_path = selected_pdf.path
+
+    if request.method == "POST":
+        form = PdfToImagesForm(request.POST)
+        if form.is_valid():
+            try:
+                output_path, page_count = convert_pdf_to_images(
+                    pdf_path,
+                    fmt=form.cleaned_data["fmt"],
+                    dpi=form.cleaned_data["dpi"],
+                )
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_TO_IMAGES,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session["to_images_id"] = str(output.id)
+                request.session["to_images_count"] = page_count
+                request.session["to_images_fmt"] = form.cleaned_data["fmt"]
+                messages.success(
+                    request,
+                    _("PDF exported to %(count)s image(s)!") % {"count": page_count},
+                )
+                return redirect("to_images_result")
+            except ValueError as e:
+                messages.error(request, _("Error: %(err)s") % {"err": e})
+            except Exception as e:
+                messages.error(request, _("Error exporting PDF to images: %(err)s") % {"err": e})
+    else:
+        form = PdfToImagesForm()
+
+    return render(
+        request,
+        "pdfeditor/to_images.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+        },
+    )
+
+
+def to_images_result_view(request):
+    output = _fetch_output(request, "to_images_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("Image bundle not found."))
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "pdfeditor/to_images_result.html",
+        {
+            "zip_filename": output.name,
+            "size": os.path.getsize(output.path),
+            "page_count": request.session.get("to_images_count", 0),
+            "fmt": request.session.get("to_images_fmt", "png"),
+        },
+    )
+
+
+def download_images_view(request):
+    output = _fetch_output(request, "to_images_id")
     if not output:
         messages.error(request, _("File not found."))
         return redirect("dashboard")

@@ -3,17 +3,36 @@ Tests pentru aplicația PDF Editor.
 """
 
 import os
+import shutil
 import tempfile
 
 import fitz  # PyMuPDF
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from .pdf_processor import check_pdf_has_text, find_and_replace_text, parse_page_range
 
 
-class PDFProcessorTests(TestCase):
+class _MediaRootIsolated:
+    """Mixin: override MEDIA_ROOT to a per-class tempdir so ops that write
+    under MEDIA_ROOT/processed/ don't touch the production directory."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._media_tmp = tempfile.mkdtemp(prefix="pdfedit_test_media_")
+        cls._media_override = override_settings(MEDIA_ROOT=cls._media_tmp)
+        cls._media_override.enable()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._media_override.disable()
+        shutil.rmtree(cls._media_tmp, ignore_errors=True)
+        super().tearDownClass()
+
+
+class PDFProcessorTests(_MediaRootIsolated, TestCase):
     """Teste pentru funcțiile de procesare PDF."""
 
     def setUp(self):
@@ -141,7 +160,7 @@ class PDFProcessorTests(TestCase):
             os.remove(output_path)
 
 
-class ViewTests(TestCase):
+class ViewTests(_MediaRootIsolated, TestCase):
     """Teste pentru views."""
 
     def setUp(self):
