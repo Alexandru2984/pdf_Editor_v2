@@ -500,6 +500,99 @@ def reorder_pages(pdf_path: str, page_order: list[int]) -> str:
     return out_path
 
 
+PAGE_SIZES_PT: dict[str, tuple[float, float]] = {
+    # 1 inch = 72 points
+    "a4": (595.0, 842.0),       # 210 x 297 mm
+    "letter": (612.0, 792.0),   # 8.5 x 11 in
+}
+
+
+def convert_images_to_pdf(
+    image_paths: list[str],
+    page_size: str = "auto",
+    fit_mode: str = "fit",
+    output_name: str | None = None,
+) -> tuple[str, int]:
+    """Build a single PDF with one image per page.
+
+    ``page_size`` is ``"auto"`` (page matches image dimensions), or ``"a4"`` /
+    ``"letter"`` (fixed page; orientation chosen automatically per image based
+    on aspect ratio). ``fit_mode`` is ``"fit"`` (preserve aspect ratio,
+    letterbox on white) or ``"fill"`` (stretch to fill page, may distort).
+
+    Returns ``(output_path, image_count)``.
+    """
+    if not image_paths:
+        raise ValueError("At least one image is required")
+    page_size = (page_size or "auto").lower()
+    if page_size not in ("auto", "a4", "letter"):
+        raise ValueError(f"Unsupported page size: {page_size}")
+    fit_mode = (fit_mode or "fit").lower()
+    if fit_mode not in ("fit", "fill"):
+        raise ValueError(f"Unsupported fit mode: {fit_mode}")
+
+    for p in image_paths:
+        if not os.path.exists(p):
+            raise ValueError(f"Image not found: {p}")
+
+    out_dir = processed_dir()
+    name = output_name or f"images_to_pdf_{timestamp()}"
+    out_path = os.path.join(out_dir, f"{name}.pdf")
+
+    out = fitz.open()
+    try:
+        for img_path in image_paths:
+            try:
+                im = PILImage.open(img_path)
+            except Exception as exc:
+                raise ValueError(f"Could not open image: {os.path.basename(img_path)} ({exc})") from exc
+
+            # Flatten alpha onto a white background and normalise to RGB so
+            # PyMuPDF doesn't refuse exotic modes (P, RGBA, LA, ...).
+            if im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
+                bg = PILImage.new("RGB", im.size, (255, 255, 255))
+                rgba = im.convert("RGBA")
+                bg.paste(rgba, mask=rgba.split()[3])
+                im = bg
+            elif im.mode != "RGB":
+                im = im.convert("RGB")
+
+            img_w_px, img_h_px = im.size
+
+            if page_size == "auto":
+                page_w, page_h = float(img_w_px), float(img_h_px)
+            else:
+                base_w, base_h = PAGE_SIZES_PT[page_size]
+                # Auto-orient page: landscape image -> landscape page.
+                if img_w_px > img_h_px:
+                    page_w, page_h = max(base_w, base_h), min(base_w, base_h)
+                else:
+                    page_w, page_h = min(base_w, base_h), max(base_w, base_h)
+
+            page = out.new_page(width=page_w, height=page_h)
+
+            if fit_mode == "fill" or page_size == "auto":
+                rect = fitz.Rect(0, 0, page_w, page_h)
+            else:
+                # Preserve aspect ratio; centre with letterbox on white.
+                scale = min(page_w / img_w_px, page_h / img_h_px)
+                draw_w = img_w_px * scale
+                draw_h = img_h_px * scale
+                offset_x = (page_w - draw_w) / 2
+                offset_y = (page_h - draw_h) / 2
+                rect = fitz.Rect(offset_x, offset_y, offset_x + draw_w, offset_y + draw_h)
+
+            buf = io.BytesIO()
+            im.save(buf, format="JPEG", quality=92, optimize=True)
+            page.insert_image(rect, stream=buf.getvalue())
+
+        out.save(out_path, garbage=4, deflate=True, clean=True)
+    finally:
+        out.close()
+
+    return out_path, len(image_paths)
+
+
 def convert_pdf_to_images(pdf_path: str, fmt: str = "png", dpi: int = 150) -> tuple[str, int]:
     """Render every page as an image and bundle the results into a ZIP.
 

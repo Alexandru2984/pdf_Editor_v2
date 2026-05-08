@@ -2997,3 +2997,118 @@ msgstr[2] "%(count)s de imagini"
 
 msgid "Download ZIP"
 msgstr "Descarcă ZIP"
+
+# Images → PDF
+msgid "Images to PDF"
+msgstr "Imagini în PDF"
+
+msgid "Combine PNG, JPG, or TIFF images into a single PDF"
+msgstr "Combină imagini PNG, JPG sau TIFF într-un singur PDF"
+
+msgid "Combine PNG, JPG, BMP, TIFF, WEBP, or GIF images into a single PDF. Drag thumbnails to reorder."
+msgstr "Combină imagini PNG, JPG, BMP, TIFF, WEBP sau GIF într-un singur PDF. Trage miniaturile pentru a le reordona."
+
+#, python-format
+msgid "You can add up to %(max)s images, %(mb)s MB each. Use \"Auto\" page size for image-native dimensions, or A4/Letter for printable output."
+msgstr "Poți adăuga până la %(max)s imagini, %(mb)s MB fiecare. Folosește dimensiunea „Auto” pentru dimensiunile native ale imaginilor sau A4/Letter pentru rezultat tipăribil."
+
+msgid "Auto (page matches image size)"
+msgstr "Auto (pagina ia dimensiunea imaginii)"
+
+msgid "A4 (210 × 297 mm)"
+msgstr "A4 (210 × 297 mm)"
+
+msgid "Letter (8.5 × 11 in)"
+msgstr "Letter (8.5 × 11 in)"
+
+msgid "Fit (preserve aspect ratio, white letterbox)"
+msgstr "Încadrare (păstrează raportul, fundal alb)"
+
+msgid "Fill (stretch to fill page, may distort)"
+msgstr "Umplere (întinde pe toată pagina, poate distorsiona)"
+
+msgid "Page size"
+msgstr "Dimensiunea paginii"
+
+msgid "Image fit"
+msgstr "Modul de încadrare"
+
+msgid "Images"
+msgstr "Imagini"
+
+msgid "Add Images"
+msgstr "Adaugă imagini"
+
+msgid "No images selected"
+msgstr "Nicio imagine selectată"
+
+msgid "1 image selected"
+msgstr "1 imagine selectată"
+
+msgid "images selected"
+msgstr "imagini selectate"
+
+msgid "Click \"Add Images\" above to start."
+msgstr "Apasă „Adaugă imagini” mai sus pentru a începe."
+
+msgid "Build PDF"
+msgstr "Construiește PDF"
+
+msgid "Add at least one image first."
+msgstr "Adaugă mai întâi cel puțin o imagine."
+
+msgid "Remove this image"
+msgstr "Elimină această imagine"
+
+#, python-format
+msgid "Too many images — only the first %(max)s will be used."
+msgstr "Prea multe imagini — vor fi folosite doar primele %(max)s."
+
+#, python-format
+msgid "Too many images — limit is %(max)d per export."
+msgstr "Prea multe imagini — limita este de %(max)d per export."
+
+#, python-format
+msgid "Skipped \"%(name)s\" — unsupported image format."
+msgstr "S-a omis „%(name)s” — format imagine nesuportat."
+
+#, python-format
+msgid "Skipped \"%(name)s\" — exceeds %(mb)d MB limit."
+msgstr "S-a omis „%(name)s” — depășește limita de %(mb)d MB."
+
+msgid "Please select at least one image."
+msgstr "Selectează cel puțin o imagine."
+
+msgid "No valid images were uploaded."
+msgstr "Nu au fost încărcate imagini valide."
+
+msgid "Error building PDF from images: %(err)s"
+msgstr "Eroare la construirea PDF-ului din imagini: %(err)s"
+
+msgid "Built PDF not found."
+msgstr "PDF-ul construit nu a fost găsit."
+
+#, python-format
+msgid "PDF built from %(count)s image(s)!"
+msgstr "PDF construit din %(count)s imagine/imagini!"
+
+msgid "Images to PDF Result"
+msgstr "Rezultat imagini în PDF"
+
+msgid "PDF Built from Images!"
+msgstr "PDF construit din imagini!"
+
+msgid "Combined %(count)s image into a single PDF."
+msgid_plural "Combined %(count)s images into a single PDF."
+msgstr[0] "Au fost combinate %(count)s imagine într-un singur PDF."
+msgstr[1] "Au fost combinate %(count)s imagini într-un singur PDF."
+msgstr[2] "Au fost combinate %(count)s de imagini într-un singur PDF."
+
+msgid "%(count)s page"
+msgid_plural "%(count)s pages"
+msgstr[0] "%(count)s pagină"
+msgstr[1] "%(count)s pagini"
+msgstr[2] "%(count)s de pagini"
+
+msgid "Download PDF"
+msgstr "Descarcă PDF"

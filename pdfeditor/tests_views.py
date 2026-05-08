@@ -407,6 +407,150 @@ class ToImagesViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 302)
 
 
+def _img_upload(name, size=(40, 30), color=(200, 50, 50, 255), fmt="PNG", mode="RGBA"):
+    img = PILImage.new(mode, size, color if mode == "RGBA" else color[:3])
+    buf = io.BytesIO()
+    img.save(buf, format=fmt)
+    content_type = "image/png" if fmt == "PNG" else "image/jpeg"
+    return SimpleUploadedFile(name, buf.getvalue(), content_type=content_type)
+
+
+class ImagesToPdfViewTests(_ViewTestBase):
+    def test_get_renders(self):
+        resp = self.client.get(reverse("images_to_pdf"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_full_workflow_single_png_auto(self):
+        resp = self.client.post(
+            reverse("images_to_pdf"),
+            {
+                "page_size": "auto",
+                "fit_mode": "fit",
+                "images_order": "",
+                "images": [_img_upload("a.png")],
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+
+        result = self.client.get(reverse("images_to_pdf_result"))
+        self.assertEqual(result.status_code, 200)
+
+        download = self.client.get(reverse("download_images_to_pdf"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
+
+        from .models import ProcessedPDF
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_IMAGES_TO_PDF)
+        self.assertTrue(latest.path.endswith(".pdf"))
+
+    def test_full_workflow_multiple_images_a4(self):
+        resp = self.client.post(
+            reverse("images_to_pdf"),
+            {
+                "page_size": "a4",
+                "fit_mode": "fit",
+                "images_order": "",
+                "images": [
+                    _img_upload("a.png"),
+                    _img_upload("b.jpg", fmt="JPEG", mode="RGB"),
+                    _img_upload("c.png", size=(80, 60), color=(0, 100, 200, 255)),
+                ],
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        result = self.client.get(reverse("images_to_pdf_result"))
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(self.client.session.get("images_to_pdf_count"), 3)
+
+    def test_custom_order_applied(self):
+        resp = self.client.post(
+            reverse("images_to_pdf"),
+            {
+                "page_size": "auto",
+                "fit_mode": "fit",
+                "images_order": "2,0,1",
+                "images": [
+                    _img_upload("first.png"),
+                    _img_upload("second.png"),
+                    _img_upload("third.png"),
+                ],
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(self.client.session.get("images_to_pdf_count"), 3)
+
+    def test_no_images_shows_error(self):
+        resp = self.client.post(
+            reverse("images_to_pdf"),
+            {"page_size": "auto", "fit_mode": "fit", "images_order": ""},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("images_to_pdf_id", self.client.session)
+
+    def test_unsupported_extension_skipped(self):
+        bogus = SimpleUploadedFile("x.txt", b"not an image", content_type="text/plain")
+        resp = self.client.post(
+            reverse("images_to_pdf"),
+            {
+                "page_size": "auto",
+                "fit_mode": "fit",
+                "images_order": "",
+                "images": [bogus],
+            },
+        )
+        # Only invalid file → no valid images → re-render (200), no session output.
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("images_to_pdf_id", self.client.session)
+
+    def test_invalid_page_size_rejected(self):
+        resp = self.client.post(
+            reverse("images_to_pdf"),
+            {
+                "page_size": "legal",
+                "fit_mode": "fit",
+                "images_order": "",
+                "images": [_img_upload("a.png")],
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("images_to_pdf_id", self.client.session)
+
+    def test_invalid_fit_mode_rejected(self):
+        resp = self.client.post(
+            reverse("images_to_pdf"),
+            {
+                "page_size": "auto",
+                "fit_mode": "stretch",
+                "images_order": "",
+                "images": [_img_upload("a.png")],
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("images_to_pdf_id", self.client.session)
+
+    def test_letter_fill_mode_works(self):
+        resp = self.client.post(
+            reverse("images_to_pdf"),
+            {
+                "page_size": "letter",
+                "fit_mode": "fill",
+                "images_order": "",
+                "images": [_img_upload("a.png", size=(100, 80))],
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+
+    def test_result_without_session_redirects(self):
+        resp = self.client.get(reverse("images_to_pdf_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_images_to_pdf"))
+        self.assertEqual(resp.status_code, 302)
+
+
 class ReorderViewTests(_ViewTestBase):
     def test_get_without_upload_redirects(self):
         resp = self.client.get(reverse("reorder"))
