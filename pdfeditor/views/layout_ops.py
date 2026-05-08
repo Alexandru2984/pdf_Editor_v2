@@ -11,15 +11,17 @@ from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_GET
 
-from ..forms import PageNumbersForm, ReorderPagesForm, RotatePagesForm, WatermarkForm
+from ..forms import CropPagesForm, PageNumbersForm, ReorderPagesForm, RotatePagesForm, WatermarkForm
 from ..models import ProcessedPDF, UploadedPDF
 from ..pdf_processor import (
     add_page_numbers,
     add_watermark,
+    crop_pages,
     render_page_thumbnail,
     reorder_pages,
     rotate_pages,
 )
+from ..ratelimiting import auth_aware_ratelimit
 from ._common import (
     attachment_response,
     get_pdf_by_id,
@@ -404,3 +406,93 @@ def page_thumbnail_view(request, pdf_id, page_number):
     response = HttpResponse(png, content_type="image/png")
     response["Cache-Control"] = "private, max-age=3600"
     return response
+
+
+# ---------- Crop pages ----------
+
+
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
+def crop_view(request):
+    selected_pdf, uploaded_pdfs, early = _require_pdf(request)
+    if early:
+        return early
+
+    pdf_path = selected_pdf.path
+
+    page_count = 0
+    try:
+        with fitz.open(pdf_path) as doc:
+            page_count = len(doc)
+    except Exception:
+        page_count = 0
+
+    if request.method == "POST":
+        form = CropPagesForm(request.POST)
+        if form.is_valid():
+            try:
+                output_path = crop_pages(
+                    pdf_path,
+                    top=float(form.cleaned_data.get("top") or 0),
+                    right=float(form.cleaned_data.get("right") or 0),
+                    bottom=float(form.cleaned_data.get("bottom") or 0),
+                    left=float(form.cleaned_data.get("left") or 0),
+                    page_range=form.cleaned_data.get("page_range") or None,
+                )
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_CROP,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session["cropped_pdf_id"] = str(output.id)
+                messages.success(request, _("Pages cropped successfully!"))
+                return redirect("crop_result")
+            except ValueError as e:
+                messages.error(request, _("Error: %(err)s") % {"err": e})
+            except Exception as e:
+                messages.error(request, _("Error cropping pages: %(err)s") % {"err": e})
+    else:
+        form = CropPagesForm()
+
+    return render(
+        request,
+        "pdfeditor/crop.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_id": selected_pdf.id,
+            "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
+            "page_count": page_count,
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+        },
+    )
+
+
+def crop_result_view(request):
+    output = _fetch_output(request, "cropped_pdf_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("Cropped file not found."))
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "pdfeditor/crop_result.html",
+        {
+            "pdf_filename": output.name,
+            "size": os.path.getsize(output.path),
+            "pdf_path_relative": os.path.relpath(output.path, settings.MEDIA_ROOT),
+        },
+    )
+
+
+def download_cropped_view(request):
+    output = _fetch_output(request, "cropped_pdf_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")

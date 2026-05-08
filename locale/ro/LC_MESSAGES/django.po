@@ -3254,3 +3254,74 @@ msgstr "Parolă incorectă"
 
 msgid "Password is required"
 msgstr "Parola este obligatorie"
+
+# Crop pages
+msgid "Crop Pages"
+msgstr "Decupează paginile"
+
+msgid "Trim margins from PDF pages by percent or specific page range"
+msgstr "Taie marginile paginilor PDF în procente sau pe un interval de pagini"
+
+msgid "Crop PDF Pages"
+msgstr "Decupează paginile PDF"
+
+msgid "Crop PDF"
+msgstr "Decupează PDF"
+
+msgid "How it works:"
+msgstr "Cum funcționează:"
+
+msgid "Margins are percentages of the page size. The preview shows page 1 — the same crop is applied to every page in the range."
+msgstr "Marginile sunt procente din dimensiunea paginii. Previzualizarea arată pagina 1 — aceeași decupare se aplică tuturor paginilor din interval."
+
+msgid "Top margin (%)"
+msgstr "Margine sus (%)"
+
+msgid "Right margin (%)"
+msgstr "Margine dreapta (%)"
+
+msgid "Bottom margin (%)"
+msgstr "Margine jos (%)"
+
+msgid "Left margin (%)"
+msgstr "Margine stânga (%)"
+
+msgid "Page Range (Optional)"
+msgstr "Interval de pagini (opțional)"
+
+msgid "Leave empty to crop all pages, or specify like: 1-3,5,7-9"
+msgstr "Lasă gol pentru a decupa toate paginile sau specifică precum: 1-3,5,7-9"
+
+msgid "e.g. 1-3,5,7-9 or leave empty for all"
+msgstr "ex. 1-3,5,7-9 sau lasă gol pentru toate"
+
+msgid "Page 1 preview"
+msgstr "Previzualizare pagina 1"
+
+msgid "Live preview — kept area is highlighted"
+msgstr "Previzualizare live — zona păstrată este evidențiată"
+
+msgid "Set at least one margin greater than zero."
+msgstr "Setează cel puțin o margine mai mare ca zero."
+
+msgid "Pages cropped successfully!"
+msgstr "Pagini decupate cu succes!"
+
+#, python-format
+msgid "Error cropping pages: %(err)s"
+msgstr "Eroare la decuparea paginilor: %(err)s"
+
+msgid "Cropped file not found."
+msgstr "Fișierul decupat nu a fost găsit."
+
+msgid "Pages Cropped"
+msgstr "Pagini decupate"
+
+msgid "Pages Cropped!"
+msgstr "Pagini decupate!"
+
+msgid "Your PDF has been cropped to the requested margins."
+msgstr "PDF-ul tău a fost decupat la marginile cerute."
+
+msgid "Cannot crop an encrypted PDF — remove the password first"
+msgstr "Nu se poate decupa un PDF criptat — elimină mai întâi parola"

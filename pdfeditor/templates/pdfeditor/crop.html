@@ -1,0 +1,243 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Crop PDF Pages" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 920px;">
+    <div class="preview-header">
+
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
+                📂 {% trans "Select PDF:" %}
+            </label>
+            <select id="pdf-selector" onchange="window.location.href='{% url 'crop' %}?pdf=' + encodeURIComponent(this.value)">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="tool-page-title">✂️ {% trans "Crop PDF Pages" %}</h2>
+            <p class="tool-page-subtitle">
+                {% blocktrans with name=pdf_name count=page_count %}<strong>{{ name }}</strong> · {{ count }} pages{% endblocktrans %}
+            </p>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="crop-info-box">
+            <p>
+                <strong>ℹ️ {% trans "How it works:" %}</strong>
+                {% trans "Margins are percentages of the page size. The preview shows page 1 — the same crop is applied to every page in the range." %}
+            </p>
+        </div>
+
+        <form method="post" id="crop-form" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="crop-grid">
+                <div class="crop-preview-wrap">
+                    {% if pdf_id and page_count %}
+                    <div class="crop-preview" id="crop-preview">
+                        <img src="{% url 'page_thumbnail' pdf_id=pdf_id page_number=1 %}" alt="{% trans 'Page 1 preview' %}">
+                        <div class="crop-shade crop-shade-top" id="shade-top"></div>
+                        <div class="crop-shade crop-shade-bottom" id="shade-bottom"></div>
+                        <div class="crop-shade crop-shade-left" id="shade-left"></div>
+                        <div class="crop-shade crop-shade-right" id="shade-right"></div>
+                    </div>
+                    {% endif %}
+                    <p class="crop-preview-caption">{% trans "Live preview — kept area is highlighted" %}</p>
+                </div>
+
+                <div class="crop-controls">
+                    <div class="crop-margin-row">
+                        <label for="{{ form.top.id_for_label }}">{{ form.top.label }}</label>
+                        {{ form.top }}
+                    </div>
+                    {% if form.top.errors %}<div class="form-error">{{ form.top.errors }}</div>{% endif %}
+
+                    <div class="crop-margin-row">
+                        <label for="{{ form.bottom.id_for_label }}">{{ form.bottom.label }}</label>
+                        {{ form.bottom }}
+                    </div>
+                    {% if form.bottom.errors %}<div class="form-error">{{ form.bottom.errors }}</div>{% endif %}
+
+                    <div class="crop-margin-row">
+                        <label for="{{ form.left.id_for_label }}">{{ form.left.label }}</label>
+                        {{ form.left }}
+                    </div>
+                    {% if form.left.errors %}<div class="form-error">{{ form.left.errors }}</div>{% endif %}
+
+                    <div class="crop-margin-row">
+                        <label for="{{ form.right.id_for_label }}">{{ form.right.label }}</label>
+                        {{ form.right }}
+                    </div>
+                    {% if form.right.errors %}<div class="form-error">{{ form.right.errors }}</div>{% endif %}
+
+                    <div class="crop-form-row">
+                        <label for="{{ form.page_range.id_for_label }}">{{ form.page_range.label }}</label>
+                        {{ form.page_range }}
+                        {% if form.page_range.help_text %}<small class="form-help">{{ form.page_range.help_text }}</small>{% endif %}
+                        {% if form.page_range.errors %}<div class="form-error">{{ form.page_range.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">← {% trans "Back" %}</a>
+                <button type="submit" class="btn btn-primary">✂️ {% trans "Crop PDF" %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    const top = document.getElementById("{{ form.top.id_for_label }}");
+    const bottom = document.getElementById("{{ form.bottom.id_for_label }}");
+    const left = document.getElementById("{{ form.left.id_for_label }}");
+    const right = document.getElementById("{{ form.right.id_for_label }}");
+    const shadeTop = document.getElementById("shade-top");
+    const shadeBottom = document.getElementById("shade-bottom");
+    const shadeLeft = document.getElementById("shade-left");
+    const shadeRight = document.getElementById("shade-right");
+
+    if (!shadeTop) return;
+
+    function clamp(v) {
+        const n = parseFloat(v);
+        if (isNaN(n) || n < 0) return 0;
+        if (n > 49) return 49;
+        return n;
+    }
+
+    function refresh() {
+        shadeTop.style.height = clamp(top.value) + "%";
+        shadeBottom.style.height = clamp(bottom.value) + "%";
+        shadeLeft.style.width = clamp(left.value) + "%";
+        shadeRight.style.width = clamp(right.value) + "%";
+    }
+
+    [top, bottom, left, right].forEach(el => {
+        if (el) el.addEventListener("input", refresh);
+    });
+    refresh();
+})();
+</script>
+
+<style>
+    .crop-info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .crop-grid {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr);
+        gap: 2rem;
+        align-items: start;
+    }
+    @media (max-width: 720px) {
+        .crop-grid { grid-template-columns: 1fr; }
+    }
+    .crop-preview-wrap {
+        text-align: center;
+    }
+    .crop-preview {
+        position: relative;
+        display: inline-block;
+        max-width: 100%;
+        border: 1px solid #d1d5db;
+        background: #f9fafb;
+        line-height: 0;
+    }
+    .crop-preview img {
+        display: block;
+        max-width: 100%;
+        height: auto;
+    }
+    .crop-shade {
+        position: absolute;
+        background: rgba(99, 102, 241, 0.35);
+        pointer-events: none;
+    }
+    .crop-shade-top { top: 0; left: 0; right: 0; height: 0; }
+    .crop-shade-bottom { bottom: 0; left: 0; right: 0; height: 0; }
+    .crop-shade-left { top: 0; bottom: 0; left: 0; width: 0; }
+    .crop-shade-right { top: 0; bottom: 0; right: 0; width: 0; }
+    .crop-preview-caption {
+        margin: 0.5rem 0 0;
+        color: #6b7280;
+        font-size: 0.85rem;
+    }
+    .crop-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+    .crop-margin-row {
+        display: grid;
+        grid-template-columns: 1fr 6rem;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .crop-margin-row label {
+        font-weight: 600;
+        color: #374151;
+    }
+    .crop-margin-row input[type="number"] {
+        padding: 0.4rem 0.6rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.95rem;
+    }
+    .crop-form-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-top: 0.75rem;
+    }
+    .crop-form-row label {
+        font-weight: 600;
+        color: #374151;
+    }
+    .crop-form-row input[type="text"] {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.95rem;
+    }
+    .form-help {
+        color: #6b7280;
+        font-size: 0.8rem;
+    }
+    .form-error {
+        margin-top: 0.25rem;
+        color: #b91c1c;
+        font-size: 0.85rem;
+    }
+    .alert-box--error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}

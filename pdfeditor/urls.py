@@ -55,6 +55,9 @@ urlpatterns = [
     path("reorder/", views.reorder_view, name="reorder"),
     path("reorder/result/", views.reorder_result_view, name="reorder_result"),
     path("download_reordered/", views.download_reordered_view, name="download_reordered"),
+    path("crop/", views.crop_view, name="crop"),
+    path("crop/result/", views.crop_result_view, name="crop_result"),
+    path("download_cropped/", views.download_cropped_view, name="download_cropped"),
     path(
         "pdf/<str:pdf_id>/page/<int:page_number>/thumbnail/",
         views.page_thumbnail_view,

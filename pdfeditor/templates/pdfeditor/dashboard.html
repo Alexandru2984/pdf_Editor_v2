@@ -128,6 +128,13 @@
             <a href="{% url 'reorder' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="crop">
+            <div class="card-icon">✂️</div>
+            <h3>{% trans "Crop Pages" %}</h3>
+            <p>{% trans "Trim margins from PDF pages by percent or specific page range" %}</p>
+            <a href="{% url 'crop' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="page-numbers">
             <div class="card-icon">🔢</div>
             <h3>{% trans "Add Page Numbers" %}</h3>

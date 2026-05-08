@@ -66,6 +66,9 @@ from .form_fill import (
 from .health import admin_health_view, healthz, readyz
 from .history import history_delete_view, history_download_view, history_view
 from .layout_ops import (
+    crop_result_view,
+    crop_view,
+    download_cropped_view,
     download_numbered_view,
     download_reordered_view,
     download_rotated_view,
@@ -143,6 +146,9 @@ __all__ = [
     "reorder_view",
     "reorder_result_view",
     "download_reordered_view",
+    "crop_view",
+    "crop_result_view",
+    "download_cropped_view",
     "page_thumbnail_view",
     "more_tools_view",
     "extract_text_ajax",

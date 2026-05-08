@@ -19,6 +19,7 @@ from .pdf_processor.ops import (
     convert_images_to_pdf,
     convert_pdf_to_docx,
     convert_pdf_to_images,
+    crop_pages,
     edit_pdf_metadata,
     merge_pdfs,
     protect_pdf,
@@ -1251,3 +1252,76 @@ class RemovePdfPasswordTests(_MediaRootMixin, TestCase):
         out = remove_pdf_password(encrypted, password="pw")
         self.tmp_files.append(out)
         self.assertIn("unprotected", os.path.basename(out))
+
+
+class CropPagesTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.tmp_files: list[str] = []
+        self.path = _make_multipage_pdf(num_pages=3)
+        self.tmp_files.append(self.path)
+
+    def tearDown(self):
+        for p in self.tmp_files:
+            if os.path.exists(p):
+                os.remove(p)
+
+    def test_simple_crop_all_pages(self):
+        out = crop_pages(self.path, top=10, right=10, bottom=10, left=10)
+        self.tmp_files.append(out)
+        with fitz.open(self.path) as src, fitz.open(out) as dst:
+            self.assertEqual(len(src), len(dst))
+            src_rect = src[0].rect
+            dst_box = dst[0].cropbox
+            # Width shrinks by 20% (10% each side), height by 20% as well.
+            self.assertAlmostEqual(dst_box.width, src_rect.width * 0.8, delta=0.5)
+            self.assertAlmostEqual(dst_box.height, src_rect.height * 0.8, delta=0.5)
+
+    def test_only_top_margin(self):
+        out = crop_pages(self.path, top=20)
+        self.tmp_files.append(out)
+        with fitz.open(self.path) as src, fitz.open(out) as dst:
+            src_rect = src[0].rect
+            dst_box = dst[0].cropbox
+            self.assertAlmostEqual(dst_box.width, src_rect.width, delta=0.5)
+            self.assertAlmostEqual(dst_box.height, src_rect.height * 0.8, delta=0.5)
+
+    def test_page_range_only_crops_specified_pages(self):
+        out = crop_pages(self.path, top=15, page_range="1,3")
+        self.tmp_files.append(out)
+        with fitz.open(self.path) as src, fitz.open(out) as dst:
+            src_h = src[0].rect.height
+            self.assertAlmostEqual(dst[0].cropbox.height, src_h * 0.85, delta=0.5)
+            # Page 2 untouched.
+            self.assertAlmostEqual(dst[1].cropbox.height, src_h, delta=0.5)
+            self.assertAlmostEqual(dst[2].cropbox.height, src_h * 0.85, delta=0.5)
+
+    def test_negative_margin_raises(self):
+        with self.assertRaises(ValueError):
+            crop_pages(self.path, top=-5)
+
+    def test_margin_at_or_above_50_raises(self):
+        with self.assertRaises(ValueError):
+            crop_pages(self.path, top=50)
+
+    def test_zero_margins_raises(self):
+        with self.assertRaises(ValueError):
+            crop_pages(self.path)
+
+    def test_invalid_page_range_raises(self):
+        with self.assertRaises(ValueError):
+            crop_pages(self.path, top=10, page_range="99")
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            crop_pages("/no/such/file.pdf", top=10)
+
+    def test_encrypted_pdf_raises(self):
+        encrypted = protect_pdf(self.path, user_password="pw")
+        self.tmp_files.append(encrypted)
+        with self.assertRaises(ValueError):
+            crop_pages(encrypted, top=10)
+
+    def test_output_basename_marks_cropped(self):
+        out = crop_pages(self.path, top=10)
+        self.tmp_files.append(out)
+        self.assertIn("cropped", os.path.basename(out))
