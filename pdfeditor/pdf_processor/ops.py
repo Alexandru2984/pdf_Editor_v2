@@ -421,6 +421,38 @@ def protect_pdf(
     return out_path
 
 
+def remove_pdf_password(pdf_path: str, password: str) -> str:
+    """Decrypt a PDF and return a copy without password protection.
+
+    ``password`` may be the user or owner password. Raises ``ValueError`` for
+    missing files, missing password input, an unencrypted source, or an
+    incorrect password.
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    if password is None:
+        raise ValueError("Password is required")
+
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    out_path = os.path.join(out_dir, f"{base}_unprotected_{timestamp()}.pdf")
+
+    with fitz.open(pdf_path) as doc:
+        if not doc.is_encrypted:
+            raise ValueError("PDF is not password-protected")
+        if not doc.authenticate(password or ""):
+            raise ValueError("Incorrect password")
+        doc.save(
+            out_path,
+            encryption=fitz.PDF_ENCRYPT_NONE,
+            garbage=4,
+            deflate=True,
+            clean=True,
+        )
+
+    return out_path
+
+
 def convert_pdf_to_docx(pdf_path: str) -> tuple[str, bool]:
     """Convert a PDF to a .docx file using pdf2docx.
 

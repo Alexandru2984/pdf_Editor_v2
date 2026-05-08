@@ -63,6 +63,7 @@ class ProcessedPDF(models.Model):
     KIND_TO_IMAGES = "to_images"
     KIND_IMAGES_TO_PDF = "images_to_pdf"
     KIND_METADATA = "metadata"
+    KIND_UNPROTECT = "unprotect"
 
     KIND_CHOICES = [
         (KIND_FIND_REPLACE, "Find & Replace"),
@@ -81,6 +82,7 @@ class ProcessedPDF(models.Model):
         (KIND_TO_IMAGES, "PDF to Images"),
         (KIND_IMAGES_TO_PDF, "Images to PDF"),
         (KIND_METADATA, "Edit Metadata"),
+        (KIND_UNPROTECT, "Remove Password"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

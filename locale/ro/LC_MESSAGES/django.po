@@ -3207,3 +3207,50 @@ msgstr "Metadate noi"
 
 msgid "Cannot edit metadata on an encrypted PDF — remove the password first"
 msgstr "Nu se pot edita metadatele unui PDF criptat — elimină mai întâi parola"
+
+# Remove password
+msgid "Remove Password"
+msgstr "Elimină parola"
+
+msgid "Strip the password from a PDF you can already open"
+msgstr "Elimină parola de pe un PDF pe care îl poți deja deschide"
+
+msgid "Strip the password from a PDF you can already open."
+msgstr "Elimină parola de pe un PDF pe care îl poți deja deschide."
+
+msgid "Remove PDF Password"
+msgstr "Elimină parola PDF"
+
+msgid "Only use this on PDFs you own or have permission to decrypt. We do not crack passwords — you must know it."
+msgstr "Folosește această funcție doar pe PDF-uri proprii sau pentru care ai dreptul să le decriptezi. Nu spargem parole — trebuie să o cunoști."
+
+msgid "Current PDF password"
+msgstr "Parola PDF curentă"
+
+msgid "Password removed successfully!"
+msgstr "Parolă eliminată cu succes!"
+
+#, python-format
+msgid "Error removing password: %(err)s"
+msgstr "Eroare la eliminarea parolei: %(err)s"
+
+msgid "Unprotected file not found."
+msgstr "Fișierul fără parolă nu a fost găsit."
+
+msgid "Password Removed"
+msgstr "Parolă eliminată"
+
+msgid "Password Removed!"
+msgstr "Parolă eliminată!"
+
+msgid "Your PDF is no longer encrypted and can be opened without a password."
+msgstr "PDF-ul tău nu mai este criptat și poate fi deschis fără parolă."
+
+msgid "PDF is not password-protected"
+msgstr "PDF-ul nu este protejat cu parolă"
+
+msgid "Incorrect password"
+msgstr "Parolă incorectă"
+
+msgid "Password is required"
+msgstr "Parola este obligatorie"

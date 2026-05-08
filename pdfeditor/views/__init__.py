@@ -26,6 +26,7 @@ from .basic_ops import (
     download_protected_view,
     download_signed_view,
     download_split_file_view,
+    download_unprotected_view,
     generate_cert_view,
     images_to_pdf_result_view,
     images_to_pdf_view,
@@ -41,6 +42,8 @@ from .basic_ops import (
     split_view,
     to_images_result_view,
     to_images_view,
+    unprotect_result_view,
+    unprotect_view,
     verify_signature_view,
 )
 from .edit import (
@@ -120,6 +123,9 @@ __all__ = [
     "protect_view",
     "protect_result_view",
     "download_protected_view",
+    "unprotect_view",
+    "unprotect_result_view",
+    "download_unprotected_view",
     "sign_view",
     "sign_result_view",
     "download_signed_view",

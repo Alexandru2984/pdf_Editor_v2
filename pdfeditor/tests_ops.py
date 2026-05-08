@@ -23,6 +23,7 @@ from .pdf_processor.ops import (
     merge_pdfs,
     protect_pdf,
     read_pdf_metadata,
+    remove_pdf_password,
     render_page_thumbnail,
     reorder_pages,
     rotate_pages,
@@ -1194,3 +1195,59 @@ class EditPdfMetadataTests(_MediaRootMixin, TestCase):
         self.tmp_files.append(encrypted)
         with self.assertRaises(ValueError):
             edit_pdf_metadata(encrypted, metadata={"title": "y"})
+
+
+class RemovePdfPasswordTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.tmp_files: list[str] = []
+        self.plain = _make_multipage_pdf(num_pages=2)
+        self.tmp_files.append(self.plain)
+
+    def tearDown(self):
+        for p in self.tmp_files:
+            if os.path.exists(p):
+                os.remove(p)
+
+    def test_removes_password_with_correct_input(self):
+        encrypted = protect_pdf(self.plain, user_password="secret123")
+        self.tmp_files.append(encrypted)
+        out = remove_pdf_password(encrypted, password="secret123")
+        self.tmp_files.append(out)
+        with fitz.open(out) as doc:
+            self.assertFalse(doc.is_encrypted)
+            self.assertEqual(len(doc), 2)
+
+    def test_owner_password_also_works(self):
+        encrypted = protect_pdf(self.plain, user_password="user-pw", owner_password="owner-pw")
+        self.tmp_files.append(encrypted)
+        out = remove_pdf_password(encrypted, password="owner-pw")
+        self.tmp_files.append(out)
+        with fitz.open(out) as doc:
+            self.assertFalse(doc.is_encrypted)
+
+    def test_wrong_password_raises(self):
+        encrypted = protect_pdf(self.plain, user_password="correct")
+        self.tmp_files.append(encrypted)
+        with self.assertRaises(ValueError):
+            remove_pdf_password(encrypted, password="wrong")
+
+    def test_unencrypted_pdf_raises(self):
+        with self.assertRaises(ValueError):
+            remove_pdf_password(self.plain, password="anything")
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            remove_pdf_password("/no/such/file.pdf", password="x")
+
+    def test_none_password_raises(self):
+        encrypted = protect_pdf(self.plain, user_password="x")
+        self.tmp_files.append(encrypted)
+        with self.assertRaises(ValueError):
+            remove_pdf_password(encrypted, password=None)  # type: ignore[arg-type]
+
+    def test_output_basename_marks_unprotected(self):
+        encrypted = protect_pdf(self.plain, user_password="pw")
+        self.tmp_files.append(encrypted)
+        out = remove_pdf_password(encrypted, password="pw")
+        self.tmp_files.append(out)
+        self.assertIn("unprotected", os.path.basename(out))

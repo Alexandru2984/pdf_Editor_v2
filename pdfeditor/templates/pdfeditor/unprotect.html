@@ -1,0 +1,116 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Remove PDF Password" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header">
+
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
+                📂 {% trans "Select PDF:" %}
+            </label>
+            <select id="pdf-selector" onchange="window.location.href='{% url 'unprotect' %}?pdf=' + encodeURIComponent(this.value)">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="tool-page-title">🔓 {% trans "Remove PDF Password" %}</h2>
+            <p class="tool-page-subtitle">
+                {% trans "Strip the password from a PDF you can already open." %}
+            </p>
+            <div class="tool-info-bar">
+                <div>
+                    <div class="tool-info-label">{% trans "Current File:" %}</div>
+                    <div class="tool-info-value">{{ pdf_name }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="unprotect-info-box">
+            <p>
+                <strong>⚠️ {% trans "Note:" %}</strong>
+                {% trans "Only use this on PDFs you own or have permission to decrypt. We do not crack passwords — you must know it." %}
+            </p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-field">
+                <label class="form-field-label" for="{{ form.password.id_for_label }}">
+                    🔑 {% trans "Current PDF password" %}
+                </label>
+                {{ form.password }}
+                {% if form.password.errors %}<div class="form-field-error">{{ form.password.errors }}</div>{% endif %}
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                    ← {% trans "Back" %}
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    🔓 {% trans "Remove Password" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .unprotect-info-box {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #92400e;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .form-field {
+        margin-bottom: 1.25rem;
+    }
+    .form-field-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+        color: var(--text-primary, #1f2937);
+    }
+    .form-field input[type="password"] {
+        width: 100%;
+        padding: 0.625rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+    .form-field-error {
+        color: #b91c1c;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    .alert-box--error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
