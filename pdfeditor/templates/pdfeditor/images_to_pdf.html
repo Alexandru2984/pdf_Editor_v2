@@ -1,0 +1,325 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Images to PDF" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 1100px;">
+    <div class="preview-header">
+        <div class="text-center">
+            <h2 class="tool-page-title">🧩 {% trans "Images to PDF" %}</h2>
+            <p class="tool-page-subtitle">
+                {% trans "Combine PNG, JPG, BMP, TIFF, WEBP, or GIF images into a single PDF. Drag thumbnails to reorder." %}
+            </p>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="img2pdf-info-box">
+            <p>
+                <strong>ℹ️ {% trans "Tips:" %}</strong>
+                {% blocktrans with max=max_files mb=max_mb %}You can add up to {{ max }} images, {{ mb }} MB each. Use "Auto" page size for image-native dimensions, or A4/Letter for printable output.{% endblocktrans %}
+            </p>
+        </div>
+
+        <form method="post" id="img2pdf-form" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            {{ form.images_order }}
+
+            <div class="form-group">
+                <label class="form-label">{% trans "Images" %}</label>
+                <div class="img2pdf-picker">
+                    <input type="file" id="image-input" name="images" accept="image/*" multiple style="display: none;">
+                    <button type="button" class="btn btn-primary" id="btn-add-images">
+                        ➕ {% trans "Add Images" %}
+                    </button>
+                    <span id="img2pdf-count" class="img2pdf-count">{% trans "No images selected" %}</span>
+                </div>
+            </div>
+
+            <div id="img2pdf-grid" class="img2pdf-grid"></div>
+            <p id="img2pdf-empty" class="img2pdf-empty">
+                {% trans "Click \"Add Images\" above to start." %}
+            </p>
+
+            <div class="form-group">
+                <label class="form-label">{{ form.page_size.label }}</label>
+                <div class="radio-group">
+                    {% for radio in form.page_size %}
+                    <label class="radio-option">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">{{ form.fit_mode.label }}</label>
+                <div class="radio-group">
+                    {% for radio in form.fit_mode %}
+                    <label class="radio-option">{{ radio.tag }} <span>{{ radio.choice_label }}</span></label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">← {% trans "Back" %}</a>
+                <button type="submit" class="btn btn-primary" id="btn-build" disabled>
+                    🧩 {% trans "Build PDF" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{% static 'js/Sortable.min.js' %}"></script>
+<script>
+(function () {
+    const input = document.getElementById("image-input");
+    const btnAdd = document.getElementById("btn-add-images");
+    const grid = document.getElementById("img2pdf-grid");
+    const empty = document.getElementById("img2pdf-empty");
+    const count = document.getElementById("img2pdf-count");
+    const orderField = document.getElementById("id_images_order");
+    const btnBuild = document.getElementById("btn-build");
+    const form = document.getElementById("img2pdf-form");
+    const maxFiles = {{ max_files }};
+
+    btnAdd.addEventListener("click", () => input.click());
+
+    input.addEventListener("change", () => {
+        const files = Array.from(input.files || []);
+        grid.innerHTML = "";
+        if (files.length === 0) {
+            refresh();
+            return;
+        }
+        if (files.length > maxFiles) {
+            alert("{% blocktrans with max=max_files %}Too many images — only the first {{ max }} will be used.{% endblocktrans %}");
+        }
+        files.slice(0, maxFiles).forEach((file, idx) => {
+            if (!file.type.startsWith("image/")) return;
+            const card = document.createElement("div");
+            card.className = "img2pdf-card";
+            card.dataset.index = idx.toString();
+
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "img2pdf-delete-btn";
+            del.title = "{% trans 'Remove this image' %}";
+            del.textContent = "✕";
+            card.appendChild(del);
+
+            const thumb = document.createElement("div");
+            thumb.className = "img2pdf-thumb";
+            const img = document.createElement("img");
+            img.src = URL.createObjectURL(file);
+            img.alt = file.name;
+            img.loading = "lazy";
+            thumb.appendChild(img);
+            card.appendChild(thumb);
+
+            const label = document.createElement("div");
+            label.className = "img2pdf-label";
+            const pos = document.createElement("span");
+            pos.className = "img2pdf-pos";
+            label.appendChild(pos);
+            const name = document.createElement("span");
+            name.className = "img2pdf-name";
+            name.title = file.name;
+            name.textContent = file.name;
+            label.appendChild(name);
+            card.appendChild(label);
+
+            grid.appendChild(card);
+        });
+        refresh();
+    });
+
+    grid.addEventListener("click", (ev) => {
+        const btn = ev.target.closest(".img2pdf-delete-btn");
+        if (!btn) return;
+        btn.closest(".img2pdf-card").remove();
+        refresh();
+    });
+
+    new Sortable(grid, {
+        animation: 150,
+        ghostClass: "img2pdf-card--ghost",
+        chosenClass: "img2pdf-card--chosen",
+        dragClass: "img2pdf-card--drag",
+        filter: ".img2pdf-delete-btn",
+        preventOnFilter: false,
+        onEnd: refresh,
+    });
+
+    function refresh() {
+        const cards = grid.querySelectorAll(".img2pdf-card");
+        cards.forEach((el, i) => {
+            el.querySelector(".img2pdf-pos").textContent = "#" + (i + 1);
+        });
+        empty.style.display = cards.length ? "none" : "block";
+        const order = Array.from(cards).map(el => el.dataset.index).join(",");
+        orderField.value = order;
+        btnBuild.disabled = cards.length === 0;
+        if (cards.length === 0) {
+            count.textContent = "{% trans 'No images selected' %}";
+        } else {
+            count.textContent = cards.length === 1
+                ? "{% trans '1 image selected' %}"
+                : ("" + cards.length + " {% trans 'images selected' %}");
+        }
+    }
+
+    form.addEventListener("submit", (ev) => {
+        const cards = grid.querySelectorAll(".img2pdf-card");
+        if (cards.length === 0) {
+            ev.preventDefault();
+            alert("{% trans 'Add at least one image first.' %}");
+        }
+    });
+
+    refresh();
+})();
+</script>
+
+<style>
+.img2pdf-info-box {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    padding: 0.875rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+.img2pdf-picker {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.img2pdf-count {
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+.img2pdf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0 1.25rem;
+    min-height: 0;
+}
+.img2pdf-empty {
+    text-align: center;
+    color: #9ca3af;
+    margin: 1.5rem 0;
+    font-style: italic;
+}
+.img2pdf-card {
+    position: relative;
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    cursor: grab;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    user-select: none;
+}
+.img2pdf-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+.img2pdf-card:active {
+    cursor: grabbing;
+}
+.img2pdf-card--ghost {
+    opacity: 0.4;
+    background: #f3f4f6;
+}
+.img2pdf-card--chosen {
+    border-color: #6366f1;
+}
+.img2pdf-card--drag {
+    transform: rotate(2deg);
+}
+.img2pdf-thumb {
+    background: #f3f4f6;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.img2pdf-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+}
+.img2pdf-label {
+    padding: 0.4rem 0.5rem;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.img2pdf-pos {
+    font-weight: 700;
+    color: #6366f1;
+    flex-shrink: 0;
+}
+.img2pdf-name {
+    color: #6b7280;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.img2pdf-delete-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(239, 68, 68, 0.92);
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: background 0.15s, transform 0.15s;
+}
+.img2pdf-delete-btn:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+.form-group {
+    margin-bottom: 1.25rem;
+}
+.form-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+</style>
+{% endblock %}

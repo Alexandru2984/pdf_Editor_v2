@@ -12,6 +12,7 @@ from ..forms import (
     CompressPDFForm,
     ConvertToDocxForm,
     GenerateCertForm,
+    ImagesToPdfForm,
     MergePDFForm,
     PdfToImagesForm,
     ProtectPDFForm,
@@ -22,6 +23,7 @@ from ..forms import (
 from ..models import ProcessedPDF, TrustAnchor
 from ..pdf_processor import (
     compress_pdf,
+    convert_images_to_pdf,
     convert_pdf_to_docx,
     convert_pdf_to_images,
     merge_pdfs,
@@ -707,6 +709,156 @@ def to_images_result_view(request):
 
 def download_images_view(request):
     output = _fetch_output(request, "to_images_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+
+
+# ---------- Images → PDF ----------
+
+
+_IMAGES_TO_PDF_MAX_FILES = 50
+_IMAGES_TO_PDF_MAX_BYTES_PER_FILE = 15 * 1024 * 1024  # 15 MB
+_IMAGES_TO_PDF_ALLOWED_EXT = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".webp", ".gif"}
+
+
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
+def images_to_pdf_view(request):
+    if request.method == "POST":
+        form = ImagesToPdfForm(request.POST)
+        uploaded = request.FILES.getlist("images")
+        if not uploaded:
+            messages.error(request, _("Please select at least one image."))
+        elif len(uploaded) > _IMAGES_TO_PDF_MAX_FILES:
+            messages.error(
+                request,
+                _("Too many images — limit is %(max)d per export.")
+                % {"max": _IMAGES_TO_PDF_MAX_FILES},
+            )
+        elif form.is_valid():
+            valid_files: list = []
+            for f in uploaded:
+                ext = os.path.splitext(f.name)[1].lower()
+                if ext not in _IMAGES_TO_PDF_ALLOWED_EXT:
+                    messages.warning(
+                        request,
+                        _('Skipped "%(name)s" — unsupported image format.')
+                        % {"name": f.name},
+                    )
+                    continue
+                if f.size > _IMAGES_TO_PDF_MAX_BYTES_PER_FILE:
+                    messages.warning(
+                        request,
+                        _('Skipped "%(name)s" — exceeds %(mb)d MB limit.')
+                        % {
+                            "name": f.name,
+                            "mb": _IMAGES_TO_PDF_MAX_BYTES_PER_FILE // (1024 * 1024),
+                        },
+                    )
+                    continue
+                valid_files.append(f)
+
+            if not valid_files:
+                messages.error(request, _("No valid images were uploaded."))
+            else:
+                # Apply user-supplied order (CSV of original indices); fall back
+                # to upload order if the order is missing or partial.
+                order = form.cleaned_data.get("images_order") or []
+                ordered_files = []
+                if order and all(0 <= i < len(uploaded) for i in order):
+                    # Translate indices: ``order`` references the original
+                    # ``uploaded`` list, not the post-validation ``valid_files``.
+                    valid_set = set(id(f) for f in valid_files)
+                    for i in order:
+                        f = uploaded[i]
+                        if id(f) in valid_set:
+                            ordered_files.append(f)
+                if not ordered_files:
+                    ordered_files = valid_files
+
+                import tempfile
+
+                staging_dir = tempfile.mkdtemp(prefix="img2pdf_")
+                staged_paths: list[str] = []
+                try:
+                    for idx, f in enumerate(ordered_files):
+                        # Preserve extension to help PIL identify the format.
+                        ext = os.path.splitext(f.name)[1].lower()
+                        staged_path = os.path.join(staging_dir, f"{idx:03d}{ext}")
+                        with open(staged_path, "wb") as out:
+                            for chunk in f.chunks():
+                                out.write(chunk)
+                        staged_paths.append(staged_path)
+
+                    try:
+                        output_path, count = convert_images_to_pdf(
+                            staged_paths,
+                            page_size=form.cleaned_data["page_size"],
+                            fit_mode=form.cleaned_data["fit_mode"],
+                        )
+                    except ValueError as e:
+                        messages.error(request, _("Error: %(err)s") % {"err": e})
+                    except Exception as e:
+                        messages.error(
+                            request,
+                            _("Error building PDF from images: %(err)s") % {"err": e},
+                        )
+                    else:
+                        output = record_output(
+                            request,
+                            kind=ProcessedPDF.KIND_IMAGES_TO_PDF,
+                            path=output_path,
+                            source=None,
+                        )
+                        request.session["images_to_pdf_id"] = str(output.id)
+                        request.session["images_to_pdf_count"] = count
+                        messages.success(
+                            request,
+                            _("PDF built from %(count)s image(s)!") % {"count": count},
+                        )
+                        return redirect("images_to_pdf_result")
+                finally:
+                    import shutil as _shutil
+
+                    _shutil.rmtree(staging_dir, ignore_errors=True)
+    else:
+        form = ImagesToPdfForm()
+
+    return render(
+        request,
+        "pdfeditor/images_to_pdf.html",
+        {
+            "form": form,
+            "max_files": _IMAGES_TO_PDF_MAX_FILES,
+            "max_mb": _IMAGES_TO_PDF_MAX_BYTES_PER_FILE // (1024 * 1024),
+        },
+    )
+
+
+def images_to_pdf_result_view(request):
+    output = _fetch_output(request, "images_to_pdf_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("Built PDF not found."))
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "pdfeditor/images_to_pdf_result.html",
+        {
+            "pdf_filename": output.name,
+            "size": os.path.getsize(output.path),
+            "image_count": request.session.get("images_to_pdf_count", 0),
+        },
+    )
+
+
+def download_images_to_pdf_view(request):
+    output = _fetch_output(request, "images_to_pdf_id")
     if not output:
         messages.error(request, _("File not found."))
         return redirect("dashboard")

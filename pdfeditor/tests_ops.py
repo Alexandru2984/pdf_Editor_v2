@@ -15,6 +15,7 @@ from .pdf_processor.ops import (
     add_page_numbers,
     add_watermark,
     compress_pdf,
+    convert_images_to_pdf,
     convert_pdf_to_docx,
     convert_pdf_to_images,
     merge_pdfs,
@@ -896,3 +897,140 @@ class ConvertPdfToImagesTests(_MediaRootMixin, TestCase):
             for p in (low_zip, high_zip):
                 if os.path.exists(p):
                     os.remove(p)
+
+
+def _make_image_file(suffix: str, size: tuple[int, int] = (200, 150), color=(50, 100, 200), mode="RGB") -> str:
+    """Write a simple image to a temp file and return its path."""
+    fd, path = tempfile.mkstemp(suffix=suffix)
+    os.close(fd)
+    if mode == "RGBA":
+        # Translucent green over the requested colour.
+        im = PILImage.new("RGBA", size, color + (180,))
+    else:
+        im = PILImage.new(mode, size, color)
+    fmt = "PNG"
+    if suffix.lower() in (".jpg", ".jpeg"):
+        fmt = "JPEG"
+        if im.mode != "RGB":
+            im = im.convert("RGB")
+    elif suffix.lower() == ".bmp":
+        fmt = "BMP"
+        if im.mode == "RGBA":
+            im = im.convert("RGB")
+    im.save(path, format=fmt)
+    return path
+
+
+class ConvertImagesToPdfTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.tmp_files: list[str] = []
+
+    def tearDown(self):
+        for p in self.tmp_files:
+            if os.path.exists(p):
+                os.remove(p)
+
+    def _make(self, suffix=".png", size=(200, 150), **kw) -> str:
+        path = _make_image_file(suffix, size=size, **kw)
+        self.tmp_files.append(path)
+        return path
+
+    def test_single_png_to_pdf_auto_size(self):
+        img = self._make(".png", size=(300, 200))
+        out, count = convert_images_to_pdf([img], page_size="auto", fit_mode="fit")
+        try:
+            self.assertEqual(count, 1)
+            self.assertTrue(out.endswith(".pdf"))
+            with fitz.open(out) as doc:
+                self.assertEqual(len(doc), 1)
+                # Auto: page dimensions match image pixels (1px = 1pt).
+                rect = doc[0].rect
+                self.assertAlmostEqual(rect.width, 300, places=0)
+                self.assertAlmostEqual(rect.height, 200, places=0)
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_multiple_images_one_page_each(self):
+        imgs = [self._make(".png"), self._make(".jpg"), self._make(".bmp")]
+        out, count = convert_images_to_pdf(imgs)
+        try:
+            self.assertEqual(count, 3)
+            with fitz.open(out) as doc:
+                self.assertEqual(len(doc), 3)
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_a4_page_size_orients_landscape_for_landscape_image(self):
+        img = self._make(".png", size=(800, 400))  # landscape
+        out, _ = convert_images_to_pdf([img], page_size="a4", fit_mode="fit")
+        try:
+            with fitz.open(out) as doc:
+                rect = doc[0].rect
+                # Landscape A4: 842 x 595.
+                self.assertAlmostEqual(rect.width, 842, places=0)
+                self.assertAlmostEqual(rect.height, 595, places=0)
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_a4_page_size_orients_portrait_for_portrait_image(self):
+        img = self._make(".png", size=(400, 800))  # portrait
+        out, _ = convert_images_to_pdf([img], page_size="a4")
+        try:
+            with fitz.open(out) as doc:
+                rect = doc[0].rect
+                self.assertAlmostEqual(rect.width, 595, places=0)
+                self.assertAlmostEqual(rect.height, 842, places=0)
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_letter_page_size(self):
+        img = self._make(".png", size=(400, 800))
+        out, _ = convert_images_to_pdf([img], page_size="letter")
+        try:
+            with fitz.open(out) as doc:
+                rect = doc[0].rect
+                self.assertAlmostEqual(rect.width, 612, places=0)
+                self.assertAlmostEqual(rect.height, 792, places=0)
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_rgba_with_transparency_flattens_onto_white(self):
+        img = self._make(".png", size=(200, 200), mode="RGBA")
+        out, _ = convert_images_to_pdf([img])
+        try:
+            self.assertTrue(os.path.exists(out))
+        finally:
+            if os.path.exists(out):
+                os.remove(out)
+
+    def test_empty_list_raises(self):
+        with self.assertRaises(ValueError):
+            convert_images_to_pdf([])
+
+    def test_missing_image_raises(self):
+        with self.assertRaises(ValueError):
+            convert_images_to_pdf(["/no/such/image.png"])
+
+    def test_unsupported_page_size_raises(self):
+        img = self._make(".png")
+        with self.assertRaises(ValueError):
+            convert_images_to_pdf([img], page_size="legal")
+
+    def test_unsupported_fit_mode_raises(self):
+        img = self._make(".png")
+        with self.assertRaises(ValueError):
+            convert_images_to_pdf([img], fit_mode="crop")
+
+    def test_corrupt_image_raises_value_error(self):
+        fd, bad = tempfile.mkstemp(suffix=".png")
+        os.close(fd)
+        with open(bad, "wb") as f:
+            f.write(b"not a real PNG")
+        self.tmp_files.append(bad)
+        with self.assertRaises(ValueError):
+            convert_images_to_pdf([bad])

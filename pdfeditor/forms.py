@@ -319,6 +319,58 @@ class ConvertToDocxForm(forms.Form):
     """No-fields form for the PDF → DOCX conversion (CSRF-only)."""
 
 
+class ImagesToPdfForm(forms.Form):
+    """Form for assembling a PDF from one or more uploaded images.
+
+    The actual files come from ``request.FILES.getlist("images")`` because
+    Django's ``FileField`` does not natively bind multiple uploads. This form
+    holds only the layout options.
+    """
+
+    PAGE_SIZE_CHOICES = [
+        ("auto", _("Auto (page matches image size)")),
+        ("a4", _("A4 (210 × 297 mm)")),
+        ("letter", _("Letter (8.5 × 11 in)")),
+    ]
+
+    FIT_CHOICES = [
+        ("fit", _("Fit (preserve aspect ratio, white letterbox)")),
+        ("fill", _("Fill (stretch to fill page, may distort)")),
+    ]
+
+    page_size = forms.ChoiceField(
+        choices=PAGE_SIZE_CHOICES,
+        initial="auto",
+        widget=forms.RadioSelect,
+        label=_("Page size"),
+    )
+    fit_mode = forms.ChoiceField(
+        choices=FIT_CHOICES,
+        initial="fit",
+        widget=forms.RadioSelect,
+        label=_("Image fit"),
+    )
+    images_order = forms.CharField(
+        widget=forms.HiddenInput(),
+        required=False,
+        help_text="Comma-separated list of original upload indices in display order.",
+    )
+
+    def clean_images_order(self):
+        raw = (self.cleaned_data.get("images_order") or "").strip()
+        if not raw:
+            return []
+        try:
+            order = [int(x.strip()) for x in raw.split(",") if x.strip() != ""]
+        except ValueError as exc:
+            raise forms.ValidationError(_("Invalid image order.")) from exc
+        if any(n < 0 for n in order):
+            raise forms.ValidationError(_("Invalid image order."))
+        if len(set(order)) != len(order):
+            raise forms.ValidationError(_("Image order cannot contain duplicates."))
+        return order
+
+
 class PdfToImagesForm(forms.Form):
     """Form for the PDF → images export (one image per page, packaged as ZIP)."""
 
