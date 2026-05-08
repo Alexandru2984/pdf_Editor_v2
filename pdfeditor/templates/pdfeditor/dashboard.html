@@ -79,6 +79,13 @@
             <a href="{% url 'images_to_pdf' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="metadata">
+            <div class="card-icon">🏷️</div>
+            <h3>{% trans "Edit Metadata" %}</h3>
+            <p>{% trans "Update title, author, subject, keywords, and other PDF properties" %}</p>
+            <a href="{% url 'metadata' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="protect">
             <div class="card-icon">🔒</div>
             <h3>{% trans "Password Protect" %}</h3>

@@ -12,14 +12,17 @@ from PIL import Image as PILImage
 
 from .pdf_processor.ops import (
     _calculate_position,
+    _parse_pdf_date,
     add_page_numbers,
     add_watermark,
     compress_pdf,
     convert_images_to_pdf,
     convert_pdf_to_docx,
     convert_pdf_to_images,
+    edit_pdf_metadata,
     merge_pdfs,
     protect_pdf,
+    read_pdf_metadata,
     render_page_thumbnail,
     reorder_pages,
     rotate_pages,
@@ -1032,3 +1035,162 @@ class ConvertImagesToPdfTests(_MediaRootMixin, TestCase):
         self.tmp_files.append(bad)
         with self.assertRaises(ValueError):
             convert_images_to_pdf([bad])
+
+
+class ParsePdfDateTests(TestCase):
+    def test_full_date_with_offset(self):
+        self.assertEqual(_parse_pdf_date("D:20250304151230+02'00'"), "2025-03-04 15:12")
+
+    def test_date_without_d_prefix(self):
+        self.assertEqual(_parse_pdf_date("20240115093000Z"), "2024-01-15 09:30")
+
+    def test_date_only(self):
+        self.assertEqual(_parse_pdf_date("D:20231201"), "2023-12-01 00:00")
+
+    def test_empty_returns_none(self):
+        self.assertIsNone(_parse_pdf_date(""))
+        self.assertIsNone(_parse_pdf_date(None))
+
+    def test_garbage_returns_none(self):
+        self.assertIsNone(_parse_pdf_date("not-a-date"))
+
+
+def _make_pdf_with_metadata(meta: dict) -> str:
+    doc = fitz.open()
+    doc.new_page(width=595, height=842)
+    full = {
+        "title": "",
+        "author": "",
+        "subject": "",
+        "keywords": "",
+        "creator": "",
+        "producer": "",
+        "creationDate": "",
+        "modDate": "",
+        **meta,
+    }
+    doc.set_metadata(full)
+    fd, path = tempfile.mkstemp(suffix=".pdf")
+    os.close(fd)
+    doc.save(path)
+    doc.close()
+    return path
+
+
+class ReadPdfMetadataTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.tmp_files: list[str] = []
+
+    def tearDown(self):
+        for p in self.tmp_files:
+            if os.path.exists(p):
+                os.remove(p)
+
+    def test_reads_all_fields(self):
+        path = _make_pdf_with_metadata(
+            {
+                "title": "Doc Title",
+                "author": "Jane",
+                "subject": "Sales",
+                "keywords": "k1,k2",
+                "creator": "Word",
+                "producer": "PyMuPDF",
+            }
+        )
+        self.tmp_files.append(path)
+        meta = read_pdf_metadata(path)
+        self.assertEqual(meta["title"], "Doc Title")
+        self.assertEqual(meta["author"], "Jane")
+        self.assertEqual(meta["subject"], "Sales")
+        self.assertEqual(meta["keywords"], "k1,k2")
+        self.assertEqual(meta["creator"], "Word")
+        self.assertIn("PyMuPDF", meta["producer"])
+
+    def test_missing_fields_return_empty_strings(self):
+        path = _make_pdf_with_metadata({})
+        self.tmp_files.append(path)
+        meta = read_pdf_metadata(path)
+        for key in ("title", "author", "subject", "keywords", "creator"):
+            self.assertEqual(meta[key], "")
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            read_pdf_metadata("/no/such/file.pdf")
+
+
+class EditPdfMetadataTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.tmp_files: list[str] = []
+
+    def tearDown(self):
+        for p in self.tmp_files:
+            if os.path.exists(p):
+                os.remove(p)
+
+    def _src(self, **meta) -> str:
+        path = _make_pdf_with_metadata(meta)
+        self.tmp_files.append(path)
+        return path
+
+    def test_writes_new_fields(self):
+        src = self._src(title="Old", author="Old Author")
+        out = edit_pdf_metadata(
+            src,
+            metadata={
+                "title": "New Title",
+                "author": "New Author",
+                "subject": "S",
+                "keywords": "k",
+                "creator": "",
+                "producer": "",
+            },
+        )
+        self.tmp_files.append(out)
+        meta = read_pdf_metadata(out)
+        self.assertEqual(meta["title"], "New Title")
+        self.assertEqual(meta["author"], "New Author")
+        self.assertEqual(meta["subject"], "S")
+        self.assertEqual(meta["keywords"], "k")
+
+    def test_empty_string_clears_field(self):
+        src = self._src(title="Old", author="Old")
+        out = edit_pdf_metadata(src, metadata={"title": "", "author": "Keep"})
+        self.tmp_files.append(out)
+        meta = read_pdf_metadata(out)
+        self.assertEqual(meta["title"], "")
+        self.assertEqual(meta["author"], "Keep")
+
+    def test_unspecified_fields_preserved(self):
+        src = self._src(title="Keep Title", author="Keep Author")
+        out = edit_pdf_metadata(src, metadata={"subject": "Only Subject"})
+        self.tmp_files.append(out)
+        meta = read_pdf_metadata(out)
+        self.assertEqual(meta["title"], "Keep Title")
+        self.assertEqual(meta["author"], "Keep Author")
+        self.assertEqual(meta["subject"], "Only Subject")
+
+    def test_clear_dates(self):
+        src = self._src(title="x", creationDate="D:20240115093000Z", modDate="D:20240601120000Z")
+        out = edit_pdf_metadata(src, metadata={}, clear_dates=True)
+        self.tmp_files.append(out)
+        meta = read_pdf_metadata(out)
+        self.assertIsNone(meta["creation_date"])
+        self.assertIsNone(meta["mod_date"])
+
+    def test_output_in_processed_dir(self):
+        src = self._src(title="x")
+        out = edit_pdf_metadata(src, metadata={"title": "y"})
+        self.tmp_files.append(out)
+        self.assertTrue(out.endswith(".pdf"))
+        self.assertIn("metadata", os.path.basename(out))
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            edit_pdf_metadata("/no/such/file.pdf", metadata={"title": "x"})
+
+    def test_encrypted_pdf_raises(self):
+        src = self._src(title="x")
+        encrypted = protect_pdf(src, owner_password="o", user_password="u")
+        self.tmp_files.append(encrypted)
+        with self.assertRaises(ValueError):
+            edit_pdf_metadata(encrypted, metadata={"title": "y"})

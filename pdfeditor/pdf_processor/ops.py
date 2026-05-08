@@ -636,6 +636,94 @@ def convert_pdf_to_images(pdf_path: str, fmt: str = "png", dpi: int = 150) -> tu
     return zip_path, page_count
 
 
+METADATA_FIELDS: tuple[str, ...] = (
+    "title",
+    "author",
+    "subject",
+    "keywords",
+    "creator",
+    "producer",
+)
+
+
+def _parse_pdf_date(raw: str | None) -> str | None:
+    """Convert a PDF date string (``D:YYYYMMDDHHmmSS+TZ``) to ISO ``YYYY-MM-DD HH:MM``.
+
+    Returns ``None`` when ``raw`` is empty or unparseable.
+    """
+    if not raw:
+        return None
+    s = raw.strip()
+    if s.startswith("D:"):
+        s = s[2:]
+    # Strip trailing timezone marker like ``+02'00'`` or ``Z``.
+    for marker in ("+", "-", "Z"):
+        idx = s.find(marker)
+        if idx >= 14:
+            s = s[:idx]
+            break
+    if len(s) < 8 or not s[:8].isdigit():
+        return None
+    y, mo, d = s[0:4], s[4:6], s[6:8]
+    h = s[8:10] if len(s) >= 10 and s[8:10].isdigit() else "00"
+    mi = s[10:12] if len(s) >= 12 and s[10:12].isdigit() else "00"
+    return f"{y}-{mo}-{d} {h}:{mi}"
+
+
+def read_pdf_metadata(pdf_path: str) -> dict[str, str | None]:
+    """Return the editable metadata fields plus formatted creation/mod dates.
+
+    The result always contains keys: ``title``, ``author``, ``subject``,
+    ``keywords``, ``creator``, ``producer``, ``creation_date``, ``mod_date``.
+    Missing values are returned as ``None`` (or empty string for text fields).
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    with fitz.open(pdf_path) as doc:
+        meta = doc.metadata or {}
+    return {
+        "title": meta.get("title", "") or "",
+        "author": meta.get("author", "") or "",
+        "subject": meta.get("subject", "") or "",
+        "keywords": meta.get("keywords", "") or "",
+        "creator": meta.get("creator", "") or "",
+        "producer": meta.get("producer", "") or "",
+        "creation_date": _parse_pdf_date(meta.get("creationDate")),
+        "mod_date": _parse_pdf_date(meta.get("modDate")),
+    }
+
+
+def edit_pdf_metadata(pdf_path: str, metadata: dict[str, str], clear_dates: bool = False) -> str:
+    """Apply new metadata to ``pdf_path`` and write a new PDF.
+
+    ``metadata`` may contain any of: ``title``, ``author``, ``subject``,
+    ``keywords``, ``creator``, ``producer``. Empty strings clear the field;
+    keys not present are left untouched. When ``clear_dates`` is true, both
+    ``creationDate`` and ``modDate`` are wiped.
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    out_path = os.path.join(out_dir, f"{base}_metadata_{timestamp()}.pdf")
+
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("Cannot edit metadata on an encrypted PDF — remove the password first")
+        current = dict(doc.metadata or {})
+        for key in METADATA_FIELDS:
+            if key in metadata:
+                current[key] = metadata[key] or ""
+        if clear_dates:
+            current["creationDate"] = ""
+            current["modDate"] = ""
+        doc.set_metadata(current)
+        doc.save(out_path, garbage=4, deflate=True, clean=True)
+
+    return out_path
+
+
 def render_page_thumbnail(pdf_path: str, page_number: int, max_width: int = 200) -> bytes:
     """Render a single page as a PNG thumbnail. ``page_number`` is 1-indexed."""
     if not os.path.exists(pdf_path):

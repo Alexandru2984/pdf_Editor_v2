@@ -1,0 +1,210 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Edit PDF Metadata" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 760px;">
+    <div class="preview-header">
+
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
+                📂 {% trans "Select PDF:" %}
+            </label>
+            <select id="pdf-selector" onchange="window.location.href='{% url 'metadata' %}?pdf=' + encodeURIComponent(this.value)">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="tool-page-title">🏷️ {% trans "Edit PDF Metadata" %}</h2>
+            <p class="tool-page-subtitle">
+                {% trans "Update the document properties stored inside the PDF." %}
+            </p>
+            <div class="tool-info-bar">
+                <div>
+                    <div class="tool-info-label">{% trans "Current File:" %}</div>
+                    <div class="tool-info-value">{{ pdf_name }}</div>
+                </div>
+                <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview tool-info-bar-divider">
+                    👁️ {% trans "Preview" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="metadata-info-box">
+            <p>
+                <strong>ℹ️ {% trans "Tip:" %}</strong>
+                {% trans "Leave a field empty to clear that metadata entry. Existing values are pre-filled below." %}
+            </p>
+        </div>
+
+        {% if current_meta.creation_date or current_meta.mod_date %}
+        <div class="metadata-dates-box">
+            <div class="metadata-dates-row">
+                <span class="metadata-dates-label">📅 {% trans "Created:" %}</span>
+                <span>{{ current_meta.creation_date|default:"—" }}</span>
+            </div>
+            <div class="metadata-dates-row">
+                <span class="metadata-dates-label">✏️ {% trans "Modified:" %}</span>
+                <span>{{ current_meta.mod_date|default:"—" }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.title.id_for_label }}">{% trans "Title" %}</label>
+                {{ form.title }}
+                {% if form.title.errors %}<div class="form-error">{{ form.title.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.author.id_for_label }}">{% trans "Author" %}</label>
+                {{ form.author }}
+                {% if form.author.errors %}<div class="form-error">{{ form.author.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.subject.id_for_label }}">{% trans "Subject" %}</label>
+                {{ form.subject }}
+                {% if form.subject.errors %}<div class="form-error">{{ form.subject.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.keywords.id_for_label }}">{% trans "Keywords" %}</label>
+                {{ form.keywords }}
+                {% if form.keywords.errors %}<div class="form-error">{{ form.keywords.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.creator.id_for_label }}">{% trans "Creator" %}</label>
+                {{ form.creator }}
+                <p class="form-help">{% trans "The application that produced the original document (e.g. Word, LibreOffice)." %}</p>
+                {% if form.creator.errors %}<div class="form-error">{{ form.creator.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="{{ form.producer.id_for_label }}">{% trans "Producer" %}</label>
+                {{ form.producer }}
+                <p class="form-help">{% trans "The application that converted the source to PDF." %}</p>
+                {% if form.producer.errors %}<div class="form-error">{{ form.producer.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-group form-checkbox-row">
+                <label>
+                    {{ form.clear_dates }}
+                    <span>{{ form.clear_dates.label }}</span>
+                </label>
+                {% if form.clear_dates.help_text %}
+                <p class="form-help">{{ form.clear_dates.help_text }}</p>
+                {% endif %}
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                    ← {% trans "Back" %}
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    💾 {% trans "Save Metadata" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .metadata-info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .metadata-dates-box {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1.25rem;
+        font-size: 0.9rem;
+        color: #374151;
+    }
+    .metadata-dates-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    .metadata-dates-row + .metadata-dates-row {
+        margin-top: 0.25rem;
+    }
+    .metadata-dates-label {
+        font-weight: 600;
+        color: #6b7280;
+        min-width: 7rem;
+    }
+    .form-group {
+        margin-bottom: 1.1rem;
+    }
+    .form-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+    }
+    .form-group input[type="text"] {
+        width: 100%;
+        padding: 0.55rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.95rem;
+        font-family: inherit;
+    }
+    .form-group input[type="text"]:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+    .form-help {
+        margin: 0.3rem 0 0;
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+    .form-error {
+        margin-top: 0.3rem;
+        color: #b91c1c;
+        font-size: 0.85rem;
+    }
+    .form-checkbox-row label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    .alert-box--error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
