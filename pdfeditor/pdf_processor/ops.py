@@ -502,8 +502,8 @@ def reorder_pages(pdf_path: str, page_order: list[int]) -> str:
 
 PAGE_SIZES_PT: dict[str, tuple[float, float]] = {
     # 1 inch = 72 points
-    "a4": (595.0, 842.0),       # 210 x 297 mm
-    "letter": (612.0, 792.0),   # 8.5 x 11 in
+    "a4": (595.0, 842.0),  # 210 x 297 mm
+    "letter": (612.0, 792.0),  # 8.5 x 11 in
 }
 
 
@@ -543,7 +543,7 @@ def convert_images_to_pdf(
     try:
         for img_path in image_paths:
             try:
-                im = PILImage.open(img_path)
+                im: PILImage.Image = PILImage.open(img_path)
             except Exception as exc:
                 raise ValueError(f"Could not open image: {os.path.basename(img_path)} ({exc})") from exc
 
@@ -650,7 +650,7 @@ def render_page_thumbnail(pdf_path: str, page_number: int, max_width: int = 200)
         zoom = max_width / rect.width if rect.width > 0 else 1.0
         matrix = fitz.Matrix(zoom, zoom)
         pix = page.get_pixmap(matrix=matrix, alpha=False)
-        return pix.tobytes("png")
+        return bytes(pix.tobytes("png"))
 
 
 def _calculate_position(

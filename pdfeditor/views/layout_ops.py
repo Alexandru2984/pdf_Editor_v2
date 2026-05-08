@@ -318,8 +318,7 @@ def reorder_view(request):
             if any(n > page_count for n in page_order):
                 messages.error(
                     request,
-                    _("Page numbers must be between 1 and %(total)d.")
-                    % {"total": page_count},
+                    _("Page numbers must be between 1 and %(total)d.") % {"total": page_count},
                 )
             else:
                 try:
@@ -400,8 +399,8 @@ def page_thumbnail_view(request, pdf_id, page_number):
         raise Http404
     try:
         png = render_page_thumbnail(pdf.path, int(page_number), max_width=180)
-    except Exception:
-        raise Http404
+    except Exception as err:
+        raise Http404 from err
     response = HttpResponse(png, content_type="image/png")
     response["Cache-Control"] = "private, max-age=3600"
     return response

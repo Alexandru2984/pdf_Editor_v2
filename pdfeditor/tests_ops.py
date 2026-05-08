@@ -899,15 +899,13 @@ class ConvertPdfToImagesTests(_MediaRootMixin, TestCase):
                     os.remove(p)
 
 
-def _make_image_file(suffix: str, size: tuple[int, int] = (200, 150), color=(50, 100, 200), mode="RGB") -> str:
+def _make_image_file(
+    suffix: str, size: tuple[int, int] = (200, 150), color=(50, 100, 200), mode="RGB"
+) -> str:
     """Write a simple image to a temp file and return its path."""
     fd, path = tempfile.mkstemp(suffix=suffix)
     os.close(fd)
-    if mode == "RGBA":
-        # Translucent green over the requested colour.
-        im = PILImage.new("RGBA", size, color + (180,))
-    else:
-        im = PILImage.new(mode, size, color)
+    im = PILImage.new("RGBA", size, color + (180,)) if mode == "RGBA" else PILImage.new(mode, size, color)
     fmt = "PNG"
     if suffix.lower() in (".jpg", ".jpeg"):
         fmt = "JPEG"
