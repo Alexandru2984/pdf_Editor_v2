@@ -165,6 +165,17 @@ class ProtectPDFForm(forms.Form):
         return cleaned
 
 
+class UnprotectPDFForm(forms.Form):
+    """Form for removing the password from an encrypted PDF."""
+
+    password = forms.CharField(
+        max_length=128,
+        required=True,
+        label=_("Password"),
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+    )
+
+
 class SignPDFForm(forms.Form):
     """Form for signing a PDF with a user-supplied PKCS#12 certificate."""
 

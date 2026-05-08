@@ -19,6 +19,7 @@ from ..forms import (
     ProtectPDFForm,
     SignPDFForm,
     SplitPDFForm,
+    UnprotectPDFForm,
     VerifyPDFForm,
 )
 from ..models import ProcessedPDF, TrustAnchor
@@ -31,6 +32,7 @@ from ..pdf_processor import (
     merge_pdfs,
     protect_pdf,
     read_pdf_metadata,
+    remove_pdf_password,
     sign_pdf,
     split_pdf,
     verify_pdf_signatures,
@@ -397,6 +399,79 @@ def protect_result_view(request):
 
 def download_protected_view(request):
     output = _fetch_output(request, "protected_pdf_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+
+
+# ---------- Remove password ----------
+
+
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
+def unprotect_view(request):
+    selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
+    if early:
+        return early
+
+    pdf_path = selected_pdf.path
+
+    if request.method == "POST":
+        form = UnprotectPDFForm(request.POST)
+        if form.is_valid():
+            try:
+                output_path = remove_pdf_password(pdf_path, password=form.cleaned_data["password"])
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_UNPROTECT,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session["unprotected_pdf_id"] = str(output.id)
+                messages.success(request, _("Password removed successfully!"))
+                return redirect("unprotect_result")
+            except ValueError as e:
+                messages.error(request, _("Error: %(err)s") % {"err": e})
+            except Exception as e:
+                messages.error(request, _("Error removing password: %(err)s") % {"err": e})
+    else:
+        form = UnprotectPDFForm()
+
+    return render(
+        request,
+        "pdfeditor/unprotect.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+        },
+    )
+
+
+def unprotect_result_view(request):
+    output = _fetch_output(request, "unprotected_pdf_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("Unprotected file not found."))
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "pdfeditor/unprotect_result.html",
+        {
+            "pdf_filename": output.name,
+            "size": os.path.getsize(output.path),
+        },
+    )
+
+
+def download_unprotected_view(request):
+    output = _fetch_output(request, "unprotected_pdf_id")
     if not output:
         messages.error(request, _("File not found."))
         return redirect("dashboard")

@@ -93,6 +93,13 @@
             <a href="{% url 'protect' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="unprotect">
+            <div class="card-icon">🔓</div>
+            <h3>{% trans "Remove Password" %}</h3>
+            <p>{% trans "Strip the password from a PDF you can already open" %}</p>
+            <a href="{% url 'unprotect' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="sign">
             <div class="card-icon">✍️</div>
             <h3>{% trans "Digital Signature" %}</h3>

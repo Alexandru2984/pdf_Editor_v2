@@ -651,6 +651,98 @@ class MetadataViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 302)
 
 
+class UnprotectViewTests(_ViewTestBase):
+    """Encrypted PDFs are placed directly into MEDIA_ROOT to bypass the upload-time
+    page-count check, which can stumble on encrypted documents in some PyMuPDF
+    versions."""
+
+    def _add_encrypted_pdf(self, password="secret123", num_pages=2):
+        from django.conf import settings as dj_settings
+
+        from .models import UploadedPDF
+
+        doc = fitz.open()
+        for i in range(num_pages):
+            page = doc.new_page(width=595, height=842)
+            page.insert_text((72, 100), f"Page {i + 1}", fontsize=12)
+        uploads_dir = os.path.join(dj_settings.MEDIA_ROOT, "uploads")
+        os.makedirs(uploads_dir, exist_ok=True)
+        path = os.path.join(uploads_dir, f"encrypted_{password}.pdf")
+        doc.save(
+            path,
+            encryption=fitz.PDF_ENCRYPT_AES_256,
+            user_pw=password,
+            owner_pw=password,
+        )
+        doc.close()
+
+        pdf = UploadedPDF.objects.create(
+            session_key=self.client.session.session_key or "test-session",
+            name=os.path.basename(path),
+            path=path,
+            size=os.path.getsize(path),
+        )
+        # Ensure the test client carries the same session key the row references.
+        session = self.client.session
+        session.save()
+        UploadedPDF.objects.filter(id=pdf.id).update(session_key=session.session_key)
+        return pdf
+
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("unprotect"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_renders(self):
+        self._add_encrypted_pdf()
+        resp = self.client.get(reverse("unprotect"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_full_workflow_correct_password(self):
+        self._add_encrypted_pdf(password="secret123")
+        resp = self.client.post(reverse("unprotect"), {"password": "secret123"})
+        self.assertEqual(resp.status_code, 302)
+
+        result = self.client.get(reverse("unprotect_result"))
+        self.assertEqual(result.status_code, 200)
+
+        download = self.client.get(reverse("download_unprotected"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
+
+        from .models import ProcessedPDF
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_UNPROTECT)
+        with fitz.open(latest.path) as doc:
+            self.assertFalse(doc.is_encrypted)
+
+    def test_wrong_password_re_renders_with_error(self):
+        self._add_encrypted_pdf(password="correct")
+        resp = self.client.post(reverse("unprotect"), {"password": "wrong"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("unprotected_pdf_id", self.client.session)
+
+    def test_unencrypted_pdf_re_renders_with_error(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(reverse("unprotect"), {"password": "anything"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("unprotected_pdf_id", self.client.session)
+
+    def test_empty_password_field_invalid(self):
+        self._add_encrypted_pdf()
+        resp = self.client.post(reverse("unprotect"), {"password": ""})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("unprotected_pdf_id", self.client.session)
+
+    def test_result_without_session_redirects(self):
+        resp = self.client.get(reverse("unprotect_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_unprotected"))
+        self.assertEqual(resp.status_code, 302)
+
+
 class ReorderViewTests(_ViewTestBase):
     def test_get_without_upload_redirects(self):
         resp = self.client.get(reverse("reorder"))
