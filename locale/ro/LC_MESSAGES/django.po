@@ -3325,3 +3325,59 @@ msgstr "PDF-ul tău a fost decupat la marginile cerute."
 
 msgid "Cannot crop an encrypted PDF — remove the password first"
 msgstr "Nu se poate decupa un PDF criptat — elimină mai întâi parola"
+
+# Flatten
+msgid "Flatten"
+msgstr "Aplatizare"
+
+msgid "Bake annotations and form fields into permanent, non-editable content"
+msgstr "Transformă adnotările și câmpurile de formular în conținut permanent, ne-editabil"
+
+msgid "Flatten PDF"
+msgstr "Aplatizează PDF"
+
+msgid "Bake annotations and form fields into permanent page content."
+msgstr "Transformă adnotările și câmpurile de formular în conținut permanent."
+
+msgid "What flattening does:"
+msgstr "Ce face aplatizarea:"
+
+msgid "Form fields and markup become regular page content. The PDF looks identical, but no one can edit fields, toggle annotations, or change the document afterwards. Text remains selectable."
+msgstr "Câmpurile de formular și adnotările devin conținut obișnuit al paginii. PDF-ul arată identic, dar nimeni nu mai poate edita câmpurile, comuta adnotările sau modifica documentul. Textul rămâne selectabil."
+
+msgid "Flatten annotations"
+msgstr "Aplatizează adnotările"
+
+msgid "Bake comments, highlights, ink, stamps and other markup into the page."
+msgstr "Transformă în pagină comentariile, evidențierile, scrisul și ștampilele."
+
+msgid "Flatten form fields"
+msgstr "Aplatizează câmpurile de formular"
+
+msgid "Convert filled inputs, checkboxes and dropdowns to non-editable text."
+msgstr "Convertește câmpurile completate, casetele de bifare și meniurile drop-down în text ne-editabil."
+
+msgid "Select at least one of annotations or form fields to flatten."
+msgstr "Selectează cel puțin adnotările sau câmpurile de formular pentru aplatizare."
+
+msgid "PDF flattened successfully!"
+msgstr "PDF aplatizat cu succes!"
+
+#, python-format
+msgid "Error flattening PDF: %(err)s"
+msgstr "Eroare la aplatizarea PDF-ului: %(err)s"
+
+msgid "Flattened file not found."
+msgstr "Fișierul aplatizat nu a fost găsit."
+
+msgid "PDF Flattened"
+msgstr "PDF aplatizat"
+
+msgid "PDF Flattened!"
+msgstr "PDF aplatizat!"
+
+msgid "Annotations and form fields are now permanent page content."
+msgstr "Adnotările și câmpurile de formular sunt acum conținut permanent."
+
+msgid "Cannot flatten an encrypted PDF — remove the password first"
+msgstr "Nu se poate aplatiza un PDF criptat — elimină mai întâi parola"

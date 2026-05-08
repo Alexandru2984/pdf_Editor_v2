@@ -743,6 +743,58 @@ class UnprotectViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 302)
 
 
+class FlattenViewTests(_ViewTestBase):
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("flatten"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_renders(self):
+        self.upload(num_pages=1)
+        resp = self.client.get(reverse("flatten"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_full_flatten_workflow(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(
+            reverse("flatten"),
+            {"flatten_annotations": "on", "flatten_forms": "on"},
+        )
+        self.assertEqual(resp.status_code, 302)
+
+        result = self.client.get(reverse("flatten_result"))
+        self.assertEqual(result.status_code, 200)
+
+        download = self.client.get(reverse("download_flattened"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
+
+        from .models import ProcessedPDF
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_FLATTEN)
+        self.assertTrue(latest.path.endswith(".pdf"))
+
+    def test_neither_option_re_renders_with_error(self):
+        self.upload(num_pages=1)
+        # Unchecked checkboxes are simply absent from POST data.
+        resp = self.client.post(reverse("flatten"), {})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("flattened_pdf_id", self.client.session)
+
+    def test_only_annotations_flag_is_accepted(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(reverse("flatten"), {"flatten_annotations": "on"})
+        self.assertEqual(resp.status_code, 302)
+
+    def test_result_without_session_redirects(self):
+        resp = self.client.get(reverse("flatten_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_flattened"))
+        self.assertEqual(resp.status_code, 302)
+
+
 class CropViewTests(_ViewTestBase):
     def test_get_without_upload_redirects(self):
         resp = self.client.get(reverse("crop"))

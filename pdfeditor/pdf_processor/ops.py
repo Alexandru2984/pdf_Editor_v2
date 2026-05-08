@@ -588,6 +588,35 @@ def crop_pages(
     return out_path
 
 
+def flatten_pdf(
+    pdf_path: str,
+    flatten_annotations: bool = True,
+    flatten_forms: bool = True,
+) -> str:
+    """Bake annotations and/or form widgets into permanent page content.
+
+    After flattening the page looks identical, but interactive form fields
+    and annotations are converted to vector text/graphics — they can no
+    longer be edited or toggled. Text remains selectable.
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    if not flatten_annotations and not flatten_forms:
+        raise ValueError("Select at least one of annotations or form fields to flatten")
+
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    out_path = os.path.join(out_dir, f"{base}_flattened_{timestamp()}.pdf")
+
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("Cannot flatten an encrypted PDF — remove the password first")
+        doc.bake(annots=flatten_annotations, widgets=flatten_forms)
+        doc.save(out_path, garbage=4, deflate=True, clean=True)
+
+    return out_path
+
+
 PAGE_SIZES_PT: dict[str, tuple[float, float]] = {
     # 1 inch = 72 points
     "a4": (595.0, 842.0),  # 210 x 297 mm

@@ -1,0 +1,140 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Flatten PDF" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header">
+
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
+                📂 {% trans "Select PDF:" %}
+            </label>
+            <select id="pdf-selector" onchange="window.location.href='{% url 'flatten' %}?pdf=' + encodeURIComponent(this.value)">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="tool-page-title">📋 {% trans "Flatten PDF" %}</h2>
+            <p class="tool-page-subtitle">
+                {% trans "Bake annotations and form fields into permanent page content." %}
+            </p>
+            <div class="tool-info-bar">
+                <div>
+                    <div class="tool-info-label">{% trans "Current File:" %}</div>
+                    <div class="tool-info-value">{{ pdf_name }}</div>
+                </div>
+                <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview tool-info-bar-divider">
+                    👁️ {% trans "Preview" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="flatten-info-box">
+            <p>
+                <strong>ℹ️ {% trans "What flattening does:" %}</strong>
+                {% trans "Form fields and markup become regular page content. The PDF looks identical, but no one can edit fields, toggle annotations, or change the document afterwards. Text remains selectable." %}
+            </p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-checkbox-group">
+                <label class="form-checkbox-row">
+                    {{ form.flatten_annotations }}
+                    <span>
+                        <strong>{{ form.flatten_annotations.label }}</strong>
+                        <small>{{ form.flatten_annotations.help_text }}</small>
+                    </span>
+                </label>
+
+                <label class="form-checkbox-row">
+                    {{ form.flatten_forms }}
+                    <span>
+                        <strong>{{ form.flatten_forms.label }}</strong>
+                        <small>{{ form.flatten_forms.help_text }}</small>
+                    </span>
+                </label>
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                    ← {% trans "Back" %}
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    📋 {% trans "Flatten PDF" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .flatten-info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .form-checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+    .form-checkbox-row {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.75rem;
+        align-items: start;
+        padding: 0.85rem 1rem;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        cursor: pointer;
+    }
+    .form-checkbox-row input[type="checkbox"] {
+        margin-top: 0.2rem;
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+    .form-checkbox-row strong {
+        display: block;
+        color: #111827;
+        font-weight: 600;
+    }
+    .form-checkbox-row small {
+        display: block;
+        color: #6b7280;
+        margin-top: 0.2rem;
+        font-size: 0.85rem;
+    }
+    .alert-box--error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
