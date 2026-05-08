@@ -66,6 +66,7 @@ class ProcessedPDF(models.Model):
     KIND_UNPROTECT = "unprotect"
     KIND_CROP = "crop"
     KIND_FLATTEN = "flatten"
+    KIND_REDACT = "redact"
 
     KIND_CHOICES = [
         (KIND_FIND_REPLACE, "Find & Replace"),
@@ -87,6 +88,7 @@ class ProcessedPDF(models.Model):
         (KIND_UNPROTECT, "Remove Password"),
         (KIND_CROP, "Crop Pages"),
         (KIND_FLATTEN, "Flatten"),
+        (KIND_REDACT, "Redact"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

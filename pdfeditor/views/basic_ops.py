@@ -18,6 +18,7 @@ from ..forms import (
     MetadataForm,
     PdfToImagesForm,
     ProtectPDFForm,
+    RedactPDFForm,
     SignPDFForm,
     SplitPDFForm,
     UnprotectPDFForm,
@@ -34,6 +35,7 @@ from ..pdf_processor import (
     merge_pdfs,
     protect_pdf,
     read_pdf_metadata,
+    redact_text,
     remove_pdf_password,
     sign_pdf,
     split_pdf,
@@ -551,6 +553,94 @@ def flatten_result_view(request):
 
 def download_flattened_view(request):
     output = _fetch_output(request, "flattened_pdf_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+
+
+# ---------- Redact ----------
+
+
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
+def redact_view(request):
+    selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
+    if early:
+        return early
+
+    pdf_path = selected_pdf.path
+
+    if request.method == "POST":
+        form = RedactPDFForm(request.POST)
+        if form.is_valid():
+            try:
+                output_path, match_count = redact_text(
+                    pdf_path,
+                    search_terms=form.cleaned_data["search_terms"],
+                    page_range=form.cleaned_data.get("page_range") or None,
+                )
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_REDACT,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session["redacted_pdf_id"] = str(output.id)
+                request.session["redacted_match_count"] = match_count
+                if match_count == 0:
+                    messages.warning(
+                        request,
+                        _("No matches were found — output is identical to the source."),
+                    )
+                else:
+                    messages.success(
+                        request,
+                        _("Redacted %(count)s match(es) successfully!") % {"count": match_count},
+                    )
+                return redirect("redact_result")
+            except ValueError as e:
+                messages.error(request, _("Error: %(err)s") % {"err": e})
+            except Exception as e:
+                messages.error(request, _("Error redacting PDF: %(err)s") % {"err": e})
+    else:
+        form = RedactPDFForm()
+
+    return render(
+        request,
+        "pdfeditor/redact.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+        },
+    )
+
+
+def redact_result_view(request):
+    output = _fetch_output(request, "redacted_pdf_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("Redacted file not found."))
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "pdfeditor/redact_result.html",
+        {
+            "pdf_filename": output.name,
+            "size": os.path.getsize(output.path),
+            "match_count": request.session.get("redacted_match_count", 0),
+        },
+    )
+
+
+def download_redacted_view(request):
+    output = _fetch_output(request, "redacted_pdf_id")
     if not output:
         messages.error(request, _("File not found."))
         return redirect("dashboard")

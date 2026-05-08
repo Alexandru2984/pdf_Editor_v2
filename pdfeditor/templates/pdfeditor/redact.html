@@ -1,0 +1,141 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Redact PDF" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header">
+
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
+                📂 {% trans "Select PDF:" %}
+            </label>
+            <select id="pdf-selector" onchange="window.location.href='{% url 'redact' %}?pdf=' + encodeURIComponent(this.value)">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="tool-page-title">⬛ {% trans "Redact PDF" %}</h2>
+            <p class="tool-page-subtitle">
+                {% trans "Permanently strip sensitive text — content is removed from the PDF, not just hidden behind a black box." %}
+            </p>
+            <div class="tool-info-bar">
+                <div>
+                    <div class="tool-info-label">{% trans "Current File:" %}</div>
+                    <div class="tool-info-value">{{ pdf_name }}</div>
+                </div>
+                <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview tool-info-bar-divider">
+                    👁️ {% trans "Preview" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="redact-warning-box">
+            <p>
+                <strong>⚠️ {% trans "Warning:" %}</strong>
+                {% trans "Redaction is permanent and irreversible. Always keep the original PDF if you might need the redacted text again." %}
+            </p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-field">
+                <label class="form-field-label" for="{{ form.search_terms.id_for_label }}">
+                    {{ form.search_terms.label }}
+                </label>
+                {{ form.search_terms }}
+                <small class="form-field-help">{{ form.search_terms.help_text }}</small>
+                {% if form.search_terms.errors %}<div class="form-field-error">{{ form.search_terms.errors }}</div>{% endif %}
+            </div>
+
+            <div class="form-field">
+                <label class="form-field-label" for="{{ form.page_range.id_for_label }}">
+                    {{ form.page_range.label }}
+                </label>
+                {{ form.page_range }}
+                <small class="form-field-help">{{ form.page_range.help_text }}</small>
+                {% if form.page_range.errors %}<div class="form-field-error">{{ form.page_range.errors }}</div>{% endif %}
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                    ← {% trans "Back" %}
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    ⬛ {% trans "Redact PDF" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .redact-warning-box {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .form-field {
+        margin-bottom: 1.25rem;
+    }
+    .form-field-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+        color: var(--text-primary, #1f2937);
+    }
+    .form-field textarea,
+    .form-field input[type="text"] {
+        width: 100%;
+        padding: 0.625rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+        font-family: inherit;
+    }
+    .form-field textarea {
+        resize: vertical;
+        min-height: 6rem;
+    }
+    .form-field-help {
+        display: block;
+        margin-top: 0.35rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    .form-field-error {
+        color: #b91c1c;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    .alert-box--error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
