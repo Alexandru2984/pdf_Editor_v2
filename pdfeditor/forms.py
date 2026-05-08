@@ -415,8 +415,8 @@ class ReorderPagesForm(forms.Form):
             raise forms.ValidationError(_("You must keep at least one page."))
         try:
             order = [int(x.strip()) for x in raw.split(",") if x.strip()]
-        except ValueError:
-            raise forms.ValidationError(_("Invalid page order format."))
+        except ValueError as err:
+            raise forms.ValidationError(_("Invalid page order format.")) from err
         if not order:
             raise forms.ValidationError(_("You must keep at least one page."))
         if any(n < 1 for n in order):

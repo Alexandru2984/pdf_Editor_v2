@@ -737,8 +737,7 @@ def images_to_pdf_view(request):
         elif len(uploaded) > _IMAGES_TO_PDF_MAX_FILES:
             messages.error(
                 request,
-                _("Too many images — limit is %(max)d per export.")
-                % {"max": _IMAGES_TO_PDF_MAX_FILES},
+                _("Too many images — limit is %(max)d per export.") % {"max": _IMAGES_TO_PDF_MAX_FILES},
             )
         elif form.is_valid():
             valid_files: list = []
@@ -747,8 +746,7 @@ def images_to_pdf_view(request):
                 if ext not in _IMAGES_TO_PDF_ALLOWED_EXT:
                     messages.warning(
                         request,
-                        _('Skipped "%(name)s" — unsupported image format.')
-                        % {"name": f.name},
+                        _('Skipped "%(name)s" — unsupported image format.') % {"name": f.name},
                     )
                     continue
                 if f.size > _IMAGES_TO_PDF_MAX_BYTES_PER_FILE:
@@ -773,7 +771,7 @@ def images_to_pdf_view(request):
                 if order and all(0 <= i < len(uploaded) for i in order):
                     # Translate indices: ``order`` references the original
                     # ``uploaded`` list, not the post-validation ``valid_files``.
-                    valid_set = set(id(f) for f in valid_files)
+                    valid_set = {id(f) for f in valid_files}
                     for i in order:
                         f = uploaded[i]
                         if id(f) in valid_set:
