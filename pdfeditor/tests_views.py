@@ -551,6 +551,106 @@ class ImagesToPdfViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 302)
 
 
+class MetadataViewTests(_ViewTestBase):
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("metadata"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_renders_with_existing_values(self):
+        self.upload()
+        resp = self.client.get(reverse("metadata"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b"Edit", resp.content)
+
+    def test_full_workflow_writes_new_metadata(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(
+            reverse("metadata"),
+            {
+                "title": "Brand New Title",
+                "author": "New Author",
+                "subject": "Sub",
+                "keywords": "k1, k2",
+                "creator": "Word",
+                "producer": "PyMuPDF",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+
+        result = self.client.get(reverse("metadata_result"))
+        self.assertEqual(result.status_code, 200)
+        self.assertIn(b"Brand New Title", result.content)
+
+        download = self.client.get(reverse("download_metadata"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
+
+        from .models import ProcessedPDF
+        from .pdf_processor import read_pdf_metadata
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_METADATA)
+        meta = read_pdf_metadata(latest.path)
+        self.assertEqual(meta["title"], "Brand New Title")
+        self.assertEqual(meta["author"], "New Author")
+        self.assertEqual(meta["keywords"], "k1, k2")
+
+    def test_empty_fields_clear_metadata(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(
+            reverse("metadata"),
+            {
+                "title": "",
+                "author": "",
+                "subject": "",
+                "keywords": "",
+                "creator": "",
+                "producer": "",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+
+        from .models import ProcessedPDF
+        from .pdf_processor import read_pdf_metadata
+
+        latest = ProcessedPDF.objects.first()
+        meta = read_pdf_metadata(latest.path)
+        for key in ("title", "author", "subject", "keywords", "creator", "producer"):
+            self.assertEqual(meta[key], "")
+
+    def test_clear_dates_checkbox(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(
+            reverse("metadata"),
+            {
+                "title": "T",
+                "author": "",
+                "subject": "",
+                "keywords": "",
+                "creator": "",
+                "producer": "",
+                "clear_dates": "on",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+
+        from .models import ProcessedPDF
+        from .pdf_processor import read_pdf_metadata
+
+        latest = ProcessedPDF.objects.first()
+        meta = read_pdf_metadata(latest.path)
+        self.assertIsNone(meta["creation_date"])
+        self.assertIsNone(meta["mod_date"])
+
+    def test_result_without_session_redirects(self):
+        resp = self.client.get(reverse("metadata_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_metadata"))
+        self.assertEqual(resp.status_code, 302)
+
+
 class ReorderViewTests(_ViewTestBase):
     def test_get_without_upload_redirects(self):
         resp = self.client.get(reverse("reorder"))

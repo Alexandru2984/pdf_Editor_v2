@@ -14,6 +14,7 @@ from ..forms import (
     GenerateCertForm,
     ImagesToPdfForm,
     MergePDFForm,
+    MetadataForm,
     PdfToImagesForm,
     ProtectPDFForm,
     SignPDFForm,
@@ -26,8 +27,10 @@ from ..pdf_processor import (
     convert_images_to_pdf,
     convert_pdf_to_docx,
     convert_pdf_to_images,
+    edit_pdf_metadata,
     merge_pdfs,
     protect_pdf,
+    read_pdf_metadata,
     sign_pdf,
     split_pdf,
     verify_pdf_signatures,
@@ -709,6 +712,120 @@ def to_images_result_view(request):
 
 def download_images_view(request):
     output = _fetch_output(request, "to_images_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+
+
+# ---------- Metadata editor ----------
+
+
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
+def metadata_view(request):
+    selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
+    if early:
+        return early
+
+    pdf_path = selected_pdf.path
+
+    try:
+        current_meta = read_pdf_metadata(pdf_path)
+    except Exception:
+        current_meta = {
+            "title": "",
+            "author": "",
+            "subject": "",
+            "keywords": "",
+            "creator": "",
+            "producer": "",
+            "creation_date": None,
+            "mod_date": None,
+        }
+
+    if request.method == "POST":
+        form = MetadataForm(request.POST)
+        if form.is_valid():
+            try:
+                output_path = edit_pdf_metadata(
+                    pdf_path,
+                    metadata={
+                        "title": form.cleaned_data["title"],
+                        "author": form.cleaned_data["author"],
+                        "subject": form.cleaned_data["subject"],
+                        "keywords": form.cleaned_data["keywords"],
+                        "creator": form.cleaned_data["creator"],
+                        "producer": form.cleaned_data["producer"],
+                    },
+                    clear_dates=form.cleaned_data.get("clear_dates", False),
+                )
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_METADATA,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session["metadata_pdf_id"] = str(output.id)
+                messages.success(request, _("Metadata updated successfully!"))
+                return redirect("metadata_result")
+            except ValueError as e:
+                messages.error(request, _("Error: %(err)s") % {"err": e})
+            except Exception as e:
+                messages.error(request, _("Error updating metadata: %(err)s") % {"err": e})
+    else:
+        form = MetadataForm(
+            initial={
+                "title": current_meta["title"],
+                "author": current_meta["author"],
+                "subject": current_meta["subject"],
+                "keywords": current_meta["keywords"],
+                "creator": current_meta["creator"],
+                "producer": current_meta["producer"],
+            }
+        )
+
+    return render(
+        request,
+        "pdfeditor/metadata.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+            "current_meta": current_meta,
+        },
+    )
+
+
+def metadata_result_view(request):
+    output = _fetch_output(request, "metadata_pdf_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("Updated PDF not found."))
+        return redirect("dashboard")
+
+    try:
+        new_meta = read_pdf_metadata(output.path)
+    except Exception:
+        new_meta = None
+
+    return render(
+        request,
+        "pdfeditor/metadata_result.html",
+        {
+            "pdf_filename": output.name,
+            "size": os.path.getsize(output.path),
+            "new_meta": new_meta,
+        },
+    )
+
+
+def download_metadata_view(request):
+    output = _fetch_output(request, "metadata_pdf_id")
     if not output:
         messages.error(request, _("File not found."))
         return redirect("dashboard")

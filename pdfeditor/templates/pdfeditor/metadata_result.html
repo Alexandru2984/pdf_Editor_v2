@@ -1,0 +1,102 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Metadata Updated" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header result-success-header">
+        <div class="result-success-icon">🏷️</div>
+        <h2>{% trans "Metadata Updated!" %}</h2>
+        <p>{% trans "Your PDF now has the new document properties." %}</p>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="result-file-row">
+            <div class="result-file-icon">📄</div>
+            <div class="result-file-info">
+                <div class="result-file-name">{{ pdf_filename }}</div>
+                <div class="result-file-meta">{{ size|filesizeformat }}</div>
+            </div>
+        </div>
+
+        {% if new_meta %}
+        <div class="meta-summary">
+            <h3 class="meta-summary-title">{% trans "New Metadata" %}</h3>
+            <dl class="meta-summary-list">
+                <div class="meta-summary-row">
+                    <dt>{% trans "Title" %}</dt>
+                    <dd>{{ new_meta.title|default:"—" }}</dd>
+                </div>
+                <div class="meta-summary-row">
+                    <dt>{% trans "Author" %}</dt>
+                    <dd>{{ new_meta.author|default:"—" }}</dd>
+                </div>
+                <div class="meta-summary-row">
+                    <dt>{% trans "Subject" %}</dt>
+                    <dd>{{ new_meta.subject|default:"—" }}</dd>
+                </div>
+                <div class="meta-summary-row">
+                    <dt>{% trans "Keywords" %}</dt>
+                    <dd>{{ new_meta.keywords|default:"—" }}</dd>
+                </div>
+                <div class="meta-summary-row">
+                    <dt>{% trans "Creator" %}</dt>
+                    <dd>{{ new_meta.creator|default:"—" }}</dd>
+                </div>
+                <div class="meta-summary-row">
+                    <dt>{% trans "Producer" %}</dt>
+                    <dd>{{ new_meta.producer|default:"—" }}</dd>
+                </div>
+            </dl>
+        </div>
+        {% endif %}
+
+        <div class="result-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                ← {% trans "Dashboard" %}
+            </a>
+            <a href="{% url 'download_metadata' %}" class="btn btn-primary">
+                📥 {% trans "Download PDF" %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .meta-summary {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem 1.25rem;
+        margin: 1rem 0 1.25rem;
+    }
+    .meta-summary-title {
+        margin: 0 0 0.75rem;
+        font-size: 1rem;
+        color: #374151;
+    }
+    .meta-summary-list {
+        margin: 0;
+    }
+    .meta-summary-row {
+        display: grid;
+        grid-template-columns: 9rem 1fr;
+        gap: 0.75rem;
+        padding: 0.4rem 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .meta-summary-row:last-child {
+        border-bottom: none;
+    }
+    .meta-summary-row dt {
+        font-weight: 600;
+        color: #6b7280;
+    }
+    .meta-summary-row dd {
+        margin: 0;
+        color: #111827;
+        word-break: break-word;
+    }
+</style>
+{% endblock %}

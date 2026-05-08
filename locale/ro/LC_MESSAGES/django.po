@@ -3110,5 +3110,100 @@ msgstr[0] "%(count)s pagină"
 msgstr[1] "%(count)s pagini"
 msgstr[2] "%(count)s de pagini"
 
-msgid "Download PDF"
-msgstr "Descarcă PDF"
+# Metadata editor
+msgid "Edit Metadata"
+msgstr "Editează metadatele"
+
+msgid "Update title, author, subject, keywords, and other PDF properties"
+msgstr "Actualizează titlul, autorul, subiectul, cuvintele cheie și alte proprietăți ale PDF-ului"
+
+msgid "Edit PDF Metadata"
+msgstr "Editează metadatele PDF"
+
+msgid "Update the document properties stored inside the PDF."
+msgstr "Actualizează proprietățile documentului stocate în PDF."
+
+msgid "Leave a field empty to clear that metadata entry. Existing values are pre-filled below."
+msgstr "Lasă un câmp gol pentru a șterge metadata respectivă. Valorile existente sunt completate mai jos."
+
+msgid "Created:"
+msgstr "Creat:"
+
+msgid "Modified:"
+msgstr "Modificat:"
+
+msgid "Title"
+msgstr "Titlu"
+
+msgid "Author"
+msgstr "Autor"
+
+msgid "Subject"
+msgstr "Subiect"
+
+msgid "Keywords"
+msgstr "Cuvinte cheie"
+
+msgid "Creator"
+msgstr "Creator"
+
+msgid "Producer"
+msgstr "Producător"
+
+msgid "e.g. Quarterly Report"
+msgstr "ex. Raport trimestrial"
+
+msgid "e.g. Jane Doe"
+msgstr "ex. Ion Popescu"
+
+msgid "e.g. Sales analysis"
+msgstr "ex. Analiză vânzări"
+
+msgid "comma-separated, e.g. report, sales, q4"
+msgstr "separate prin virgulă, ex. raport, vânzări, t4"
+
+msgid "e.g. Microsoft Word"
+msgstr "ex. Microsoft Word"
+
+msgid "e.g. Adobe PDF Library"
+msgstr "ex. Adobe PDF Library"
+
+msgid "The application that produced the original document (e.g. Word, LibreOffice)."
+msgstr "Aplicația care a produs documentul original (ex. Word, LibreOffice)."
+
+msgid "The application that converted the source to PDF."
+msgstr "Aplicația care a convertit sursa în PDF."
+
+msgid "Clear creation and modification dates"
+msgstr "Șterge datele de creare și modificare"
+
+msgid "Remove the embedded creation/modification timestamps."
+msgstr "Elimină marcajele de timp pentru creare/modificare din document."
+
+msgid "Save Metadata"
+msgstr "Salvează metadatele"
+
+msgid "Metadata updated successfully!"
+msgstr "Metadate actualizate cu succes!"
+
+#, python-format
+msgid "Error updating metadata: %(err)s"
+msgstr "Eroare la actualizarea metadatelor: %(err)s"
+
+msgid "Updated PDF not found."
+msgstr "PDF-ul actualizat nu a fost găsit."
+
+msgid "Metadata Updated"
+msgstr "Metadate actualizate"
+
+msgid "Metadata Updated!"
+msgstr "Metadate actualizate!"
+
+msgid "Your PDF now has the new document properties."
+msgstr "PDF-ul tău are acum noile proprietăți ale documentului."
+
+msgid "New Metadata"
+msgstr "Metadate noi"
+
+msgid "Cannot edit metadata on an encrypted PDF — remove the password first"
+msgstr "Nu se pot edita metadatele unui PDF criptat — elimină mai întâi parola"

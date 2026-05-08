@@ -319,6 +319,46 @@ class ConvertToDocxForm(forms.Form):
     """No-fields form for the PDF → DOCX conversion (CSRF-only)."""
 
 
+class MetadataForm(forms.Form):
+    """Edit the standard PDF metadata fields (Title, Author, Subject, ...)."""
+
+    title = forms.CharField(
+        required=False,
+        max_length=500,
+        widget=forms.TextInput(attrs={"placeholder": _("e.g. Quarterly Report")}),
+    )
+    author = forms.CharField(
+        required=False,
+        max_length=500,
+        widget=forms.TextInput(attrs={"placeholder": _("e.g. Jane Doe")}),
+    )
+    subject = forms.CharField(
+        required=False,
+        max_length=500,
+        widget=forms.TextInput(attrs={"placeholder": _("e.g. Sales analysis")}),
+    )
+    keywords = forms.CharField(
+        required=False,
+        max_length=1000,
+        widget=forms.TextInput(attrs={"placeholder": _("comma-separated, e.g. report, sales, q4")}),
+    )
+    creator = forms.CharField(
+        required=False,
+        max_length=500,
+        widget=forms.TextInput(attrs={"placeholder": _("e.g. Microsoft Word")}),
+    )
+    producer = forms.CharField(
+        required=False,
+        max_length=500,
+        widget=forms.TextInput(attrs={"placeholder": _("e.g. Adobe PDF Library")}),
+    )
+    clear_dates = forms.BooleanField(
+        required=False,
+        label=_("Clear creation and modification dates"),
+        help_text=_("Remove the embedded creation/modification timestamps."),
+    )
+
+
 class ImagesToPdfForm(forms.Form):
     """Form for assembling a PDF from one or more uploaded images.
 
