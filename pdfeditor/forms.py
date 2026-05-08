@@ -683,3 +683,56 @@ class RephraseForm(forms.Form):
         else:
             # Default fallback
             self.fields["model"].choices = [("", "Default Model")]
+
+
+class CropPagesForm(forms.Form):
+    """Crop margins (in percent of page width/height) from PDF pages."""
+
+    top = forms.FloatField(
+        required=False,
+        initial=0,
+        min_value=0,
+        max_value=49,
+        label=_("Top margin (%)"),
+        widget=forms.NumberInput(attrs={"step": "0.5", "min": "0", "max": "49"}),
+    )
+    right = forms.FloatField(
+        required=False,
+        initial=0,
+        min_value=0,
+        max_value=49,
+        label=_("Right margin (%)"),
+        widget=forms.NumberInput(attrs={"step": "0.5", "min": "0", "max": "49"}),
+    )
+    bottom = forms.FloatField(
+        required=False,
+        initial=0,
+        min_value=0,
+        max_value=49,
+        label=_("Bottom margin (%)"),
+        widget=forms.NumberInput(attrs={"step": "0.5", "min": "0", "max": "49"}),
+    )
+    left = forms.FloatField(
+        required=False,
+        initial=0,
+        min_value=0,
+        max_value=49,
+        label=_("Left margin (%)"),
+        widget=forms.NumberInput(attrs={"step": "0.5", "min": "0", "max": "49"}),
+    )
+    page_range = forms.CharField(
+        required=False,
+        max_length=200,
+        label=_("Page Range (Optional)"),
+        help_text=_("Leave empty to crop all pages, or specify like: 1-3,5,7-9"),
+        widget=forms.TextInput(attrs={"placeholder": _("e.g. 1-3,5,7-9 or leave empty for all")}),
+    )
+
+    def clean(self) -> dict:
+        cleaned = super().clean()
+        margins = {k: cleaned.get(k) or 0.0 for k in ("top", "right", "bottom", "left")}
+        for key in margins:
+            cleaned[key] = margins[key]
+        if all(margins[k] == 0 for k in margins):
+            raise forms.ValidationError(_("Set at least one margin greater than zero."))
+        return cleaned

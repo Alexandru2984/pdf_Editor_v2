@@ -743,6 +743,73 @@ class UnprotectViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 302)
 
 
+class CropViewTests(_ViewTestBase):
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("crop"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_renders(self):
+        self.upload(num_pages=2)
+        resp = self.client.get(reverse("crop"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_full_crop_workflow(self):
+        self.upload(num_pages=2)
+        resp = self.client.post(
+            reverse("crop"),
+            {"top": "10", "right": "5", "bottom": "10", "left": "5", "page_range": ""},
+        )
+        self.assertEqual(resp.status_code, 302)
+
+        result = self.client.get(reverse("crop_result"))
+        self.assertEqual(result.status_code, 200)
+
+        download = self.client.get(reverse("download_cropped"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
+
+        from .models import ProcessedPDF
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_CROP)
+        self.assertTrue(latest.path.endswith(".pdf"))
+
+    def test_zero_margins_re_renders_with_error(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(
+            reverse("crop"),
+            {"top": "0", "right": "0", "bottom": "0", "left": "0", "page_range": ""},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("cropped_pdf_id", self.client.session)
+
+    def test_out_of_range_margin_rejected(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(
+            reverse("crop"),
+            {"top": "60", "right": "0", "bottom": "0", "left": "0", "page_range": ""},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("cropped_pdf_id", self.client.session)
+
+    def test_invalid_page_range_re_renders(self):
+        self.upload(num_pages=2)
+        resp = self.client.post(
+            reverse("crop"),
+            {"top": "10", "right": "0", "bottom": "0", "left": "0", "page_range": "99"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("cropped_pdf_id", self.client.session)
+
+    def test_result_without_session_redirects(self):
+        resp = self.client.get(reverse("crop_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_cropped"))
+        self.assertEqual(resp.status_code, 302)
+
+
 class ReorderViewTests(_ViewTestBase):
     def test_get_without_upload_redirects(self):
         resp = self.client.get(reverse("reorder"))

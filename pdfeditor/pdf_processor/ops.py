@@ -532,6 +532,62 @@ def reorder_pages(pdf_path: str, page_order: list[int]) -> str:
     return out_path
 
 
+def crop_pages(
+    pdf_path: str,
+    top: float = 0.0,
+    right: float = 0.0,
+    bottom: float = 0.0,
+    left: float = 0.0,
+    page_range: str | None = None,
+) -> str:
+    """Shrink the visible area of pages by removing percentage margins.
+
+    Each margin is expressed in percent of the page width (left/right) or
+    height (top/bottom). Values must be in ``[0, 49]`` and opposite margins
+    must sum to less than 100. Cropping is implemented via PyMuPDF's
+    ``set_cropbox`` — viewers respect the smaller box but the underlying
+    page content is preserved.
+
+    ``page_range`` is the standard ``"1-3,5,7-9"`` syntax; ``None`` or an
+    empty string means every page.
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    margins = (top, right, bottom, left)
+    for m in margins:
+        if m is None or m < 0 or m >= 50:
+            raise ValueError("Each margin must be in [0, 49] percent")
+    if all(m == 0 for m in margins):
+        raise ValueError("At least one margin must be greater than zero")
+
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    out_path = os.path.join(out_dir, f"{base}_cropped_{timestamp()}.pdf")
+
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("Cannot crop an encrypted PDF — remove the password first")
+        total = len(doc)
+        if total == 0:
+            raise ValueError("PDF has no pages")
+        indices = parse_page_range(page_range or "", total)
+
+        for idx in indices:
+            page = doc[idx]
+            r = page.rect
+            new_box = fitz.Rect(
+                r.x0 + r.width * left / 100.0,
+                r.y0 + r.height * top / 100.0,
+                r.x1 - r.width * right / 100.0,
+                r.y1 - r.height * bottom / 100.0,
+            )
+            page.set_cropbox(new_box)
+
+        doc.save(out_path, garbage=4, deflate=True, clean=True)
+
+    return out_path
+
+
 PAGE_SIZES_PT: dict[str, tuple[float, float]] = {
     # 1 inch = 72 points
     "a4": (595.0, 842.0),  # 210 x 297 mm
