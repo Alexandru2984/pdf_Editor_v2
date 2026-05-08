@@ -736,3 +736,26 @@ class CropPagesForm(forms.Form):
         if all(margins[k] == 0 for k in margins):
             raise forms.ValidationError(_("Set at least one margin greater than zero."))
         return cleaned
+
+
+class FlattenPDFForm(forms.Form):
+    """Bake annotations and/or form widgets into permanent page content."""
+
+    flatten_annotations = forms.BooleanField(
+        required=False,
+        initial=True,
+        label=_("Flatten annotations"),
+        help_text=_("Bake comments, highlights, ink, stamps and other markup into the page."),
+    )
+    flatten_forms = forms.BooleanField(
+        required=False,
+        initial=True,
+        label=_("Flatten form fields"),
+        help_text=_("Convert filled inputs, checkboxes and dropdowns to non-editable text."),
+    )
+
+    def clean(self) -> dict:
+        cleaned = super().clean()
+        if not cleaned.get("flatten_annotations") and not cleaned.get("flatten_forms"):
+            raise forms.ValidationError(_("Select at least one of annotations or form fields to flatten."))
+        return cleaned

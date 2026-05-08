@@ -21,6 +21,7 @@ from .pdf_processor.ops import (
     convert_pdf_to_images,
     crop_pages,
     edit_pdf_metadata,
+    flatten_pdf,
     merge_pdfs,
     protect_pdf,
     read_pdf_metadata,
@@ -1325,3 +1326,93 @@ class CropPagesTests(_MediaRootMixin, TestCase):
         out = crop_pages(self.path, top=10)
         self.tmp_files.append(out)
         self.assertIn("cropped", os.path.basename(out))
+
+
+def _make_pdf_with_form_and_annotation() -> str:
+    """Create a 1-page PDF with one text widget and one text annotation."""
+    doc = fitz.open()
+    page = doc.new_page(width=595, height=842)
+    page.insert_text((72, 72), "Document body.", fontsize=12)
+    widget = fitz.Widget()
+    widget.field_name = "name"
+    widget.field_type = fitz.PDF_WIDGET_TYPE_TEXT
+    widget.field_value = "Alice"
+    widget.rect = fitz.Rect(72, 120, 280, 145)
+    page.add_widget(widget)
+    page.add_text_annot((72, 200), "Reviewer note")
+    fd, path = tempfile.mkstemp(suffix=".pdf")
+    os.close(fd)
+    doc.save(path)
+    doc.close()
+    return path
+
+
+class FlattenPdfTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.tmp_files: list[str] = []
+        self.path = _make_pdf_with_form_and_annotation()
+        self.tmp_files.append(self.path)
+
+    def tearDown(self):
+        for p in self.tmp_files:
+            if os.path.exists(p):
+                os.remove(p)
+
+    def _count(self, pdf_path):
+        with fitz.open(pdf_path) as doc:
+            page = doc[0]
+            widgets = list(page.widgets() or [])
+            annots = list(page.annots() or [])
+            return len(widgets), len(annots)
+
+    def test_source_has_form_and_annotation(self):
+        widgets, annots = self._count(self.path)
+        self.assertEqual(widgets, 1)
+        self.assertGreaterEqual(annots, 1)
+
+    def test_flatten_both_removes_widgets_and_annotations(self):
+        out = flatten_pdf(self.path)
+        self.tmp_files.append(out)
+        widgets, annots = self._count(out)
+        self.assertEqual(widgets, 0)
+        self.assertEqual(annots, 0)
+
+    def test_flatten_only_forms_keeps_annotations(self):
+        out = flatten_pdf(self.path, flatten_annotations=False, flatten_forms=True)
+        self.tmp_files.append(out)
+        widgets, annots = self._count(out)
+        self.assertEqual(widgets, 0)
+        self.assertGreaterEqual(annots, 1)
+
+    def test_flatten_only_annotations_keeps_widgets(self):
+        out = flatten_pdf(self.path, flatten_annotations=True, flatten_forms=False)
+        self.tmp_files.append(out)
+        widgets, annots = self._count(out)
+        self.assertEqual(widgets, 1)
+        self.assertEqual(annots, 0)
+
+    def test_neither_option_raises(self):
+        with self.assertRaises(ValueError):
+            flatten_pdf(self.path, flatten_annotations=False, flatten_forms=False)
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            flatten_pdf("/no/such/file.pdf")
+
+    def test_encrypted_pdf_raises(self):
+        encrypted = protect_pdf(self.path, user_password="pw")
+        self.tmp_files.append(encrypted)
+        with self.assertRaises(ValueError):
+            flatten_pdf(encrypted)
+
+    def test_output_basename_marks_flattened(self):
+        out = flatten_pdf(self.path)
+        self.tmp_files.append(out)
+        self.assertIn("flattened", os.path.basename(out))
+
+    def test_text_remains_searchable(self):
+        out = flatten_pdf(self.path)
+        self.tmp_files.append(out)
+        with fitz.open(out) as doc:
+            text = doc[0].get_text()
+        self.assertIn("Document body", text)
