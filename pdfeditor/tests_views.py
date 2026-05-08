@@ -795,6 +795,78 @@ class FlattenViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 302)
 
 
+class RedactViewTests(_ViewTestBase):
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("redact"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_renders(self):
+        self.upload(num_pages=1)
+        resp = self.client.get(reverse("redact"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_full_redact_workflow(self):
+        self.upload(num_pages=1, text_prefix="badword")
+        resp = self.client.post(
+            reverse("redact"),
+            {"search_terms": "badword", "page_range": ""},
+        )
+        self.assertEqual(resp.status_code, 302)
+
+        result = self.client.get(reverse("redact_result"))
+        self.assertEqual(result.status_code, 200)
+
+        download = self.client.get(reverse("download_redacted"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
+
+        from .models import ProcessedPDF
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_REDACT)
+        self.assertGreaterEqual(self.client.session.get("redacted_match_count", 0), 1)
+        with fitz.open(latest.path) as doc:
+            self.assertNotIn("badword", doc[0].get_text())
+
+    def test_multiple_terms_one_per_line(self):
+        self.upload(num_pages=1, text_prefix="Page 1 alpha beta")
+        resp = self.client.post(
+            reverse("redact"),
+            {"search_terms": "alpha\nbeta", "page_range": ""},
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertGreaterEqual(self.client.session.get("redacted_match_count", 0), 2)
+
+    def test_no_match_still_succeeds_with_zero_count(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(
+            reverse("redact"),
+            {"search_terms": "DEFINITELY_NOT_HERE_xyz", "page_range": ""},
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(self.client.session.get("redacted_match_count"), 0)
+
+    def test_empty_terms_re_renders(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(reverse("redact"), {"search_terms": "   \n  ", "page_range": ""})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("redacted_pdf_id", self.client.session)
+
+    def test_invalid_page_range_re_renders(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(reverse("redact"), {"search_terms": "x", "page_range": "99"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("redacted_pdf_id", self.client.session)
+
+    def test_result_without_session_redirects(self):
+        resp = self.client.get(reverse("redact_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_redacted"))
+        self.assertEqual(resp.status_code, 302)
+
+
 class CropViewTests(_ViewTestBase):
     def test_get_without_upload_redirects(self):
         resp = self.client.get(reverse("crop"))

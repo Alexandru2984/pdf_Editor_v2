@@ -759,3 +759,33 @@ class FlattenPDFForm(forms.Form):
         if not cleaned.get("flatten_annotations") and not cleaned.get("flatten_forms"):
             raise forms.ValidationError(_("Select at least one of annotations or form fields to flatten."))
         return cleaned
+
+
+class RedactPDFForm(forms.Form):
+    """Permanently strip text matches from a PDF (true redaction)."""
+
+    search_terms = forms.CharField(
+        required=True,
+        label=_("Text to redact"),
+        help_text=_("One term per line. Matching is case-insensitive."),
+        widget=forms.Textarea(
+            attrs={
+                "rows": 5,
+                "placeholder": _("e.g.\nJohn Doe\nclassified\nproject-x"),
+            }
+        ),
+    )
+    page_range = forms.CharField(
+        required=False,
+        max_length=200,
+        label=_("Page Range (Optional)"),
+        help_text=_("Leave empty to scan all pages, or specify like: 1-3,5,7-9"),
+        widget=forms.TextInput(attrs={"placeholder": _("e.g. 1-3,5,7-9 or leave empty for all")}),
+    )
+
+    def clean_search_terms(self) -> list[str]:
+        raw = self.cleaned_data["search_terms"]
+        terms = [line.strip() for line in raw.splitlines() if line.strip()]
+        if not terms:
+            raise forms.ValidationError(_("Provide at least one search term."))
+        return terms

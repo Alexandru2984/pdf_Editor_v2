@@ -3381,3 +3381,80 @@ msgstr "Adnotările și câmpurile de formular sunt acum conținut permanent."
 
 msgid "Cannot flatten an encrypted PDF — remove the password first"
 msgstr "Nu se poate aplatiza un PDF criptat — elimină mai întâi parola"
+
+# Redact
+msgid "Redact Text"
+msgstr "Redactează text"
+
+msgid "Permanently remove sensitive text — content is stripped, not just covered"
+msgstr "Elimină permanent textul sensibil — conținutul este șters, nu doar acoperit"
+
+msgid "Redact PDF"
+msgstr "Redactează PDF"
+
+msgid "Permanently strip sensitive text — content is removed from the PDF, not just hidden behind a black box."
+msgstr "Elimină permanent textul sensibil — conținutul este scos din PDF, nu doar ascuns sub un dreptunghi negru."
+
+msgid "Warning:"
+msgstr "Avertisment:"
+
+msgid "Redaction is permanent and irreversible. Always keep the original PDF if you might need the redacted text again."
+msgstr "Redactarea este permanentă și ireversibilă. Păstrează întotdeauna PDF-ul original dacă ai putea avea nevoie din nou de textul redactat."
+
+msgid "Text to redact"
+msgstr "Text de redactat"
+
+msgid "One term per line. Matching is case-insensitive."
+msgstr "Câte un termen pe rând. Căutarea ignoră majusculele."
+
+msgid ""
+"e.g.\n"
+"John Doe\n"
+"classified\n"
+"project-x"
+msgstr ""
+"ex.\n"
+"Ion Popescu\n"
+"clasificat\n"
+"proiect-x"
+
+msgid "Leave empty to scan all pages, or specify like: 1-3,5,7-9"
+msgstr "Lasă gol pentru a scana toate paginile sau specifică precum: 1-3,5,7-9"
+
+msgid "Provide at least one search term."
+msgstr "Furnizează cel puțin un termen de căutare."
+
+#, python-format
+msgid "Redacted %(count)s match(es) successfully!"
+msgstr "Redactate cu succes %(count)s potriviri!"
+
+msgid "No matches were found — output is identical to the source."
+msgstr "Nu au fost găsite potriviri — rezultatul este identic cu sursa."
+
+msgid "No matches were found — the output is identical to the source."
+msgstr "Nu au fost găsite potriviri — rezultatul este identic cu sursa."
+
+#, python-format
+msgid "Error redacting PDF: %(err)s"
+msgstr "Eroare la redactarea PDF-ului: %(err)s"
+
+msgid "Redacted file not found."
+msgstr "Fișierul redactat nu a fost găsit."
+
+msgid "PDF Redacted"
+msgstr "PDF redactat"
+
+msgid "PDF Redacted!"
+msgstr "PDF redactat!"
+
+msgid "%(count)s match was permanently removed."
+msgid_plural "%(count)s matches were permanently removed."
+msgstr[0] "%(count)s potrivire a fost eliminată permanent."
+msgstr[1] "%(count)s potriviri au fost eliminate permanent."
+msgstr[2] "%(count)s de potriviri au fost eliminate permanent."
+
+msgid "Cannot redact an encrypted PDF — remove the password first"
+msgstr "Nu se poate redacta un PDF criptat — elimină mai întâi parola"
+
+msgid "Provide at least one search term"
+msgstr "Furnizează cel puțin un termen de căutare"

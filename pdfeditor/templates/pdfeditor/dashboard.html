@@ -142,6 +142,13 @@
             <a href="{% url 'flatten' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="redact">
+            <div class="card-icon">⬛</div>
+            <h3>{% trans "Redact Text" %}</h3>
+            <p>{% trans "Permanently remove sensitive text — content is stripped, not just covered" %}</p>
+            <a href="{% url 'redact' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="page-numbers">
             <div class="card-icon">🔢</div>
             <h3>{% trans "Add Page Numbers" %}</h3>

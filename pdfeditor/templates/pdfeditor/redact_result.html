@@ -1,0 +1,39 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "PDF Redacted" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header result-success-header">
+        <div class="result-success-icon">⬛</div>
+        <h2>{% trans "PDF Redacted!" %}</h2>
+        <p>
+            {% if match_count %}
+                {% blocktrans count count=match_count %}{{ count }} match was permanently removed.{% plural %}{{ count }} matches were permanently removed.{% endblocktrans %}
+            {% else %}
+                {% trans "No matches were found — the output is identical to the source." %}
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="result-file-row">
+            <div class="result-file-icon">📄</div>
+            <div class="result-file-info">
+                <div class="result-file-name">{{ pdf_filename }}</div>
+                <div class="result-file-meta">{{ size|filesizeformat }}</div>
+            </div>
+        </div>
+
+        <div class="result-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                ← {% trans "Dashboard" %}
+            </a>
+            <a href="{% url 'download_redacted' %}" class="btn btn-primary">
+                📥 {% trans "Download PDF" %}
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

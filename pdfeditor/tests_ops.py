@@ -25,6 +25,7 @@ from .pdf_processor.ops import (
     merge_pdfs,
     protect_pdf,
     read_pdf_metadata,
+    redact_text,
     remove_pdf_password,
     render_page_thumbnail,
     reorder_pages,
@@ -1416,3 +1417,120 @@ class FlattenPdfTests(_MediaRootMixin, TestCase):
         with fitz.open(out) as doc:
             text = doc[0].get_text()
         self.assertIn("Document body", text)
+
+
+def _make_pdf_with_text(pages_text: list[str]) -> str:
+    """Build a multi-page PDF where each page contains the given string."""
+    doc = fitz.open()
+    for txt in pages_text:
+        page = doc.new_page(width=595, height=842)
+        page.insert_text((72, 100), txt, fontsize=12)
+    fd, path = tempfile.mkstemp(suffix=".pdf")
+    os.close(fd)
+    doc.save(path)
+    doc.close()
+    return path
+
+
+class RedactTextTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.tmp_files: list[str] = []
+
+    def tearDown(self):
+        for p in self.tmp_files:
+            if os.path.exists(p):
+                os.remove(p)
+
+    def _src(self, pages_text):
+        path = _make_pdf_with_text(pages_text)
+        self.tmp_files.append(path)
+        return path
+
+    def test_removes_term_from_text(self):
+        src = self._src(["Hello SECRET world"])
+        out, count = redact_text(src, ["SECRET"])
+        self.tmp_files.append(out)
+        self.assertEqual(count, 1)
+        with fitz.open(out) as doc:
+            text = doc[0].get_text()
+        self.assertNotIn("SECRET", text)
+        self.assertIn("Hello", text)
+        self.assertIn("world", text)
+
+    def test_case_insensitive_match(self):
+        src = self._src(["The Secret of monkey island"])
+        out, count = redact_text(src, ["secret"])
+        self.tmp_files.append(out)
+        self.assertEqual(count, 1)
+        with fitz.open(out) as doc:
+            self.assertNotIn("Secret", doc[0].get_text())
+
+    def test_multiple_terms(self):
+        src = self._src(["Alice met Bob in Paris"])
+        out, count = redact_text(src, ["Alice", "Bob"])
+        self.tmp_files.append(out)
+        self.assertEqual(count, 2)
+        with fitz.open(out) as doc:
+            text = doc[0].get_text()
+        self.assertNotIn("Alice", text)
+        self.assertNotIn("Bob", text)
+        self.assertIn("Paris", text)
+
+    def test_multiple_occurrences_same_term(self):
+        src = self._src(["foo foo foo bar"])
+        out, count = redact_text(src, ["foo"])
+        self.tmp_files.append(out)
+        self.assertEqual(count, 3)
+
+    def test_term_not_present_returns_zero(self):
+        src = self._src(["just some text"])
+        out, count = redact_text(src, ["NOT_HERE"])
+        self.tmp_files.append(out)
+        self.assertEqual(count, 0)
+        with fitz.open(out) as doc:
+            self.assertIn("just some text", doc[0].get_text())
+
+    def test_page_range_limits_scope(self):
+        src = self._src(["badword on page 1", "badword on page 2", "badword on page 3"])
+        out, count = redact_text(src, ["badword"], page_range="2")
+        self.tmp_files.append(out)
+        self.assertEqual(count, 1)
+        with fitz.open(out) as doc:
+            self.assertIn("badword", doc[0].get_text())  # page 1 untouched
+            self.assertNotIn("badword", doc[1].get_text())  # page 2 redacted
+            self.assertIn("badword", doc[2].get_text())  # page 3 untouched
+
+    def test_empty_terms_raises(self):
+        src = self._src(["any text"])
+        with self.assertRaises(ValueError):
+            redact_text(src, [])
+        with self.assertRaises(ValueError):
+            redact_text(src, ["", "  "])
+
+    def test_terms_with_whitespace_are_stripped(self):
+        src = self._src(["Hello world"])
+        out, count = redact_text(src, ["  world  "])
+        self.tmp_files.append(out)
+        self.assertEqual(count, 1)
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            redact_text("/no/such/file.pdf", ["foo"])
+
+    def test_invalid_page_range_raises(self):
+        src = self._src(["text"])
+        with self.assertRaises(ValueError):
+            redact_text(src, ["text"], page_range="99")
+
+    def test_encrypted_pdf_raises(self):
+        src = self._src(["text"])
+        encrypted = protect_pdf(src, user_password="pw")
+        self.tmp_files.append(encrypted)
+        with self.assertRaises(ValueError):
+            redact_text(encrypted, ["text"])
+
+    def test_output_basename_marks_redacted(self):
+        src = self._src(["text"])
+        out, _ = redact_text(src, ["text"])
+        self.tmp_files.append(out)
+        self.assertIn("redacted", os.path.basename(out))

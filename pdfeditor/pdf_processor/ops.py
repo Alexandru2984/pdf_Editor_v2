@@ -617,6 +617,53 @@ def flatten_pdf(
     return out_path
 
 
+def redact_text(
+    pdf_path: str,
+    search_terms: list[str],
+    page_range: str | None = None,
+) -> tuple[str, int]:
+    """Permanently remove every occurrence of each ``search_term``.
+
+    Each match becomes a black rectangle and the underlying text/images are
+    stripped from the page content stream — not merely covered. Search is
+    case-insensitive (PyMuPDF's default). Returns ``(output_path, total_matches)``.
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    cleaned_terms = [t.strip() for t in (search_terms or []) if t and t.strip()]
+    if not cleaned_terms:
+        raise ValueError("Provide at least one search term")
+
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    out_path = os.path.join(out_dir, f"{base}_redacted_{timestamp()}.pdf")
+
+    total_matches = 0
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("Cannot redact an encrypted PDF — remove the password first")
+        total = len(doc)
+        if total == 0:
+            raise ValueError("PDF has no pages")
+        indices = parse_page_range(page_range or "", total)
+
+        for idx in indices:
+            page = doc[idx]
+            page_had_match = False
+            for term in cleaned_terms:
+                rects = page.search_for(term) or []
+                for rect in rects:
+                    page.add_redact_annot(rect, fill=(0, 0, 0))
+                    total_matches += 1
+                    page_had_match = True
+            if page_had_match:
+                page.apply_redactions()
+
+        doc.save(out_path, garbage=4, deflate=True, clean=True)
+
+    return out_path, total_matches
+
+
 PAGE_SIZES_PT: dict[str, tuple[float, float]] = {
     # 1 inch = 72 points
     "a4": (595.0, 842.0),  # 210 x 297 mm
