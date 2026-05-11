@@ -1,5 +1,6 @@
 """DRF serializers for API responses."""
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from ..models import ApiKey, ProcessedPDF, ShareLink, UploadedPDF
@@ -22,7 +23,8 @@ class ProcessedPDFSerializer(serializers.ModelSerializer):
         fields = ["id", "kind", "kind_display", "name", "size", "created_at", "source_id", "download_url"]
         read_only_fields = fields
 
-    def get_download_url(self, obj):
+    @extend_schema_field(serializers.URLField(allow_null=True))
+    def get_download_url(self, obj) -> str | None:
         request = self.context.get("request")
         if request is None:
             return None
