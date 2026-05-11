@@ -70,6 +70,7 @@ class ProcessedPDF(models.Model):
     KIND_OCR_LAYER = "ocr_layer"
     KIND_PDFA = "pdfa"
     KIND_COMPARE = "compare"
+    KIND_OUTLINE = "outline"
 
     KIND_CHOICES = [
         (KIND_FIND_REPLACE, "Find & Replace"),
@@ -95,6 +96,7 @@ class ProcessedPDF(models.Model):
         (KIND_OCR_LAYER, "OCR Layer"),
         (KIND_PDFA, "PDF/A"),
         (KIND_COMPARE, "Compare"),
+        (KIND_OUTLINE, "Edit Outline"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -160,3 +162,89 @@ class TrustAnchor(models.Model):
     def __str__(self):
         status = "active" if self.is_active else "disabled"
         return f"{self.name} ({status})"
+
+
+class AuditLog(models.Model):
+    """Immutable record of a single PDF operation — who, what, when, from where."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="audit_entries",
+    )
+    session_key = models.CharField(max_length=64, db_index=True, blank=True)
+    kind = models.CharField(max_length=20, db_index=True)
+    source_name = models.CharField(max_length=255, blank=True)
+    output_name = models.CharField(max_length=255, blank=True)
+    output_size = models.BigIntegerField(default=0)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["kind", "-created_at"]),
+        ]
+
+    def __str__(self):
+        owner = self.user.username if self.user_id else f"anon:{self.session_key[:8] or '?'}"
+        return f"{self.kind} · {owner} · {self.created_at:%Y-%m-%d %H:%M}"
+
+
+def _default_share_token() -> str:
+    return uuid.uuid4().hex
+
+
+class ShareLink(models.Model):
+    """A public, token-protected download link for a ProcessedPDF.
+
+    Whoever has the link can download the underlying PDF until either the
+    expiry passes or the download counter exceeds ``max_downloads``. Owner
+    can revoke at any time by deleting the row.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    processed_pdf = models.ForeignKey(
+        "ProcessedPDF",
+        on_delete=models.CASCADE,
+        related_name="share_links",
+    )
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="share_links",
+    )
+    session_key = models.CharField(max_length=64, blank=True, db_index=True)
+    token = models.CharField(max_length=64, unique=True, default=_default_share_token, db_index=True)
+    expires_at = models.DateTimeField()
+    max_downloads = models.PositiveIntegerField(default=0)
+    download_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["creator", "-created_at"]),
+            models.Index(fields=["session_key", "-created_at"]),
+        ]
+
+    def is_expired(self) -> bool:
+        from django.utils import timezone
+
+        return timezone.now() >= self.expires_at
+
+    def is_exhausted(self) -> bool:
+        return self.max_downloads > 0 and self.download_count >= self.max_downloads
+
+    def is_usable(self) -> bool:
+        return not self.is_expired() and not self.is_exhausted()
+
+    def __str__(self):
+        return f"share:{self.token[:8]} → {self.processed_pdf_id}"

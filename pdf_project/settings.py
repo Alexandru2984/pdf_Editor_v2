@@ -45,6 +45,11 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 PDF_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 PDF_MAX_PAGES = int(os.environ.get("PDF_MAX_PAGES", 500))
 
+# Per-owner storage quota for uploaded PDFs (sum of file sizes). 0 = unlimited.
+# Default: anon 50 MB, authenticated 500 MB. Overridable via env.
+PDF_QUOTA_ANON_BYTES = int(os.environ.get("PDF_QUOTA_ANON_BYTES", 50 * 1024 * 1024))
+PDF_QUOTA_USER_BYTES = int(os.environ.get("PDF_QUOTA_USER_BYTES", 500 * 1024 * 1024))
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

@@ -13,7 +13,7 @@ from django.utils.translation import gettext as _
 
 from ..models import UploadedPDF
 from ..pdf_processor import check_pdf_has_text
-from ._common import _owner_kwargs, get_uploaded_pdfs, owner_filter
+from ._common import _owner_kwargs, get_uploaded_pdfs, owner_filter, storage_quota, storage_usage
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +54,16 @@ def _generate_thumbnail(pdf_path: str, thumb_path: str) -> bool:
 
 
 def dashboard_view(request):
+    quota = storage_quota(request)
+    used = storage_usage(request)
     return render(
         request,
         "pdfeditor/dashboard.html",
         {
             "uploaded_pdfs": get_uploaded_pdfs(request),
+            "storage_used": used,
+            "storage_quota": quota,
+            "storage_percent": (used * 100 // quota) if quota else 0,
         },
     )
 
@@ -73,6 +78,8 @@ def upload_view(request):
         return render(request, "pdfeditor/upload.html")
 
     max_bytes = getattr(settings, "PDF_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
+    quota = storage_quota(request)
+    quota_used = storage_usage(request)
     fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "uploads"))
 
     created = []
@@ -90,6 +97,14 @@ def upload_view(request):
                 % {"name": uploaded_file.name, "mb": max_bytes // (1024 * 1024)},
             )
             continue
+        if quota and quota_used + uploaded_file.size > quota:
+            messages.warning(
+                request,
+                _('Skipped "%(name)s" - would exceed your %(mb)d MB storage quota.')
+                % {"name": uploaded_file.name, "mb": quota // (1024 * 1024)},
+            )
+            continue
+        quota_used += uploaded_file.size
 
         header = uploaded_file.read(5)
         uploaded_file.seek(0)

@@ -3690,3 +3690,181 @@ msgstr "Pagini eliminate"
 
 msgid "Download Report"
 msgstr "Descarcă raportul"
+
+msgid "Edit Bookmarks"
+msgstr "Editează marcajele"
+
+msgid "Add, rename or remove the PDF's table of contents — point each bookmark to a specific page"
+msgstr "Adaugă, redenumește sau elimină cuprinsul PDF-ului — fiecare marcaj poate fi legat de o anumită pagină"
+
+#, python-format
+msgid "Build or replace the table of contents. The PDF has %(pages)s page(s)."
+msgstr "Construiește sau înlocuiește cuprinsul. PDF-ul are %(pages)s pagină(i)."
+
+msgid "Levels indicate nesting (1 = top-level chapter, 2 = subsection, etc.). The first entry must start at level 1 and levels cannot jump."
+msgstr "Nivelele indică ierarhia (1 = capitol principal, 2 = subsecțiune etc.). Prima intrare trebuie să fie nivel 1, iar nivelele nu pot sări."
+
+msgid "Outline entries (JSON)"
+msgstr "Intrări outline (JSON)"
+
+#, python-brace-format
+msgid "One entry per item: {\"level\": 1, \"title\": \"Chapter 1\", \"page\": 5}. Submit [] to clear."
+msgstr "Câte o intrare per element: {\"level\": 1, \"title\": \"Capitolul 1\", \"page\": 5}. Trimite [] pentru a goli."
+
+msgid "Level"
+msgstr "Nivel"
+
+msgid "Chapter title"
+msgstr "Titlu capitol"
+
+msgid "Add row"
+msgstr "Adaugă rând"
+
+msgid "Clear all"
+msgstr "Șterge tot"
+
+msgid "Save Bookmarks"
+msgstr "Salvează marcajele"
+
+#, python-format
+msgid "Invalid JSON: %(err)s"
+msgstr "JSON invalid: %(err)s"
+
+msgid "Outline must be a JSON array."
+msgstr "Outline-ul trebuie să fie un array JSON."
+
+#, python-format
+msgid "Entry %(n)s must be an object."
+msgstr "Intrarea %(n)s trebuie să fie un obiect."
+
+#, python-format
+msgid "Entry %(n)s is missing field '%(k)s'."
+msgstr "Intrării %(n)s îi lipsește câmpul „%(k)s”."
+
+msgid "Outline updated successfully."
+msgstr "Outline-ul a fost actualizat cu succes."
+
+#, python-format
+msgid "Error reading outline: %(err)s"
+msgstr "Eroare la citirea outline-ului: %(err)s"
+
+#, python-format
+msgid "Error editing outline: %(err)s"
+msgstr "Eroare la editarea outline-ului: %(err)s"
+
+msgid "Outline file not found."
+msgstr "Fișierul outline nu a fost găsit."
+
+msgid "Cannot read outline of an encrypted PDF — remove the password first"
+msgstr "Nu se poate citi outline-ul unui PDF criptat — elimină mai întâi parola"
+
+msgid "Cannot edit outline of an encrypted PDF — remove the password first"
+msgstr "Nu se poate edita outline-ul unui PDF criptat — elimină mai întâi parola"
+
+msgid "Bookmarks Saved"
+msgstr "Marcaje salvate"
+
+msgid "Bookmarks Saved!"
+msgstr "Marcaje salvate!"
+
+#, python-format
+msgid "%(count)s bookmark stored."
+msgid_plural "%(count)s bookmarks stored."
+msgstr[0] "%(count)s marcaj salvat."
+msgstr[1] "%(count)s marcaje salvate."
+msgstr[2] "%(count)s de marcaje salvate."
+
+#, python-format
+msgid "%(used)s of %(quota)s used"
+msgstr "%(used)s din %(quota)s folosit"
+
+#, python-format
+msgid "Skipped \"%(name)s\" - would exceed your %(mb)d MB storage quota."
+msgstr "Sărit „%(name)s” — ar depăși cota ta de %(mb)d MB."
+
+msgid "Share Links"
+msgstr "Linkuri de partajare"
+
+msgid "Create token-based public links for your processed PDFs with TTL and download caps"
+msgstr "Creează linkuri publice cu token pentru PDF-urile procesate, cu durată și limită de descărcări"
+
+msgid "Manage"
+msgstr "Gestionează"
+
+msgid "Create public download links for your processed PDFs — with TTL and download caps."
+msgstr "Creează linkuri publice de descărcare pentru PDF-urile procesate — cu durată și limită de descărcări."
+
+msgid "Create a new link"
+msgstr "Creează un link nou"
+
+msgid "Processed PDF"
+msgstr "PDF procesat"
+
+msgid "Link lifetime"
+msgstr "Durata linkului"
+
+msgid "After this period the link stops working. The PDF itself stays in your history."
+msgstr "După această perioadă, linkul nu mai funcționează. PDF-ul rămâne în istoricul tău."
+
+msgid "Max downloads"
+msgstr "Descărcări maxime"
+
+msgid "Stop the link after this many downloads. 0 = unlimited within the lifetime."
+msgstr "Oprește linkul după acest număr de descărcări. 0 = nelimitat în durata stabilită."
+
+msgid "1 hour"
+msgstr "1 oră"
+
+msgid "24 hours"
+msgstr "24 de ore"
+
+msgid "7 days"
+msgstr "7 zile"
+
+msgid "30 days"
+msgstr "30 de zile"
+
+msgid "Create link"
+msgstr "Creează link"
+
+msgid "Run any PDF operation first — share links work on processed PDFs."
+msgstr "Rulează mai întâi orice operație — linkurile de partajare funcționează doar pe PDF-urile procesate."
+
+msgid "Your share links"
+msgstr "Linkurile tale de partajare"
+
+msgid "Downloads"
+msgstr "Descărcări"
+
+msgid "Expires"
+msgstr "Expiră"
+
+msgid "Revoke this link?"
+msgstr "Revocă acest link?"
+
+msgid "No share links yet."
+msgstr "Niciun link de partajare încă."
+
+msgid "Invalid share link request."
+msgstr "Cerere de link invalidă."
+
+msgid "Share link created."
+msgstr "Linkul de partajare a fost creat."
+
+msgid "Share link not found."
+msgstr "Linkul de partajare nu a fost găsit."
+
+msgid "Share link revoked."
+msgstr "Linkul de partajare a fost revocat."
+
+msgid "Link Unavailable"
+msgstr "Link indisponibil"
+
+msgid "This share link has expired."
+msgstr "Acest link a expirat."
+
+msgid "This share link has reached its download limit."
+msgstr "Acest link a atins limita de descărcări."
+
+msgid "The shared file is no longer available."
+msgstr "Fișierul partajat nu mai este disponibil."
