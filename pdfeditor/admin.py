@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AuditLog, ProcessedPDF, ShareLink, TrustAnchor, UploadedPDF
+from .models import ApiKey, AuditLog, ProcessedPDF, ShareLink, TrustAnchor, UploadedPDF
 
 
 @admin.register(UploadedPDF)
@@ -92,3 +92,18 @@ class ShareLinkAdmin(admin.ModelAdmin):
     @admin.display(description="Token", ordering="token")
     def token_short(self, obj):
         return f"{obj.token[:10]}…" if obj.token else ""
+
+
+@admin.register(ApiKey)
+class ApiKeyAdmin(admin.ModelAdmin):
+    list_display = ("label", "prefix", "user", "last_used_at", "revoked_at", "created_at")
+    list_filter = ("created_at", "revoked_at")
+    search_fields = ("label", "prefix", "user__username", "user__email")
+    readonly_fields = ("id", "key_hash", "prefix", "last_used_at", "created_at")
+    raw_id_fields = ("user",)
+
+    def has_add_permission(self, request):
+        # Keys must be created through the profile UI so the plaintext token
+        # is shown to the user. Admin-side creation would leave the user
+        # without the secret.
+        return False

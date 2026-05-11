@@ -11,9 +11,12 @@ from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.utils.translation import gettext as _
+from django.views.decorators.http import require_http_methods
 
-from ..models import ProcessedPDF, UploadedPDF
+from ..models import ApiKey, ProcessedPDF, UploadedPDF
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,8 @@ def profile_view(request: HttpRequest) -> HttpResponse:
     user = request.user
     uploaded_count = UploadedPDF.objects.filter(user=user).count()
     processed_count = ProcessedPDF.objects.filter(user=user).count()
+    api_keys = ApiKey.objects.filter(user=user)
+    new_token = request.session.pop("new_api_key_token", None)
 
     return render(
         request,
@@ -30,8 +35,31 @@ def profile_view(request: HttpRequest) -> HttpResponse:
         {
             "uploaded_count": uploaded_count,
             "processed_count": processed_count,
+            "api_keys": api_keys,
+            "new_api_key_token": new_token,
         },
     )
+
+
+@login_required
+@require_http_methods(["POST"])
+def create_api_key_view(request: HttpRequest) -> HttpResponse:
+    label = (request.POST.get("label") or "").strip()[:80]
+    _, token = ApiKey.create_for_user(request.user, label=label)
+    request.session["new_api_key_token"] = token
+    messages.success(request, _("API key created. Copy the token now — it won't be shown again."))
+    return redirect("profile")
+
+
+@login_required
+@require_http_methods(["POST"])
+def revoke_api_key_view(request: HttpRequest, key_id: str) -> HttpResponse:
+    key = get_object_or_404(ApiKey, user=request.user, id=key_id)
+    if key.revoked_at is None:
+        key.revoked_at = timezone.now()
+        key.save(update_fields=["revoked_at"])
+        messages.success(request, _("API key revoked."))
+    return redirect("profile")
 
 
 @login_required

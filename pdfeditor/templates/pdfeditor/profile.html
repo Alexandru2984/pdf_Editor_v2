@@ -46,12 +46,89 @@
         <a href="{% url 'history' %}" class="profile-btn neutral">📜 {% trans "View history" %}</a>
     </div>
 
+    <h3 class="profile-section-title">{% trans "API access" %}</h3>
+    <p class="api-keys-help">
+        {% trans "Use these keys to call the REST API at" %} <a href="/api/v1/docs/">/api/v1/docs/</a>.
+        {% trans "Send the token in the" %} <code>X-API-Key</code> {% trans "header." %}
+    </p>
+
+    {% if new_api_key_token %}
+    <div class="api-key-fresh">
+        <strong>{% trans "Your new key — copy it now, it will not be shown again:" %}</strong>
+        <code class="api-key-token" onclick="navigator.clipboard.writeText('{{ new_api_key_token }}'); this.classList.add('copied');">{{ new_api_key_token }}</code>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'create_api_key' %}" class="api-key-create-form">
+        {% csrf_token %}
+        <input type="text" name="label" maxlength="80" placeholder="{% trans 'Label (e.g. local dev script)' %}">
+        <button type="submit" class="profile-btn primary">🔑 {% trans "Create API key" %}</button>
+    </form>
+
+    {% if api_keys %}
+    <table class="api-keys-table">
+        <thead>
+            <tr>
+                <th>{% trans "Label" %}</th>
+                <th>{% trans "Prefix" %}</th>
+                <th>{% trans "Last used" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for key in api_keys %}
+            <tr class="{% if not key.is_active %}revoked-row{% endif %}">
+                <td>{{ key.label|default:"—" }}</td>
+                <td><code>{{ key.prefix }}…</code></td>
+                <td>{% if key.last_used_at %}{{ key.last_used_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
+                <td>
+                    {% if key.is_active %}
+                        <span class="status-active">{% trans "active" %}</span>
+                    {% else %}
+                        <span class="status-revoked">{% trans "revoked" %}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if key.is_active %}
+                    <form method="post" action="{% url 'revoke_api_key' key.id %}" style="display:inline;" onsubmit="return confirm('{% trans 'Revoke this key?' %}');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-link-danger">✕</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">{% trans "No API keys yet." %}</p>
+    {% endif %}
+
     <h3 class="profile-section-title danger-section">{% trans "Your data" %}</h3>
     <div class="profile-actions">
         <a href="{% url 'export_data' %}" class="profile-btn neutral">⬇️ {% trans "Export my data (JSON)" %}</a>
         <a href="{% url 'delete_account' %}" class="profile-btn danger">🗑️ {% trans "Delete account" %}</a>
     </div>
 </div>
+
+<style>
+    .api-keys-help { color: #6b7280; font-size: 0.9rem; margin-bottom: 0.75rem; }
+    .api-keys-help a { color: #2563eb; }
+    .api-key-fresh { background: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+    .api-key-token { display: block; margin-top: 0.5rem; padding: 0.5rem; background: #fff; border: 1px solid #d1fae5; border-radius: 0.375rem; cursor: pointer; word-break: break-all; font-size: 0.85rem; }
+    .api-key-token.copied { background: #d1fae5; }
+    .api-key-create-form { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .api-key-create-form input { flex: 1; padding: 0.5rem 0.625rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-family: inherit; }
+    .api-keys-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    .api-keys-table th, .api-keys-table td { padding: 0.5rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
+    .api-keys-table th { color: #6b7280; font-weight: 600; }
+    .revoked-row { opacity: 0.55; }
+    .status-active { color: #065f46; font-weight: 600; }
+    .status-revoked { color: #991b1b; }
+    .btn-link-danger { background: transparent; border: none; color: #b91c1c; cursor: pointer; font-size: 1rem; }
+    .muted { color: #6b7280; font-style: italic; }
+</style>
 
 <style>
     .profile-card {

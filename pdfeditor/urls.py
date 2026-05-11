@@ -122,6 +122,8 @@ urlpatterns = [
     path("accounts/profile/", views.profile_view, name="profile"),
     path("accounts/profile/export/", views.export_data_view, name="export_data"),
     path("accounts/profile/delete/", views.delete_account_view, name="delete_account"),
+    path("accounts/profile/api-keys/create/", views.create_api_key_view, name="create_api_key"),
+    path("accounts/profile/api-keys/<uuid:key_id>/revoke/", views.revoke_api_key_view, name="revoke_api_key"),
     path(
         "accounts/confirm/<str:uidb64>/<str:token>/",
         views.confirm_email_view,

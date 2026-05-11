@@ -101,7 +101,13 @@ from .layout_ops import (
     watermark_result_view,
     watermark_view,
 )
-from .profile import delete_account_view, export_data_view, profile_view
+from .profile import (
+    create_api_key_view,
+    delete_account_view,
+    export_data_view,
+    profile_view,
+    revoke_api_key_view,
+)
 from .rephrase import (
     download_rephrased_view,
     rephrase_preview_ajax,
@@ -217,6 +223,8 @@ __all__ = [
     "profile_view",
     "export_data_view",
     "delete_account_view",
+    "create_api_key_view",
+    "revoke_api_key_view",
     "share_links_view",
     "create_share_link_view",
     "revoke_share_link_view",

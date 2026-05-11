@@ -31,5 +31,6 @@ urlpatterns = [
     # Serves a JS file that wires gettext()/ngettext() in the browser using
     # the active locale; static JS files import from this.
     path("jsi18n/", JavaScriptCatalog.as_view(packages=["pdfeditor"]), name="javascript-catalog"),
+    path("api/v1/", include("pdfeditor.api.urls")),
     path("", include("pdfeditor.urls")),
 ]
