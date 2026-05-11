@@ -9,6 +9,7 @@ from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 
 from ..forms import (
+    ComparePdfsForm,
     CompressPDFForm,
     ConvertToDocxForm,
     FlattenPDFForm,
@@ -28,6 +29,7 @@ from ..forms import (
 )
 from ..models import ProcessedPDF, TrustAnchor
 from ..pdf_processor import (
+    compare_pdfs,
     compress_pdf,
     convert_images_to_pdf,
     convert_pdf_to_docx,
@@ -814,6 +816,102 @@ def pdfa_result_view(request):
 
 def download_pdfa_view(request):
     output = _fetch_output(request, "pdfa_pdf_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+
+
+# ---------- Compare PDFs ----------
+
+
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
+def compare_view(request):
+    selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
+    if early:
+        return early
+
+    others = [p for p in uploaded_pdfs if p.id != selected_pdf.id]
+    if not others:
+        messages.error(
+            request,
+            _("You need at least 2 uploaded PDFs to run a comparison."),
+        )
+        return redirect("dashboard")
+
+    pdf_choices = [(str(p.id), f"{p.name} • {p.size} bytes") for p in others]
+
+    if request.method == "POST":
+        form = ComparePdfsForm(request.POST, pdf_choices=pdf_choices)
+        if form.is_valid():
+            second = get_pdf_by_id(request, form.cleaned_data["second_pdf"])
+            if not second:
+                messages.error(request, _("Selected PDF not found."))
+                return redirect("compare")
+            try:
+                output_path, stats = compare_pdfs(selected_pdf.path, second.path)
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_COMPARE,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session["compare_pdf_id"] = str(output.id)
+                request.session["compare_stats"] = stats
+                request.session["compare_second_name"] = second.name
+                total_changes = stats["changed"] + stats["added"] + stats["removed"]
+                if total_changes == 0:
+                    messages.info(request, _("No textual differences found between the two PDFs."))
+                else:
+                    messages.success(
+                        request,
+                        _("Comparison complete — %(n)s differing page(s).") % {"n": total_changes},
+                    )
+                return redirect("compare_result")
+            except ValueError as e:
+                messages.error(request, _("Error: %(err)s") % {"err": e})
+            except Exception as e:
+                messages.error(request, _("Error comparing PDFs: %(err)s") % {"err": e})
+    else:
+        form = ComparePdfsForm(pdf_choices=pdf_choices)
+
+    return render(
+        request,
+        "pdfeditor/compare.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_path_relative": os.path.relpath(selected_pdf.path, settings.MEDIA_ROOT),
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+        },
+    )
+
+
+def compare_result_view(request):
+    output = _fetch_output(request, "compare_pdf_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("Comparison report not found."))
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "pdfeditor/compare_result.html",
+        {
+            "pdf_filename": output.name,
+            "size": os.path.getsize(output.path),
+            "stats": request.session.get("compare_stats", {}),
+            "second_name": request.session.get("compare_second_name", ""),
+        },
+    )
+
+
+def download_compare_view(request):
+    output = _fetch_output(request, "compare_pdf_id")
     if not output:
         messages.error(request, _("File not found."))
         return redirect("dashboard")

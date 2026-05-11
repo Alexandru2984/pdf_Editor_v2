@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import difflib
 import io
 import logging
 import os
@@ -726,6 +727,201 @@ def convert_to_pdfa(pdf_path: str, version: str = "2b") -> tuple[str, str]:
         raise ValueError(f"PDF/A conversion failed: {stderr.strip() or 'ghostscript error'}")
 
     return out_path, version
+
+
+def _page_text_lines(page: fitz.Page) -> list[str]:
+    """Extract page text and split into trimmed, non-empty lines."""
+    raw = page.get_text() or ""
+    return [ln.rstrip() for ln in raw.splitlines() if ln.strip()]
+
+
+def _diff_pages(lines_a: list[str], lines_b: list[str]) -> tuple[list[tuple[str, str]], bool]:
+    """Return (diff_lines, has_changes). Each diff line is (tag, text) where
+    tag is one of "same", "del", "add"."""
+    matcher = difflib.SequenceMatcher(a=lines_a, b=lines_b, autojunk=False)
+    out: list[tuple[str, str]] = []
+    has_changes = False
+    for op, i1, i2, j1, j2 in matcher.get_opcodes():
+        if op == "equal":
+            for line in lines_a[i1:i2]:
+                out.append(("same", line))
+        elif op == "delete":
+            has_changes = True
+            for line in lines_a[i1:i2]:
+                out.append(("del", line))
+        elif op == "insert":
+            has_changes = True
+            for line in lines_b[j1:j2]:
+                out.append(("add", line))
+        elif op == "replace":
+            has_changes = True
+            for line in lines_a[i1:i2]:
+                out.append(("del", line))
+            for line in lines_b[j1:j2]:
+                out.append(("add", line))
+    return out, has_changes
+
+
+_COMPARE_PAGE_WIDTH = 595.0
+_COMPARE_PAGE_HEIGHT = 842.0
+_COMPARE_MARGIN_X = 40.0
+_COMPARE_MARGIN_Y = 50.0
+_COMPARE_LINE_HEIGHT = 12.0
+_COMPARE_TAG_COLORS = {
+    "same": (0.25, 0.25, 0.25),
+    "del": (0.75, 0.0, 0.0),
+    "add": (0.0, 0.55, 0.1),
+}
+_COMPARE_TAG_PREFIX = {"same": "  ", "del": "- ", "add": "+ "}
+
+
+def _wrap_text(text: str, max_chars: int = 95) -> list[str]:
+    """Crude wrap: split on max_chars while preserving original whitespace.
+    Good enough for monospace-style diff output rendered by PyMuPDF."""
+    if not text:
+        return [""]
+    chunks = []
+    while len(text) > max_chars:
+        chunks.append(text[:max_chars])
+        text = text[max_chars:]
+    chunks.append(text)
+    return chunks
+
+
+def _emit_diff_lines(
+    out_doc: fitz.Document,
+    header: str,
+    diff_lines: list[tuple[str, str]],
+) -> None:
+    """Render a header + colored diff lines, paginating as needed."""
+    page = out_doc.new_page(width=_COMPARE_PAGE_WIDTH, height=_COMPARE_PAGE_HEIGHT)
+    page.insert_text((_COMPARE_MARGIN_X, _COMPARE_MARGIN_Y), header, fontsize=13, color=(0, 0, 0))
+    y = _COMPARE_MARGIN_Y + 24
+    max_y = _COMPARE_PAGE_HEIGHT - _COMPARE_MARGIN_Y
+
+    for tag, text in diff_lines:
+        color = _COMPARE_TAG_COLORS[tag]
+        prefix = _COMPARE_TAG_PREFIX[tag]
+        for wrapped in _wrap_text(prefix + text):
+            if y > max_y:
+                page = out_doc.new_page(width=_COMPARE_PAGE_WIDTH, height=_COMPARE_PAGE_HEIGHT)
+                page.insert_text(
+                    (_COMPARE_MARGIN_X, _COMPARE_MARGIN_Y),
+                    header + " (continued)",
+                    fontsize=11,
+                    color=(0.4, 0.4, 0.4),
+                )
+                y = _COMPARE_MARGIN_Y + 20
+            page.insert_text(
+                (_COMPARE_MARGIN_X, y),
+                wrapped,
+                fontsize=9,
+                fontname="courier",
+                color=color,
+            )
+            y += _COMPARE_LINE_HEIGHT
+
+
+def compare_pdfs(pdf_a_path: str, pdf_b_path: str) -> tuple[str, dict[str, int]]:
+    """Compare two PDFs page-by-page and emit a diff report PDF.
+
+    Text from each page is extracted and run through ``difflib.SequenceMatcher``
+    to identify added / removed / changed lines. The report starts with a
+    summary page (page counts, pages identical / changed / added / removed)
+    followed by one or more diff pages per non-identical page. Returns
+    ``(out_path, stats)`` where stats contains ``pages_a``, ``pages_b``,
+    ``identical``, ``changed``, ``added``, ``removed``.
+    """
+    for p in (pdf_a_path, pdf_b_path):
+        if not os.path.exists(p):
+            raise ValueError(f"PDF file not found: {p}")
+    if os.path.abspath(pdf_a_path) == os.path.abspath(pdf_b_path):
+        raise ValueError("Cannot compare a PDF against itself — choose two different files")
+
+    out_dir = processed_dir()
+    base_a = safe_basename(pdf_a_path)
+    base_b = safe_basename(pdf_b_path)
+    out_path = os.path.join(out_dir, f"{base_a}_vs_{base_b}_diff_{timestamp()}.pdf")
+
+    with fitz.open(pdf_a_path) as doc_a, fitz.open(pdf_b_path) as doc_b:
+        if doc_a.is_encrypted or doc_b.is_encrypted:
+            raise ValueError("Cannot compare encrypted PDFs — remove the password first")
+
+        pages_a = len(doc_a)
+        pages_b = len(doc_b)
+        if pages_a == 0 or pages_b == 0:
+            raise ValueError("Both PDFs must have at least one page")
+
+        text_a = [_page_text_lines(doc_a[i]) for i in range(pages_a)]
+        text_b = [_page_text_lines(doc_b[i]) for i in range(pages_b)]
+
+    stats = {
+        "pages_a": pages_a,
+        "pages_b": pages_b,
+        "identical": 0,
+        "changed": 0,
+        "added": 0,
+        "removed": 0,
+    }
+    per_page_reports: list[tuple[str, list[tuple[str, str]]]] = []
+    common = min(pages_a, pages_b)
+
+    for i in range(common):
+        diff_lines, has_changes = _diff_pages(text_a[i], text_b[i])
+        if has_changes:
+            stats["changed"] += 1
+            per_page_reports.append((f"Page {i + 1} — changed", diff_lines))
+        else:
+            stats["identical"] += 1
+
+    for i in range(common, pages_a):
+        stats["removed"] += 1
+        per_page_reports.append((f"Page {i + 1} — removed in revised", [("del", line) for line in text_a[i]]))
+    for i in range(common, pages_b):
+        stats["added"] += 1
+        per_page_reports.append((f"Page {i + 1} — added in revised", [("add", line) for line in text_b[i]]))
+
+    out_doc = fitz.open()
+    try:
+        summary = out_doc.new_page(width=_COMPARE_PAGE_WIDTH, height=_COMPARE_PAGE_HEIGHT)
+        y = _COMPARE_MARGIN_Y
+        summary.insert_text(
+            (_COMPARE_MARGIN_X, y),
+            "PDF Comparison Report",
+            fontsize=18,
+            color=(0, 0, 0),
+        )
+        y += 32
+        for label, value in [
+            ("Original", f"{os.path.basename(pdf_a_path)} ({pages_a} pages)"),
+            ("Revised", f"{os.path.basename(pdf_b_path)} ({pages_b} pages)"),
+            ("Pages identical", str(stats["identical"])),
+            ("Pages changed", str(stats["changed"])),
+            ("Pages added in revised", str(stats["added"])),
+            ("Pages removed in revised", str(stats["removed"])),
+        ]:
+            summary.insert_text(
+                (_COMPARE_MARGIN_X, y), f"{label}: {value}", fontsize=11, color=(0.15, 0.15, 0.15)
+            )
+            y += 18
+
+        for header, diff_lines in per_page_reports:
+            _emit_diff_lines(out_doc, header, diff_lines)
+
+        if not per_page_reports:
+            note = out_doc.new_page(width=_COMPARE_PAGE_WIDTH, height=_COMPARE_PAGE_HEIGHT)
+            note.insert_text(
+                (_COMPARE_MARGIN_X, _COMPARE_MARGIN_Y),
+                "No textual differences found.",
+                fontsize=14,
+                color=(0, 0.45, 0.1),
+            )
+
+        out_doc.save(out_path, garbage=4, deflate=True, clean=True)
+    finally:
+        out_doc.close()
+
+    return out_path, stats
 
 
 PAGE_SIZES_PT: dict[str, tuple[float, float]] = {

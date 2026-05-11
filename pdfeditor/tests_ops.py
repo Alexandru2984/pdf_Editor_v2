@@ -17,6 +17,7 @@ from .pdf_processor.ops import (
     _parse_pdf_date,
     add_page_numbers,
     add_watermark,
+    compare_pdfs,
     compress_pdf,
     convert_images_to_pdf,
     convert_pdf_to_docx,
@@ -1707,3 +1708,84 @@ class ConvertToPdfaTests(_MediaRootMixin, TestCase):
         out, _ = convert_to_pdfa(src, "2b")
         self.tmp_files.append(out)
         self.assertIn("pdfa2b", os.path.basename(out))
+
+
+class ComparePdfsTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.tmp_files: list[str] = []
+
+    def tearDown(self):
+        for p in self.tmp_files:
+            if os.path.exists(p):
+                os.remove(p)
+
+    def _src(self, pages_text):
+        path = _make_pdf_with_text(pages_text)
+        self.tmp_files.append(path)
+        return path
+
+    def test_identical_pdfs_report_no_changes(self):
+        a = self._src(["Hello world", "Page two body"])
+        b = self._src(["Hello world", "Page two body"])
+        out, stats = compare_pdfs(a, b)
+        self.tmp_files.append(out)
+        self.assertEqual(stats["identical"], 2)
+        self.assertEqual(stats["changed"], 0)
+        self.assertEqual(stats["added"], 0)
+        self.assertEqual(stats["removed"], 0)
+        self.assertEqual(stats["pages_a"], 2)
+        self.assertEqual(stats["pages_b"], 2)
+        self.assertTrue(os.path.exists(out))
+
+    def test_changed_page_is_detected(self):
+        a = self._src(["original line"])
+        b = self._src(["revised line"])
+        out, stats = compare_pdfs(a, b)
+        self.tmp_files.append(out)
+        self.assertEqual(stats["changed"], 1)
+        self.assertEqual(stats["identical"], 0)
+
+    def test_added_pages_are_counted(self):
+        a = self._src(["page 1"])
+        b = self._src(["page 1", "page 2 new"])
+        out, stats = compare_pdfs(a, b)
+        self.tmp_files.append(out)
+        self.assertEqual(stats["identical"], 1)
+        self.assertEqual(stats["added"], 1)
+        self.assertEqual(stats["removed"], 0)
+
+    def test_removed_pages_are_counted(self):
+        a = self._src(["page 1", "page 2 to be cut"])
+        b = self._src(["page 1"])
+        out, stats = compare_pdfs(a, b)
+        self.tmp_files.append(out)
+        self.assertEqual(stats["identical"], 1)
+        self.assertEqual(stats["removed"], 1)
+        self.assertEqual(stats["added"], 0)
+
+    def test_same_file_path_raises(self):
+        a = self._src(["x"])
+        with self.assertRaises(ValueError):
+            compare_pdfs(a, a)
+
+    def test_missing_file_raises(self):
+        a = self._src(["x"])
+        with self.assertRaises(ValueError):
+            compare_pdfs(a, "/no/such/file.pdf")
+        with self.assertRaises(ValueError):
+            compare_pdfs("/no/such/file.pdf", a)
+
+    def test_encrypted_pdf_raises(self):
+        a = self._src(["secret"])
+        b = self._src(["secret"])
+        encrypted = protect_pdf(a, user_password="pw")
+        self.tmp_files.append(encrypted)
+        with self.assertRaises(ValueError):
+            compare_pdfs(encrypted, b)
+
+    def test_output_basename_marks_diff(self):
+        a = self._src(["a"])
+        b = self._src(["b"])
+        out, _ = compare_pdfs(a, b)
+        self.tmp_files.append(out)
+        self.assertIn("diff", os.path.basename(out))

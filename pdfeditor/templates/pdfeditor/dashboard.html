@@ -163,6 +163,13 @@
             <a href="{% url 'pdfa' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="compare">
+            <div class="card-icon">🔄</div>
+            <h3>{% trans "Compare PDFs" %}</h3>
+            <p>{% trans "Diff two PDFs page-by-page — get a report showing added, removed and changed lines" %}</p>
+            <a href="{% url 'compare' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="page-numbers">
             <div class="card-icon">🔢</div>
             <h3>{% trans "Add Page Numbers" %}</h3>

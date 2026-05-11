@@ -13,10 +13,13 @@ from .auth import (
     resend_confirmation_view,
 )
 from .basic_ops import (
+    compare_result_view,
+    compare_view,
     compress_result_view,
     compress_view,
     convert_result_view,
     convert_view,
+    download_compare_view,
     download_compressed_view,
     download_converted_view,
     download_flattened_view,
@@ -153,6 +156,9 @@ __all__ = [
     "pdfa_view",
     "pdfa_result_view",
     "download_pdfa_view",
+    "compare_view",
+    "compare_result_view",
+    "download_compare_view",
     "sign_view",
     "sign_result_view",
     "download_signed_view",

@@ -17,6 +17,7 @@ from .forms import FormField, extract_form_fields, fill_form_fields, has_form_fi
 from .ops import (
     add_page_numbers,
     add_watermark,
+    compare_pdfs,
     compress_pdf,
     convert_images_to_pdf,
     convert_pdf_to_docx,
@@ -46,6 +47,7 @@ __all__ = [
     "compress_pdf",
     "convert_pdf_to_docx",
     "convert_pdf_to_images",
+    "compare_pdfs",
     "convert_images_to_pdf",
     "convert_to_pdfa",
     "crop_pages",

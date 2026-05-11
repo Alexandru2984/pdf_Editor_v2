@@ -985,6 +985,68 @@ class PdfaViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 302)
 
 
+class CompareViewTests(_ViewTestBase):
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("compare"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_with_single_pdf_redirects(self):
+        self.upload(name="only.pdf", num_pages=1)
+        resp = self.client.get(reverse("compare"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_with_two_pdfs_renders(self):
+        self.upload(name="a.pdf", num_pages=1)
+        self.upload(name="b.pdf", num_pages=1)
+        resp = self.client.get(reverse("compare"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_full_compare_workflow(self):
+        self.upload(name="a.pdf", num_pages=1, text_prefix="alpha")
+        self.upload(name="b.pdf", num_pages=1, text_prefix="bravo")
+        from .models import UploadedPDF
+
+        pdfs = list(UploadedPDF.objects.order_by("uploaded_at"))
+        first, second = pdfs[0], pdfs[1]
+
+        resp = self.client.post(
+            reverse("compare") + f"?pdf={first.id}",
+            {"second_pdf": str(second.id)},
+        )
+        self.assertEqual(resp.status_code, 302)
+
+        result = self.client.get(reverse("compare_result"))
+        self.assertEqual(result.status_code, 200)
+
+        download = self.client.get(reverse("download_compare"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
+
+        from .models import ProcessedPDF
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_COMPARE)
+        stats = self.client.session.get("compare_stats")
+        self.assertIsNotNone(stats)
+        self.assertEqual(stats["pages_a"], 1)
+        self.assertEqual(stats["pages_b"], 1)
+
+    def test_invalid_second_pdf_re_renders(self):
+        self.upload(name="a.pdf", num_pages=1)
+        self.upload(name="b.pdf", num_pages=1)
+        resp = self.client.post(reverse("compare"), {"second_pdf": "not-a-uuid"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("compare_pdf_id", self.client.session)
+
+    def test_result_without_session_redirects(self):
+        resp = self.client.get(reverse("compare_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_compare"))
+        self.assertEqual(resp.status_code, 302)
+
+
 class CropViewTests(_ViewTestBase):
     def test_get_without_upload_redirects(self):
         resp = self.client.get(reverse("crop"))
