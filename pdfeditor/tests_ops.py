@@ -21,6 +21,7 @@ from .pdf_processor.ops import (
     convert_images_to_pdf,
     convert_pdf_to_docx,
     convert_pdf_to_images,
+    convert_to_pdfa,
     crop_pages,
     edit_pdf_metadata,
     flatten_pdf,
@@ -1643,3 +1644,66 @@ class MakePdfSearchableTests(_MediaRootMixin, TestCase):
         out, _ = make_pdf_searchable(src, language="eng", dpi=150)
         self.tmp_files.append(out)
         self.assertIn("searchable", os.path.basename(out))
+
+
+_HAS_GHOSTSCRIPT = shutil.which("gs") is not None
+
+
+@unittest.skipUnless(_HAS_GHOSTSCRIPT, "ghostscript not installed")
+class ConvertToPdfaTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.tmp_files: list[str] = []
+
+    def tearDown(self):
+        for p in self.tmp_files:
+            if os.path.exists(p):
+                os.remove(p)
+
+    def _src(self, pages_text=None):
+        path = _make_pdf_with_text(pages_text or ["Archival document body"])
+        self.tmp_files.append(path)
+        return path
+
+    def test_convert_to_pdfa_2b_returns_pdfa_file(self):
+        src = self._src()
+        out, version = convert_to_pdfa(src, "2b")
+        self.tmp_files.append(out)
+        self.assertEqual(version, "2b")
+        self.assertTrue(os.path.exists(out))
+        with open(out, "rb") as f:
+            body = f.read()
+        # ghostscript embeds a PDF/A identification block in XMP metadata.
+        self.assertIn(b"pdfaid", body)
+
+    def test_convert_to_pdfa_1b_returns_pdfa_file(self):
+        src = self._src()
+        out, version = convert_to_pdfa(src, "1b")
+        self.tmp_files.append(out)
+        self.assertEqual(version, "1b")
+        with open(out, "rb") as f:
+            body = f.read()
+        self.assertIn(b"pdfaid", body)
+
+    def test_invalid_version_raises(self):
+        src = self._src()
+        with self.assertRaises(ValueError):
+            convert_to_pdfa(src, "3b")
+        with self.assertRaises(ValueError):
+            convert_to_pdfa(src, "")
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            convert_to_pdfa("/no/such/file.pdf", "2b")
+
+    def test_encrypted_pdf_raises(self):
+        src = self._src()
+        encrypted = protect_pdf(src, user_password="pw")
+        self.tmp_files.append(encrypted)
+        with self.assertRaises(ValueError):
+            convert_to_pdfa(encrypted, "2b")
+
+    def test_output_basename_marks_pdfa(self):
+        src = self._src()
+        out, _ = convert_to_pdfa(src, "2b")
+        self.tmp_files.append(out)
+        self.assertIn("pdfa2b", os.path.basename(out))

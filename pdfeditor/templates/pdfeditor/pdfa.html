@@ -1,0 +1,128 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Convert to PDF/A" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header">
+
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
+                📂 {% trans "Select PDF:" %}
+            </label>
+            <select id="pdf-selector" onchange="window.location.href='{% url 'pdfa' %}?pdf=' + encodeURIComponent(this.value)">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="tool-page-title">📦 {% trans "Convert to PDF/A" %}</h2>
+            <p class="tool-page-subtitle">
+                {% trans "Produce an ISO-compliant PDF/A file suitable for long-term archival." %}
+            </p>
+            <div class="tool-info-bar">
+                <div>
+                    <div class="tool-info-label">{% trans "Current File:" %}</div>
+                    <div class="tool-info-value">{{ pdf_name }}</div>
+                </div>
+                <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview tool-info-bar-divider">
+                    👁️ {% trans "Preview" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="pdfa-info-box">
+            <p>
+                <strong>ℹ️ {% trans "Note:" %}</strong>
+                {% trans "Conversion fails if the document contains content that can't be represented in the chosen PDF/A level (e.g. transparency on 1b). If that happens, try PDF/A-2b instead." %}
+            </p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-field">
+                <label class="form-field-label" for="{{ form.version.id_for_label }}">
+                    {{ form.version.label }}
+                </label>
+                {{ form.version }}
+                <small class="form-field-help">{{ form.version.help_text }}</small>
+                {% if form.version.errors %}<div class="form-field-error">{{ form.version.errors }}</div>{% endif %}
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                    ← {% trans "Back" %}
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    📦 {% trans "Convert" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .pdfa-info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.25rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .form-field {
+        margin-bottom: 1.25rem;
+    }
+    .form-field-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+        color: var(--text-primary, #1f2937);
+    }
+    .form-field select {
+        width: 100%;
+        padding: 0.625rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+        font-family: inherit;
+        background: #fff;
+    }
+    .form-field-help {
+        display: block;
+        margin-top: 0.35rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    .form-field-error {
+        color: #b91c1c;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    .alert-box--error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}

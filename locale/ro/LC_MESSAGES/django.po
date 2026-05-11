@@ -3545,3 +3545,70 @@ msgstr[2] "Strat de text OCR adăugat pe {{ count }} de pagini."
 
 msgid "All pages already had a text layer — the file was passed through unchanged."
 msgstr "Toate paginile aveau deja un strat de text — fișierul a fost transmis nemodificat."
+
+msgid "Convert to PDF/A"
+msgstr "Convertește în PDF/A"
+
+msgid "Convert to PDF/A-1b or PDF/A-2b for long-term, ISO-compliant archival"
+msgstr "Convertește în PDF/A-1b sau PDF/A-2b pentru arhivare pe termen lung, conform ISO"
+
+msgid "Produce an ISO-compliant PDF/A file suitable for long-term archival."
+msgstr "Creează un fișier PDF/A conform ISO, potrivit pentru arhivare pe termen lung."
+
+msgid "PDF/A version"
+msgstr "Versiune PDF/A"
+
+msgid "PDF/A-2b is recommended for new documents. Pick 1b only if a recipient requires it."
+msgstr "PDF/A-2b este recomandat pentru documente noi. Alege 1b doar dacă destinatarul o cere."
+
+msgid "PDF/A-2b (modern, allows transparency and JPEG2000)"
+msgstr "PDF/A-2b (modern, permite transparență și JPEG2000)"
+
+msgid "PDF/A-1b (broadest compatibility, no transparency)"
+msgstr "PDF/A-1b (compatibilitate maximă, fără transparență)"
+
+msgid "Conversion fails if the document contains content that can't be represented in the chosen PDF/A level (e.g. transparency on 1b). If that happens, try PDF/A-2b instead."
+msgstr "Conversia eșuează dacă documentul conține conținut ce nu poate fi reprezentat în nivelul PDF/A ales (de ex. transparență la 1b). Dacă se întâmplă, încearcă PDF/A-2b în schimb."
+
+msgid "Convert"
+msgstr "Convertește"
+
+msgid "Unsupported PDF/A version. Choose '1b' or '2b'."
+msgstr "Versiune PDF/A nesuportată. Alege „1b” sau „2b”."
+
+msgid "Cannot convert an encrypted PDF — remove the password first"
+msgstr "Nu se poate converti un PDF criptat — elimină mai întâi parola"
+
+msgid "ghostscript binary not found — install ghostscript on the host"
+msgstr "binarul ghostscript nu a fost găsit — instalează ghostscript pe server"
+
+msgid "ghostscript binary not found"
+msgstr "binarul ghostscript nu a fost găsit"
+
+msgid "PDF/A conversion timed out"
+msgstr "Conversia PDF/A a depășit timpul alocat"
+
+#, python-format
+msgid "PDF/A conversion failed: %(err)s"
+msgstr "Conversia PDF/A a eșuat: %(err)s"
+
+#, python-format
+msgid "PDF converted to PDF/A-%(ver)s."
+msgstr "PDF convertit în PDF/A-%(ver)s."
+
+#, python-format
+msgid "Error converting to PDF/A: %(err)s"
+msgstr "Eroare la conversia în PDF/A: %(err)s"
+
+msgid "PDF/A file not found."
+msgstr "Fișierul PDF/A nu a fost găsit."
+
+msgid "PDF/A Ready"
+msgstr "PDF/A gata"
+
+msgid "PDF/A Ready!"
+msgstr "PDF/A gata!"
+
+#, python-brace-format
+msgid "Your document has been converted to PDF/A-{{ version }}."
+msgstr "Documentul a fost convertit în PDF/A-{{ version }}."

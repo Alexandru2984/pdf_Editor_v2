@@ -815,3 +815,20 @@ class MakeSearchableForm(forms.Form):
         label=_("Rendering DPI"),
         help_text=_("Higher DPI improves accuracy on small fonts but slows OCR. 200 is a good default."),
     )
+
+
+class PdfaForm(forms.Form):
+    """Convert a PDF to PDF/A-1b or PDF/A-2b for long-term archival."""
+
+    VERSION_CHOICES = [
+        ("2b", _("PDF/A-2b (modern, allows transparency and JPEG2000)")),
+        ("1b", _("PDF/A-1b (broadest compatibility, no transparency)")),
+    ]
+
+    version = forms.ChoiceField(
+        required=True,
+        choices=VERSION_CHOICES,
+        initial="2b",
+        label=_("PDF/A version"),
+        help_text=_("PDF/A-2b is recommended for new documents. Pick 1b only if a recipient requires it."),
+    )

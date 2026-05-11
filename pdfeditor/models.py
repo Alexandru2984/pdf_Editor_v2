@@ -68,6 +68,7 @@ class ProcessedPDF(models.Model):
     KIND_FLATTEN = "flatten"
     KIND_REDACT = "redact"
     KIND_OCR_LAYER = "ocr_layer"
+    KIND_PDFA = "pdfa"
 
     KIND_CHOICES = [
         (KIND_FIND_REPLACE, "Find & Replace"),
@@ -91,6 +92,7 @@ class ProcessedPDF(models.Model):
         (KIND_FLATTEN, "Flatten"),
         (KIND_REDACT, "Redact"),
         (KIND_OCR_LAYER, "OCR Layer"),
+        (KIND_PDFA, "PDF/A"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -930,6 +930,61 @@ class SearchableViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 302)
 
 
+_HAS_GHOSTSCRIPT_VIEWS = shutil.which("gs") is not None
+
+
+@unittest.skipUnless(_HAS_GHOSTSCRIPT_VIEWS, "ghostscript not installed")
+class PdfaViewTests(_ViewTestBase):
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("pdfa"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_renders(self):
+        self.upload(num_pages=1)
+        resp = self.client.get(reverse("pdfa"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_full_pdfa_workflow(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(reverse("pdfa"), {"version": "2b"})
+        self.assertEqual(resp.status_code, 302)
+
+        result = self.client.get(reverse("pdfa_result"))
+        self.assertEqual(result.status_code, 200)
+
+        download = self.client.get(reverse("download_pdfa"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
+
+        from .models import ProcessedPDF
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_PDFA)
+        self.assertEqual(self.client.session.get("pdfa_version"), "2b")
+        with open(latest.path, "rb") as f:
+            self.assertIn(b"pdfaid", f.read())
+
+    def test_pdfa_1b_workflow(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(reverse("pdfa"), {"version": "1b"})
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(self.client.session.get("pdfa_version"), "1b")
+
+    def test_invalid_version_re_renders(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(reverse("pdfa"), {"version": "9z"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("pdfa_pdf_id", self.client.session)
+
+    def test_result_without_session_redirects(self):
+        resp = self.client.get(reverse("pdfa_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_pdfa"))
+        self.assertEqual(resp.status_code, 302)
+
+
 class CropViewTests(_ViewTestBase):
     def test_get_without_upload_redirects(self):
         resp = self.client.get(reverse("crop"))

@@ -156,6 +156,13 @@
             <a href="{% url 'searchable' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="pdfa">
+            <div class="card-icon">📦</div>
+            <h3>{% trans "Convert to PDF/A" %}</h3>
+            <p>{% trans "Convert to PDF/A-1b or PDF/A-2b for long-term, ISO-compliant archival" %}</p>
+            <a href="{% url 'pdfa' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="page-numbers">
             <div class="card-icon">🔢</div>
             <h3>{% trans "Add Page Numbers" %}</h3>

@@ -5,12 +5,18 @@ from __future__ import annotations
 import io
 import logging
 import os
+import shutil
+import subprocess
 import zipfile
 
 import fitz
 from PIL import Image as PILImage
 
 from ._common import parse_page_range, processed_dir, safe_basename, timestamp
+
+# Resolve ghostscript binary up-front so PDF/A conversion fails fast with a
+# clear message in environments where it isn't installed.
+GHOSTSCRIPT_CMD = os.environ.get("GHOSTSCRIPT_CMD") or shutil.which("gs") or "/usr/bin/gs"
 
 
 def split_pdf(pdf_path: str, ranges: list[tuple[int, int]]) -> list[str]:
@@ -662,6 +668,64 @@ def redact_text(
         doc.save(out_path, garbage=4, deflate=True, clean=True)
 
     return out_path, total_matches
+
+
+_PDFA_VERSION_TO_GS_LEVEL = {"1b": 1, "2b": 2}
+
+
+def convert_to_pdfa(pdf_path: str, version: str = "2b") -> tuple[str, str]:
+    """Convert a PDF to PDF/A-1b or PDF/A-2b for long-term archival.
+
+    Uses ghostscript with ``-dPDFA=N -dPDFACompatibilityPolicy=1``, which
+    fails the conversion if the source contains anything that can't be
+    represented in PDF/A (e.g. transparency on 1b) rather than silently
+    dropping it. Color is normalised through device-independent space so
+    embedded profiles aren't required. Returns ``(output_path, version)``.
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    if version not in _PDFA_VERSION_TO_GS_LEVEL:
+        raise ValueError("Unsupported PDF/A version. Choose '1b' or '2b'.")
+
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("Cannot convert an encrypted PDF — remove the password first")
+        if len(doc) == 0:
+            raise ValueError("PDF has no pages")
+
+    if not (GHOSTSCRIPT_CMD and os.path.exists(GHOSTSCRIPT_CMD)):
+        raise ValueError("ghostscript binary not found — install ghostscript on the host")
+
+    level = _PDFA_VERSION_TO_GS_LEVEL[version]
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    out_path = os.path.join(out_dir, f"{base}_pdfa{version}_{timestamp()}.pdf")
+
+    cmd = [
+        GHOSTSCRIPT_CMD,
+        "-dPDFA=" + str(level),
+        "-dBATCH",
+        "-dNOPAUSE",
+        "-dQUIET",
+        "-dPDFACompatibilityPolicy=1",
+        "-sColorConversionStrategy=UseDeviceIndependentColor",
+        "-sDEVICE=pdfwrite",
+        "-sOutputFile=" + out_path,
+        pdf_path,
+    ]
+
+    try:
+        proc = subprocess.run(cmd, capture_output=True, timeout=120, check=False)
+    except subprocess.TimeoutExpired as exc:
+        raise ValueError("PDF/A conversion timed out") from exc
+    except FileNotFoundError as exc:
+        raise ValueError("ghostscript binary not found") from exc
+
+    if proc.returncode != 0 or not os.path.exists(out_path):
+        stderr = proc.stderr.decode("utf-8", errors="replace")[:500] if proc.stderr else ""
+        raise ValueError(f"PDF/A conversion failed: {stderr.strip() or 'ghostscript error'}")
+
+    return out_path, version
 
 
 PAGE_SIZES_PT: dict[str, tuple[float, float]] = {
