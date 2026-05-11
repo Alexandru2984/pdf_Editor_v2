@@ -4,12 +4,14 @@ import io
 import os
 import shutil
 import tempfile
+import unittest
 import zipfile
 
 import fitz
 from django.test import TestCase, override_settings
 from PIL import Image as PILImage
 
+from .pdf_processor.extract import make_pdf_searchable
 from .pdf_processor.ops import (
     _calculate_position,
     _parse_pdf_date,
@@ -1534,3 +1536,110 @@ class RedactTextTests(_MediaRootMixin, TestCase):
         out, _ = redact_text(src, ["text"])
         self.tmp_files.append(out)
         self.assertIn("redacted", os.path.basename(out))
+
+
+def _make_image_only_pdf(text: str = "HELLO OCR", pages: int = 1) -> str:
+    """Render `text` as a raster image, then embed each image as a page —
+    the resulting PDF has no text layer, so OCR must produce one to make it
+    searchable."""
+    from PIL import ImageDraw, ImageFont
+
+    fd, path = tempfile.mkstemp(suffix=".pdf")
+    os.close(fd)
+
+    img_w, img_h = 1240, 1754  # ~A4 @ 150dpi
+    doc = fitz.open()
+    try:
+        for _i in range(pages):
+            img = PILImage.new("RGB", (img_w, img_h), "white")
+            draw = ImageDraw.Draw(img)
+            try:
+                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 80)
+            except OSError:
+                font = ImageFont.load_default()
+            draw.text((100, 200), text, fill="black", font=font)
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            buf.seek(0)
+            page = doc.new_page(width=595, height=842)
+            page.insert_image(page.rect, stream=buf.getvalue())
+        doc.save(path)
+    finally:
+        doc.close()
+    return path
+
+
+_HAS_TESSERACT = shutil.which("tesseract") is not None
+
+
+@unittest.skipUnless(_HAS_TESSERACT, "tesseract not installed")
+class MakePdfSearchableTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.tmp_files: list[str] = []
+
+    def tearDown(self):
+        for p in self.tmp_files:
+            if os.path.exists(p):
+                os.remove(p)
+
+    def test_image_only_page_gets_text_layer(self):
+        src = _make_image_only_pdf("HELLO OCR")
+        self.tmp_files.append(src)
+        out, pages_ocrd = make_pdf_searchable(src, language="eng", dpi=150)
+        self.tmp_files.append(out)
+        self.assertEqual(pages_ocrd, 1)
+        with fitz.open(out) as doc:
+            extracted = doc[0].get_text().upper()
+        self.assertIn("HELLO", extracted)
+
+    def test_text_page_is_copied_unchanged(self):
+        src = _make_pdf_with_text(["Already selectable"])
+        self.tmp_files.append(src)
+        out, pages_ocrd = make_pdf_searchable(src, language="eng", dpi=150)
+        self.tmp_files.append(out)
+        self.assertEqual(pages_ocrd, 0)
+        with fitz.open(out) as doc:
+            self.assertIn("Already selectable", doc[0].get_text())
+
+    def test_mixed_document_only_ocrs_image_pages(self):
+        text_pdf = _make_pdf_with_text(["plain text page"])
+        image_pdf = _make_image_only_pdf("SCANNED")
+        merged = merge_pdfs([text_pdf, image_pdf])
+        self.tmp_files.extend([text_pdf, image_pdf, merged])
+        out, pages_ocrd = make_pdf_searchable(merged, language="eng", dpi=150)
+        self.tmp_files.append(out)
+        self.assertEqual(pages_ocrd, 1)
+
+    def test_invalid_dpi_raises(self):
+        src = _make_pdf_with_text(["x"])
+        self.tmp_files.append(src)
+        with self.assertRaises(ValueError):
+            make_pdf_searchable(src, dpi=50)
+        with self.assertRaises(ValueError):
+            make_pdf_searchable(src, dpi=1000)
+
+    def test_blank_language_raises(self):
+        src = _make_pdf_with_text(["x"])
+        self.tmp_files.append(src)
+        with self.assertRaises(ValueError):
+            make_pdf_searchable(src, language="")
+        with self.assertRaises(ValueError):
+            make_pdf_searchable(src, language="   ")
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            make_pdf_searchable("/no/such/file.pdf")
+
+    def test_encrypted_pdf_raises(self):
+        src = _make_pdf_with_text(["secret"])
+        encrypted = protect_pdf(src, user_password="pw")
+        self.tmp_files.extend([src, encrypted])
+        with self.assertRaises(ValueError):
+            make_pdf_searchable(encrypted)
+
+    def test_output_basename_marks_searchable(self):
+        src = _make_pdf_with_text(["x"])
+        self.tmp_files.append(src)
+        out, _ = make_pdf_searchable(src, language="eng", dpi=150)
+        self.tmp_files.append(out)
+        self.assertIn("searchable", os.path.basename(out))

@@ -4,6 +4,7 @@ import io
 import os
 import shutil
 import tempfile
+import unittest
 from unittest.mock import AsyncMock, patch
 
 import fitz
@@ -864,6 +865,68 @@ class RedactViewTests(_ViewTestBase):
 
     def test_download_without_session_redirects(self):
         resp = self.client.get(reverse("download_redacted"))
+        self.assertEqual(resp.status_code, 302)
+
+
+_HAS_TESSERACT_VIEWS = shutil.which("tesseract") is not None
+
+
+@unittest.skipUnless(_HAS_TESSERACT_VIEWS, "tesseract not installed")
+class SearchableViewTests(_ViewTestBase):
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("searchable"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_renders(self):
+        self.upload(num_pages=1)
+        resp = self.client.get(reverse("searchable"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_text_pdf_passes_through_with_zero_ocr_pages(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(
+            reverse("searchable"),
+            {"language": "eng", "dpi": "150"},
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(self.client.session.get("searchable_pages_ocrd"), 0)
+
+        result = self.client.get(reverse("searchable_result"))
+        self.assertEqual(result.status_code, 200)
+
+        download = self.client.get(reverse("download_searchable"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
+
+        from .models import ProcessedPDF
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_OCR_LAYER)
+
+    def test_invalid_dpi_re_renders(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(
+            reverse("searchable"),
+            {"language": "eng", "dpi": "5"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("searchable_pdf_id", self.client.session)
+
+    def test_missing_language_re_renders(self):
+        self.upload(num_pages=1)
+        resp = self.client.post(
+            reverse("searchable"),
+            {"language": "", "dpi": "200"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("searchable_pdf_id", self.client.session)
+
+    def test_result_without_session_redirects(self):
+        resp = self.client.get(reverse("searchable_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_searchable"))
         self.assertEqual(resp.status_code, 302)
 
 

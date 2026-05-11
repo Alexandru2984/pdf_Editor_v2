@@ -149,6 +149,13 @@
             <a href="{% url 'redact' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="searchable">
+            <div class="card-icon">🔍</div>
+            <h3>{% trans "Make Searchable" %}</h3>
+            <p>{% trans "Run OCR on scanned pages and embed an invisible text layer so the PDF becomes searchable" %}</p>
+            <a href="{% url 'searchable' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="page-numbers">
             <div class="card-icon">🔢</div>
             <h3>{% trans "Add Page Numbers" %}</h3>

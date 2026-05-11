@@ -12,7 +12,7 @@ from .edit import (
     replace_in_rect_safe,
     replace_with_flow,
 )
-from .extract import extract_text_from_pdf, ocr_pdf_to_text
+from .extract import extract_text_from_pdf, make_pdf_searchable, ocr_pdf_to_text
 from .forms import FormField, extract_form_fields, fill_form_fields, has_form_fields
 from .ops import (
     add_page_numbers,
@@ -61,6 +61,7 @@ __all__ = [
     "rotate_pages",
     "add_page_numbers",
     "extract_text_from_pdf",
+    "make_pdf_searchable",
     "ocr_pdf_to_text",
     "find_and_replace_text",
     "rephrase_text_in_pdf",

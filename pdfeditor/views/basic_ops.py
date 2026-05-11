@@ -14,6 +14,7 @@ from ..forms import (
     FlattenPDFForm,
     GenerateCertForm,
     ImagesToPdfForm,
+    MakeSearchableForm,
     MergePDFForm,
     MetadataForm,
     PdfToImagesForm,
@@ -32,6 +33,7 @@ from ..pdf_processor import (
     convert_pdf_to_images,
     edit_pdf_metadata,
     flatten_pdf,
+    make_pdf_searchable,
     merge_pdfs,
     protect_pdf,
     read_pdf_metadata,
@@ -641,6 +643,94 @@ def redact_result_view(request):
 
 def download_redacted_view(request):
     output = _fetch_output(request, "redacted_pdf_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+
+
+# ---------- Searchable PDF (OCR layer) ----------
+
+
+@auth_aware_ratelimit(anon_rate="10/h", user_rate="40/h", method="POST")
+def searchable_view(request):
+    selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
+    if early:
+        return early
+
+    pdf_path = selected_pdf.path
+
+    if request.method == "POST":
+        form = MakeSearchableForm(request.POST)
+        if form.is_valid():
+            try:
+                output_path, pages_ocrd = make_pdf_searchable(
+                    pdf_path,
+                    language=form.cleaned_data["language"],
+                    dpi=form.cleaned_data["dpi"],
+                )
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_OCR_LAYER,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session["searchable_pdf_id"] = str(output.id)
+                request.session["searchable_pages_ocrd"] = pages_ocrd
+                if pages_ocrd == 0:
+                    messages.info(
+                        request,
+                        _("All pages already had a text layer — nothing to OCR."),
+                    )
+                else:
+                    messages.success(
+                        request,
+                        _("Added OCR text layer on %(count)s page(s).") % {"count": pages_ocrd},
+                    )
+                return redirect("searchable_result")
+            except ValueError as e:
+                messages.error(request, _("Error: %(err)s") % {"err": e})
+            except Exception as e:
+                messages.error(request, _("Error running OCR: %(err)s") % {"err": e})
+    else:
+        form = MakeSearchableForm()
+
+    return render(
+        request,
+        "pdfeditor/searchable.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+        },
+    )
+
+
+def searchable_result_view(request):
+    output = _fetch_output(request, "searchable_pdf_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("Searchable file not found."))
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "pdfeditor/searchable_result.html",
+        {
+            "pdf_filename": output.name,
+            "size": os.path.getsize(output.path),
+            "pages_ocrd": request.session.get("searchable_pages_ocrd", 0),
+        },
+    )
+
+
+def download_searchable_view(request):
+    output = _fetch_output(request, "searchable_pdf_id")
     if not output:
         messages.error(request, _("File not found."))
         return redirect("dashboard")

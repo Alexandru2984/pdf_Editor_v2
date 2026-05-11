@@ -1,0 +1,39 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "PDF is Searchable" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header result-success-header">
+        <div class="result-success-icon">🔍</div>
+        <h2>{% trans "PDF is Searchable!" %}</h2>
+        <p>
+            {% if pages_ocrd %}
+                {% blocktrans count count=pages_ocrd %}OCR text layer added on {{ count }} page.{% plural %}OCR text layer added on {{ count }} pages.{% endblocktrans %}
+            {% else %}
+                {% trans "All pages already had a text layer — the file was passed through unchanged." %}
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="result-file-row">
+            <div class="result-file-icon">📄</div>
+            <div class="result-file-info">
+                <div class="result-file-name">{{ pdf_filename }}</div>
+                <div class="result-file-meta">{{ size|filesizeformat }}</div>
+            </div>
+        </div>
+
+        <div class="result-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                ← {% trans "Dashboard" %}
+            </a>
+            <a href="{% url 'download_searchable' %}" class="btn btn-primary">
+                📥 {% trans "Download PDF" %}
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
