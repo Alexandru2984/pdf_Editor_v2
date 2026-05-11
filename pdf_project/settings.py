@@ -58,8 +58,48 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "axes",
+    "rest_framework",
+    "drf_spectacular",
     "pdfeditor",
 ]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "pdfeditor.api.auth.ApiKeyAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "pdfeditor.api.throttles.ApiKeyRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "20/hour",
+        "api_key": "300/hour",
+    },
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "PDF Editor API",
+    "DESCRIPTION": (
+        "Programmatic access to the PDF Editor toolbox: upload PDFs, run "
+        "operations (compress, OCR, sign, redact, PDF/A, …), and download "
+        "the results. Authenticate by sending your API key in the "
+        "`X-API-Key` header."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX": "/api/v1",
+    "TAGS": [
+        {"name": "PDFs", "description": "Upload and manage source PDFs"},
+        {"name": "Operations", "description": "Run a PDF processing operation"},
+        {"name": "Outputs", "description": "List and download processed PDFs"},
+    ],
+}
 
 MIDDLEWARE = [
     "pdfeditor.middleware.RequestIDMiddleware",

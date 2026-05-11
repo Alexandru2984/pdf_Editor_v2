@@ -200,6 +200,67 @@ def _default_share_token() -> str:
     return uuid.uuid4().hex
 
 
+def _default_api_key_token() -> str:
+    import secrets
+
+    return secrets.token_urlsafe(32)
+
+
+class ApiKey(models.Model):
+    """Per-user API key for programmatic access to the REST API.
+
+    The plaintext token is shown ONCE on creation; only its SHA-256 hash is
+    stored. Revoked keys are kept for audit but cannot authenticate. Each
+    key is scoped to one user — the API never authenticates anonymous
+    sessions.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="api_keys",
+    )
+    label = models.CharField(max_length=80, blank=True, help_text="Friendly name for this key.")
+    key_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    prefix = models.CharField(max_length=12, db_index=True, help_text="First chars of the token for display.")
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "-created_at"])]
+
+    def is_active(self) -> bool:
+        return self.revoked_at is None
+
+    def __str__(self):
+        state = "active" if self.is_active() else "revoked"
+        return f"{self.label or self.prefix} · {self.user.username} ({state})"
+
+    @staticmethod
+    def hash_token(token: str) -> str:
+        import hashlib
+
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def create_for_user(cls, user, label: str = "") -> tuple["ApiKey", str]:
+        """Create a new key. Returns (instance, plaintext_token). The plaintext
+        is only returned here — it's not stored, only its hash."""
+        token = _default_api_key_token()
+        return (
+            cls.objects.create(
+                user=user,
+                label=label or "",
+                key_hash=cls.hash_token(token),
+                prefix=token[:8],
+            ),
+            token,
+        )
+
+
 class ShareLink(models.Model):
     """A public, token-protected download link for a ProcessedPDF.
 

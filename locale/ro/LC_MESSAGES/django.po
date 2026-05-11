@@ -3868,3 +3868,54 @@ msgstr "Acest link a atins limita de descărcări."
 
 msgid "The shared file is no longer available."
 msgstr "Fișierul partajat nu mai este disponibil."
+
+msgid "API access"
+msgstr "Acces API"
+
+msgid "Use these keys to call the REST API at"
+msgstr "Folosește aceste chei pentru a apela REST API la"
+
+msgid "Send the token in the"
+msgstr "Trimite tokenul în"
+
+msgid "header."
+msgstr "header."
+
+msgid "Your new key — copy it now, it will not be shown again:"
+msgstr "Cheia ta nouă — copiaz-o acum, nu va mai fi afișată:"
+
+msgid "Label (e.g. local dev script)"
+msgstr "Etichetă (ex. script de dev local)"
+
+msgid "Create API key"
+msgstr "Creează cheie API"
+
+msgid "Label"
+msgstr "Etichetă"
+
+msgid "Prefix"
+msgstr "Prefix"
+
+msgid "Last used"
+msgstr "Ultima utilizare"
+
+msgid "Status"
+msgstr "Stare"
+
+msgid "active"
+msgstr "activă"
+
+msgid "revoked"
+msgstr "revocată"
+
+msgid "Revoke this key?"
+msgstr "Revocă această cheie?"
+
+msgid "No API keys yet."
+msgstr "Nicio cheie API încă."
+
+msgid "API key created. Copy the token now — it won't be shown again."
+msgstr "Cheie API creată. Copiază tokenul acum — nu va mai fi afișat."
+
+msgid "API key revoked."
+msgstr "Cheie API revocată."
