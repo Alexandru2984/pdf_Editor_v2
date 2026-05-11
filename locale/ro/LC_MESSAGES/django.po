@@ -3458,3 +3458,90 @@ msgstr "Nu se poate redacta un PDF criptat — elimină mai întâi parola"
 
 msgid "Provide at least one search term"
 msgstr "Furnizează cel puțin un termen de căutare"
+
+msgid "Make Searchable"
+msgstr "Fă căutabil"
+
+msgid "Run OCR on scanned pages and embed an invisible text layer so the PDF becomes searchable"
+msgstr "Rulează OCR pe paginile scanate și încorporează un strat invizibil de text pentru ca PDF-ul să devină căutabil"
+
+msgid "Make PDF Searchable"
+msgstr "Fă PDF-ul căutabil"
+
+msgid "Run OCR on scanned pages and embed an invisible text layer so the PDF becomes searchable and copy-pastable."
+msgstr "Rulează OCR pe paginile scanate și încorporează un strat invizibil de text pentru ca PDF-ul să devină căutabil și să poată fi copiat."
+
+msgid "Pages that already have selectable text are kept as-is. Only image-only pages are OCR'd, which may take a while for long documents."
+msgstr "Paginile care au deja text selectabil sunt păstrate ca atare. Doar paginile fără text sunt procesate cu OCR, ceea ce poate dura pentru documente lungi."
+
+msgid "OCR language"
+msgstr "Limbă OCR"
+
+msgid "Pick the language(s) used in the document."
+msgstr "Alege limba/limbile folosite în document."
+
+msgid "English + Romanian"
+msgstr "Engleză + Română"
+
+msgid "English"
+msgstr "Engleză"
+
+msgid "Romanian"
+msgstr "Română"
+
+msgid "Rendering DPI"
+msgstr "DPI de randare"
+
+msgid "Higher DPI improves accuracy on small fonts but slows OCR. 200 is a good default."
+msgstr "Un DPI mai mare îmbunătățește acuratețea pe font mic dar încetinește OCR-ul. 200 este o valoare implicită bună."
+
+msgid "Run OCR"
+msgstr "Rulează OCR"
+
+msgid "Language is required (e.g. eng, ron, eng+ron)"
+msgstr "Limba este obligatorie (ex. eng, ron, eng+ron)"
+
+msgid "dpi must be between 72 and 600"
+msgstr "DPI-ul trebuie să fie între 72 și 600"
+
+msgid "pytesseract / Pillow not installed"
+msgstr "pytesseract / Pillow nu sunt instalate"
+
+msgid "Cannot OCR an encrypted PDF — remove the password first"
+msgstr "Nu se poate face OCR pe un PDF criptat — elimină mai întâi parola"
+
+msgid "PDF has no pages"
+msgstr "PDF-ul nu are pagini"
+
+#, python-format
+msgid "OCR failed: %(err)s"
+msgstr "OCR a eșuat: %(err)s"
+
+#, python-format
+msgid "Added OCR text layer on %(count)s page(s)."
+msgstr "S-a adăugat strat de text OCR pe %(count)s pagină(i)."
+
+msgid "All pages already had a text layer — nothing to OCR."
+msgstr "Toate paginile aveau deja un strat de text — nimic de procesat cu OCR."
+
+#, python-format
+msgid "Error running OCR: %(err)s"
+msgstr "Eroare la rularea OCR-ului: %(err)s"
+
+msgid "Searchable file not found."
+msgstr "Fișierul căutabil nu a fost găsit."
+
+msgid "PDF is Searchable"
+msgstr "PDF căutabil"
+
+msgid "PDF is Searchable!"
+msgstr "PDF căutabil!"
+
+msgid "OCR text layer added on {{ count }} page."
+msgid_plural "OCR text layer added on {{ count }} pages."
+msgstr[0] "Strat de text OCR adăugat pe {{ count }} pagină."
+msgstr[1] "Strat de text OCR adăugat pe {{ count }} pagini."
+msgstr[2] "Strat de text OCR adăugat pe {{ count }} de pagini."
+
+msgid "All pages already had a text layer — the file was passed through unchanged."
+msgstr "Toate paginile aveau deja un strat de text — fișierul a fost transmis nemodificat."

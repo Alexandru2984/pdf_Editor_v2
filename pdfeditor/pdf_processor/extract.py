@@ -19,6 +19,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 import fitz
 
+from ._common import processed_dir, safe_basename, timestamp
+
 logger = logging.getLogger(__name__)
 
 # 200dpi is enough for body text at A4 — readable by tesseract while ~2.25x
@@ -110,3 +112,67 @@ def ocr_pdf_to_text(pdf_path: str) -> str:
     if not out:
         return "No text could be extracted via OCR. The document might be blank or poor quality."
     return "\n".join(out)
+
+
+def make_pdf_searchable(pdf_path: str, language: str = "eng+ron", dpi: int = 200) -> tuple[str, int]:
+    """Render image-only pages, OCR them, and embed the recognised text as an
+    invisible layer so the PDF becomes searchable/selectable while looking
+    identical.
+
+    Pages that already have a text layer are copied as-is. Returns
+    ``(output_path, ocr_page_count)``.
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    if dpi < 72 or dpi > 600:
+        raise ValueError("dpi must be between 72 and 600")
+    if not language or not language.strip():
+        raise ValueError("Language is required (e.g. eng, ron, eng+ron)")
+
+    try:
+        import pytesseract
+        from PIL import Image
+    except ImportError as e:
+        raise ValueError("pytesseract / Pillow not installed") from e
+
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    out_path = os.path.join(out_dir, f"{base}_searchable_{timestamp()}.pdf")
+
+    new_doc = fitz.open()
+    pages_ocrd = 0
+
+    try:
+        with fitz.open(pdf_path) as doc:
+            if doc.is_encrypted:
+                raise ValueError("Cannot OCR an encrypted PDF — remove the password first")
+            total = len(doc)
+            if total == 0:
+                raise ValueError("PDF has no pages")
+
+            for page in doc:
+                if page.get_text().strip():
+                    new_doc.insert_pdf(doc, from_page=page.number, to_page=page.number)
+                    continue
+
+                pix = page.get_pixmap(dpi=dpi, alpha=False)
+                img = Image.open(io.BytesIO(pix.tobytes("png")))
+                try:
+                    ocr_pdf_bytes = pytesseract.image_to_pdf_or_hocr(img, extension="pdf", lang=language)
+                except pytesseract.TesseractError as exc:
+                    raise ValueError(f"OCR failed: {exc}") from exc
+
+                ocr_doc = fitz.open(stream=ocr_pdf_bytes, filetype="pdf")
+                try:
+                    new_doc.insert_pdf(ocr_doc)
+                    pages_ocrd += 1
+                finally:
+                    ocr_doc.close()
+
+        new_doc.save(out_path, garbage=4, deflate=True, clean=True)
+    finally:
+        new_doc.close()
+
+    return out_path, pages_ocrd

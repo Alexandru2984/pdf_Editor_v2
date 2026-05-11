@@ -32,6 +32,8 @@ db.sqlite3-journal
 # Environment
 .env
 .env.local
+.env.bak*
+.env.*.bak
 
 # Uploads (keep structure, ignore content)
 media/uploads/*

@@ -789,3 +789,29 @@ class RedactPDFForm(forms.Form):
         if not terms:
             raise forms.ValidationError(_("Provide at least one search term."))
         return terms
+
+
+class MakeSearchableForm(forms.Form):
+    """Run OCR on image-only pages and embed an invisible text layer."""
+
+    LANG_CHOICES = [
+        ("eng+ron", _("English + Romanian")),
+        ("eng", _("English")),
+        ("ron", _("Romanian")),
+    ]
+
+    language = forms.ChoiceField(
+        required=True,
+        choices=LANG_CHOICES,
+        initial="eng+ron",
+        label=_("OCR language"),
+        help_text=_("Pick the language(s) used in the document."),
+    )
+    dpi = forms.IntegerField(
+        required=True,
+        min_value=72,
+        max_value=600,
+        initial=200,
+        label=_("Rendering DPI"),
+        help_text=_("Higher DPI improves accuracy on small fonts but slows OCR. 200 is a good default."),
+    )
