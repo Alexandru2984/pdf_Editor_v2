@@ -23,6 +23,26 @@
         </form>
     </div>
 
+    {% if storage_quota %}
+    <div class="storage-meter" title="{% blocktrans with used=storage_used|filesizeformat quota=storage_quota|filesizeformat %}{{ used }} of {{ quota }} used{% endblocktrans %}">
+        <div class="storage-meter-header">
+            <span>💾 {% trans "Storage used" %}</span>
+            <span>{{ storage_used|filesizeformat }} / {{ storage_quota|filesizeformat }} ({{ storage_percent }}%)</span>
+        </div>
+        <div class="storage-meter-track">
+            <div class="storage-meter-fill {% if storage_percent >= 90 %}storage-meter-fill--danger{% elif storage_percent >= 70 %}storage-meter-fill--warn{% endif %}" style="width: {{ storage_percent }}%;"></div>
+        </div>
+    </div>
+    <style>
+        .storage-meter { max-width: 720px; margin: 0 auto 1rem; padding: 0.625rem 0.875rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; }
+        .storage-meter-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #4b5563; margin-bottom: 0.4rem; }
+        .storage-meter-track { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+        .storage-meter-fill { height: 100%; background: #10b981; transition: width 0.3s; }
+        .storage-meter-fill--warn { background: #f59e0b; }
+        .storage-meter-fill--danger { background: #ef4444; }
+    </style>
+    {% endif %}
+
     <h2 class="section-title">{% trans "PDF Operations" %}</h2>
 
     <div class="operations-grid">
@@ -168,6 +188,20 @@
             <h3>{% trans "Compare PDFs" %}</h3>
             <p>{% trans "Diff two PDFs page-by-page — get a report showing added, removed and changed lines" %}</p>
             <a href="{% url 'compare' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
+        <div class="operation-card" data-feature="outline">
+            <div class="card-icon">📑</div>
+            <h3>{% trans "Edit Bookmarks" %}</h3>
+            <p>{% trans "Add, rename or remove the PDF's table of contents — point each bookmark to a specific page" %}</p>
+            <a href="{% url 'outline' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
+        <div class="operation-card" data-feature="share">
+            <div class="card-icon">🔗</div>
+            <h3>{% trans "Share Links" %}</h3>
+            <p>{% trans "Create token-based public links for your processed PDFs with TTL and download caps" %}</p>
+            <a href="{% url 'share_links' %}" class="btn btn-secondary">{% trans "Manage" %}</a>
         </div>
 
         <div class="operation-card" data-feature="page-numbers">

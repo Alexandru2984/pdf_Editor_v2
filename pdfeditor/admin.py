@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ProcessedPDF, TrustAnchor, UploadedPDF
+from .models import AuditLog, ProcessedPDF, ShareLink, TrustAnchor, UploadedPDF
 
 
 @admin.register(UploadedPDF)
@@ -39,3 +39,56 @@ class ProcessedPDFAdmin(admin.ModelAdmin):
     @admin.display(description="Session", ordering="session_key")
     def session_key_short(self, obj):
         return f"{obj.session_key[:8]}…" if obj.session_key else ""
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "kind", "user", "output_name", "ip_address")
+    list_filter = ("kind", "created_at")
+    search_fields = (
+        "user__username",
+        "user__email",
+        "session_key",
+        "output_name",
+        "source_name",
+        "ip_address",
+    )
+    readonly_fields = (
+        "id",
+        "user",
+        "session_key",
+        "kind",
+        "source_name",
+        "output_name",
+        "output_size",
+        "ip_address",
+        "user_agent",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ShareLink)
+class ShareLinkAdmin(admin.ModelAdmin):
+    list_display = (
+        "token_short",
+        "processed_pdf",
+        "creator",
+        "download_count",
+        "max_downloads",
+        "expires_at",
+        "created_at",
+    )
+    list_filter = ("created_at", "expires_at")
+    search_fields = ("token", "creator__username", "session_key", "processed_pdf__name")
+    readonly_fields = ("id", "token", "creator", "session_key", "created_at", "download_count")
+    raw_id_fields = ("processed_pdf",)
+
+    @admin.display(description="Token", ordering="token")
+    def token_short(self, obj):
+        return f"{obj.token[:10]}…" if obj.token else ""

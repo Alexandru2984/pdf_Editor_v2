@@ -1,0 +1,208 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Edit Bookmarks" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 820px;">
+    <div class="preview-header">
+
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
+                📂 {% trans "Select PDF:" %}
+            </label>
+            <select id="pdf-selector" onchange="window.location.href='{% url 'outline' %}?pdf=' + encodeURIComponent(this.value)">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="tool-page-title">📑 {% trans "Edit Bookmarks" %}</h2>
+            <p class="tool-page-subtitle">
+                {% blocktrans with pages=page_count %}Build or replace the table of contents. The PDF has {{ pages }} page(s).{% endblocktrans %}
+            </p>
+            <div class="tool-info-bar">
+                <div>
+                    <div class="tool-info-label">{% trans "Current File:" %}</div>
+                    <div class="tool-info-value">{{ pdf_name }}</div>
+                </div>
+                <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview tool-info-bar-divider">
+                    👁️ {% trans "Preview" %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="outline-info-box">
+            <p>
+                <strong>ℹ️ {% trans "Note:" %}</strong>
+                {% trans "Levels indicate nesting (1 = top-level chapter, 2 = subsection, etc.). The first entry must start at level 1 and levels cannot jump." %}
+            </p>
+        </div>
+
+        <form method="post" novalidate id="outline-form">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert-box alert-box--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+            {% if form.entries_json.errors %}
+            <div class="alert-box alert-box--error">{{ form.entries_json.errors }}</div>
+            {% endif %}
+
+            <table class="outline-table" id="outline-table">
+                <thead>
+                    <tr>
+                        <th style="width: 4rem;">{% trans "Level" %}</th>
+                        <th>{% trans "Title" %}</th>
+                        <th style="width: 6rem;">{% trans "Page" %}</th>
+                        <th style="width: 3rem;"></th>
+                    </tr>
+                </thead>
+                <tbody id="outline-rows"></tbody>
+            </table>
+
+            <div class="outline-actions">
+                <button type="button" class="btn btn-secondary" onclick="addOutlineRow()">
+                    ➕ {% trans "Add row" %}
+                </button>
+                <button type="button" class="btn btn-link" onclick="clearOutlineRows()">
+                    🗑 {% trans "Clear all" %}
+                </button>
+            </div>
+
+            <textarea name="entries_json" id="entries_json" style="display:none;"></textarea>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                    ← {% trans "Back" %}
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    📑 {% trans "Save Bookmarks" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .outline-info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .outline-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 0.75rem;
+    }
+    .outline-table th, .outline-table td {
+        padding: 0.4rem 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        vertical-align: middle;
+    }
+    .outline-table th {
+        text-align: left;
+        font-size: 0.85rem;
+        color: #6b7280;
+        font-weight: 600;
+    }
+    .outline-table input {
+        width: 100%;
+        padding: 0.4rem 0.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+        font-family: inherit;
+    }
+    .outline-table input[type="number"] {
+        text-align: center;
+    }
+    .outline-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+    }
+    .btn-link {
+        background: transparent;
+        border: none;
+        color: #6b7280;
+        text-decoration: underline;
+        cursor: pointer;
+        font-size: 0.875rem;
+    }
+    .row-delete {
+        background: transparent;
+        border: none;
+        color: #b91c1c;
+        cursor: pointer;
+        font-size: 1.1rem;
+    }
+    .alert-box--error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<script>
+    const PAGE_COUNT = {{ page_count }};
+    const INITIAL_ENTRIES = {{ existing_entries_json|safe }};
+
+    function addOutlineRow(level = 1, title = '', page = 1) {
+        const tbody = document.getElementById('outline-rows');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="number" min="1" max="6" value="${level}" class="row-level"></td>
+            <td><input type="text" value="${title.replace(/"/g, '&quot;')}" class="row-title" placeholder="{% trans 'Chapter title' %}"></td>
+            <td><input type="number" min="1" max="${PAGE_COUNT}" value="${page}" class="row-page"></td>
+            <td><button type="button" class="row-delete" onclick="this.closest('tr').remove()">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function clearOutlineRows() {
+        document.getElementById('outline-rows').innerHTML = '';
+    }
+
+    function collectEntries() {
+        const rows = document.querySelectorAll('#outline-rows tr');
+        const entries = [];
+        rows.forEach(tr => {
+            const level = parseInt(tr.querySelector('.row-level').value || '1', 10);
+            const title = tr.querySelector('.row-title').value.trim();
+            const page = parseInt(tr.querySelector('.row-page').value || '1', 10);
+            if (title) {
+                entries.push({ level, title, page });
+            }
+        });
+        return entries;
+    }
+
+    document.getElementById('outline-form').addEventListener('submit', () => {
+        document.getElementById('entries_json').value = JSON.stringify(collectEntries());
+    });
+
+    if (Array.isArray(INITIAL_ENTRIES) && INITIAL_ENTRIES.length > 0) {
+        INITIAL_ENTRIES.forEach(e => addOutlineRow(e.level, e.title, e.page));
+    } else {
+        addOutlineRow();
+    }
+</script>
+{% endblock %}

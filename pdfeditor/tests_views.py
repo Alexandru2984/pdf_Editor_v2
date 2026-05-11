@@ -5,6 +5,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from datetime import timedelta
 from unittest.mock import AsyncMock, patch
 
 import fitz
@@ -1045,6 +1046,262 @@ class CompareViewTests(_ViewTestBase):
     def test_download_without_session_redirects(self):
         resp = self.client.get(reverse("download_compare"))
         self.assertEqual(resp.status_code, 302)
+
+
+class OutlineViewTests(_ViewTestBase):
+    def test_get_without_upload_redirects(self):
+        resp = self.client.get(reverse("outline"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_get_renders_with_pdf(self):
+        self.upload(num_pages=3)
+        resp = self.client.get(reverse("outline"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_full_outline_workflow(self):
+        import json
+
+        self.upload(num_pages=3)
+        entries = [
+            {"level": 1, "title": "Intro", "page": 1},
+            {"level": 1, "title": "Conclusion", "page": 3},
+        ]
+        resp = self.client.post(
+            reverse("outline"),
+            {"entries_json": json.dumps(entries)},
+        )
+        self.assertEqual(resp.status_code, 302)
+
+        result = self.client.get(reverse("outline_result"))
+        self.assertEqual(result.status_code, 200)
+
+        download = self.client.get(reverse("download_outline"))
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
+
+        from .models import ProcessedPDF
+
+        latest = ProcessedPDF.objects.first()
+        self.assertEqual(latest.kind, ProcessedPDF.KIND_OUTLINE)
+        with fitz.open(latest.path) as doc:
+            toc = doc.get_toc(simple=True)
+        self.assertEqual(len(toc), 2)
+        self.assertEqual(toc[0][1], "Intro")
+
+    def test_invalid_json_re_renders(self):
+        self.upload(num_pages=2)
+        resp = self.client.post(reverse("outline"), {"entries_json": "not json"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("outline_pdf_id", self.client.session)
+
+    def test_invalid_level_jump_re_renders(self):
+        import json
+
+        self.upload(num_pages=2)
+        bad = [
+            {"level": 1, "title": "A", "page": 1},
+            {"level": 3, "title": "B", "page": 2},
+        ]
+        resp = self.client.post(reverse("outline"), {"entries_json": json.dumps(bad)})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("outline_pdf_id", self.client.session)
+
+    def test_result_without_session_redirects(self):
+        resp = self.client.get(reverse("outline_result"))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_download_without_session_redirects(self):
+        resp = self.client.get(reverse("download_outline"))
+        self.assertEqual(resp.status_code, 302)
+
+
+class StorageQuotaTests(_ViewTestBase):
+    @override_settings(PDF_QUOTA_ANON_BYTES=2000)
+    def test_upload_blocked_when_quota_exceeded(self):
+        # Small 2-page PDF (~1.1KB) fits in 2000-byte quota.
+        first = _make_uploaded("first.pdf", num_pages=2)
+        self.client.post(reverse("upload"), {"pdf_file": first})
+
+        from .models import UploadedPDF
+
+        self.assertEqual(UploadedPDF.objects.count(), 1)
+
+        # Second upload pushes total over the 2000-byte quota → rejected.
+        second = _make_uploaded("second.pdf", num_pages=2)
+        resp2 = self.client.post(reverse("upload"), {"pdf_file": second})
+        self.assertEqual(resp2.status_code, 200)
+        self.assertContains(resp2, "storage quota")
+        self.assertEqual(UploadedPDF.objects.count(), 1)
+
+    @override_settings(PDF_QUOTA_ANON_BYTES=0)
+    def test_unlimited_quota_allows_uploads(self):
+        self.upload(num_pages=2)
+        self.upload(name="x2.pdf", num_pages=2)
+
+        from .models import UploadedPDF
+
+        self.assertEqual(UploadedPDF.objects.count(), 2)
+
+    def test_dashboard_shows_storage_widget(self):
+        self.upload(num_pages=1)
+        resp = self.client.get(reverse("dashboard"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "storage-meter")
+
+
+class ShareLinkTests(_ViewTestBase):
+    def _create_processed_pdf(self):
+        self.upload(num_pages=1)
+        self.client.post(reverse("compress"), {"quality": "medium"})
+        from .models import ProcessedPDF
+
+        return ProcessedPDF.objects.first()
+
+    def test_share_links_page_renders_empty(self):
+        resp = self.client.get(reverse("share_links"))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_create_link_and_public_download(self):
+        processed = self._create_processed_pdf()
+        resp = self.client.post(
+            reverse("create_share_link"),
+            {
+                "processed_pdf_id": str(processed.id),
+                "ttl_hours": "24",
+                "max_downloads": "0",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+
+        from .models import ShareLink
+
+        link = ShareLink.objects.first()
+        self.assertIsNotNone(link)
+        self.assertEqual(link.processed_pdf_id, processed.id)
+
+        # Public download in a fresh client (no session shared) works.
+        public_client = Client()
+        download = public_client.get(reverse("public_share_download", args=[link.token]))
+        self.assertEqual(download.status_code, 200)
+
+        link.refresh_from_db()
+        self.assertEqual(link.download_count, 1)
+
+    def test_expired_link_returns_gone(self):
+        from django.utils import timezone
+
+        from .models import ShareLink
+
+        processed = self._create_processed_pdf()
+        link = ShareLink.objects.create(
+            processed_pdf=processed,
+            expires_at=timezone.now() - timedelta(minutes=1),
+            session_key=self.client.session.session_key or "",
+        )
+        public_client = Client()
+        resp = public_client.get(reverse("public_share_download", args=[link.token]))
+        self.assertEqual(resp.status_code, 410)
+        self.assertContains(resp, "expired", status_code=410)
+
+    def test_max_downloads_exhaustion(self):
+        from django.utils import timezone
+
+        from .models import ShareLink
+
+        processed = self._create_processed_pdf()
+        link = ShareLink.objects.create(
+            processed_pdf=processed,
+            expires_at=timezone.now() + timedelta(hours=1),
+            max_downloads=1,
+            session_key=self.client.session.session_key or "",
+        )
+        public_client = Client()
+        first = public_client.get(reverse("public_share_download", args=[link.token]))
+        self.assertEqual(first.status_code, 200)
+        second = public_client.get(reverse("public_share_download", args=[link.token]))
+        self.assertEqual(second.status_code, 410)
+
+    def test_revoke_link(self):
+        processed = self._create_processed_pdf()
+        self.client.post(
+            reverse("create_share_link"),
+            {
+                "processed_pdf_id": str(processed.id),
+                "ttl_hours": "1",
+                "max_downloads": "0",
+            },
+        )
+        from .models import ShareLink
+
+        link = ShareLink.objects.first()
+        revoke = self.client.post(reverse("revoke_share_link", args=[link.token]))
+        self.assertEqual(revoke.status_code, 302)
+        self.assertFalse(ShareLink.objects.filter(token=link.token).exists())
+
+    def test_cannot_create_link_for_someone_elses_pdf(self):
+        from django.contrib.auth import get_user_model
+
+        from .models import ShareLink
+
+        # Owner A uploads + creates a processed PDF.
+        owner_a = self._create_processed_pdf()
+        self.assertIsNotNone(owner_a)
+
+        # Switch to a different session — should not be able to share owner_a's PDF.
+        User = get_user_model()
+        other = User.objects.create_user(username="other", password="pw12345!")
+        other_client = Client()
+        other_client.force_login(other)
+        resp = other_client.post(
+            reverse("create_share_link"),
+            {
+                "processed_pdf_id": str(owner_a.id),
+                "ttl_hours": "1",
+                "max_downloads": "0",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        # No share link should have been created by 'other'.
+        self.assertFalse(ShareLink.objects.filter(creator=other).exists())
+
+
+class AuditLogTests(_ViewTestBase):
+    def test_op_creates_audit_entry(self):
+        from .models import AuditLog
+
+        self.upload(num_pages=2)
+        self.client.post(reverse("compress"), {"quality": "medium"})
+
+        latest = AuditLog.objects.first()
+        self.assertIsNotNone(latest)
+        self.assertEqual(latest.kind, "compress")
+        self.assertTrue(latest.output_name)
+        self.assertGreater(latest.output_size, 0)
+
+    def test_anon_audit_entry_has_session_key(self):
+        from .models import AuditLog
+
+        self.upload(num_pages=1)
+        self.client.post(reverse("compress"), {"quality": "medium"})
+        latest = AuditLog.objects.first()
+        self.assertIsNone(latest.user)
+        self.assertTrue(latest.session_key)
+
+    def test_authenticated_audit_entry_links_user(self):
+        from django.contrib.auth import get_user_model
+
+        from .models import AuditLog
+
+        User = get_user_model()
+        user = User.objects.create_user(username="bob", password="pw12345!")
+        self.client.force_login(user)
+
+        self.upload(num_pages=1)
+        self.client.post(reverse("compress"), {"quality": "medium"})
+
+        latest = AuditLog.objects.first()
+        self.assertEqual(latest.user_id, user.id)
+        self.assertEqual(latest.session_key, "")
 
 
 class CropViewTests(_ViewTestBase):

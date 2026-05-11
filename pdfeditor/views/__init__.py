@@ -27,6 +27,7 @@ from .basic_ops import (
     download_images_view,
     download_merged_view,
     download_metadata_view,
+    download_outline_view,
     download_pdfa_view,
     download_protected_view,
     download_redacted_view,
@@ -43,6 +44,8 @@ from .basic_ops import (
     merge_view,
     metadata_result_view,
     metadata_view,
+    outline_result_view,
+    outline_view,
     pdfa_result_view,
     pdfa_view,
     protect_result_view,
@@ -105,6 +108,12 @@ from .rephrase import (
     rephrase_result_view,
     rephrase_view,
 )
+from .share import (
+    create_share_link_view,
+    public_share_download_view,
+    revoke_share_link_view,
+    share_links_view,
+)
 from .upload import dashboard_view, delete_pdf_view, thumbnail_view, upload_view
 
 __all__ = [
@@ -159,6 +168,9 @@ __all__ = [
     "compare_view",
     "compare_result_view",
     "download_compare_view",
+    "outline_view",
+    "outline_result_view",
+    "download_outline_view",
     "sign_view",
     "sign_result_view",
     "download_signed_view",
@@ -205,4 +217,8 @@ __all__ = [
     "profile_view",
     "export_data_view",
     "delete_account_view",
+    "share_links_view",
+    "create_share_link_view",
+    "revoke_share_link_view",
+    "public_share_download_view",
 ]

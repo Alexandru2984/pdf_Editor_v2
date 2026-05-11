@@ -9,10 +9,30 @@ rows never alias each other.
 import os
 
 from django.conf import settings
+from django.db import models
 from django.db.models import Q
 from django.http import FileResponse, Http404, HttpRequest
 
-from ..models import ProcessedPDF, UploadedPDF
+from ..models import AuditLog, ProcessedPDF, UploadedPDF
+
+
+def storage_usage(request: HttpRequest) -> int:
+    """Total bytes occupied by the requester's uploaded PDFs."""
+    return UploadedPDF.objects.filter(owner_filter(request)).aggregate(total=models.Sum("size"))["total"] or 0
+
+
+def storage_quota(request: HttpRequest) -> int:
+    """Per-owner upload quota in bytes (0 = unlimited)."""
+    if getattr(request, "user", None) is not None and request.user.is_authenticated:
+        return int(getattr(settings, "PDF_QUOTA_USER_BYTES", 0) or 0)
+    return int(getattr(settings, "PDF_QUOTA_ANON_BYTES", 0) or 0)
+
+
+def _client_ip(request: HttpRequest) -> str | None:
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip() or None
+    return request.META.get("REMOTE_ADDR") or None
 
 
 def ensure_session_key(request: HttpRequest) -> str:
@@ -53,8 +73,12 @@ def get_pdf_by_id(request: HttpRequest, pdf_id):
 
 
 def record_output(request: HttpRequest, *, kind: str, path: str, source=None) -> ProcessedPDF:
-    """Create a ProcessedPDF row tracking a generated output file."""
-    return ProcessedPDF.objects.create(
+    """Create a ProcessedPDF row tracking a generated output file.
+
+    Also writes an immutable AuditLog entry capturing who ran the op and
+    where from. Audit failures are swallowed — they must never block the
+    user's successful operation."""
+    output = ProcessedPDF.objects.create(
         **_owner_kwargs(request),
         kind=kind,
         source=source,
@@ -62,6 +86,23 @@ def record_output(request: HttpRequest, *, kind: str, path: str, source=None) ->
         path=path,
         size=os.path.getsize(path) if os.path.exists(path) else 0,
     )
+
+    try:
+        owner = _owner_kwargs(request)
+        AuditLog.objects.create(
+            user=owner.get("user"),
+            session_key=owner.get("session_key", "") or "",
+            kind=kind,
+            source_name=getattr(source, "name", "") or "",
+            output_name=output.name,
+            output_size=output.size,
+            ip_address=_client_ip(request),
+            user_agent=request.META.get("HTTP_USER_AGENT", "")[:300],
+        )
+    except Exception:  # noqa: BLE001 — audit must never break the user flow
+        pass
+
+    return output
 
 
 def latest_output(request: HttpRequest, kind: str):

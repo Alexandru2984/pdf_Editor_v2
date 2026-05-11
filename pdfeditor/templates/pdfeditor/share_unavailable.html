@@ -1,0 +1,22 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Link Unavailable" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 540px;">
+    <div class="preview-header result-success-header" style="--success-color: #b91c1c;">
+        <div class="result-success-icon">⛔</div>
+        <h2>{% trans "Link Unavailable" %}</h2>
+        <p>
+            {% if reason == "expired" %}
+                {% trans "This share link has expired." %}
+            {% elif reason == "exhausted" %}
+                {% trans "This share link has reached its download limit." %}
+            {% else %}
+                {% trans "The shared file is no longer available." %}
+            {% endif %}
+        </p>
+    </div>
+</div>
+{% endblock %}

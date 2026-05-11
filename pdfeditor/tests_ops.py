@@ -29,11 +29,13 @@ from .pdf_processor.ops import (
     merge_pdfs,
     protect_pdf,
     read_pdf_metadata,
+    read_pdf_outline,
     redact_text,
     remove_pdf_password,
     render_page_thumbnail,
     reorder_pages,
     rotate_pages,
+    set_pdf_outline,
     sign_pdf,
     split_pdf,
     verify_pdf_signatures,
@@ -1789,3 +1791,86 @@ class ComparePdfsTests(_MediaRootMixin, TestCase):
         out, _ = compare_pdfs(a, b)
         self.tmp_files.append(out)
         self.assertIn("diff", os.path.basename(out))
+
+
+class PdfOutlineTests(_MediaRootMixin, TestCase):
+    def setUp(self):
+        self.tmp_files: list[str] = []
+
+    def tearDown(self):
+        for p in self.tmp_files:
+            if os.path.exists(p):
+                os.remove(p)
+
+    def _src(self, pages: int = 3):
+        path = _make_pdf_with_text([f"page {i + 1}" for i in range(pages)])
+        self.tmp_files.append(path)
+        return path
+
+    def test_read_empty_outline(self):
+        src = self._src()
+        self.assertEqual(read_pdf_outline(src), [])
+
+    def test_set_then_read_round_trip(self):
+        src = self._src(pages=4)
+        entries = [
+            {"level": 1, "title": "Intro", "page": 1},
+            {"level": 2, "title": "Background", "page": 2},
+            {"level": 1, "title": "Chapter 2", "page": 3},
+        ]
+        out = set_pdf_outline(src, entries)
+        self.tmp_files.append(out)
+        roundtrip = read_pdf_outline(out)
+        self.assertEqual(len(roundtrip), 3)
+        self.assertEqual(roundtrip[0]["title"], "Intro")
+        self.assertEqual(roundtrip[1]["level"], 2)
+        self.assertEqual(roundtrip[2]["page"], 3)
+
+    def test_empty_list_clears_outline(self):
+        src = self._src()
+        first = set_pdf_outline(src, [{"level": 1, "title": "A", "page": 1}])
+        self.tmp_files.append(first)
+        cleared = set_pdf_outline(first, [])
+        self.tmp_files.append(cleared)
+        self.assertEqual(read_pdf_outline(cleared), [])
+
+    def test_first_entry_must_be_level_1(self):
+        src = self._src()
+        with self.assertRaises(ValueError):
+            set_pdf_outline(src, [{"level": 2, "title": "Wrong", "page": 1}])
+
+    def test_level_jump_raises(self):
+        src = self._src()
+        with self.assertRaises(ValueError):
+            set_pdf_outline(
+                src,
+                [
+                    {"level": 1, "title": "A", "page": 1},
+                    {"level": 3, "title": "Skipped", "page": 2},
+                ],
+            )
+
+    def test_page_out_of_range_raises(self):
+        src = self._src(pages=2)
+        with self.assertRaises(ValueError):
+            set_pdf_outline(src, [{"level": 1, "title": "x", "page": 99}])
+
+    def test_empty_title_raises(self):
+        src = self._src()
+        with self.assertRaises(ValueError):
+            set_pdf_outline(src, [{"level": 1, "title": "   ", "page": 1}])
+
+    def test_missing_file_raises(self):
+        with self.assertRaises(ValueError):
+            read_pdf_outline("/no/such/file.pdf")
+        with self.assertRaises(ValueError):
+            set_pdf_outline("/no/such/file.pdf", [])
+
+    def test_encrypted_pdf_raises(self):
+        src = self._src()
+        encrypted = protect_pdf(src, user_password="pw")
+        self.tmp_files.append(encrypted)
+        with self.assertRaises(ValueError):
+            set_pdf_outline(encrypted, [{"level": 1, "title": "x", "page": 1}])
+        with self.assertRaises(ValueError):
+            read_pdf_outline(encrypted)

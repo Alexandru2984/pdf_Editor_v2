@@ -729,6 +729,71 @@ def convert_to_pdfa(pdf_path: str, version: str = "2b") -> tuple[str, str]:
     return out_path, version
 
 
+def read_pdf_outline(pdf_path: str) -> list[dict[str, int | str]]:
+    """Return the existing bookmarks/outline as a flat list of
+    ``{"level": int, "title": str, "page": int}`` dicts (page is 1-indexed).
+    Returns an empty list if the PDF has no TOC."""
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("Cannot read outline of an encrypted PDF — remove the password first")
+        toc = doc.get_toc(simple=True) or []
+    return [{"level": int(lvl), "title": str(title), "page": int(page)} for lvl, title, page in toc]
+
+
+def set_pdf_outline(pdf_path: str, entries: list[dict[str, int | str]]) -> str:
+    """Replace the PDF outline with ``entries`` and save a new copy.
+
+    Each entry must have integer ``level`` (>=1), non-empty ``title``, and
+    integer ``page`` within the document's page range. Levels must form a
+    valid tree — the first entry must be level 1, and levels cannot jump
+    (e.g. cannot go from 1 directly to 3). An empty list clears the TOC.
+    """
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+
+    out_dir = processed_dir()
+    base = safe_basename(pdf_path)
+    out_path = os.path.join(out_dir, f"{base}_outline_{timestamp()}.pdf")
+
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("Cannot edit outline of an encrypted PDF — remove the password first")
+        total = len(doc)
+        if total == 0:
+            raise ValueError("PDF has no pages")
+
+        toc: list[list[int | str]] = []
+        prev_level = 0
+        for idx, entry in enumerate(entries, 1):
+            try:
+                level = int(entry["level"])
+                title = str(entry["title"]).strip()
+                page = int(entry["page"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError(f"Entry {idx} is malformed: {exc}") from exc
+            if level < 1:
+                raise ValueError(f"Entry {idx} has invalid level {level} (must be ≥ 1)")
+            if not title:
+                raise ValueError(f"Entry {idx} has an empty title")
+            if page < 1 or page > total:
+                raise ValueError(f"Entry {idx} page {page} is out of range (PDF has {total} pages)")
+            if prev_level == 0 and level != 1:
+                raise ValueError(f"Entry {idx} must start at level 1")
+            if level > prev_level + 1:
+                raise ValueError(
+                    f"Entry {idx} jumps from level {prev_level} to {level} — levels must increase by 1"
+                )
+            toc.append([level, title, page])
+            prev_level = level
+
+        doc.set_toc(toc)
+        doc.save(out_path, garbage=4, deflate=True, clean=True)
+
+    return out_path
+
+
 def _page_text_lines(page: fitz.Page) -> list[str]:
     """Extract page text and split into trimmed, non-empty lines."""
     raw = page.get_text() or ""

@@ -846,3 +846,66 @@ class ComparePdfsForm(forms.Form):
     def __init__(self, *args, pdf_choices: list[tuple[str, str]] | None = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["second_pdf"].choices = pdf_choices or []
+
+
+class ShareLinkForm(forms.Form):
+    """Create a public token-based download link for a processed PDF."""
+
+    TTL_CHOICES = [
+        ("1", _("1 hour")),
+        ("24", _("24 hours")),
+        ("168", _("7 days")),
+        ("720", _("30 days")),
+    ]
+
+    processed_pdf_id = forms.CharField(required=True, widget=forms.HiddenInput)
+    ttl_hours = forms.ChoiceField(
+        required=True,
+        choices=TTL_CHOICES,
+        initial="24",
+        label=_("Link lifetime"),
+        help_text=_("After this period the link stops working. The PDF itself stays in your history."),
+    )
+    max_downloads = forms.IntegerField(
+        required=True,
+        min_value=0,
+        max_value=10000,
+        initial=0,
+        label=_("Max downloads"),
+        help_text=_("Stop the link after this many downloads. 0 = unlimited within the lifetime."),
+    )
+
+
+class OutlineForm(forms.Form):
+    """Edit the PDF bookmarks/outline.
+
+    The UI builds a list of entries client-side and POSTs them as a JSON
+    array. Each entry must be ``{"level": int, "title": str, "page": int}``.
+    """
+
+    entries_json = forms.CharField(
+        required=True,
+        widget=forms.Textarea(attrs={"rows": 6}),
+        label=_("Outline entries (JSON)"),
+        help_text=_('One entry per item: {"level": 1, "title": "Chapter 1", "page": 5}. Submit [] to clear.'),
+    )
+
+    def clean_entries_json(self) -> list[dict]:
+        import json
+
+        raw = self.cleaned_data["entries_json"].strip() or "[]"
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise forms.ValidationError(_("Invalid JSON: %(err)s") % {"err": exc}) from exc
+        if not isinstance(data, list):
+            raise forms.ValidationError(_("Outline must be a JSON array."))
+        for i, entry in enumerate(data, 1):
+            if not isinstance(entry, dict):
+                raise forms.ValidationError(_("Entry %(n)s must be an object.") % {"n": i})
+            for key in ("level", "title", "page"):
+                if key not in entry:
+                    raise forms.ValidationError(
+                        _("Entry %(n)s is missing field '%(k)s'.") % {"n": i, "k": key}
+                    )
+        return data
