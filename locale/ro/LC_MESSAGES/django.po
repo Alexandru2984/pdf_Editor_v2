@@ -3612,3 +3612,81 @@ msgstr "PDF/A gata!"
 #, python-brace-format
 msgid "Your document has been converted to PDF/A-{{ version }}."
 msgstr "Documentul a fost convertit în PDF/A-{{ version }}."
+
+msgid "Compare PDFs"
+msgstr "Compară PDF-uri"
+
+msgid "Diff two PDFs page-by-page — get a report showing added, removed and changed lines"
+msgstr "Compară două PDF-uri pagină cu pagină — obține un raport cu liniile adăugate, eliminate și modificate"
+
+msgid "Diff two PDFs page-by-page and download a report showing added, removed and changed lines."
+msgstr "Compară două PDF-uri pagină cu pagină și descarcă un raport cu liniile adăugate, eliminate și modificate."
+
+msgid "Original PDF:"
+msgstr "PDF original:"
+
+msgid "Original:"
+msgstr "Original:"
+
+msgid "Compare against"
+msgstr "Compară cu"
+
+msgid "Pick a second PDF — the report will show what changed between the two."
+msgstr "Alege un al doilea PDF — raportul va arăta ce s-a schimbat între cele două."
+
+msgid "Comparison is text-based — image-only pages won't be diffed unless OCR was run first. Output is a PDF report, not a side-by-side preview."
+msgstr "Compararea este bazată pe text — paginile cu doar imagini nu sunt comparate decât dacă rulezi OCR mai întâi. Rezultatul este un raport PDF, nu o previzualizare alăturată."
+
+msgid "Compare"
+msgstr "Compară"
+
+msgid "You need at least 2 uploaded PDFs to run a comparison."
+msgstr "Ai nevoie de cel puțin 2 PDF-uri încărcate pentru a putea face o comparație."
+
+msgid "Cannot compare a PDF against itself — choose two different files"
+msgstr "Nu se poate compara un PDF cu el însuși — alege două fișiere diferite"
+
+msgid "Cannot compare encrypted PDFs — remove the password first"
+msgstr "Nu se pot compara PDF-uri criptate — elimină mai întâi parola"
+
+msgid "Both PDFs must have at least one page"
+msgstr "Ambele PDF-uri trebuie să aibă cel puțin o pagină"
+
+msgid "No textual differences found between the two PDFs."
+msgstr "Nu s-au găsit diferențe de text între cele două PDF-uri."
+
+#, python-format
+msgid "Comparison complete — %(n)s differing page(s)."
+msgstr "Comparare finalizată — %(n)s pagină(i) diferită(e)."
+
+#, python-format
+msgid "Error comparing PDFs: %(err)s"
+msgstr "Eroare la compararea PDF-urilor: %(err)s"
+
+msgid "Comparison report not found."
+msgstr "Raportul de comparație nu a fost găsit."
+
+msgid "Comparison Ready"
+msgstr "Comparație gata"
+
+msgid "Comparison Ready!"
+msgstr "Comparație gata!"
+
+#, python-format
+msgid "Compared against <strong>%(name)s</strong>."
+msgstr "Comparat cu <strong>%(name)s</strong>."
+
+msgid "Pages identical"
+msgstr "Pagini identice"
+
+msgid "Pages changed"
+msgstr "Pagini modificate"
+
+msgid "Pages added"
+msgstr "Pagini adăugate"
+
+msgid "Pages removed"
+msgstr "Pagini eliminate"
+
+msgid "Download Report"
+msgstr "Descarcă raportul"

@@ -832,3 +832,17 @@ class PdfaForm(forms.Form):
         label=_("PDF/A version"),
         help_text=_("PDF/A-2b is recommended for new documents. Pick 1b only if a recipient requires it."),
     )
+
+
+class ComparePdfsForm(forms.Form):
+    """Pick the second PDF to compare the currently-selected one against."""
+
+    second_pdf = forms.ChoiceField(
+        required=True,
+        label=_("Compare against"),
+        help_text=_("Pick a second PDF — the report will show what changed between the two."),
+    )
+
+    def __init__(self, *args, pdf_choices: list[tuple[str, str]] | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["second_pdf"].choices = pdf_choices or []

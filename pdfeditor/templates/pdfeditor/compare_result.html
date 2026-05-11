@@ -1,0 +1,76 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Comparison Ready" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 720px;">
+    <div class="preview-header result-success-header">
+        <div class="result-success-icon">🔄</div>
+        <h2>{% trans "Comparison Ready!" %}</h2>
+        {% if second_name %}
+        <p>{% blocktrans with name=second_name %}Compared against <strong>{{ name }}</strong>.{% endblocktrans %}</p>
+        {% endif %}
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        {% if stats %}
+        <div class="compare-stats">
+            <div class="compare-stat"><span>{% trans "Pages identical" %}</span><strong>{{ stats.identical }}</strong></div>
+            <div class="compare-stat compare-stat--changed"><span>{% trans "Pages changed" %}</span><strong>{{ stats.changed }}</strong></div>
+            <div class="compare-stat compare-stat--added"><span>{% trans "Pages added" %}</span><strong>{{ stats.added }}</strong></div>
+            <div class="compare-stat compare-stat--removed"><span>{% trans "Pages removed" %}</span><strong>{{ stats.removed }}</strong></div>
+        </div>
+        {% endif %}
+
+        <div class="result-file-row">
+            <div class="result-file-icon">📄</div>
+            <div class="result-file-info">
+                <div class="result-file-name">{{ pdf_filename }}</div>
+                <div class="result-file-meta">{{ size|filesizeformat }}</div>
+            </div>
+        </div>
+
+        <div class="result-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                ← {% trans "Dashboard" %}
+            </a>
+            <a href="{% url 'download_compare' %}" class="btn btn-primary">
+                📥 {% trans "Download Report" %}
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .compare-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .compare-stat {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 0.625rem 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    .compare-stat span {
+        color: #6b7280;
+        font-size: 0.8rem;
+    }
+    .compare-stat strong {
+        font-size: 1.25rem;
+        color: #1f2937;
+    }
+    .compare-stat--changed { border-color: #fde68a; background: #fffbeb; }
+    .compare-stat--changed strong { color: #92400e; }
+    .compare-stat--added { border-color: #bbf7d0; background: #ecfdf5; }
+    .compare-stat--added strong { color: #065f46; }
+    .compare-stat--removed { border-color: #fecaca; background: #fef2f2; }
+    .compare-stat--removed strong { color: #991b1b; }
+</style>
+{% endblock %}

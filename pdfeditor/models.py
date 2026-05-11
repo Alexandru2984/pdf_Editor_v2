@@ -69,6 +69,7 @@ class ProcessedPDF(models.Model):
     KIND_REDACT = "redact"
     KIND_OCR_LAYER = "ocr_layer"
     KIND_PDFA = "pdfa"
+    KIND_COMPARE = "compare"
 
     KIND_CHOICES = [
         (KIND_FIND_REPLACE, "Find & Replace"),
@@ -93,6 +94,7 @@ class ProcessedPDF(models.Model):
         (KIND_REDACT, "Redact"),
         (KIND_OCR_LAYER, "OCR Layer"),
         (KIND_PDFA, "PDF/A"),
+        (KIND_COMPARE, "Compare"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
