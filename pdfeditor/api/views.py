@@ -40,6 +40,10 @@ def _count_pages_safely(path: str) -> int | None:
 class UploadedPDFViewSet(viewsets.ReadOnlyModelViewSet):
     """List, retrieve, and delete source PDFs uploaded by the current user."""
 
+    # Class-level queryset enables drf-spectacular's schema introspection
+    # (it can't call get_queryset() without a request). Actual ownership
+    # scoping lives in get_queryset() and applies at runtime.
+    queryset = UploadedPDF.objects.all()
     serializer_class = UploadedPDFSerializer
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     lookup_field = "id"
@@ -122,6 +126,7 @@ class UploadedPDFViewSet(viewsets.ReadOnlyModelViewSet):
 class ProcessedPDFViewSet(viewsets.ReadOnlyModelViewSet):
     """List, retrieve, and download processed PDFs produced for the current user."""
 
+    queryset = ProcessedPDF.objects.all()
     serializer_class = ProcessedPDFSerializer
     lookup_field = "id"
 
