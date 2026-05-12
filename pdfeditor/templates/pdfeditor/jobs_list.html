@@ -1,0 +1,60 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Your jobs" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 880px;">
+    <div class="preview-header">
+        <div class="text-center">
+            <h2 class="tool-page-title">⚙️ {% trans "Your jobs" %}</h2>
+            <p class="tool-page-subtitle">{% trans "Async PDF operations queued or completed in the last 100." %}</p>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        {% if jobs %}
+        <table class="jobs-table">
+            <thead>
+                <tr>
+                    <th>{% trans "Kind" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Source" %}</th>
+                    <th>{% trans "Created" %}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in jobs %}
+                <tr>
+                    <td>{{ job.get_kind_display|default:job.kind }}</td>
+                    <td><span class="job-status-pill {{ job.status }}">{{ job.get_status_display }}</span></td>
+                    <td>{{ job.source.name|default:"—" }}</td>
+                    <td>{{ job.created_at|date:"Y-m-d H:i" }}</td>
+                    <td><a href="{% url 'job_detail' job.id %}" class="btn btn-link-primary">{% trans "Open" %} →</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="alert-box alert-box--info">{% trans "No jobs yet — run a long operation (OCR, PDF/A, compare, convert to Word) and it shows up here." %}</div>
+        {% endif %}
+
+        <div class="tool-form-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">← {% trans "Dashboard" %}</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .jobs-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .jobs-table th, .jobs-table td { padding: 0.55rem 0.65rem; border-bottom: 1px solid #e5e7eb; text-align: left; }
+    .jobs-table th { color: #6b7280; font-weight: 600; }
+    .job-status-pill { padding: 0.2rem 0.625rem; border-radius: 999px; font-weight: 600; font-size: 0.8rem; background: #e0e7ff; color: #3730a3; }
+    .job-status-pill.done { background: #d1fae5; color: #065f46; }
+    .job-status-pill.failed { background: #fecaca; color: #991b1b; }
+    .job-status-pill.running { background: #fef3c7; color: #92400e; }
+    .btn-link-primary { color: #2563eb; text-decoration: none; font-size: 0.875rem; }
+    .alert-box--info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 0.75rem 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+</style>
+{% endblock %}

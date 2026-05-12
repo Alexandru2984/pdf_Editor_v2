@@ -29,17 +29,13 @@ from ..forms import (
     UnprotectPDFForm,
     VerifyPDFForm,
 )
-from ..models import ProcessedPDF, TrustAnchor
+from ..models import Job, ProcessedPDF, TrustAnchor
 from ..pdf_processor import (
-    compare_pdfs,
     compress_pdf,
     convert_images_to_pdf,
-    convert_pdf_to_docx,
     convert_pdf_to_images,
-    convert_to_pdfa,
     edit_pdf_metadata,
     flatten_pdf,
-    make_pdf_searchable,
     merge_pdfs,
     protect_pdf,
     read_pdf_metadata,
@@ -52,6 +48,7 @@ from ..pdf_processor import (
     verify_pdf_signatures,
 )
 from ..ratelimiting import auth_aware_ratelimit
+from ..tasks import enqueue_job
 from ._common import (
     attachment_response,
     get_pdf_by_id,
@@ -59,6 +56,26 @@ from ._common import (
     owner_filter,
     record_output,
 )
+
+
+def _queue_async_job(request, *, kind: str, source, second_source=None, params: dict | None = None):
+    """Create a Job row, dispatch its Celery task, and return the Job."""
+    owner_user = request.user if request.user.is_authenticated else None
+    session_key = "" if owner_user else (request.session.session_key or "")
+    if not owner_user and not session_key:
+        request.session.save()
+        session_key = request.session.session_key or ""
+
+    job = Job.objects.create(
+        user=owner_user,
+        session_key=session_key,
+        kind=kind,
+        source=source,
+        second_source=second_source,
+        params=params or {},
+    )
+    enqueue_job(job)
+    return job
 
 
 def _resolve_pdf_or_redirect(request):
@@ -675,35 +692,17 @@ def searchable_view(request):
     if request.method == "POST":
         form = MakeSearchableForm(request.POST)
         if form.is_valid():
-            try:
-                output_path, pages_ocrd = make_pdf_searchable(
-                    pdf_path,
-                    language=form.cleaned_data["language"],
-                    dpi=form.cleaned_data["dpi"],
-                )
-                output = record_output(
-                    request,
-                    kind=ProcessedPDF.KIND_OCR_LAYER,
-                    path=output_path,
-                    source=selected_pdf,
-                )
-                request.session["searchable_pdf_id"] = str(output.id)
-                request.session["searchable_pages_ocrd"] = pages_ocrd
-                if pages_ocrd == 0:
-                    messages.info(
-                        request,
-                        _("All pages already had a text layer — nothing to OCR."),
-                    )
-                else:
-                    messages.success(
-                        request,
-                        _("Added OCR text layer on %(count)s page(s).") % {"count": pages_ocrd},
-                    )
-                return redirect("searchable_result")
-            except ValueError as e:
-                messages.error(request, _("Error: %(err)s") % {"err": e})
-            except Exception as e:
-                messages.error(request, _("Error running OCR: %(err)s") % {"err": e})
+            job = _queue_async_job(
+                request,
+                kind=ProcessedPDF.KIND_OCR_LAYER,
+                source=selected_pdf,
+                params={
+                    "language": form.cleaned_data["language"],
+                    "dpi": form.cleaned_data["dpi"],
+                },
+            )
+            messages.info(request, _("OCR job queued. We'll show you progress live."))
+            return redirect("job_detail", job_id=job.id)
     else:
         form = MakeSearchableForm()
 
@@ -763,28 +762,14 @@ def pdfa_view(request):
     if request.method == "POST":
         form = PdfaForm(request.POST)
         if form.is_valid():
-            try:
-                output_path, version = convert_to_pdfa(
-                    pdf_path,
-                    version=form.cleaned_data["version"],
-                )
-                output = record_output(
-                    request,
-                    kind=ProcessedPDF.KIND_PDFA,
-                    path=output_path,
-                    source=selected_pdf,
-                )
-                request.session["pdfa_pdf_id"] = str(output.id)
-                request.session["pdfa_version"] = version
-                messages.success(
-                    request,
-                    _("PDF converted to PDF/A-%(ver)s.") % {"ver": version},
-                )
-                return redirect("pdfa_result")
-            except ValueError as e:
-                messages.error(request, _("Error: %(err)s") % {"err": e})
-            except Exception as e:
-                messages.error(request, _("Error converting to PDF/A: %(err)s") % {"err": e})
+            job = _queue_async_job(
+                request,
+                kind=ProcessedPDF.KIND_PDFA,
+                source=selected_pdf,
+                params={"version": form.cleaned_data["version"]},
+            )
+            messages.info(request, _("PDF/A conversion queued."))
+            return redirect("job_detail", job_id=job.id)
     else:
         form = PdfaForm()
 
@@ -856,30 +841,15 @@ def compare_view(request):
             if not second:
                 messages.error(request, _("Selected PDF not found."))
                 return redirect("compare")
-            try:
-                output_path, stats = compare_pdfs(selected_pdf.path, second.path)
-                output = record_output(
-                    request,
-                    kind=ProcessedPDF.KIND_COMPARE,
-                    path=output_path,
-                    source=selected_pdf,
-                )
-                request.session["compare_pdf_id"] = str(output.id)
-                request.session["compare_stats"] = stats
-                request.session["compare_second_name"] = second.name
-                total_changes = stats["changed"] + stats["added"] + stats["removed"]
-                if total_changes == 0:
-                    messages.info(request, _("No textual differences found between the two PDFs."))
-                else:
-                    messages.success(
-                        request,
-                        _("Comparison complete — %(n)s differing page(s).") % {"n": total_changes},
-                    )
-                return redirect("compare_result")
-            except ValueError as e:
-                messages.error(request, _("Error: %(err)s") % {"err": e})
-            except Exception as e:
-                messages.error(request, _("Error comparing PDFs: %(err)s") % {"err": e})
+            job = _queue_async_job(
+                request,
+                kind=ProcessedPDF.KIND_COMPARE,
+                source=selected_pdf,
+                second_source=second,
+                params={"second_name": second.name},
+            )
+            messages.info(request, _("Comparison job queued."))
+            return redirect("job_detail", job_id=job.id)
     else:
         form = ComparePdfsForm(pdf_choices=pdf_choices)
 
@@ -1176,31 +1146,13 @@ def convert_view(request):
     if request.method == "POST":
         form = ConvertToDocxForm(request.POST)
         if form.is_valid():
-            try:
-                output_path, has_text = convert_pdf_to_docx(pdf_path)
-                output = record_output(
-                    request,
-                    kind=ProcessedPDF.KIND_CONVERT,
-                    path=output_path,
-                    source=selected_pdf,
-                )
-                request.session["converted_docx_id"] = str(output.id)
-                request.session["converted_has_text"] = has_text
-                if has_text:
-                    messages.success(request, _("PDF converted to Word successfully!"))
-                else:
-                    messages.warning(
-                        request,
-                        _(
-                            "Conversion done, but the source PDF appears to be image-only "
-                            "(scan). The .docx will be near-empty — run OCR first for better results."
-                        ),
-                    )
-                return redirect("convert_result")
-            except ValueError as e:
-                messages.error(request, _("Error: %(err)s") % {"err": e})
-            except Exception as e:
-                messages.error(request, _("Error converting PDF: %(err)s") % {"err": e})
+            job = _queue_async_job(
+                request,
+                kind=ProcessedPDF.KIND_CONVERT,
+                source=selected_pdf,
+            )
+            messages.info(request, _("Conversion to Word queued."))
+            return redirect("job_detail", job_id=job.id)
     else:
         form = ConvertToDocxForm()
 

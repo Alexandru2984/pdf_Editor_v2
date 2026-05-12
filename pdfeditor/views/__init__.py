@@ -83,6 +83,7 @@ from .form_fill import (
 )
 from .health import admin_health_view, healthz, readyz
 from .history import history_delete_view, history_download_view, history_view
+from .jobs import job_detail_view, job_download_view, job_status_view, jobs_list_view
 from .layout_ops import (
     crop_result_view,
     crop_view,
@@ -229,4 +230,8 @@ __all__ = [
     "create_share_link_view",
     "revoke_share_link_view",
     "public_share_download_view",
+    "jobs_list_view",
+    "job_detail_view",
+    "job_status_view",
+    "job_download_view",
 ]
