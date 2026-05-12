@@ -54,10 +54,13 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
-    environment: *app-env
+    environment:
+      <<: *app-env
+      FASTEMBED_CACHE_DIR: /app/data/fastembed
     volumes:
       - ./media:/app/media
       - ./staticfiles:/app/staticfiles
+      - embeddings_cache:/app/data/fastembed
     restart: unless-stopped
 
   worker:
@@ -72,11 +75,17 @@ services:
       --loglevel=info
       --concurrency=${CELERY_CONCURRENCY:-2}
       --max-tasks-per-child=50
-    environment: *app-env
+    environment:
+      <<: *app-env
+      # Persist the ONNX embedding model (~120 MB) across restarts so we
+      # don't re-download it every time the worker container restarts.
+      FASTEMBED_CACHE_DIR: /app/data/fastembed
     volumes:
       - ./media:/app/media
+      - embeddings_cache:/app/data/fastembed
     restart: unless-stopped
 
 volumes:
   pgdata:
   redisdata:
+  embeddings_cache:
