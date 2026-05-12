@@ -5,7 +5,10 @@ x-app-env: &app-env
   SECURE_SSL: ${SECURE_SSL:-0}
   GROQ_API_KEY: ${GROQ_API_KEY:-}
   OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
-  DATABASE_URL: postgres://${POSTGRES_USER:-pdfeditor}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-pdfeditor}
+  # Goes through pgbouncer (transaction pooling). Direct DB at db:5432 is
+  # available too — pgbouncer itself talks to db, and Postgres conns are
+  # already bumped to 300 for headroom.
+  DATABASE_URL: postgres://${POSTGRES_USER:-pdfeditor}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-pdfeditor}
   SENTRY_DSN: ${SENTRY_DSN:-}
   CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
   CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
@@ -25,6 +28,14 @@ services:
     # pgvector/pgvector:pg16 = vanilla Postgres 16 + the `vector` extension.
     # Same data dir layout as postgres:16, so the existing volume Just Works.
     image: pgvector/pgvector:pg16
+    # max_connections bumped from default 100: gunicorn (3 uvicorn workers) +
+    # celery (2) + pgbouncer + admin headroom blew past 100 under load.
+    command:
+      - postgres
+      - -c
+      - max_connections=300
+      - -c
+      - shared_buffers=512MB
     # Bound to 127.0.0.1 so local tests can hit Postgres (needed for the
     # pgvector-typed columns), without exposing the DB to the public net.
     ports:
@@ -39,6 +50,35 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pdfeditor} -d ${POSTGRES_DB:-pdfeditor}"]
       interval: 5s
       timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  pgbouncer:
+    # Lightweight Postgres connection pooler. Transaction mode multiplexes
+    # many client sessions onto a small fixed pool of server connections —
+    # under load this is the difference between healthy and "too many
+    # clients already" errors at the DB.
+    image: edoburu/pgbouncer:v1.23.1-p2
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-pdfeditor}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB:-pdfeditor}
+      LISTEN_PORT: 6432
+      POOL_MODE: transaction
+      AUTH_TYPE: scram-sha-256
+      MAX_CLIENT_CONN: "1000"
+      DEFAULT_POOL_SIZE: "25"
+      RESERVE_POOL_SIZE: "5"
+      SERVER_RESET_QUERY: DISCARD ALL
+    healthcheck:
+      test: ["CMD-SHELL", "PGPASSWORD=$$DB_PASSWORD psql -h 127.0.0.1 -p 6432 -U $$DB_USER -d $$DB_NAME -c 'SELECT 1' >/dev/null"]
+      interval: 5s
+      timeout: 3s
       retries: 10
     restart: unless-stopped
 
@@ -60,6 +100,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
@@ -77,6 +119,8 @@ services:
     image: pdfeditor:latest
     depends_on:
       db:
+        condition: service_healthy
+      pgbouncer:
         condition: service_healthy
       redis:
         condition: service_healthy

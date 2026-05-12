@@ -95,7 +95,7 @@ class Visitor(HttpUser):
 
     @task(1)
     def healthz(self):
-        self.client.get("/healthz/", name="GET /healthz/")
+        self.client.get("/healthz", name="GET /healthz")
 
 
 class Uploader(HttpUser):
