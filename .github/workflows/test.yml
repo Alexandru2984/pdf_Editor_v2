@@ -52,7 +52,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install coverage mypy types-requests ruff
+          pip install coverage mypy types-requests ruff bandit pip-audit
 
       - name: Run ruff lint + format check
         if: matrix.python-version == '3.12'
@@ -63,6 +63,14 @@ jobs:
       - name: Run mypy
         if: matrix.python-version == '3.12'
         run: mypy pdfeditor/
+
+      - name: Run bandit SAST
+        if: matrix.python-version == '3.12'
+        run: bandit -r pdfeditor/ pdf_project/ -c pyproject.toml -x "tests*,*/tests*"
+
+      - name: Run pip-audit (dep CVEs)
+        if: matrix.python-version == '3.12'
+        run: pip-audit --requirement requirements.txt --strict
 
       - name: Run tests with coverage
         env:
