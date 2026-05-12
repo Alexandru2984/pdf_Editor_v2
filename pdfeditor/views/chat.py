@@ -199,6 +199,32 @@ def _call_groq(messages_payload: list[dict], model: str | None = None) -> tuple[
         return "", f"Malformed Groq response: {exc}"
 
 
+@require_http_methods(["POST"])
+def start_index_view(request, pdf_id):
+    """AJAX endpoint — start indexing a PDF without navigating away from
+    the chat page. Returns the job_id; the frontend polls
+    ``/jobs/<id>/status/`` and refreshes the checkbox row when done."""
+    pdf = _resolve_pdf(request, pdf_id)
+    if pdf is None:
+        return JsonResponse({"error": "PDF not found."}, status=404)
+
+    if Embedding.objects.filter(uploaded_pdf=pdf).exists():
+        return JsonResponse({"already_indexed": True, "pdf_id": str(pdf.id)})
+
+    # Reuse a pending/running job if one exists.
+    existing = Job.objects.filter(
+        owner_filter(request),
+        kind=ProcessedPDF.KIND_CHAT_INDEX,
+        source=pdf,
+        status__in=[Job.STATUS_QUEUED, Job.STATUS_RUNNING],
+    ).first()
+    if existing:
+        return JsonResponse({"job_id": str(existing.id), "status": existing.status})
+
+    job = _queue_async_job(request, kind=ProcessedPDF.KIND_CHAT_INDEX, source=pdf)
+    return JsonResponse({"job_id": str(job.id), "status": job.status})
+
+
 @auth_aware_ratelimit(anon_rate="10/h", user_rate="100/h", method="POST")
 @require_http_methods(["POST"])
 def chat_message_view(request, pdf_id):

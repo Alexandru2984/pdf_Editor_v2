@@ -4,105 +4,155 @@
 {% block title %}{% trans "Chat with PDF" %}{% endblock %}
 
 {% block content %}
-<div class="preview-container" style="--tool-max-width: 880px;">
-    <div class="preview-header">
-        <div class="text-center">
-            <h2 class="tool-page-title">💬 {% trans "Chat with PDF" %}</h2>
-            <p class="tool-page-subtitle" id="chat-subtitle">
+<div class="preview-container chat-shell">
+    <div class="chat-header">
+        <div>
+            <h2 class="chat-title">💬 {% trans "Chat with PDF" %}</h2>
+            <p class="chat-meta" id="chat-subtitle">
                 {% blocktrans count count=selected_count with chunks=chunk_count %}{{ count }} document, {{ chunks }} chunks in context.{% plural %}{{ count }} documents, {{ chunks }} chunks in context.{% endblocktrans %}
             </p>
         </div>
-    </div>
-
-    <div class="pdf-viewer-wrapper">
-        <!-- Controls: PDF picker + LLM picker -->
-        <details class="chat-controls" open>
-            <summary>⚙️ {% trans "Documents & model" %}</summary>
-
-            <div class="chat-controls-grid">
-                <div>
-                    <label class="chat-label">{% trans "Include these PDFs in the answer:" %}</label>
-                    <div class="pdf-checkbox-list" id="pdf-checkbox-list">
-                        {% for opt in pdf_options %}
-                        <label class="pdf-checkbox-row {% if not opt.indexed %}not-indexed{% endif %}" title="{{ opt.name }}">
-                            <input type="checkbox" value="{{ opt.id }}"
-                                {% if opt.is_anchor %}checked disabled{% endif %}
-                                {% if opt.selected and not opt.is_anchor %}checked{% endif %}
-                                {% if not opt.indexed %}disabled{% endif %}>
-                            <span class="pdf-name">{{ opt.name }}</span>
-                            {% if opt.is_anchor %}<span class="badge badge-anchor">anchor</span>{% endif %}
-                            {% if not opt.indexed %}
-                                <a href="{% url 'chat' opt.id %}" class="badge badge-action">{% trans "index →" %}</a>
-                            {% endif %}
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div>
-                    <label class="chat-label" for="llm-picker">{% trans "AI model:" %}</label>
-                    <select id="llm-picker" class="chat-select">
-                        {% for mid, mlabel in available_llms %}
-                        <option value="{{ mid }}" {% if mid == default_llm %}selected{% endif %}>{{ mlabel }}</option>
-                        {% endfor %}
-                    </select>
-                    <p class="chat-help">{% trans "Bigger models are more accurate but slower." %}</p>
-                </div>
-            </div>
-        </details>
-
-        <div class="chat-history" id="chat-history">
-            <div class="chat-msg chat-msg-system">
-                <div class="chat-bubble">{% trans "Hi! Ask me anything about the documents above. I cite my sources." %}</div>
-            </div>
-        </div>
-
-        <form class="chat-input-row" id="chat-form" autocomplete="off">
-            {% csrf_token %}
-            <input type="text" id="chat-input" placeholder="{% trans 'Ask a question…' %}" maxlength="2000" required>
-            <button type="submit" class="btn btn-primary" id="chat-send">↗ {% trans "Send" %}</button>
-        </form>
-
-        <div class="tool-form-actions">
-            <a href="{% url 'dashboard' %}" class="btn btn-secondary">← {% trans "Dashboard" %}</a>
+        <div class="chat-header-actions">
+            <button type="button" class="chat-icon-btn" id="clear-chat-btn" title="{% trans 'Clear conversation' %}">🗑️</button>
+            <a href="{% url 'dashboard' %}" class="chat-icon-btn" title="{% trans 'Dashboard' %}">←</a>
         </div>
     </div>
+
+    <!-- Controls: PDF picker + LLM picker -->
+    <details class="chat-controls">
+        <summary>⚙️ {% trans "Documents & model" %}</summary>
+
+        <div class="chat-controls-grid">
+            <div>
+                <label class="chat-label">{% trans "Include these PDFs in the answer:" %}</label>
+                <div class="pdf-checkbox-list" id="pdf-checkbox-list">
+                    {% for opt in pdf_options %}
+                    <label class="pdf-checkbox-row {% if not opt.indexed %}not-indexed{% endif %}" data-pdf-id="{{ opt.id }}" title="{{ opt.name }}">
+                        <input type="checkbox" value="{{ opt.id }}"
+                            {% if opt.is_anchor %}checked disabled{% endif %}
+                            {% if opt.selected and not opt.is_anchor %}checked{% endif %}
+                            {% if not opt.indexed %}disabled{% endif %}>
+                        <span class="pdf-name">{{ opt.name }}</span>
+                        {% if opt.is_anchor %}<span class="badge badge-anchor">anchor</span>{% endif %}
+                        {% if not opt.indexed %}
+                            <button type="button" class="badge badge-action btn-index" data-pdf-id="{{ opt.id }}">{% trans "index" %} ⚡</button>
+                        {% endif %}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div>
+                <label class="chat-label" for="llm-picker">{% trans "AI model:" %}</label>
+                <select id="llm-picker" class="chat-select">
+                    {% for mid, mlabel in available_llms %}
+                    <option value="{{ mid }}" {% if mid == default_llm %}selected{% endif %}>{{ mlabel }}</option>
+                    {% endfor %}
+                </select>
+                <p class="chat-help">{% trans "Bigger = smarter but slower." %}</p>
+            </div>
+        </div>
+    </details>
+
+    <div class="chat-history" id="chat-history">
+        <div class="chat-msg chat-msg-system">
+            <div class="chat-avatar">💡</div>
+            <div class="chat-bubble">{% trans "Hi! Ask me anything about the documents above. I cite my sources." %}</div>
+        </div>
+    </div>
+
+    <form class="chat-input-row" id="chat-form" autocomplete="off">
+        {% csrf_token %}
+        <input type="text" id="chat-input" placeholder="{% trans 'Ask a question…' %}" maxlength="2000" required>
+        <button type="submit" class="btn btn-primary chat-send-btn" id="chat-send">
+            <span class="send-icon">↗</span>
+        </button>
+    </form>
 </div>
 
 <style>
-    .chat-controls { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.625rem 0.875rem; margin-bottom: 0.75rem; font-size: 0.9rem; }
+    /* Container */
+    .chat-shell { --tool-max-width: 920px; display: flex; flex-direction: column; }
+
+    /* Header */
+    .chat-header { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; margin-bottom: 0.75rem; }
+    .chat-title { margin: 0; font-size: 1.25rem; }
+    .chat-meta { margin: 0.2rem 0 0; color: #6b7280; font-size: 0.85rem; }
+    .chat-header-actions { display: flex; gap: 0.4rem; }
+    .chat-icon-btn { background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.45rem 0.7rem; cursor: pointer; font-size: 1rem; text-decoration: none; color: #374151; }
+    .chat-icon-btn:hover { background: #e5e7eb; }
+
+    /* Controls */
+    .chat-controls { background: #fafbff; border: 1px solid #e5e7eb; border-radius: 0.6rem; padding: 0.625rem 0.875rem; margin: 0 1rem 0.75rem; font-size: 0.9rem; }
     .chat-controls summary { cursor: pointer; font-weight: 600; color: #374151; }
     .chat-controls-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 0.75rem; }
     @media (max-width: 640px) { .chat-controls-grid { grid-template-columns: 1fr; } }
     .chat-label { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.85rem; color: #4b5563; }
-    .pdf-checkbox-list { max-height: 12rem; overflow-y: auto; padding: 0.4rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 0.375rem; }
-    .pdf-checkbox-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.4rem; border-radius: 0.25rem; cursor: pointer; }
+    .pdf-checkbox-list { max-height: 12rem; overflow-y: auto; padding: 0.4rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 0.4rem; }
+    .pdf-checkbox-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.4rem; border-radius: 0.3rem; cursor: pointer; transition: background 0.15s; }
     .pdf-checkbox-row:hover { background: #f3f4f6; }
-    .pdf-checkbox-row.not-indexed { opacity: 0.65; cursor: default; }
+    .pdf-checkbox-row.not-indexed { opacity: 0.7; cursor: default; }
+    .pdf-checkbox-row.indexing { opacity: 1; }
     .pdf-checkbox-row input { margin: 0; }
     .pdf-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem; }
-    .badge { font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 999px; font-weight: 600; }
+    .badge { font-size: 0.7rem; padding: 0.1rem 0.45rem; border-radius: 999px; font-weight: 600; }
     .badge-anchor { background: #dbeafe; color: #1e40af; }
-    .badge-action { background: #fef3c7; color: #92400e; text-decoration: none; }
+    .badge-action { background: #fef3c7; color: #92400e; border: none; cursor: pointer; font-family: inherit; }
     .badge-action:hover { background: #fde68a; }
-    .chat-select { width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-family: inherit; font-size: 0.85rem; background: #fff; }
+    .badge-busy { background: #e0e7ff; color: #3730a3; cursor: wait; }
+    .badge-busy::before { content: "⏳ "; animation: spin 1.5s linear infinite; display: inline-block; }
+    .badge-done { background: #d1fae5; color: #065f46; }
+    @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+    .chat-select { width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.4rem; font-family: inherit; font-size: 0.85rem; background: #fff; }
     .chat-help { color: #6b7280; font-size: 0.75rem; margin: 0.3rem 0 0; }
-    .chat-history { max-height: 55vh; overflow-y: auto; padding: 0.75rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; margin-bottom: 0.75rem; }
-    .chat-msg { display: flex; margin-bottom: 0.75rem; }
-    .chat-msg-user { justify-content: flex-end; }
-    .chat-msg-assistant, .chat-msg-system { justify-content: flex-start; }
-    .chat-bubble { max-width: 80%; padding: 0.625rem 0.9rem; border-radius: 0.75rem; line-height: 1.5; font-size: 0.95rem; white-space: pre-wrap; word-wrap: break-word; }
-    .chat-msg-user .chat-bubble { background: #2563eb; color: #fff; border-bottom-right-radius: 0.25rem; }
-    .chat-msg-assistant .chat-bubble { background: #fff; border: 1px solid #e5e7eb; color: #1f2937; border-bottom-left-radius: 0.25rem; }
-    .chat-msg-system .chat-bubble { background: #fef3c7; color: #92400e; font-style: italic; }
+
+    /* Messages */
+    .chat-history { flex: 1; min-height: 50vh; max-height: 60vh; overflow-y: auto; padding: 1rem; margin: 0 1rem 0.75rem; background: linear-gradient(to bottom, #fafbff, #ffffff); border: 1px solid #e5e7eb; border-radius: 0.75rem; scroll-behavior: smooth; }
+    .chat-msg { display: flex; gap: 0.6rem; margin-bottom: 1rem; align-items: flex-start; }
+    .chat-msg-user { flex-direction: row-reverse; }
+    .chat-msg-assistant, .chat-msg-system, .chat-msg-error { flex-direction: row; }
+    .chat-avatar { width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; background: #f3f4f6; }
+    .chat-msg-user .chat-avatar { background: #2563eb; color: #fff; }
+    .chat-msg-assistant .chat-avatar { background: #ede9fe; }
+    .chat-msg-error .chat-avatar { background: #fef2f2; }
+    .chat-bubble { max-width: 78%; padding: 0.7rem 0.95rem; border-radius: 1rem; line-height: 1.5; font-size: 0.95rem; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    .chat-msg-user .chat-bubble { background: #2563eb; color: #fff; border-bottom-right-radius: 0.3rem; }
+    .chat-msg-assistant .chat-bubble { background: #fff; border: 1px solid #e5e7eb; color: #1f2937; border-bottom-left-radius: 0.3rem; }
+    .chat-msg-system .chat-bubble { background: #fffbeb; border: 1px solid #fde68a; color: #78350f; font-size: 0.9rem; }
     .chat-msg-error .chat-bubble { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
-    .chat-citations { margin-top: 0.5rem; padding: 0.5rem; background: #f3f4f6; border-radius: 0.375rem; font-size: 0.8rem; color: #4b5563; }
-    .chat-citation { padding: 0.25rem 0; border-bottom: 1px dashed #d1d5db; }
-    .chat-citation:last-child { border-bottom: none; }
-    .chat-citation-tag { font-weight: 600; color: #1f2937; }
-    .chat-input-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-    .chat-input-row input { flex: 1; padding: 0.625rem 0.875rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; }
     .chat-typing { font-style: italic; color: #6b7280; }
+
+    /* Markdown inside bubbles */
+    .chat-bubble p { margin: 0 0 0.5rem; }
+    .chat-bubble p:last-child { margin-bottom: 0; }
+    .chat-bubble strong { font-weight: 700; }
+    .chat-bubble em { font-style: italic; }
+    .chat-bubble code { background: rgba(0,0,0,0.06); padding: 0.05rem 0.35rem; border-radius: 0.25rem; font-size: 0.88em; font-family: ui-monospace, monospace; }
+    .chat-msg-user .chat-bubble code { background: rgba(255,255,255,0.2); }
+    .chat-bubble pre { background: #1f2937; color: #f9fafb; padding: 0.75rem; border-radius: 0.5rem; overflow-x: auto; font-size: 0.85rem; margin: 0.5rem 0; }
+    .chat-bubble pre code { background: transparent; padding: 0; color: inherit; }
+    .chat-bubble a { color: #2563eb; text-decoration: underline; }
+    .chat-msg-user .chat-bubble a { color: #fff; }
+    .citation-ref { display: inline-block; background: #e0e7ff; color: #3730a3; padding: 0 0.35rem; border-radius: 999px; font-size: 0.72em; font-weight: 700; vertical-align: super; margin: 0 0.05em; cursor: pointer; }
+    .citation-ref:hover { background: #c7d2fe; }
+
+    /* Citations block */
+    .chat-citations { margin-top: 0.5rem; }
+    .chat-citations summary { cursor: pointer; font-size: 0.78rem; color: #6b7280; font-weight: 600; padding: 0.25rem 0; user-select: none; }
+    .chat-citations summary:hover { color: #1f2937; }
+    .citation-cards { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.4rem; }
+    .citation-card { background: #f9fafb; border: 1px solid #e5e7eb; border-left: 3px solid #6366f1; border-radius: 0.4rem; padding: 0.5rem 0.65rem; font-size: 0.82rem; line-height: 1.5; }
+    .citation-card-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; color: #4b5563; font-weight: 600; }
+    .citation-num { background: #6366f1; color: #fff; padding: 0.08rem 0.45rem; border-radius: 999px; font-size: 0.72rem; }
+    .citation-doc { color: #6b7280; font-weight: 500; font-size: 0.78rem; }
+    .citation-text { color: #374151; }
+
+    /* Input */
+    .chat-input-row { display: flex; gap: 0.5rem; padding: 0 1rem; margin-bottom: 1rem; }
+    .chat-input-row input { flex: 1; padding: 0.7rem 1rem; border: 1px solid #d1d5db; border-radius: 999px; font-family: inherit; font-size: 0.95rem; transition: border-color 0.15s, box-shadow 0.15s; }
+    .chat-input-row input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+    .chat-send-btn { padding: 0.7rem 1.1rem; border-radius: 999px; font-size: 1.05rem; }
+    .chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>
 
 <script>
@@ -116,6 +166,42 @@ const input = document.getElementById('chat-input');
 const sendBtn = document.getElementById('chat-send');
 const llmPicker = document.getElementById('llm-picker');
 const pdfList = document.getElementById('pdf-checkbox-list');
+const subtitle = document.getElementById('chat-subtitle');
+const clearBtn = document.getElementById('clear-chat-btn');
+
+function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// Tiny markdown → safe HTML. Escapes first, then re-injects formatting.
+// Supports: **bold**, *italic*, `code`, ```fenced code```, [text](url),
+// [N] citation refs as clickable badges, and paragraph breaks on \n\n.
+function renderMarkdown(text) {
+    // Pull out fenced code blocks first to protect them from inline rules.
+    const codeBlocks = [];
+    text = text.replace(/```([\s\S]*?)```/g, (_, code) => {
+        codeBlocks.push(code);
+        return ` CODE${codeBlocks.length - 1} `;
+    });
+    let html = escapeHtml(text);
+    // Citation refs [1], [2], … → clickable badge
+    html = html.replace(/\[(\d{1,2})\]/g, '<span class="citation-ref" data-cite="$1">$1</span>');
+    // Inline code: `xxx`
+    html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    // Bold: **xxx**
+    html = html.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
+    // Italic: *xxx*  (avoid matching ** which we already consumed)
+    html = html.replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, '$1<em>$2</em>');
+    // Links: [text](url)
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    // Paragraphs on blank lines
+    html = html.split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+    // Restore fenced code blocks
+    html = html.replace(/ CODE(\d+) /g, (_, i) =>
+        `<pre><code>${escapeHtml(codeBlocks[Number(i)])}</code></pre>`
+    );
+    return html;
+}
 
 function selectedExtraIds() {
     const out = [];
@@ -125,36 +211,57 @@ function selectedExtraIds() {
     return out;
 }
 
-function updateSubtitle() {
+function refreshSubtitle() {
     const total = 1 + selectedExtraIds().length;
-    const sub = document.getElementById('chat-subtitle');
-    if (sub) sub.textContent = total + ' ' + (total === 1 ? '{% trans "document selected" %}' : '{% trans "documents selected" %}');
+    if (subtitle) {
+        subtitle.textContent = total + ' ' + (total === 1 ? '{% trans "document selected" %}' : '{% trans "documents selected" %}');
+    }
 }
-pdfList.addEventListener('change', updateSubtitle);
+pdfList.addEventListener('change', refreshSubtitle);
 
 function addMsg(role, text, citations) {
     const wrap = document.createElement('div');
     wrap.className = 'chat-msg chat-msg-' + role;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'chat-avatar';
+    avatar.textContent = role === 'user' ? '🧑' : role === 'assistant' ? '🤖' : role === 'error' ? '⚠️' : '💡';
+    wrap.appendChild(avatar);
+
     const bubble = document.createElement('div');
     bubble.className = 'chat-bubble';
-    bubble.textContent = text;
+    if (role === 'assistant') {
+        bubble.innerHTML = renderMarkdown(text);
+    } else {
+        bubble.textContent = text;
+    }
     wrap.appendChild(bubble);
 
     if (citations && citations.length) {
-        const cites = document.createElement('div');
+        const cites = document.createElement('details');
         cites.className = 'chat-citations';
+        const summary = document.createElement('summary');
+        summary.textContent = `📚 ${citations.length} {% trans 'source(s)' %}`;
+        cites.appendChild(summary);
+        const cards = document.createElement('div');
+        cards.className = 'citation-cards';
         citations.forEach(c => {
-            const row = document.createElement('div');
-            row.className = 'chat-citation';
-            const tag = document.createElement('span');
-            tag.className = 'chat-citation-tag';
-            const where = c.document ? c.document + ' · {% trans "page" %} ' + c.page : '{% trans "page" %} ' + c.page;
-            tag.textContent = '[' + c.index + '] ' + where + ': ';
-            row.appendChild(tag);
-            row.appendChild(document.createTextNode(c.excerpt));
-            cites.appendChild(row);
+            const card = document.createElement('div');
+            card.className = 'citation-card';
+            const head = document.createElement('div');
+            head.className = 'citation-card-head';
+            head.innerHTML = `<span class="citation-num">${c.index}</span>` +
+                (c.document ? `<span>${escapeHtml(c.document)}</span>` : '') +
+                `<span class="citation-doc">{% trans "page" %} ${c.page}</span>`;
+            card.appendChild(head);
+            const body = document.createElement('div');
+            body.className = 'citation-text';
+            body.textContent = c.excerpt;
+            card.appendChild(body);
+            cards.appendChild(card);
         });
-        wrap.appendChild(cites);
+        cites.appendChild(cards);
+        bubble.appendChild(cites);
     }
     history.appendChild(wrap);
     history.scrollTop = history.scrollHeight;
@@ -168,8 +275,8 @@ form.addEventListener('submit', async (e) => {
     addMsg('user', question);
     input.value = '';
     sendBtn.disabled = true;
-    const typing = addMsg('assistant', '{% trans "Thinking…" %}');
-    typing.classList.add('chat-typing');
+    const typingBubble = addMsg('assistant', '{% trans "Thinking…" %}');
+    typingBubble.classList.add('chat-typing');
 
     try {
         const resp = await fetch(MESSAGE_URL, {
@@ -182,7 +289,7 @@ form.addEventListener('submit', async (e) => {
                 extra_pdf_ids: selectedExtraIds(),
             }),
         });
-        typing.parentElement.remove();
+        typingBubble.parentElement.remove();
         const data = await resp.json();
         if (!resp.ok) {
             addMsg('error', data.error || ('HTTP ' + resp.status));
@@ -190,12 +297,99 @@ form.addEventListener('submit', async (e) => {
             addMsg('assistant', data.answer, data.citations);
         }
     } catch (err) {
-        typing.parentElement.remove();
+        typingBubble.parentElement.remove();
         addMsg('error', '{% trans "Network error:" %} ' + err.message);
     } finally {
         sendBtn.disabled = false;
         input.focus();
     }
+});
+
+// In-place indexing: click "index ⚡" → start job, poll, enable the row
+// when done. User never leaves the page.
+function startIndex(btn) {
+    const pdfId = btn.dataset.pdfId;
+    btn.disabled = true;
+    btn.className = 'badge badge-busy';
+    btn.textContent = '{% trans "indexing" %}';
+
+    fetch(`/chat/${pdfId}/start-index/`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'X-CSRFToken': CSRF },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            btn.className = 'badge badge-action';
+            btn.disabled = false;
+            btn.textContent = '{% trans "retry" %} ⚡';
+            return;
+        }
+        if (data.already_indexed) {
+            markRowReady(pdfId);
+            return;
+        }
+        pollJob(data.job_id, pdfId, btn);
+    })
+    .catch(() => {
+        btn.className = 'badge badge-action';
+        btn.disabled = false;
+        btn.textContent = '{% trans "retry" %} ⚡';
+    });
+}
+
+function pollJob(jobId, pdfId, btn) {
+    fetch(`/jobs/${jobId}/status/`, { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.is_terminal) {
+                setTimeout(() => pollJob(jobId, pdfId, btn), 1500);
+                return;
+            }
+            if (data.status === 'done') {
+                markRowReady(pdfId);
+            } else {
+                btn.className = 'badge badge-action';
+                btn.disabled = false;
+                btn.textContent = '{% trans "retry" %} ⚡';
+                addMsg('error', '{% trans "Indexing failed:" %} ' + (data.error_message || data.status));
+            }
+        })
+        .catch(() => setTimeout(() => pollJob(jobId, pdfId, btn), 3000));
+}
+
+function markRowReady(pdfId) {
+    const row = pdfList.querySelector(`.pdf-checkbox-row[data-pdf-id="${pdfId}"]`);
+    if (!row) return;
+    row.classList.remove('not-indexed', 'indexing');
+    const cb = row.querySelector('input[type="checkbox"]');
+    if (cb) {
+        cb.disabled = false;
+        cb.checked = true;
+    }
+    const btn = row.querySelector('.btn-index, .badge-busy, .badge-action');
+    if (btn) {
+        btn.className = 'badge badge-done';
+        btn.textContent = '✓ {% trans "indexed" %}';
+        btn.disabled = true;
+    }
+    refreshSubtitle();
+}
+
+pdfList.addEventListener('click', e => {
+    const btn = e.target.closest('.btn-index');
+    if (btn) {
+        e.preventDefault();
+        startIndex(btn);
+    }
+});
+
+clearBtn.addEventListener('click', () => {
+    if (!confirm('{% trans "Clear the conversation?" %}')) return;
+    history.querySelectorAll('.chat-msg').forEach((el, idx) => {
+        if (idx > 0) el.remove();  // keep the welcome message
+    });
 });
 
 input.focus();

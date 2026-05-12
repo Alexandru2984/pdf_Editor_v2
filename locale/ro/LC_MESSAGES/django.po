@@ -4039,3 +4039,30 @@ msgstr "document selectat"
 
 msgid "documents selected"
 msgstr "documente selectate"
+
+msgid "Clear conversation"
+msgstr "Șterge conversația"
+
+msgid "Clear the conversation?"
+msgstr "Ștergi conversația?"
+
+msgid "Bigger = smarter but slower."
+msgstr "Mai mare = mai inteligent dar mai lent."
+
+msgid "index"
+msgstr "indexează"
+
+msgid "indexing"
+msgstr "indexez..."
+
+msgid "indexed"
+msgstr "indexat"
+
+msgid "retry"
+msgstr "reîncearcă"
+
+msgid "Indexing failed:"
+msgstr "Indexarea a eșuat:"
+
+msgid "source(s)"
+msgstr "surse"
