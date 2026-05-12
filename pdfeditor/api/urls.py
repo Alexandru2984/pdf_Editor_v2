@@ -32,6 +32,7 @@ op_patterns = [
     path("page-numbers/", ops_views.PageNumbersOpView.as_view(), name="op-page-numbers"),
     path("watermark/", ops_views.WatermarkOpView.as_view(), name="op-watermark"),
     path("convert-docx/", ops_views.ConvertDocxOpView.as_view(), name="op-convert-docx"),
+    path("chat/", ops_views.ChatOpView.as_view(), name="op-chat"),
 ]
 
 urlpatterns = [

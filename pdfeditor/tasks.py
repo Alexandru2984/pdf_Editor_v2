@@ -138,12 +138,78 @@ def run_convert_docx_task(job_id: str) -> str | None:
     return _safe_run(job_id, ProcessedPDF.KIND_CONVERT, run)
 
 
+@shared_task(name="pdfeditor.run_chat_index")
+def run_chat_index_task(job_id: str) -> str | None:
+    """Chunk + embed a PDF for RAG chat. Doesn't produce a ProcessedPDF —
+    it populates ``Embedding`` rows linked to the source UploadedPDF."""
+    from .models import Embedding
+    from .pdf_processor.rag import chunk_pdf, embed_texts
+
+    try:
+        job = Job.objects.select_related("source").get(id=job_id)
+    except Job.DoesNotExist:
+        logger.warning("chat_index fired for missing job %s", job_id)
+        return None
+    if not job.source or not job.source.exists_on_disk():
+        _fail(job, "Source PDF is missing on disk.")
+        return None
+
+    _start(job)
+    try:
+        chunks = list(chunk_pdf(job.source.path))
+        if not chunks:
+            _fail(job, "No extractable text — run OCR first to make this PDF searchable.")
+            return None
+
+        # Wipe any prior embeddings for this PDF so reindex is idempotent.
+        Embedding.objects.filter(uploaded_pdf=job.source).delete()
+
+        texts = [c[2] for c in chunks]
+        vectors = embed_texts(texts)
+        Embedding.objects.bulk_create(
+            [
+                Embedding(
+                    uploaded_pdf=job.source,
+                    chunk_index=idx,
+                    page_number=page,
+                    chunk_text=text,
+                    embedding=vec,
+                )
+                for (idx, page, text), vec in zip(chunks, vectors, strict=True)
+            ],
+            batch_size=200,
+        )
+    except SoftTimeLimitExceeded:
+        _fail(job, "Indexing timed out.")
+        return None
+    except ValueError as exc:
+        _fail(job, str(exc))
+        return None
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Chat index failed for job %s", job_id)
+        _fail(job, f"Internal error: {exc.__class__.__name__}")
+        return None
+
+    # No ProcessedPDF for indexing — just mark done with progress=100.
+    merged = dict(job.params or {})
+    merged["chunk_count"] = len(chunks)
+    job.params = merged
+    job.status = Job.STATUS_DONE
+    job.progress = 100
+    from django.utils import timezone as _tz
+
+    job.finished_at = _tz.now()
+    job.save(update_fields=["params", "status", "progress", "finished_at"])
+    return str(job.id)
+
+
 # Map kind → task callable. Helps views enqueue without importing each task.
 KIND_TO_TASK = {
     ProcessedPDF.KIND_OCR_LAYER: run_ocr_task,
     ProcessedPDF.KIND_PDFA: run_pdfa_task,
     ProcessedPDF.KIND_COMPARE: run_compare_task,
     ProcessedPDF.KIND_CONVERT: run_convert_docx_task,
+    ProcessedPDF.KIND_CHAT_INDEX: run_chat_index_task,
 }
 
 

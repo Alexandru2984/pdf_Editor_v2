@@ -3974,3 +3974,37 @@ msgstr "Niciun job încă — rulează o operație lungă (OCR, PDF/A, compare, 
 
 msgid "Job output not found."
 msgstr "Rezultatul jobului nu a fost găsit."
+
+msgid "Chat with PDF"
+msgstr "Discută cu PDF-ul"
+
+msgid "Ask questions about your PDF and get answers with citations — powered by local embeddings + Groq"
+msgstr "Pune întrebări despre PDF și primește răspunsuri cu citate — folosește embedding-uri locale + Groq"
+
+msgid "Open Chat"
+msgstr "Deschide chat"
+
+#, python-format
+msgid "Ask anything about <strong>%(name)s</strong> — %(count)s chunks indexed."
+msgstr "Întreabă orice despre <strong>%(name)s</strong> — %(count)s fragmente indexate."
+
+msgid "Hi! Ask me anything about this document. I cite my sources."
+msgstr "Salut! Întreabă-mă orice despre acest document. Citez sursele."
+
+msgid "Ask a question…"
+msgstr "Pune o întrebare…"
+
+msgid "Send"
+msgstr "Trimite"
+
+msgid "Thinking…"
+msgstr "Mă gândesc…"
+
+msgid "Network error:"
+msgstr "Eroare de rețea:"
+
+msgid "page"
+msgstr "pagina"
+
+msgid "Indexing this PDF for chat. Takes a few seconds — we'll bring you back."
+msgstr "Se indexează PDF-ul pentru chat. Durează câteva secunde — te aducem înapoi."

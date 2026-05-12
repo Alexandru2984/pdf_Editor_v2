@@ -11,6 +11,12 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from pgvector.django import HnswIndex, VectorField
+
+# Dimensionality of the multilingual MiniLM model we use (384 floats).
+# Keep aligned with EMBEDDING_MODEL in pdf_processor.rag — changing this
+# requires a new migration that rebuilds the column + HNSW index.
+EMBEDDING_DIM = 384
 
 
 class UploadedPDF(models.Model):
@@ -71,6 +77,7 @@ class ProcessedPDF(models.Model):
     KIND_PDFA = "pdfa"
     KIND_COMPARE = "compare"
     KIND_OUTLINE = "outline"
+    KIND_CHAT_INDEX = "chat_index"
 
     KIND_CHOICES = [
         (KIND_FIND_REPLACE, "Find & Replace"),
@@ -97,6 +104,7 @@ class ProcessedPDF(models.Model):
         (KIND_PDFA, "PDF/A"),
         (KIND_COMPARE, "Compare"),
         (KIND_OUTLINE, "Edit Outline"),
+        (KIND_CHAT_INDEX, "Index for Chat"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -269,6 +277,43 @@ class Job(models.Model):
     def __str__(self):
         owner = self.user.username if self.user_id else f"anon:{self.session_key[:8] or '?'}"
         return f"{self.kind} · {self.status} · {owner}"
+
+
+class Embedding(models.Model):
+    """One chunk of a PDF with its dense vector embedding, for RAG retrieval.
+
+    Chunks are deleted en masse when the source PDF goes away. The HNSW
+    index uses cosine distance — match it in queries with
+    ``order_by(CosineDistance(...))``.
+    """
+
+    id = models.BigAutoField(primary_key=True)
+    uploaded_pdf = models.ForeignKey(
+        "UploadedPDF",
+        on_delete=models.CASCADE,
+        related_name="embeddings",
+    )
+    chunk_index = models.PositiveIntegerField()
+    page_number = models.PositiveSmallIntegerField()
+    chunk_text = models.TextField()
+    embedding = VectorField(dimensions=EMBEDDING_DIM)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["uploaded_pdf_id", "chunk_index"]
+        indexes = [
+            models.Index(fields=["uploaded_pdf", "chunk_index"]),
+            HnswIndex(
+                name="embedding_hnsw_cos",
+                fields=["embedding"],
+                m=16,
+                ef_construction=64,
+                opclasses=["vector_cosine_ops"],
+            ),
+        ]
+
+    def __str__(self):
+        return f"chunk {self.chunk_index} p{self.page_number} of {self.uploaded_pdf_id}"
 
 
 def _default_share_token() -> str:

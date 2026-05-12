@@ -12,7 +12,13 @@ x-app-env: &app-env
 
 services:
   db:
-    image: postgres:16-alpine
+    # pgvector/pgvector:pg16 = vanilla Postgres 16 + the `vector` extension.
+    # Same data dir layout as postgres:16, so the existing volume Just Works.
+    image: pgvector/pgvector:pg16
+    # Bound to 127.0.0.1 so local tests can hit Postgres (needed for the
+    # pgvector-typed columns), without exposing the DB to the public net.
+    ports:
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-pdfeditor}
       POSTGRES_USER: ${POSTGRES_USER:-pdfeditor}

@@ -64,6 +64,7 @@ from .basic_ops import (
     unprotect_view,
     verify_signature_view,
 )
+from .chat import chat_message_view, chat_view
 from .edit import (
     download_view,
     edit_view,
@@ -234,4 +235,6 @@ __all__ = [
     "job_detail_view",
     "job_status_view",
     "job_download_view",
+    "chat_view",
+    "chat_message_view",
 ]

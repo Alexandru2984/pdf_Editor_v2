@@ -13,7 +13,7 @@ import contextlib
 import os
 from collections.abc import Callable
 
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -493,6 +493,65 @@ class WatermarkOpView(_BaseOpView):
             watermark_type="text",
             watermark_content=params["text"],
             options={"position": params["position"], "opacity": params["opacity"]},
+        )
+
+
+class _ChatSerializer(serializers.Serializer):
+    pdf_id = serializers.UUIDField()
+    message = serializers.CharField(max_length=2000)
+
+
+@extend_schema(
+    tags=["Operations"],
+    request=_ChatSerializer,
+    responses={
+        200: OpenApiResponse(description="Answer + per-excerpt citations"),
+        409: OpenApiResponse(description="PDF not indexed yet"),
+        502: OpenApiResponse(description="LLM upstream error"),
+    },
+)
+class ChatOpView(APIView):
+    """RAG chat over an indexed PDF. POST {'pdf_id', 'message'}.
+
+    Same retrieval + Groq flow as the web view. If the PDF has no
+    embeddings, returns 409 — clients should kick off indexing via the
+    chat web flow or by enqueueing a chat_index Job manually."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        in_ser = _ChatSerializer(data=request.data)
+        in_ser.is_valid(raise_exception=True)
+        pdf = _user_pdf(request.user, in_ser.validated_data["pdf_id"])
+
+        from ..models import Embedding
+        from ..pdf_processor.rag import embed_query
+        from ..views.chat import _build_rag_prompt, _call_groq, _retrieve
+
+        if not Embedding.objects.filter(uploaded_pdf=pdf).exists():
+            return Response(
+                {"detail": "PDF not indexed for chat yet."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        qvec = embed_query(in_ser.validated_data["message"])
+        chunks = _retrieve(pdf, qvec)
+        answer, error = _call_groq(_build_rag_prompt(in_ser.validated_data["message"], chunks))
+        if error:
+            return Response({"detail": error}, status=status.HTTP_502_BAD_GATEWAY)
+
+        return Response(
+            {
+                "answer": answer,
+                "citations": [
+                    {
+                        "index": i + 1,
+                        "page": c.page_number,
+                        "excerpt": c.chunk_text[:300] + ("…" if len(c.chunk_text) > 300 else ""),
+                    }
+                    for i, c in enumerate(chunks)
+                ],
+            }
         )
 
 
