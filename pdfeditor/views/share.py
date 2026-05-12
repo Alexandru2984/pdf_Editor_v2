@@ -80,6 +80,7 @@ def share_links_view(request):
     )
 
 
+@auth_aware_ratelimit(anon_rate="30/h", user_rate="200/h", method="POST")
 @require_http_methods(["POST"])
 def revoke_share_link_view(request, token: str):
     link = ShareLink.objects.filter(_owner_filter_for_links(request), token=token).first()
