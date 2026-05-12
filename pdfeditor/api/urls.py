@@ -11,6 +11,7 @@ app_name = "api"
 router = DefaultRouter()
 router.register(r"pdfs", views.UploadedPDFViewSet, basename="pdf")
 router.register(r"outputs", views.ProcessedPDFViewSet, basename="output")
+router.register(r"jobs", views.JobViewSet, basename="job")
 
 op_patterns = [
     path("compress/", ops_views.CompressOpView.as_view(), name="op-compress"),

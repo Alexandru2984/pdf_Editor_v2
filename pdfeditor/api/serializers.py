@@ -3,7 +3,7 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from ..models import ApiKey, ProcessedPDF, ShareLink, UploadedPDF
+from ..models import ApiKey, Job, ProcessedPDF, ShareLink, UploadedPDF
 
 
 class UploadedPDFSerializer(serializers.ModelSerializer):
@@ -57,6 +57,45 @@ class ShareLinkSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         path = reverse("public_share_download", args=[obj.token])
         return request.build_absolute_uri(path) if request else path
+
+
+class JobSerializer(serializers.ModelSerializer):
+    output_id = serializers.PrimaryKeyRelatedField(source="output", read_only=True)
+    output_download_url = serializers.SerializerMethodField()
+    is_terminal = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Job
+        fields = [
+            "id",
+            "kind",
+            "status",
+            "is_terminal",
+            "progress",
+            "error_message",
+            "output_id",
+            "output_download_url",
+            "params",
+            "created_at",
+            "started_at",
+            "finished_at",
+        ]
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_terminal(self, obj) -> bool:
+        return obj.is_terminal()
+
+    @extend_schema_field(serializers.URLField(allow_null=True))
+    def get_output_download_url(self, obj) -> str | None:
+        if not obj.output_id:
+            return None
+        request = self.context.get("request")
+        if request is None:
+            return None
+        from django.urls import reverse
+
+        return request.build_absolute_uri(reverse("api:output-download", args=[obj.output_id]))
 
 
 class ApiKeySerializer(serializers.ModelSerializer):

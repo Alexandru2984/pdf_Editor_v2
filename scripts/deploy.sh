@@ -34,11 +34,11 @@ docker pull "${REGISTRY_IMAGE}:${TAG}"
 echo "→ Retagging as ${LOCAL_IMAGE}…"
 docker tag "${REGISTRY_IMAGE}:${TAG}" "$LOCAL_IMAGE"
 
-echo "→ Restarting web container…"
-docker compose up -d --no-build web
+echo "→ Restarting web + worker containers…"
+docker compose up -d --no-build web worker
 
 echo "→ Waiting for healthy startup…"
 sleep 8
-docker compose ps web
+docker compose ps web worker
 
 echo "✓ Deployed ${REGISTRY_IMAGE}:${TAG}"

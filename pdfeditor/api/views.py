@@ -21,8 +21,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
-from ..models import ProcessedPDF, UploadedPDF
-from .serializers import ProcessedPDFSerializer, UploadedPDFSerializer
+from ..models import Job, ProcessedPDF, UploadedPDF
+from .serializers import JobSerializer, ProcessedPDFSerializer, UploadedPDFSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -150,3 +150,15 @@ class ProcessedPDFViewSet(viewsets.ReadOnlyModelViewSet):
             as_attachment=True,
             filename=os.path.basename(obj.path),
         )
+
+
+@extend_schema(tags=["Operations"])
+class JobViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read async job state (queued/running/done/failed) + result link."""
+
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return Job.objects.filter(user=self.request.user)

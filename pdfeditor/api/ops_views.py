@@ -20,19 +20,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import ProcessedPDF, UploadedPDF
+from ..models import Job, ProcessedPDF, UploadedPDF
 from ..pdf_processor import (
     add_page_numbers,
     add_watermark,
-    compare_pdfs,
     compress_pdf,
-    convert_pdf_to_docx,
     convert_pdf_to_images,
-    convert_to_pdfa,
     crop_pages,
     edit_pdf_metadata,
     flatten_pdf,
-    make_pdf_searchable,
     merge_pdfs,
     protect_pdf,
     redact_text,
@@ -41,6 +37,7 @@ from ..pdf_processor import (
     set_pdf_outline,
     split_pdf,
 )
+from ..tasks import enqueue_job
 from ..views._common import _client_ip
 from .serializers import ProcessedPDFSerializer
 
@@ -79,6 +76,34 @@ def _record(request, kind: str, path: str, source: UploadedPDF | None) -> Proces
             user_agent=request.META.get("HTTP_USER_AGENT", "")[:300],
         )
     return output
+
+
+def _queue_async_api_job(
+    user, kind: str, source: UploadedPDF, second_source=None, params: dict | None = None
+) -> Job:
+    job = Job.objects.create(
+        user=user,
+        session_key="",
+        kind=kind,
+        source=source,
+        second_source=second_source,
+        params=params or {},
+    )
+    enqueue_job(job)
+    return job
+
+
+def _job_response(job: Job, request) -> Response:
+    """Standard 202 response for async ops — include URLs to poll status."""
+    from django.urls import reverse
+
+    payload = {
+        "job_id": str(job.id),
+        "kind": job.kind,
+        "status": job.status,
+        "status_url": request.build_absolute_uri(reverse("api:job-detail", args=[job.id])),
+    }
+    return Response(payload, status=status.HTTP_202_ACCEPTED)
 
 
 class _BaseOpView(APIView):
@@ -289,24 +314,42 @@ class RedactOpView(_BaseOpView):
         return out
 
 
-@extend_schema(tags=["Operations"], request=_OcrSerializer, responses={201: ProcessedPDFSerializer})
-class SearchableOpView(_BaseOpView):
-    kind = ProcessedPDF.KIND_OCR_LAYER
-    request_serializer = _OcrSerializer
+@extend_schema(tags=["Operations"], request=_OcrSerializer, responses={202: None})
+class SearchableOpView(APIView):
+    """Queue an OCR job. Returns 202 + job_id; poll /api/v1/jobs/<id>/ for status."""
 
-    def run(self, pdf_path, params):
-        out, _ = make_pdf_searchable(pdf_path, language=params["language"], dpi=params["dpi"])
-        return out
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        in_ser = _OcrSerializer(data=request.data)
+        in_ser.is_valid(raise_exception=True)
+        pdf = _user_pdf(request.user, in_ser.validated_data["pdf_id"])
+        job = _queue_async_api_job(
+            request.user,
+            ProcessedPDF.KIND_OCR_LAYER,
+            pdf,
+            params={"language": in_ser.validated_data["language"], "dpi": in_ser.validated_data["dpi"]},
+        )
+        return _job_response(job, request)
 
 
-@extend_schema(tags=["Operations"], request=_PdfaSerializer, responses={201: ProcessedPDFSerializer})
-class PdfaOpView(_BaseOpView):
-    kind = ProcessedPDF.KIND_PDFA
-    request_serializer = _PdfaSerializer
+@extend_schema(tags=["Operations"], request=_PdfaSerializer, responses={202: None})
+class PdfaOpView(APIView):
+    """Queue a PDF/A conversion. Returns 202 + job_id."""
 
-    def run(self, pdf_path, params):
-        out, _ = convert_to_pdfa(pdf_path, version=params["version"])
-        return out
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        in_ser = _PdfaSerializer(data=request.data)
+        in_ser.is_valid(raise_exception=True)
+        pdf = _user_pdf(request.user, in_ser.validated_data["pdf_id"])
+        job = _queue_async_api_job(
+            request.user,
+            ProcessedPDF.KIND_PDFA,
+            pdf,
+            params={"version": in_ser.validated_data["version"]},
+        )
+        return _job_response(job, request)
 
 
 @extend_schema(tags=["Operations"], request=_UnprotectSerializer, responses={201: ProcessedPDFSerializer})
@@ -382,25 +425,23 @@ class OutlineOpView(_BaseOpView):
         return set_pdf_outline(pdf_path, params["entries"])
 
 
-@extend_schema(tags=["Operations"], request=_CompareSerializer, responses={201: ProcessedPDFSerializer})
+@extend_schema(tags=["Operations"], request=_CompareSerializer, responses={202: None})
 class CompareOpView(APIView):
+    """Queue a comparison job. Returns 202 + job_id."""
+
     permission_classes = [IsAuthenticated]
-    request_serializer = _CompareSerializer
 
     def post(self, request):
-        in_ser = self.request_serializer(data=request.data)
+        in_ser = _CompareSerializer(data=request.data)
         in_ser.is_valid(raise_exception=True)
         a = _user_pdf(request.user, in_ser.validated_data["pdf_id"])
         b = _user_pdf(request.user, in_ser.validated_data["second_pdf_id"])
-        try:
-            out, _ = compare_pdfs(a.path, b.path)
-        except ValueError as exc:
-            raise ValidationError({"detail": str(exc)}) from exc
-        output = _record(request, ProcessedPDF.KIND_COMPARE, out, source=a)
-        return Response(
-            ProcessedPDFSerializer(output, context={"request": request}).data,
-            status=status.HTTP_201_CREATED,
+        if a.id == b.id:
+            raise ValidationError({"detail": "Choose two different PDFs."})
+        job = _queue_async_api_job(
+            request.user, ProcessedPDF.KIND_COMPARE, a, second_source=b, params={"second_name": b.name}
         )
+        return _job_response(job, request)
 
 
 @extend_schema(tags=["Operations"], request=_MetadataSerializer, responses={201: ProcessedPDFSerializer})
@@ -455,14 +496,18 @@ class WatermarkOpView(_BaseOpView):
         )
 
 
-@extend_schema(tags=["Operations"], request=_ConvertSerializer, responses={201: ProcessedPDFSerializer})
-class ConvertDocxOpView(_BaseOpView):
-    kind = ProcessedPDF.KIND_CONVERT
-    request_serializer = _ConvertSerializer
+@extend_schema(tags=["Operations"], request=_ConvertSerializer, responses={202: None})
+class ConvertDocxOpView(APIView):
+    """Queue PDF→DOCX conversion. Returns 202 + job_id."""
 
-    def run(self, pdf_path, params):
-        out, _ = convert_pdf_to_docx(pdf_path)
-        return out
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        in_ser = _ConvertSerializer(data=request.data)
+        in_ser.is_valid(raise_exception=True)
+        pdf = _user_pdf(request.user, in_ser.validated_data["pdf_id"])
+        job = _queue_async_api_job(request.user, ProcessedPDF.KIND_CONVERT, pdf)
+        return _job_response(job, request)
 
 
 @extend_schema(

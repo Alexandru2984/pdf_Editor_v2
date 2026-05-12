@@ -3919,3 +3919,58 @@ msgstr "Cheie API creată. Copiază tokenul acum — nu va mai fi afișat."
 
 msgid "API key revoked."
 msgstr "Cheie API revocată."
+
+msgid "OCR job queued. We'll show you progress live."
+msgstr "Job OCR în coadă. Îți arătăm progresul în timp real."
+
+msgid "PDF/A conversion queued."
+msgstr "Conversia PDF/A a fost pusă în coadă."
+
+msgid "Comparison job queued."
+msgstr "Jobul de comparare a fost pus în coadă."
+
+msgid "Conversion to Word queued."
+msgstr "Conversia în Word a fost pusă în coadă."
+
+msgid "Job status"
+msgstr "Stare job"
+
+msgid "Processing…"
+msgstr "Se procesează…"
+
+#, python-format
+msgid "Running %(kind)s in the background. This page updates live."
+msgstr "Rulez %(kind)s în fundal. Pagina se actualizează live."
+
+msgid "Progress"
+msgstr "Progres"
+
+msgid "Download result"
+msgstr "Descarcă rezultatul"
+
+msgid "All jobs"
+msgstr "Toate joburile"
+
+msgid "Done!"
+msgstr "Gata!"
+
+msgid "Failed"
+msgstr "Eșuat"
+
+msgid "Your jobs"
+msgstr "Joburile tale"
+
+msgid "Async PDF operations queued or completed in the last 100."
+msgstr "Ultimele 100 de operații PDF asincrone, în coadă sau finalizate."
+
+msgid "Kind"
+msgstr "Tip"
+
+msgid "Open"
+msgstr "Deschide"
+
+msgid "No jobs yet — run a long operation (OCR, PDF/A, compare, convert to Word) and it shows up here."
+msgstr "Niciun job încă — rulează o operație lungă (OCR, PDF/A, compare, conversie Word) și apare aici."
+
+msgid "Job output not found."
+msgstr "Rezultatul jobului nu a fost găsit."

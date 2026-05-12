@@ -196,6 +196,81 @@ class AuditLog(models.Model):
         return f"{self.kind} · {owner} · {self.created_at:%Y-%m-%d %H:%M}"
 
 
+class Job(models.Model):
+    """Tracks an async PDF operation run by a Celery worker.
+
+    The view creates the row + enqueues a task. The task updates ``status``
+    as it progresses and links ``output`` once a ProcessedPDF row exists. On
+    failure, ``error_message`` carries the user-friendly summary.
+    """
+
+    STATUS_QUEUED = "queued"
+    STATUS_RUNNING = "running"
+    STATUS_DONE = "done"
+    STATUS_FAILED = "failed"
+    STATUS_CHOICES = [
+        (STATUS_QUEUED, "Queued"),
+        (STATUS_RUNNING, "Running"),
+        (STATUS_DONE, "Done"),
+        (STATUS_FAILED, "Failed"),
+    ]
+    TERMINAL_STATUSES = (STATUS_DONE, STATUS_FAILED)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="jobs",
+    )
+    session_key = models.CharField(max_length=64, db_index=True, blank=True)
+    kind = models.CharField(max_length=20, db_index=True)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_QUEUED, db_index=True)
+    source = models.ForeignKey(
+        "UploadedPDF",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="jobs",
+    )
+    second_source = models.ForeignKey(
+        "UploadedPDF",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="jobs_as_second",
+        help_text="Optional second input (e.g. compare's revised PDF).",
+    )
+    output = models.ForeignKey(
+        "ProcessedPDF",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="jobs",
+    )
+    params = models.JSONField(default=dict, blank=True)
+    progress = models.PositiveSmallIntegerField(default=0)
+    error_message = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["session_key", "-created_at"]),
+        ]
+
+    def is_terminal(self) -> bool:
+        return self.status in self.TERMINAL_STATUSES
+
+    def __str__(self):
+        owner = self.user.username if self.user_id else f"anon:{self.session_key[:8] or '?'}"
+        return f"{self.kind} · {self.status} · {owner}"
+
+
 def _default_share_token() -> str:
     return uuid.uuid4().hex
 

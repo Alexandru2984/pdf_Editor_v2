@@ -149,7 +149,7 @@ class OperationsApiTests(_ApiTestBase):
         self.assertEqual(resp.status_code, 201, resp.content)
         self.assertEqual(resp.json()["kind"], ProcessedPDF.KIND_REDACT)
 
-    def test_pdfa_creates_output(self):
+    def test_pdfa_returns_async_job(self):
         if not shutil.which("gs"):
             self.skipTest("ghostscript not installed")
         pdf = self._upload(num_pages=1)
@@ -158,8 +158,9 @@ class OperationsApiTests(_ApiTestBase):
             {"pdf_id": str(pdf.id), "version": "2b"},
             format="json",
         )
-        self.assertEqual(resp.status_code, 201, resp.content)
-        self.assertEqual(resp.json()["kind"], ProcessedPDF.KIND_PDFA)
+        # PDF/A is async — returns 202 with a job_id.
+        self.assertEqual(resp.status_code, 202, resp.content)
+        self.assertIn("job_id", resp.json())
 
     def test_op_with_missing_pdf_returns_404(self):
         resp = self.client.post(

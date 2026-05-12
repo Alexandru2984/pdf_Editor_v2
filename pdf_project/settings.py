@@ -82,6 +82,28 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
+# Celery: broker is Redis. Result backend uses a separate DB so task results
+# don't churn the broker's keyspace. In tests, CELERY_TASK_ALWAYS_EAGER=True
+# runs tasks inline (no worker needed) — set in tests via override_settings.
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TIMEZONE = "UTC"
+# Acknowledge tasks AFTER they complete — if a worker crashes mid-task, the
+# task gets redelivered to another worker rather than being silently lost.
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+# Hard kill at 10 min — protects against runaway tesseract/ghostscript subprocs.
+CELERY_TASK_TIME_LIMIT = 600
+CELERY_TASK_SOFT_TIME_LIMIT = 540
+# In Django's test runner, run tasks inline so we don't need a real broker
+# or worker container. Detected via DJANGO_TEST=1 (set by manage.py test).
+if "test" in sys.argv:
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "PDF Editor API",
     "DESCRIPTION": (
@@ -190,7 +212,7 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": os.environ.get("DATABASE_PATH", BASE_DIR / "db.sqlite3"),
+            "NAME": os.environ.get("DATABASE_PATH", str(BASE_DIR / "db.sqlite3")),
         },
     }
 

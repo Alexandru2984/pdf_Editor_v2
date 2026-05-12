@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ApiKey, AuditLog, ProcessedPDF, ShareLink, TrustAnchor, UploadedPDF
+from .models import ApiKey, AuditLog, Job, ProcessedPDF, ShareLink, TrustAnchor, UploadedPDF
 
 
 @admin.register(UploadedPDF)
@@ -106,4 +106,35 @@ class ApiKeyAdmin(admin.ModelAdmin):
         # Keys must be created through the profile UI so the plaintext token
         # is shown to the user. Admin-side creation would leave the user
         # without the secret.
+        return False
+
+
+@admin.register(Job)
+class JobAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "kind", "status", "user", "progress", "duration")
+    list_filter = ("status", "kind", "created_at")
+    search_fields = ("user__username", "session_key", "kind", "error_message")
+    readonly_fields = (
+        "id",
+        "user",
+        "session_key",
+        "kind",
+        "source",
+        "second_source",
+        "output",
+        "params",
+        "created_at",
+        "started_at",
+        "finished_at",
+    )
+    raw_id_fields = ("source", "second_source", "output")
+
+    @admin.display(description="Duration")
+    def duration(self, obj):
+        if obj.started_at and obj.finished_at:
+            delta = obj.finished_at - obj.started_at
+            return f"{delta.total_seconds():.1f}s"
+        return "—"
+
+    def has_add_permission(self, request):
         return False

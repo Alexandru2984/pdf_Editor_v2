@@ -334,21 +334,20 @@ class ConvertViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 200)
 
     def test_full_convert_workflow(self):
+        # Convert is async now: POST redirects to /jobs/<id>/ and Celery
+        # eager mode runs the task inline so it lands as done immediately.
         self.upload()
         resp = self.client.post(reverse("convert"), {})
         self.assertEqual(resp.status_code, 302)
+        self.assertIn("/jobs/", resp.url)
 
-        result = self.client.get(reverse("convert_result"))
-        self.assertEqual(result.status_code, 200)
-        # Filename ends with .docx and is offered as a download.
-        download = self.client.get(reverse("download_converted"))
-        self.assertEqual(download.status_code, 200)
-        # Recorded ProcessedPDF has the right kind and a .docx path.
-        from .models import ProcessedPDF
+        from .models import Job, ProcessedPDF
 
-        latest = ProcessedPDF.objects.first()
-        self.assertEqual(latest.kind, ProcessedPDF.KIND_CONVERT)
-        self.assertTrue(latest.path.endswith(".docx"))
+        job = Job.objects.first()
+        self.assertEqual(job.kind, ProcessedPDF.KIND_CONVERT)
+        self.assertEqual(job.status, Job.STATUS_DONE)
+        self.assertIsNotNone(job.output_id)
+        self.assertTrue(job.output.path.endswith(".docx"))
 
     def test_convert_result_without_session_redirects(self):
         resp = self.client.get(reverse("convert_result"))
@@ -890,19 +889,13 @@ class SearchableViewTests(_ViewTestBase):
             {"language": "eng", "dpi": "150"},
         )
         self.assertEqual(resp.status_code, 302)
-        self.assertEqual(self.client.session.get("searchable_pages_ocrd"), 0)
+        self.assertIn("/jobs/", resp.url)
 
-        result = self.client.get(reverse("searchable_result"))
-        self.assertEqual(result.status_code, 200)
+        from .models import Job, ProcessedPDF
 
-        download = self.client.get(reverse("download_searchable"))
-        self.assertEqual(download.status_code, 200)
-        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
-
-        from .models import ProcessedPDF
-
-        latest = ProcessedPDF.objects.first()
-        self.assertEqual(latest.kind, ProcessedPDF.KIND_OCR_LAYER)
+        job = Job.objects.first()
+        self.assertEqual(job.kind, ProcessedPDF.KIND_OCR_LAYER)
+        self.assertEqual(job.status, Job.STATUS_DONE)
 
     def test_invalid_dpi_re_renders(self):
         self.upload(num_pages=1)
@@ -949,27 +942,26 @@ class PdfaViewTests(_ViewTestBase):
         self.upload(num_pages=1)
         resp = self.client.post(reverse("pdfa"), {"version": "2b"})
         self.assertEqual(resp.status_code, 302)
+        self.assertIn("/jobs/", resp.url)
 
-        result = self.client.get(reverse("pdfa_result"))
-        self.assertEqual(result.status_code, 200)
+        from .models import Job, ProcessedPDF
 
-        download = self.client.get(reverse("download_pdfa"))
-        self.assertEqual(download.status_code, 200)
-        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
-
-        from .models import ProcessedPDF
-
-        latest = ProcessedPDF.objects.first()
-        self.assertEqual(latest.kind, ProcessedPDF.KIND_PDFA)
-        self.assertEqual(self.client.session.get("pdfa_version"), "2b")
-        with open(latest.path, "rb") as f:
+        job = Job.objects.first()
+        self.assertEqual(job.kind, ProcessedPDF.KIND_PDFA)
+        self.assertEqual(job.status, Job.STATUS_DONE)
+        self.assertEqual(job.params.get("version"), "2b")
+        with open(job.output.path, "rb") as f:
             self.assertIn(b"pdfaid", f.read())
 
     def test_pdfa_1b_workflow(self):
         self.upload(num_pages=1)
         resp = self.client.post(reverse("pdfa"), {"version": "1b"})
         self.assertEqual(resp.status_code, 302)
-        self.assertEqual(self.client.session.get("pdfa_version"), "1b")
+        from .models import Job
+
+        job = Job.objects.first()
+        self.assertEqual(job.params.get("version"), "1b")
+        self.assertEqual(job.status, Job.STATUS_DONE)
 
     def test_invalid_version_re_renders(self):
         self.upload(num_pages=1)
@@ -1005,7 +997,7 @@ class CompareViewTests(_ViewTestBase):
     def test_full_compare_workflow(self):
         self.upload(name="a.pdf", num_pages=1, text_prefix="alpha")
         self.upload(name="b.pdf", num_pages=1, text_prefix="bravo")
-        from .models import UploadedPDF
+        from .models import Job, ProcessedPDF, UploadedPDF
 
         pdfs = list(UploadedPDF.objects.order_by("uploaded_at"))
         first, second = pdfs[0], pdfs[1]
@@ -1015,19 +1007,12 @@ class CompareViewTests(_ViewTestBase):
             {"second_pdf": str(second.id)},
         )
         self.assertEqual(resp.status_code, 302)
+        self.assertIn("/jobs/", resp.url)
 
-        result = self.client.get(reverse("compare_result"))
-        self.assertEqual(result.status_code, 200)
-
-        download = self.client.get(reverse("download_compare"))
-        self.assertEqual(download.status_code, 200)
-        self.assertEqual(download["Content-Disposition"][:11], "attachment;")
-
-        from .models import ProcessedPDF
-
-        latest = ProcessedPDF.objects.first()
-        self.assertEqual(latest.kind, ProcessedPDF.KIND_COMPARE)
-        stats = self.client.session.get("compare_stats")
+        job = Job.objects.first()
+        self.assertEqual(job.kind, ProcessedPDF.KIND_COMPARE)
+        self.assertEqual(job.status, Job.STATUS_DONE)
+        stats = (job.params or {}).get("stats")
         self.assertIsNotNone(stats)
         self.assertEqual(stats["pages_a"], 1)
         self.assertEqual(stats["pages_b"], 1)
