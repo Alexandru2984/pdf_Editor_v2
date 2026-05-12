@@ -24,7 +24,7 @@ RUN pip install -r requirements.txt && pip install gunicorn
 COPY . .
 
 RUN useradd --create-home --shell /bin/bash app \
-    && mkdir -p /app/media/uploads /app/media/processed /app/staticfiles /app/data \
+    && mkdir -p /app/media/uploads /app/media/processed /app/staticfiles /app/data /app/data/fastembed \
     && chown -R app:app /app
 USER app
 

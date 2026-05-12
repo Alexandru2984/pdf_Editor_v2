@@ -115,8 +115,6 @@ class PDFPreviewModal {
             pdfUrl = window.location.origin + pdfUrl;
         }
         
-        console.log('Loading PDF from:', pdfUrl);
-        
         try {
             // Load PDF
             const loadingTask = pdfjsLib.getDocument({
@@ -124,9 +122,7 @@ class PDFPreviewModal {
                 withCredentials: false
             });
 
-            
             this.pdfDoc = await loadingTask.promise;
-            console.log('PDF loaded successfully, pages:', this.pdfDoc.numPages);
             
             // Reset state
             this.pageNum = 1;
@@ -216,10 +212,8 @@ document.addEventListener('DOMContentLoaded', () => {
     script.type = 'text/javascript';
     
     script.onload = () => {
-        console.log('PDF.js loaded');
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
         pdfModal = new PDFPreviewModal();
-        console.log('PDF Modal initialized');
     };
     
     script.onerror = (e) => {

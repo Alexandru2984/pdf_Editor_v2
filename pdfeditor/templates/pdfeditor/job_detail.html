@@ -105,6 +105,13 @@ async function poll() {
         }
 
         if (data.is_terminal) {
+            // For ops that don't produce a downloadable file (like chat_index),
+            // jump the user back to where they should pick up — e.g. the chat
+            // page — so they don't have to navigate manually.
+            if (data.status === "done" && data.follow_up_url) {
+                window.location.href = data.follow_up_url;
+                return;
+            }
             if (data.status === "failed") {
                 document.getElementById("job-title").textContent = "❌ {% trans 'Failed' %}";
             }
