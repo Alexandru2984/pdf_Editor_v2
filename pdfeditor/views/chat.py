@@ -199,11 +199,17 @@ def _call_groq(messages_payload: list[dict], model: str | None = None) -> tuple[
         return "", f"Malformed Groq response: {exc}"
 
 
+@auth_aware_ratelimit(anon_rate="10/h", user_rate="60/h", method="POST")
 @require_http_methods(["POST"])
 def start_index_view(request, pdf_id):
     """AJAX endpoint — start indexing a PDF without navigating away from
     the chat page. Returns the job_id; the frontend polls
-    ``/jobs/<id>/status/`` and refreshes the checkbox row when done."""
+    ``/jobs/<id>/status/`` and refreshes the checkbox row when done.
+
+    Rate-limited because each call enqueues a Celery job that loads the
+    embedding model and processes the full PDF — expensive enough that
+    a tight cap on anonymous traffic is worth it.
+    """
     pdf = _resolve_pdf(request, pdf_id)
     if pdf is None:
         return JsonResponse({"error": "PDF not found."}, status=404)
