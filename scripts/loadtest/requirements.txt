@@ -1,0 +1,5 @@
+locust>=2.32.0
+# Optional — generates a valid PDF fixture instead of using the
+# minimal-PDF fallback. Already pulled in by the main app, but listed
+# here so the loadtest can run standalone in a thin venv.
+PyMuPDF>=1.27.0
