@@ -86,7 +86,32 @@ REST_FRAMEWORK = {
         "api_key": "300/hour",
     },
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Paginate list endpoints. Without this, /api/v1/outputs/ serialized
+    # every row the user owned — fine for new accounts, catastrophic for
+    # any client that ran heavy traffic for a few minutes. Cap at 100 to
+    # keep the response size bounded.
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 50,
 }
+
+# Redis-backed shared cache. Used by django-ratelimit (so quotas are
+# consistent across gunicorn workers — LocMemCache would fragment them
+# per-process) and as the session store backend below. Falls back to
+# LocMemCache when REDIS_URL is unset (e.g. unit tests).
+_redis_url = os.environ.get("REDIS_CACHE_URL", os.environ.get("REDIS_URL", ""))
+if _redis_url and "test" not in sys.argv:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": _redis_url,
+            "KEY_PREFIX": "pdfeditor",
+            "TIMEOUT": 300,
+        }
+    }
+    # Cached-DB sessions: read from Redis (fast), write-through to DB
+    # (durable). Avoids the DB roundtrip per request the default `db`
+    # engine forces — that was visible at 80+ concurrent users.
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
 
 # Celery: broker is Redis. Result backend uses a separate DB so task results
 # don't churn the broker's keyspace. In tests, CELERY_TASK_ALWAYS_EAGER=True

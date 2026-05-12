@@ -12,6 +12,9 @@ x-app-env: &app-env
   SENTRY_DSN: ${SENTRY_DSN:-}
   CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
   CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
+  # Shared cache + session store. DB index 2 keeps it isolated from
+  # Celery's broker/result keyspaces (which live on 0 and 1).
+  REDIS_CACHE_URL: ${REDIS_CACHE_URL:-redis://redis:6379/2}
   # SMTP — Django reads both EMAIL_* and SMTP_* aliases. Without these in
   # the container, confirmation/reset emails silently fail.
   SMTP_HOST: ${SMTP_HOST:-}
@@ -25,6 +28,7 @@ x-app-env: &app-env
   # Set to "0" only for load testing or local dev. Production keeps it
   # on so per-op anon quotas (5/h on auth, 20/h on ops) still apply.
   RATELIMIT_ENABLE: ${RATELIMIT_ENABLE:-1}
+  GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
 
 services:
   db:

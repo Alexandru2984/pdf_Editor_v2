@@ -1,10 +1,18 @@
 """URL conf for the REST API. Mounted at ``/api/v1/`` from the project urls."""
 
 from django.urls import include, path
+from django.views.decorators.cache import cache_page
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
 from . import ops_views, views
+
+# Schema generation is expensive *and* triggers a race-condition assertion
+# in drf_spectacular under concurrent load (observed in a 500-user locust
+# run: thousands of 500s with "Schema generation REQUIRES a view instance").
+# Caching the rendered response for 5 minutes sidesteps both — schemas
+# don't change between requests anyway. Re-evaluated on each deploy.
+_cached_schema = cache_page(60 * 5)(SpectacularAPIView.as_view())
 
 app_name = "api"
 
@@ -39,7 +47,7 @@ urlpatterns = [
     path("", ops_views.ApiRootView.as_view(), name="root"),
     path("", include(router.urls)),
     path("ops/", include(op_patterns)),
-    path("schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("schema/", _cached_schema, name="schema"),
     path("docs/", SpectacularSwaggerView.as_view(url_name="api:schema"), name="docs"),
     path("redoc/", SpectacularRedocView.as_view(url_name="api:schema"), name="redoc"),
 ]
