@@ -1,7 +1,0 @@
-Method,Name,Error,Occurrences,First Seen,Last Seen
-GET,GET /api/v1/docs/,HTTPError('500 Server Error: Internal Server Error for url: GET /api/v1/docs/'),138,2026-05-12T21:11:42Z,2026-05-12T21:14:03Z
-GET,GET /,HTTPError('500 Server Error: Internal Server Error for url: GET /'),727,2026-05-12T21:11:42Z,2026-05-12T21:14:04Z
-POST,POST /upload/,CatchResponseError('upload returned 500'),572,2026-05-12T21:11:39Z,2026-05-12T21:14:04Z
-POST,POST /compress/,CatchResponseError('compress returned 500'),68,2026-05-12T21:11:44Z,2026-05-12T21:14:04Z
-GET,GET /api/v1/,HTTPError('429 Client Error: Too Many Requests for url: GET /api/v1/'),787,2026-05-12T21:11:10Z,2026-05-12T21:14:09Z
-GET,GET /api/v1/docs/,HTTPError('429 Client Error: Too Many Requests for url: GET /api/v1/docs/'),426,2026-05-12T21:11:10Z,2026-05-12T21:14:09Z

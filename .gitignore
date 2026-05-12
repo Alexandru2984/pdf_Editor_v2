@@ -56,3 +56,8 @@ htmlcov/
 prompt.txt
 test.pdf
 *.bak
+
+# Load test output — rapoartele/CSV-urile de la fiecare run sunt artefacte locale,
+# nu state versionat. Commit doar locustfile-urile + README + benchmarks.md.
+scripts/loadtest/*.csv
+scripts/loadtest/*.html
