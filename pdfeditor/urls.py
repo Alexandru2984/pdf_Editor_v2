@@ -60,6 +60,7 @@ urlpatterns = [
     path("share/create/", views.create_share_link_view, name="create_share_link"),
     path("share/revoke/<str:token>/", views.revoke_share_link_view, name="revoke_share_link"),
     path("s/<str:token>/", views.public_share_download_view, name="public_share_download"),
+    path("metrics", views.metrics_view, name="metrics"),
     path("jobs/", views.jobs_list_view, name="jobs_list"),
     path("jobs/<uuid:job_id>/", views.job_detail_view, name="job_detail"),
     path("jobs/<uuid:job_id>/status/", views.job_status_view, name="job_status"),

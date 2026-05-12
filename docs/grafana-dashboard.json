@@ -1,0 +1,122 @@
+{
+  "title": "PDF Editor — Operations & RAG",
+  "uid": "pdfeditor-ops",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["pdfeditor", "ops", "rag"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": { "text": "Prometheus", "value": "prometheus" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Requests / sec (last 5 min)",
+      "datasource": { "type": "prometheus", "uid": "$datasource" },
+      "targets": [{ "expr": "sum(rate(django_http_requests_total_by_view_transport_method_total[5m]))", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "p95 latency (HTTP, last 5 min)",
+      "datasource": { "type": "prometheus", "uid": "$datasource" },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(django_http_requests_latency_including_middlewares_seconds_bucket[5m])) by (le))", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Errors / 5xx ratio",
+      "datasource": { "type": "prometheus", "uid": "$datasource" },
+      "targets": [{ "expr": "sum(rate(django_http_responses_total_by_status_total{status=~\"5..\"}[5m])) / sum(rate(django_http_responses_total_by_status_total[5m]))", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } },
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Jobs in flight (queued + running)",
+      "datasource": { "type": "prometheus", "uid": "$datasource" },
+      "targets": [{ "expr": "sum(pdfeditor_job_queue_depth)", "refId": "A" }],
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Ops / sec by kind",
+      "datasource": { "type": "prometheus", "uid": "$datasource" },
+      "targets": [{ "expr": "sum(rate(pdfeditor_op_total[5m])) by (kind)", "refId": "A", "legendFormat": "{{kind}}" }],
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Op duration p50 / p95 / p99 by kind",
+      "datasource": { "type": "prometheus", "uid": "$datasource" },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(pdfeditor_op_duration_seconds_bucket[5m])) by (kind, le))", "refId": "A", "legendFormat": "{{kind}} p50" },
+        { "expr": "histogram_quantile(0.95, sum(rate(pdfeditor_op_duration_seconds_bucket[5m])) by (kind, le))", "refId": "B", "legendFormat": "{{kind}} p95" },
+        { "expr": "histogram_quantile(0.99, sum(rate(pdfeditor_op_duration_seconds_bucket[5m])) by (kind, le))", "refId": "C", "legendFormat": "{{kind}} p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Job outcomes / sec (done vs failed)",
+      "datasource": { "type": "prometheus", "uid": "$datasource" },
+      "targets": [{ "expr": "sum(rate(pdfeditor_job_total[5m])) by (kind, status)", "refId": "A", "legendFormat": "{{kind}} · {{status}}" }],
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Chat latency p50 / p95 by model",
+      "datasource": { "type": "prometheus", "uid": "$datasource" },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(pdfeditor_chat_latency_seconds_bucket[5m])) by (model, le))", "refId": "A", "legendFormat": "{{model}} p50" },
+        { "expr": "histogram_quantile(0.95, sum(rate(pdfeditor_chat_latency_seconds_bucket[5m])) by (model, le))", "refId": "B", "legendFormat": "{{model}} p95" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Embeddings created (counter)",
+      "datasource": { "type": "prometheus", "uid": "$datasource" },
+      "targets": [{ "expr": "pdfeditor_embeddings_created_total", "refId": "A" }],
+      "gridPos": { "x": 0, "y": 20, "w": 6, "h": 4 }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Chat messages / 5 min",
+      "datasource": { "type": "prometheus", "uid": "$datasource" },
+      "targets": [{ "expr": "sum(increase(pdfeditor_chat_message_total[5m]))", "refId": "A" }],
+      "gridPos": { "x": 6, "y": 20, "w": 6, "h": 4 }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Job queue depth by status",
+      "datasource": { "type": "prometheus", "uid": "$datasource" },
+      "targets": [{ "expr": "pdfeditor_job_queue_depth", "refId": "A", "legendFormat": "{{status}}" }],
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 4 }
+    }
+  ]
+}

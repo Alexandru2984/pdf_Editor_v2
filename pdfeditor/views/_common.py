@@ -78,6 +78,9 @@ def record_output(request: HttpRequest, *, kind: str, path: str, source=None) ->
     Also writes an immutable AuditLog entry capturing who ran the op and
     where from. Audit failures are swallowed — they must never block the
     user's successful operation."""
+    from ..metrics import OP_TOTAL
+
+    OP_TOTAL.labels(kind=kind, outcome="success").inc()
     output = ProcessedPDF.objects.create(
         **_owner_kwargs(request),
         kind=kind,

@@ -27,7 +27,17 @@ cd "$(dirname "$0")/.."
 # (new services, volume mounts, image upgrades) actually land. The Docker
 # image itself is pulled from GHCR below; only the orchestration glue
 # comes from git.
+#
+# If the working tree has uncommitted local edits, refuse to nuke them.
+# This is the safer default for a VPS where the maintainer occasionally
+# edits files in-place — losing those silently has burned us before.
 echo "→ Pulling repo changes from origin/main…"
+if ! git diff --quiet HEAD 2>/dev/null; then
+    echo "  ⚠ working tree has uncommitted changes — refusing to reset."
+    echo "  Commit or stash them, then re-run scripts/deploy.sh."
+    git status --short
+    exit 1
+fi
 git fetch --depth=1 origin main
 git reset --hard origin/main
 

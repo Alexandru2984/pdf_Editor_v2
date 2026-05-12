@@ -290,11 +290,19 @@ def chat_message_view(request, pdf_id):
         logger.exception("Query embedding failed")
         return JsonResponse({"error": f"Embedding failed: {exc.__class__.__name__}"}, status=500)
 
+    import time
+
+    from ..metrics import CHAT_LATENCY_SECONDS, CHAT_MESSAGE_TOTAL
+
+    started = time.monotonic()
     chunks = _retrieve(selected_ids, qvec)
     multi = len(selected_ids) > 1
     answer, error = _call_groq(_build_rag_prompt(question, chunks, multi_doc=multi), model=model)
+    CHAT_LATENCY_SECONDS.labels(model=model).observe(time.monotonic() - started)
     if error:
+        CHAT_MESSAGE_TOTAL.labels(model=model, outcome="failure").inc()
         return JsonResponse({"error": error}, status=502)
+    CHAT_MESSAGE_TOTAL.labels(model=model, outcome="success").inc()
 
     citations = [
         {

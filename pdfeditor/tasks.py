@@ -14,6 +14,7 @@ from celery import shared_task
 from celery.exceptions import SoftTimeLimitExceeded
 from django.utils import timezone
 
+from .metrics import EMBEDDINGS_CREATED, JOB_TOTAL, OP_DURATION_SECONDS, OP_TOTAL
 from .models import Job, ProcessedPDF, UploadedPDF
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,10 @@ def _record_output(job: Job, kind: str, out_path: str) -> ProcessedPDF:
     job.progress = 100
     job.finished_at = timezone.now()
     job.save(update_fields=["output", "status", "progress", "finished_at"])
+    JOB_TOTAL.labels(kind=kind, status="done").inc()
+    if job.started_at:
+        OP_DURATION_SECONDS.labels(kind=kind).observe((job.finished_at - job.started_at).total_seconds())
+    OP_TOTAL.labels(kind=kind, outcome="success").inc()
     return output
 
 
@@ -49,6 +54,8 @@ def _fail(job: Job, error: str) -> None:
     job.error_message = error[:500]
     job.finished_at = timezone.now()
     job.save(update_fields=["status", "error_message", "finished_at"])
+    JOB_TOTAL.labels(kind=job.kind, status="failed").inc()
+    OP_TOTAL.labels(kind=job.kind, outcome="failure").inc()
 
 
 def _safe_run(job_id: str, kind: str, run):
@@ -179,6 +186,7 @@ def run_chat_index_task(job_id: str) -> str | None:
             ],
             batch_size=200,
         )
+        EMBEDDINGS_CREATED.inc(len(chunks))
     except SoftTimeLimitExceeded:
         _fail(job, "Indexing timed out.")
         return None

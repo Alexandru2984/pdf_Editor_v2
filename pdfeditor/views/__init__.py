@@ -103,6 +103,7 @@ from .layout_ops import (
     watermark_result_view,
     watermark_view,
 )
+from .metrics import metrics_view
 from .profile import (
     create_api_key_view,
     delete_account_view,
@@ -217,6 +218,7 @@ __all__ = [
     "healthz",
     "readyz",
     "admin_health_view",
+    "metrics_view",
     "register_view",
     "confirm_email_view",
     "resend_confirmation_view",

@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "axes",
     "rest_framework",
     "drf_spectacular",
+    "django_prometheus",
     "pdfeditor",
 ]
 
@@ -124,6 +125,9 @@ SPECTACULAR_SETTINGS = {
 }
 
 MIDDLEWARE = [
+    # django-prometheus must wrap everything: Before starts the timer,
+    # After records latency + per-view counters. Keep them as outermost.
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "pdfeditor.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -134,6 +138,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "axes.middleware.AxesMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -296,6 +301,13 @@ SESSION_COOKIE_SAMESITE = "Lax"
 
 # Sentry — only initialised when SENTRY_DSN is set in the environment.
 # Tests skip init explicitly to avoid spurious network attempts.
+# Prometheus /metrics endpoint allowlist — comma-separated IPs that may
+# scrape. Empty in DEBUG = open, empty in prod = closed (404). Default
+# allows just localhost so an in-VPS Prometheus / Grafana Agent can hit
+# it; for Grafana Cloud, add their pull endpoint to the env var.
+_metrics_allow_raw = os.environ.get("PROMETHEUS_METRICS_ALLOW", "127.0.0.1")
+PROMETHEUS_METRICS_ALLOW = {ip.strip() for ip in _metrics_allow_raw.split(",") if ip.strip()}
+
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 if SENTRY_DSN and not TESTING:
     sentry_sdk.init(
