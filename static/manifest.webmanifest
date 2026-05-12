@@ -1,0 +1,27 @@
+{
+    "name": "PDF Editor",
+    "short_name": "PDF Editor",
+    "description": "Self-hosted PDF toolbox with REST API, async pipeline, and AI chat over your documents.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#ffffff",
+    "theme_color": "#2563eb",
+    "lang": "en",
+    "categories": ["productivity", "utilities"],
+    "icons": [
+        {
+            "src": "/static/images/logo.jpg",
+            "sizes": "192x192",
+            "type": "image/jpeg",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/images/logo.jpg",
+            "sizes": "512x512",
+            "type": "image/jpeg",
+            "purpose": "any"
+        }
+    ]
+}
