@@ -1,0 +1,7 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+GET,GET /api/v1/outputs/,HTTPError('429 Client Error: Too Many Requests for url: GET /api/v1/outputs/'),85,2026-05-12T21:39:29Z,2026-05-12T21:42:17Z
+POST,POST /flatten/,HTTPError('403 Client Error: Forbidden for url: POST /flatten/'),695,2026-05-12T21:37:35Z,2026-05-12T21:42:20Z
+GET,GET /api/v1/,HTTPError('429 Client Error: Too Many Requests for url: GET /api/v1/'),186,2026-05-12T21:37:46Z,2026-05-12T21:42:16Z
+GET,GET /api/v1/pdfs/,HTTPError('429 Client Error: Too Many Requests for url: GET /api/v1/pdfs/'),70,2026-05-12T21:39:34Z,2026-05-12T21:42:21Z
+GET,GET /api/v1/docs/,HTTPError('429 Client Error: Too Many Requests for url: GET /api/v1/docs/'),123,2026-05-12T21:38:04Z,2026-05-12T21:42:20Z
+POST,POST /to-images/,HTTPError('403 Client Error: Forbidden for url: POST /to-images/'),25,2026-05-12T21:40:26Z,2026-05-12T21:42:20Z

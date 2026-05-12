@@ -72,10 +72,15 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
-    "DEFAULT_THROTTLE_CLASSES": [
-        "pdfeditor.api.throttles.ApiKeyRateThrottle",
-        "rest_framework.throttling.AnonRateThrottle",
-    ],
+    # Throttle classes — empty list when RATELIMIT_ENABLE=0 (load testing).
+    "DEFAULT_THROTTLE_CLASSES": (
+        [
+            "pdfeditor.api.throttles.ApiKeyRateThrottle",
+            "rest_framework.throttling.AnonRateThrottle",
+        ]
+        if os.environ.get("RATELIMIT_ENABLE", "1").lower() not in ("0", "false", "no")
+        else []
+    ),
     "DEFAULT_THROTTLE_RATES": {
         "anon": "20/hour",
         "api_key": "300/hour",
@@ -307,6 +312,11 @@ SESSION_COOKIE_SAMESITE = "Lax"
 # it; for Grafana Cloud, add their pull endpoint to the env var.
 _metrics_allow_raw = os.environ.get("PROMETHEUS_METRICS_ALLOW", "127.0.0.1")
 PROMETHEUS_METRICS_ALLOW = {ip.strip() for ip in _metrics_allow_raw.split(",") if ip.strip()}
+
+# django-ratelimit kill-switch. Default on; flip to "0"/"false" only for
+# load testing or local dev. Don't disable in prod — the per-op anon
+# quotas are how we keep upload/compress from getting hammered.
+RATELIMIT_ENABLE = os.environ.get("RATELIMIT_ENABLE", "1").lower() not in ("0", "false", "no")
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 if SENTRY_DSN and not TESTING:
