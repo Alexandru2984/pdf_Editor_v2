@@ -8,6 +8,11 @@ updates:
     labels:
       - "dependencies"
       - "python"
+    ignore:
+      # Stay on Django 4.2 LTS until we plan a migration to 5.2 LTS.
+      # Major bumps skip required intermediate migrations.
+      - dependency-name: "Django"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
