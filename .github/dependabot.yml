@@ -9,8 +9,8 @@ updates:
       - "dependencies"
       - "python"
     ignore:
-      # Stay on Django 4.2 LTS until we plan a migration to 5.2 LTS.
-      # Major bumps skip required intermediate migrations.
+      # Stay on Django 5.2 LTS until 5.x EOL in April 2028. 6.x is non-LTS
+      # and requires Python 3.12+, which would shrink our CI matrix.
       - dependency-name: "Django"
         update-types: ["version-update:semver-major"]
 
