@@ -73,7 +73,7 @@ jobs:
       # CRITICAL OS-package CVEs so we don't ship a known-vulnerable
       # container to prod. Pinned to the image we just pushed by short_sha.
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.short_sha }}
           format: table
