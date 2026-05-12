@@ -4008,3 +4008,61 @@ msgstr "pagina"
 
 msgid "Indexing this PDF for chat. Takes a few seconds — we'll bring you back."
 msgstr "Se indexează PDF-ul pentru chat. Durează câteva secunde — te aducem înapoi."
+
+#, python-format
+msgid "%(count)s document, %(chunks)s chunks in context."
+msgid_plural "%(count)s documents, %(chunks)s chunks in context."
+msgstr[0] "%(count)s document, %(chunks)s fragmente în context."
+msgstr[1] "%(count)s documente, %(chunks)s fragmente în context."
+msgstr[2] "%(count)s de documente, %(chunks)s de fragmente în context."
+
+msgid "Documents & model"
+msgstr "Documente & model"
+
+msgid "Include these PDFs in the answer:"
+msgstr "Include aceste PDF-uri în răspuns:"
+
+msgid "index →"
+msgstr "indexează →"
+
+msgid "AI model:"
+msgstr "Model AI:"
+
+msgid "Bigger models are more accurate but slower."
+msgstr "Modelele mari sunt mai precise dar mai lente."
+
+msgid "Hi! Ask me anything about the documents above. I cite my sources."
+msgstr "Salut! Întreabă-mă orice despre documentele de mai sus. Citez sursele."
+
+msgid "document selected"
+msgstr "document selectat"
+
+msgid "documents selected"
+msgstr "documente selectate"
+
+msgid "Clear conversation"
+msgstr "Șterge conversația"
+
+msgid "Clear the conversation?"
+msgstr "Ștergi conversația?"
+
+msgid "Bigger = smarter but slower."
+msgstr "Mai mare = mai inteligent dar mai lent."
+
+msgid "index"
+msgstr "indexează"
+
+msgid "indexing"
+msgstr "indexez..."
+
+msgid "indexed"
+msgstr "indexat"
+
+msgid "retry"
+msgstr "reîncearcă"
+
+msgid "Indexing failed:"
+msgstr "Indexarea a eșuat:"
+
+msgid "source(s)"
+msgstr "surse"

@@ -23,6 +23,14 @@ LOCAL_IMAGE="pdfeditor:latest"
 
 cd "$(dirname "$0")/.."
 
+# Pull the latest compose file + scripts from git so structural changes
+# (new services, volume mounts, image upgrades) actually land. The Docker
+# image itself is pulled from GHCR below; only the orchestration glue
+# comes from git.
+echo "→ Pulling repo changes from origin/main…"
+git fetch --depth=1 origin main
+git reset --hard origin/main
+
 echo "→ Saving current latest as rollback…"
 if docker image inspect "$LOCAL_IMAGE" >/dev/null 2>&1; then
     docker tag "$LOCAL_IMAGE" pdfeditor:rollback
@@ -34,11 +42,11 @@ docker pull "${REGISTRY_IMAGE}:${TAG}"
 echo "→ Retagging as ${LOCAL_IMAGE}…"
 docker tag "${REGISTRY_IMAGE}:${TAG}" "$LOCAL_IMAGE"
 
-echo "→ Restarting web + worker containers…"
-docker compose up -d --no-build web worker
+echo "→ Bringing up all services (picks up compose changes)…"
+docker compose up -d --no-build
 
 echo "→ Waiting for healthy startup…"
 sleep 8
-docker compose ps web worker
+docker compose ps
 
 echo "✓ Deployed ${REGISTRY_IMAGE}:${TAG}"

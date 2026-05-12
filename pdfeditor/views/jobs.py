@@ -40,6 +40,10 @@ def job_detail_view(request, job_id):
 
 def job_status_view(request, job_id):
     """Lightweight JSON polled by the status page every couple of seconds."""
+    from django.urls import reverse
+
+    from ..models import ProcessedPDF
+
     job = _user_job(request, job_id)
     payload = {
         "id": str(job.id),
@@ -54,6 +58,10 @@ def job_status_view(request, job_id):
     }
     if job.kind == "compare" and (job.params or {}).get("stats"):
         payload["stats"] = job.params["stats"]
+    # chat_index has no ProcessedPDF output — instead point the user back at
+    # the chat page for the source PDF once indexing is done.
+    if job.kind == ProcessedPDF.KIND_CHAT_INDEX and job.status == Job.STATUS_DONE and job.source_id:
+        payload["follow_up_url"] = reverse("chat", args=[job.source_id])
     return JsonResponse(payload)
 
 
