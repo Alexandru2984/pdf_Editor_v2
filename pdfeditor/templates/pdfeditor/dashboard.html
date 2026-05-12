@@ -12,13 +12,13 @@
 
     <div class="upload-zone" id="drop-zone">
         <div class="upload-icon">📁</div>
-        <h2>{% trans "Upload Your PDF" %}</h2>
-        <p>{% trans "Drag & drop your PDF here or click to browse" %}</p>
+        <h2>{% trans "Upload Your PDFs" %}</h2>
+        <p>{% trans "Drag & drop one or more PDFs here, or click to browse (hold Ctrl/Shift in the picker to select multiple)" %}</p>
         <form method="post" action="{% url 'upload' %}" enctype="multipart/form-data" id="upload-form">
             {% csrf_token %}
-            <input type="file" name="pdf_file" id="file-input" accept=".pdf" multiple style="display: none;">
+            <input type="file" name="pdf_file" id="file-input" accept=".pdf,application/pdf" multiple style="display: none;">
             <button type="button" class="btn btn-primary btn-large" onclick="document.getElementById('file-input').click()">
-                {% trans "Choose File" %}
+                {% trans "Choose Files" %}
             </button>
         </form>
     </div>
