@@ -1,229 +1,323 @@
 # PDF Editor v2
 
 [![tests](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/test.yml/badge.svg)](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/test.yml)
+[![deploy](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml/badge.svg)](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml)
+![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
+![django](https://img.shields.io/badge/django-5.2%20LTS-092e20)
+![tests](https://img.shields.io/badge/tests-665%20passing-brightgreen)
+![security](https://img.shields.io/badge/security-bandit%20%2B%20pip--audit%20%2B%20trivy-blue)
+![license](https://img.shields.io/badge/license-MIT-green)
 
-Django web app for editing PDFs in-place. Find/replace text, split/merge/compress,
-watermark, rotate, page numbers, OCR, AcroForm fill, and AI-powered rephrase via
-Ollama (local) or Groq (cloud). Works with or without an account — anonymous
-sessions and registered users are isolated from each other at the query layer.
+> **A self-hosted PDF toolbox with REST API, async pipeline, and AI chat over your documents.**
 
-**Live demo:** <https://pdf.micutu.com>
+**Live:** <https://pdf.micutu.com>  ·  **API docs:** <https://pdf.micutu.com/api/v1/docs/>
 
-## What makes this non-trivial
+PDF Editor is a Django web app that turns 25+ PDF operations into a single
+self-hosted service — split, merge, OCR, redact, sign, compare, convert,
+even **chat with your PDFs** using a local vector store + LLM. Built to be
+production-grade: REST API with OpenAPI schema, async job pipeline on Celery,
+per-user storage quotas, full audit log, share links, and a security CI
+gate that blocks deploys on critical CVEs.
 
-Editing text *inside* an existing PDF is fundamentally harder than generating a
-new one. PyMuPDF operates on coordinate rectangles, not paragraphs, so replacing
-"lorem ipsum" in a document means:
+---
 
-1. Finding the exact bounding box of the original span.
-2. Detecting the paragraph and column it belongs to (line gap, font size, alignment).
-3. Redacting that area and inserting replacement text at the same coordinates with
-   a font that approximates the original.
-4. In **FLOW mode**, shifting all text below by the height delta — and *extending
-   the page* if the new text overflows.
+## Highlights
 
-The interesting code lives in `pdfeditor/pdf_processor/_layout.py` and
-`pdfeditor/pdf_processor/edit.py`.
+- **🧰 25+ PDF operations** — find/replace, split, merge, compress, watermark,
+  rotate, page numbers, OCR layer, AcroForm fill, password protect/remove,
+  crop, flatten, redact, PDF/A, compare, outline editor, PDF→DOCX, PDF→images,
+  images→PDF, metadata editor, reorder, digital signature (PKCS#7 + LTV + TSA)
+- **🤖 Chat with PDF (RAG)** — `pgvector` for retrieval, multilingual ONNX
+  embeddings (`fastembed`), Groq LLM with model picker and live citations
+- **🔌 REST API + OpenAPI** — `/api/v1/docs/` Swagger UI, `/api/v1/redoc/` Redoc,
+  per-user API keys, throttling, full operation coverage
+- **⚡ Async pipeline** — Celery + Redis for long ops (OCR/PDF-A/Compare/Chat
+  indexing); web returns 202 with `job_id`, frontend polls live status
+- **🔐 Production-grade auth** — registration + email confirmation, password
+  reset, account export (GDPR), TOTP-free 2FA via signed tokens; storage
+  quotas (50MB anon / 500MB user); share links with TTL + download caps
+- **📊 Audit + observability** — `AuditLog` model for every operation
+  (who/what/when/IP/UA), Sentry error tracking, request-ID tracing
+- **🚦 Auto-deploy** — push to main → GitHub Actions builds image → pushes
+  to GHCR → SSH deploys to VPS → restarts containers, all gated by tests +
+  Trivy image scan
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    Client[Browser] -->|HTTPS| Nginx[nginx]
-    Nginx -->|Unix socket| GU[gunicorn + uvicorn workers]
+    Client[Browser / API client] -->|HTTPS| CF[Cloudflare]
+    CF --> Nginx[nginx · CSP, rate limit, TLS]
+    Nginx -->|HTTP| Web[Django / gunicorn + uvicorn]
 
-    subgraph Django ["Django / ASGI"]
-        MW[RequestIDMiddleware<br/>+ axes + CSRF]
-        Views[Views<br/>upload · edit · split · merge<br/>compress · watermark · rotate<br/>page-numbers · extract · OCR<br/>rephrase · form-fill · history<br/>auth · health]
-        AuthFilter[owner_filter<br/>user OR session_key]
-        ORM[(Postgres / SQLite)]
-        PDFProc[pdf_processor<br/>SAFE + FLOW · ops · forms<br/>extract · layout]
-        AIProv[AIProvider<br/>OllamaProvider · GroqProvider]
-
-        MW --> Views
-        Views --> AuthFilter
-        AuthFilter --> ORM
-        Views --> PDFProc
-        Views -. async .-> AIProv
+    subgraph Compose ["docker compose"]
+        Web -->|sync ops| OPS[pdf_processor<br/>compress · merge · sign · …]
+        Web -->|enqueue| Redis[(Redis<br/>broker + result)]
+        Redis --> Worker[Celery worker<br/>OCR · PDF-A · Compare · RAG index]
+        Worker --> OPS
+        Web -->|ORM| DB[(Postgres + pgvector)]
+        Worker --> DB
+        Web -->|chat retrieval| DB
     end
 
-    AIProv -->|httpx async| Groq[Groq API]
-    AIProv -->|httpx async| Ollama[Ollama local]
-    PDFProc -->|tesseract subprocess| OCR[Tesseract]
-    Views -->|errors| Sentry[Sentry]
-    Views <-->|/healthz · /readyz| LB[Load balancer]
+    Worker -->|tesseract| OCR[Tesseract OCR]
+    Worker -->|ghostscript| GS[Ghostscript PDF/A]
+    Web -->|RAG embeds local| FE[fastembed ONNX]
+    Web -->|chat LLM| Groq[Groq API]
+    Web -->|errors| Sentry[Sentry]
 
-    Cleanup[systemd timer<br/>cleanup_old_pdfs] --> ORM
+    GHA[GitHub Actions] -->|push image| GHCR[(ghcr.io)]
+    GHA -->|ssh deploy.sh| Web
 ```
 
+## Tech stack
+
+**Backend** Python 3.12 · Django 5.2 LTS · DRF + drf-spectacular · Celery 5 ·
+PyMuPDF (fitz) · pyHanko (digital signatures) · pdf2docx · pytesseract ·
+Pillow · pgvector · fastembed (ONNX) · httpx · django-axes · django-ratelimit
+
+**Infra** PostgreSQL 16 + pgvector · Redis 7 · Nginx · gunicorn (uvicorn
+workers) · Docker Compose · GitHub Actions · GitHub Container Registry ·
+Cloudflare · systemd timers (cleanup)
+
+**LLM / AI** Groq API (Llama 3.3 70B, GPT-OSS 120B, Llama 4 Scout) · Ollama
+(local fallback) · HuggingFace `paraphrase-multilingual-MiniLM-L12-v2` (RAG)
+
+**Security** Bandit (SAST) · pip-audit (dep CVEs) · Trivy (image scan) ·
+SHA-256 API key hashes · CSP enforced · HSTS preload · `realpath` path
+guard · audit log
+
+## Features at a glance
+
+| Category | Operations |
+|----------|------------|
+| **Text** | Find & replace (SAFE + FLOW), redact, AI rephrase |
+| **Layout** | Crop, flatten, rotate, page numbers, watermark, reorder/delete pages, edit bookmarks/outline |
+| **Convert** | PDF→DOCX, PDF→images (PNG/JPG with DPI), images→PDF |
+| **Compose** | Split, merge, compare two PDFs |
+| **Security** | Password protect, remove password, digital signature (PKCS#7 / PAdES B-B/B-T/B-LT/B-LTA), verify signatures |
+| **Compliance** | PDF/A-1b · PDF/A-2b (via ghostscript) |
+| **Recognition** | OCR text extraction · embed OCR text layer (searchable PDF) |
+| **Metadata** | Read + edit title/author/keywords/dates |
+| **Forms** | Detect AcroForm fields, fill, optional flatten |
+| **AI** | Chat with PDF (RAG) · rephrase regions · auto-summarize via Groq |
+| **Sharing** | Public token links with TTL + download caps |
+| **Admin** | API keys, audit log, storage quotas, history |
+
+## REST API quick start
+
+```bash
+# Get an API key from /accounts/profile/ → "Create API key"
+export API_KEY="your_token_here"
+export BASE="https://pdf.micutu.com/api/v1"
+
+# Upload a PDF
+curl -X POST -H "X-API-Key: $API_KEY" \
+  -F "pdf_file=@invoice.pdf" $BASE/pdfs/
+
+# Compress it
+curl -X POST -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{"pdf_id":"<uuid>","quality":"medium"}' \
+  $BASE/ops/compress/
+
+# Queue OCR (returns 202 + job_id, poll /jobs/<id>/ for status)
+curl -X POST -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{"pdf_id":"<uuid>","language":"eng+ron","dpi":200}' \
+  $BASE/ops/searchable/
+
+# Chat with an indexed PDF
+curl -X POST -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{"pdf_id":"<uuid>","message":"Summarize the conclusion"}' \
+  $BASE/ops/chat/
 ```
-pdf_project/            Django project (settings, urls, wsgi, asgi)
-pdfeditor/
-├── models.py           UploadedPDF, ProcessedPDF — owned by user OR anon session
-├── ai_service.py       OllamaProvider + GroqProvider, sync + async (httpx) variants
-├── ratelimiting.py     auth_aware_ratelimit — per-user when auth, per-IP otherwise
-├── middleware.py       Request-ID injection (X-Request-Id) + log filter
-├── email_utils.py      Confirmation token signing + send helpers
-├── pdf_processor/      PDF manipulation package (no Django imports → standalone)
-│   ├── _common.py      Paths, page-range parsing, font/color mapping
-│   ├── _layout.py      Span/Line/Block model, paragraph detection, block shifting
-│   ├── edit.py         SAFE + FLOW text replacement, find/replace, coord rephrase
-│   ├── ops.py          Split, merge, compress, watermark, rotate, page numbers
-│   ├── extract.py      Text-layer + OCR extraction
-│   └── forms.py        AcroForm field detection + filling (with optional flatten)
-├── views/              HTTP views grouped by concern
-│   ├── _common.py      owner_filter Q-pattern, guarded media serving
-│   ├── auth.py         Register, email confirmation, resend
-│   ├── upload.py       Magic-byte + page-count validation
-│   ├── edit.py         Find/replace + result + preview
-│   ├── basic_ops.py    Split / merge / compress
-│   ├── layout_ops.py   Watermark / rotate / page-numbers
-│   ├── extract.py      Text + OCR (rate-limited)
-│   ├── rephrase.py     AI rephrase (async preview endpoint)
-│   ├── form_fill.py    AcroForm fill + flatten
-│   ├── history.py      Per-owner history of processed PDFs
-│   └── health.py       /healthz (liveness) + /readyz (DB check)
-├── templates/          Django templates (PDF.js viewer + auth flow)
-└── management/commands/
-    └── cleanup_old_pdfs.py
+
+Full spec at `/api/v1/schema/` (OpenAPI 3.0 YAML), interactive docs at
+`/api/v1/docs/` (Swagger UI) and `/api/v1/redoc/` (Redoc).
+
+## RAG (Chat with PDF) — how it works
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant W as Web (Django)
+    participant K as Worker (Celery)
+    participant D as Postgres + pgvector
+    participant L as Groq LLM
+
+    U->>W: GET /chat/<pdf_id>/
+    W->>D: Embedding rows for this PDF?
+    alt no embeddings yet
+        W->>K: enqueue chat_index Job
+        W-->>U: redirect /jobs/<id>/ (auto-poll)
+        K->>D: bulk insert 384-dim vectors (HNSW cos)
+    end
+
+    U->>W: POST /chat/<pdf_id>/message/ {message}
+    W->>W: embed(query) via fastembed ONNX
+    W->>D: top-K cosine similar across selected PDFs
+    W->>L: system prompt + retrieved excerpts + question
+    L-->>W: answer (cites [1] [2])
+    W-->>U: {answer, citations[]}
 ```
 
-## Feature overview
+Multi-PDF retrieval — pick several already-indexed documents and the query
+ranks chunks across all of them, with per-citation document attribution.
 
-| Area | Description |
-|------|-------------|
-| Auth | Register · email confirmation · login/logout · password change/reset · resend confirmation |
-| Find & replace | Document-wide, case-sensitive/insensitive, page-range filter, SAFE + FLOW modes |
-| AI rephrase | Select region → Ollama (local) or Groq (cloud) → paste back with paragraph reflow |
-| Split / merge | Arbitrary page ranges; merge multiple uploads in chosen order |
-| Compress | JPEG re-encoding of embedded images, 3 quality presets |
-| Watermark | Text or image, 9 positions, opacity + rotation |
-| Rotate | 90 / 180 / 270° on selected pages |
-| Page numbers | Position + format + font size + start page |
-| Extract / OCR | Text-layer extraction or Tesseract OCR fallback |
-| Form fill | Detect AcroForm widgets, fill text/checkbox/radio/combobox, optional flatten |
-| History | Per-user (or per-session for anon) list of every output, with preview/download/delete |
+## Async job pipeline
 
-## Ownership model
+Long-running ops (OCR, PDF/A, Compare, RAG indexing) run in a separate Celery
+worker container. The flow:
 
-Anonymous users get a Django `session_key`; authenticated users get a `User` FK.
-Both fields exist on the same row, and a single `owner_filter(request)` helper
-returns the appropriate `Q()` for every query, so:
+1. Web view validates input, creates a `Job` row (`status=queued`), calls
+   `task.delay(job_id)`, returns **HTTP 302** (web) or **202** (API) with the
+   job id.
+2. Frontend polls `/jobs/<id>/status/` every 2s — lightweight JSON endpoint
+   that shows `status` (`queued|running|done|failed`), `progress`, optional
+   `error_message`, and `follow_up_url` once done.
+3. Worker picks up the task, updates `status=running`, runs the underlying
+   `pdf_processor` function, on success creates a `ProcessedPDF` row and
+   links it back to the `Job` (`status=done`), on failure stores a friendly
+   `error_message`.
+4. Result page detects `status=done`, auto-redirects to download or follow-up.
 
-- Anonymous PDFs never appear to a logged-in user (or to *another* anonymous browser).
-- Logging in does **not** absorb the previous anonymous session's PDFs — they
-  remain anon-scoped (and get cleaned up on schedule).
-- A user's PDFs persist across browsers, devices, and session resets.
-
-The same filter gates `/media/` access — direct URL guesses return 404 unless
-the row matches the requester's user/session.
-
-## Operations & observability
-
-- **Health endpoints**: `/healthz` (liveness) and `/readyz` (DB ping).
-- **Request-ID middleware**: every response carries `X-Request-Id` (a UUID4 or the
-  inbound `X-Request-Id` header if the upstream proxy supplies one). The same ID
-  is injected into every `pdfeditor.*` log line via a `contextvar` filter.
-- **Sentry**: enabled when `SENTRY_DSN` is set. Captures errors and 0.1× of
-  transactions; tagged with environment.
-- **Auth-aware rate limiting**: `pdfeditor.ratelimiting.auth_aware_ratelimit` keys
-  by `user.pk` for authenticated requests and by `REMOTE_ADDR` otherwise, with
-  separate quotas per state. OCR is the tightest bucket (10/h anon, 40/h user)
-  because rasterising at 300 DPI then running tesseract is CPU-expensive.
+In CI, `CELERY_TASK_ALWAYS_EAGER=True` runs tasks inline so tests don't need
+a broker.
 
 ## Security posture
 
-`python manage.py check --deploy --fail-level WARNING` reports zero warnings.
-
-- `SECRET_KEY`, `ALLOWED_HOSTS`, secrets read from `.env` (chmod 600 in prod).
-- HTTPS hardening: `SECURE_SSL_REDIRECT`, HSTS preload, `SECURE_PROXY_SSL_HEADER`,
-  Secure + HttpOnly + SameSite cookies (gated by a `TESTING` flag).
-- Upload validation: `%PDF-` magic bytes, 10 MB size cap, page-count cap (default
-  500, env-configurable), `basename()` sanitation.
-- `django-axes` — 5 failed admin logins per (IP, username) → 1h lockout.
-- `auth_aware_ratelimit` on every AI/OCR/extract endpoint.
-- CSRF on every POST, including async AJAX endpoints.
-- Path-traversal guard in `serve_media_view`: `realpath` + `startswith(MEDIA_ROOT)`
-  before the ownership check.
-- Email confirmation token uses Django's `default_token_generator` — single-use
-  (the seed includes `is_active`, so the token invalidates the moment the
-  account becomes active).
+- **CI security gate** — every push runs `bandit` (SAST), `pip-audit`
+  (dep CVEs), and on deploy `trivy` (image scan with `ignore-unfixed:true`,
+  fail on HIGH/CRITICAL).
+- **Auth** — Django sessions + per-user API keys (SHA-256 hashed, plaintext
+  shown once). `django-axes` locks login after 5 failures.
+- **CSRF** on every state-changing endpoint, including JSON POSTs.
+- **Rate limits** — `auth_aware_ratelimit` per-user-or-IP, with stricter
+  buckets on expensive ops (OCR 10/h anon, 40/h user; chat 10/h / 100/h).
+- **CSP enforced** at nginx (no report-only) — script-src/connect-src
+  allowlists.
+- **HSTS preload**, secure + HttpOnly + SameSite cookies, HTTPS-only.
+- **Path traversal** blocked via `realpath` + ownership check on every
+  `/media/` access.
+- **Audit log** — every operation captures user, IP, user-agent, kind,
+  source + output names, timestamps.
+- **Disclosure policy:** [SECURITY.md](SECURITY.md).
 
 ## Testing & quality
 
-| | |
-|--|--|
-| Tests | **325** (1 skipped without `tesseract`) — `python manage.py test pdfeditor` |
-| Coverage | **90%** (`coverage run` → `coverage report`) |
-| Type checking | mypy clean on 32 source files; strict on `pdf_processor/` and `ai_service.py` |
-| Linting | ruff (lint + format), config in `pyproject.toml` |
-| Pre-commit | `.pre-commit-config.yaml` runs ruff + mypy + standard hooks |
-| CI | GitHub Actions matrix on Python 3.10/3.11/3.12 |
-| Dependabot | Weekly `pip` + `github-actions` + `docker` updates |
+| Check | Status |
+|-------|--------|
+| Test count | **665 passing** (Postgres + pgvector required) |
+| Coverage | reports uploaded as CI artifact (`coverage.xml`) |
+| Linting | `ruff check` + `ruff format` |
+| Types | `mypy` strict on `pdf_processor/` |
+| SAST | `bandit` (config in `pyproject.toml`) |
+| CVE scan | `pip-audit` blocks PRs with known fixable CVEs |
+| Image scan | `trivy` blocks deploys on HIGH/CRITICAL OS/library CVEs |
+| Python matrix | 3.10 · 3.11 · 3.12 (parallel in CI) |
+| Auto-update | Dependabot weekly (`pip` + `github-actions` + `docker`) |
 
 ## Running locally
+
+### Docker (recommended)
 
 ```bash
 git clone https://github.com/Alexandru2984/pdf_Editor_v2.git
 cd pdf_Editor_v2
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-cat > .env <<'EOF'
-DEBUG=True
-SECRET_KEY='pick-something-long-and-random-min-50-chars'
+cat > .env <<EOF
+SECRET_KEY=$(openssl rand -hex 32)
+POSTGRES_PASSWORD=$(openssl rand -hex 16)
+DEBUG=False
 ALLOWED_HOSTS=localhost,127.0.0.1
-SECURE_SSL=0
-# Optional: GROQ_API_KEY=gsk_...
-# Optional: SENTRY_DSN=https://...
+GROQ_API_KEY=  # optional, enables chat
 EOF
-chmod 600 .env
-
-python manage.py migrate
-python manage.py test pdfeditor
-python manage.py runserver
-```
-
-Open <http://localhost:8000>. For AI rephrase you need either a running Ollama
-instance (`OLLAMA_HOST` env var) or a Groq API key in `.env`. OCR needs
-`tesseract` on the system `PATH`. Email confirmation prints to the console in
-DEBUG mode.
-
-### Docker
-
-```bash
-echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" >> .env
-echo "SECRET_KEY=$(openssl rand -hex 32)" >> .env
 docker compose up --build
 ```
 
-The compose file launches Postgres + the app under uvicorn workers (so async
-AI endpoints actually free up workers during slow upstream calls).
+Open <http://localhost:8000>. The compose file starts Postgres+pgvector,
+Redis, the Django web app, and the Celery worker as separate services.
 
-## Production deployment
+### Bare-metal
 
-The live instance runs behind nginx → gunicorn (with uvicorn workers, for ASGI)
-over a Unix socket, managed by two systemd units:
+```bash
+python3.12 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+sudo apt-get install -y tesseract-ocr tesseract-ocr-ron ghostscript
+python manage.py migrate
+python manage.py test pdfeditor   # 665 tests, needs Postgres+pgvector
+python manage.py runserver
+```
 
-- `pdfeditor.service` — `gunicorn pdf_project.asgi:application -k uvicorn.workers.UvicornWorker`
-  with 3 workers, `EnvironmentFile=.env`.
-- `pdfeditor-cleanup.timer` — hourly run of `cleanup_old_pdfs`, which deletes
-  DB rows and files older than `PDF_CLEANUP_HOURS` plus orphan files on disk.
+For chat / RAG you also need a running Celery worker:
 
-## Tech stack
+```bash
+celery -A pdf_project worker --loglevel=info
+```
 
-Django 4.2 · PyMuPDF (fitz) · Pillow · pytesseract · django-axes ·
-django-ratelimit · httpx (async) · sentry-sdk · psycopg2 · dj-database-url ·
-python-dotenv · gunicorn · uvicorn · systemd. AI providers: Ollama (local) and
-Groq (cloud), both behind an `AIProvider` interface so new providers slot in
-with a single class.
+## Auto-deploy
 
-## Known limitations (FLOW mode)
+Pushes to `main` trigger:
 
-- Bullet/list markers are detected to avoid being swallowed into the wrong
-  paragraph, but the markers themselves aren't re-inserted when blocks shift.
-- Multi-column tables and complex layouts may reflow incorrectly; SAFE mode is
-  the fallback when paragraph detection fails.
-- Signature widgets in AcroForms are read but never filled — they need a cert,
-  which is out of scope.
+1. **`tests` workflow** — Python 3.10/3.11/3.12 matrix, ruff + mypy + bandit
+   + pip-audit + 665 tests + Django deploy check.
+2. **`build-and-deploy`** (workflow_run after tests success) — builds the
+   image, pushes to `ghcr.io/alexandru2984/pdf_editor_v2:{latest,sha-XXXXX}`,
+   scans with Trivy (fail on HIGH/CRITICAL), then SSHes into the VPS and
+   runs `scripts/deploy.sh` which pulls the new image, retags the previous
+   as `pdfeditor:rollback`, and `docker compose up -d --no-build`.
+
+Rollback is a one-liner: `docker tag pdfeditor:rollback pdfeditor:latest && docker compose up -d --no-build`.
+
+Setup details in [.github/DEPLOY.md](.github/DEPLOY.md).
+
+## Roadmap
+
+✅ Done
+
+- 25+ PDF operations · digital signatures with PAdES B-B/B-T/B-LT/B-LTA
+- REST API + OpenAPI/Swagger/Redoc · per-user API keys + throttling
+- Celery + Redis async pipeline · job status polling
+- RAG chat (pgvector + ONNX embeddings + Groq) · multi-PDF retrieval · LLM picker
+- Audit log · storage quotas · share links · API keys
+- Auto-deploy CI/CD (GHCR + Trivy + SSH) · Sentry error tracking
+- Multi-language (EN + RO) · CSP enforced · 665 tests
+
+🚧 In progress / next
+
+- Prometheus `/metrics` + Grafana dashboard
+- PWA (installable, offline cache) + dark mode toggle
+- Load testing scenarios with Locust
+- ADRs (architecture decision records) for the major design choices
+
+## Project structure
+
+```
+pdf_project/            Django project (settings, urls, asgi, celery)
+pdfeditor/
+├── models.py           UploadedPDF, ProcessedPDF, Job, Embedding,
+│                       ShareLink, ApiKey, AuditLog, TrustAnchor
+├── tasks.py            Celery tasks (OCR, PDF/A, Compare, Convert, RAG index)
+├── ratelimiting.py     auth_aware_ratelimit decorator
+├── ai_service.py       Ollama + Groq providers (sync + async)
+├── pdf_processor/      Standalone PDF lib (no Django imports)
+│   ├── ops.py          Split/merge/compress/redact/crop/flatten/PDF-A/…
+│   ├── edit.py         Find/replace SAFE + FLOW, rephrase
+│   ├── extract.py      Text + OCR + searchable PDF
+│   ├── forms.py        AcroForm detect + fill
+│   └── rag.py          Chunking + embeddings
+├── api/                DRF endpoints (pdfs · outputs · ops · jobs · chat)
+│   ├── auth.py         X-API-Key auth + OpenAPI extension
+│   ├── throttles.py    Per-API-key rate limiting
+│   └── serializers.py
+├── views/              HTTP views grouped by concern
+│   ├── basic_ops.py    Split/merge/compress/convert/protect/etc.
+│   ├── layout_ops.py   Crop/rotate/watermark/page-numbers/reorder
+│   ├── chat.py         RAG chat with PDF
+│   ├── jobs.py         Job status + listing
+│   ├── share.py        Public token download links
+│   └── …
+└── templates/          Django templates + chat UI + admin
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
