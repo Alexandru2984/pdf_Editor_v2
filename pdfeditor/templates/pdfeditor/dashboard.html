@@ -204,6 +204,15 @@
             <a href="{% url 'share_links' %}" class="btn btn-secondary">{% trans "Manage" %}</a>
         </div>
 
+        {% if uploaded_pdfs %}
+        <div class="operation-card" data-feature="chat">
+            <div class="card-icon">💬</div>
+            <h3>{% trans "Chat with PDF" %}</h3>
+            <p>{% trans "Ask questions about your PDF and get answers with citations — powered by local embeddings + Groq" %}</p>
+            <a href="{% url 'chat' uploaded_pdfs.0.id %}" class="btn btn-secondary">{% trans "Open Chat" %}</a>
+        </div>
+        {% endif %}
+
         <div class="operation-card" data-feature="page-numbers">
             <div class="card-icon">🔢</div>
             <h3>{% trans "Add Page Numbers" %}</h3>

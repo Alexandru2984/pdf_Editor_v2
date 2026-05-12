@@ -6,12 +6,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # System deps: tesseract for OCR (eng + ron language packs), ghostscript for
-# PDF/A conversion, libgl/libglib for Pillow image ops.
+# PDF/A conversion, libgl/libglib for Pillow image ops, libgomp1 for the
+# ONNX Runtime backend that powers fastembed (RAG embeddings).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         tesseract-ocr \
         tesseract-ocr-ron \
         ghostscript \
         libglib2.0-0 \
+        libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
