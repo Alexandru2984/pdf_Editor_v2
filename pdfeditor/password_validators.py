@@ -38,7 +38,10 @@ class PwnedPasswordValidator:
         if getattr(settings, "TESTING", False):
             return  # tests run offline; don't hit external APIs
 
-        sha1 = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
+        # SHA1 is mandated by the HaveIBeenPwned "range" API, which uses
+        # k-anonymity (we send the first 5 hex chars, never the password).
+        # Not a password-storage hash — usedforsecurity=False silences bandit.
+        sha1 = hashlib.sha1(password.encode("utf-8"), usedforsecurity=False).hexdigest().upper()
         prefix, suffix = sha1[:5], sha1[5:]
 
         try:

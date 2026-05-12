@@ -31,3 +31,22 @@ ignore = [
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+# Bandit SAST configuration. We only fail CI on MEDIUM+ severity — the
+# LOW findings (subprocess imports, try/except/pass in audit-log writes)
+# are all manually reviewed false-positives, and chasing every one of
+# them would just lead to noise + #nosec everywhere.
+[tool.bandit]
+exclude_dirs = [
+    "venv",
+    "staticfiles",
+    "media",
+    "pdfeditor/migrations",
+]
+# Skip rule explanations:
+# - B404: subprocess module import (we only invoke ghostscript with a
+#   fixed argv list, see ops.py::convert_to_pdfa).
+# - B603: subprocess without shell=True — same call, args are safe.
+# - B110/B112: try/except/pass-or-continue used intentionally to keep
+#   audit-log writes from breaking user flows.
+skips = ["B404", "B603", "B110", "B112"]
