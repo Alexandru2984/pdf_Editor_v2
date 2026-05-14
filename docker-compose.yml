@@ -101,8 +101,31 @@ services:
       retries: 10
     restart: unless-stopped
 
-  web:
+  # One-shot init container: runs Django migrations + collectstatic once
+  # before web/worker start. With N web replicas, running migrate from the
+  # web CMD would have all replicas racing through advisory locks; this
+  # pattern is the canonical fix and keeps the startup quiet.
+  migrate:
     build: .
+    image: pdfeditor:latest
+    depends_on:
+      db:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput"
+    environment:
+      <<: *app-env
+      FASTEMBED_CACHE_DIR: /app/data/fastembed
+    volumes:
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
+      - embeddings_cache:/app/data/fastembed
+    restart: "no"
+
+  web:
     image: pdfeditor:latest
     depends_on:
       db:
@@ -111,6 +134,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     # No host port mapping — the `nginx` service below load-balances
     # across replicas and is the only thing that listens on 8000 on
     # the host. Each replica is reachable internally as web:8000
@@ -152,6 +177,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     command: >
       celery -A pdf_project worker
       --loglevel=info

@@ -193,16 +193,35 @@ def run_to_images_task(job_id: str) -> str | None:
 
     Heaviest CPU op in the catalog at high DPI — load testing put p95 at
     ~3.8s sync, which monopolizes a gunicorn worker. Async dispatch keeps
-    the request-serving pool free.
+    the request-serving pool free, and the progress_cb lets us push live
+    per-page updates so the SSE stream actually has something to say.
     """
     from .pdf_processor import convert_pdf_to_images
 
     def run(job: Job) -> str:
         params = job.params or {}
+        last_pct = {"v": 5}  # _start set progress=5, don't regress below it
+
+        def on_page(rendered: int, total: int) -> None:
+            # 90 % of the bar is rendering; the last 10 % covers zip-close +
+            # ProcessedPDF row creation in _record_output (which jumps to 100).
+            pct = 5 + int((rendered / max(total, 1)) * 90)
+            if pct <= last_pct["v"]:
+                return
+            last_pct["v"] = pct
+            job.progress = pct
+            # update_fields=["progress"] keeps this write cheap. The save
+            # call itself triggers _publish_job_event only if we add it —
+            # we go through the same publish path so the SSE subscriber
+            # sees the new percent.
+            Job.objects.filter(pk=job.pk).update(progress=pct)
+            _publish_job_event(job)
+
         out, page_count = convert_pdf_to_images(
             job.source.path,
             fmt=params.get("fmt", "png"),
             dpi=int(params.get("dpi", 150)),
+            progress_cb=on_page,
         )
         # Stash page_count on the job so the result template can show it.
         merged = dict(job.params or {})

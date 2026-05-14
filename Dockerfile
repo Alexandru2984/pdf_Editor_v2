@@ -39,4 +39,8 @@ EXPOSE 8000
 
 # Run under ASGI (uvicorn workers) so the async rephrase preview view doesn't
 # block other requests during slow upstream AI calls. Sync views still work.
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn pdf_project.asgi:application --bind 0.0.0.0:8000 --workers ${GUNICORN_WORKERS:-3} --worker-class uvicorn.workers.UvicornWorker --timeout 60"]
+#
+# Migrations + collectstatic are NOT in this CMD: they run once in a
+# dedicated `migrate` service in docker-compose so multiple web replicas
+# don't race against each other on startup.
+CMD ["sh", "-c", "gunicorn pdf_project.asgi:application --bind 0.0.0.0:8000 --workers ${GUNICORN_WORKERS:-3} --worker-class uvicorn.workers.UvicornWorker --timeout 60"]

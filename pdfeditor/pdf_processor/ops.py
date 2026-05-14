@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess
 import zipfile
+from collections.abc import Callable
 
 import fitz
 from PIL import Image as PILImage
@@ -1082,11 +1083,20 @@ def convert_images_to_pdf(
     return out_path, len(image_paths)
 
 
-def convert_pdf_to_images(pdf_path: str, fmt: str = "png", dpi: int = 150) -> tuple[str, int]:
+def convert_pdf_to_images(
+    pdf_path: str,
+    fmt: str = "png",
+    dpi: int = 150,
+    progress_cb: Callable[[int, int], None] | None = None,
+) -> tuple[str, int]:
     """Render every page as an image and bundle the results into a ZIP.
 
     ``fmt`` is one of ``"png"`` or ``"jpg"``. ``dpi`` controls render resolution
     (72 = screen, 150 = balanced, 300 = print). Returns ``(zip_path, page_count)``.
+
+    ``progress_cb(rendered, total)`` is called after each page is written
+    to the archive. Optional — sync callers can omit it; the async Celery
+    task uses it to surface live progress to SSE subscribers.
     """
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
@@ -1108,6 +1118,7 @@ def convert_pdf_to_images(pdf_path: str, fmt: str = "png", dpi: int = 150) -> tu
     with fitz.open(pdf_path) as doc:
         if doc.is_encrypted:
             raise ValueError("Cannot render an encrypted PDF — remove the password first")
+        total = len(doc)
         with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             for idx, page in enumerate(doc, 1):
                 pix = page.get_pixmap(matrix=matrix, alpha=(fmt == "png"))
@@ -1121,6 +1132,8 @@ def convert_pdf_to_images(pdf_path: str, fmt: str = "png", dpi: int = 150) -> tu
                     data = buf.getvalue()
                 zf.writestr(f"{base}_page_{idx:03d}.{fmt}", data)
                 page_count += 1
+                if progress_cb is not None:
+                    progress_cb(page_count, total)
 
     return zip_path, page_count
 

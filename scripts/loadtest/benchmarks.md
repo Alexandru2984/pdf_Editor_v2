@@ -32,6 +32,9 @@ LOCUST_API_KEY=<your-key> locust -f <file> --host=... --headless ...
 6. **Schema endpoint cached** for 5 min — drf-spectacular's generator throws `AssertionError` under concurrent first-time generation
 7. **gunicorn workers**: 3 → 8 (during stress test; back to 3 in prod since 12-core box reserves headroom for celery/db/redis containers)
 8. **`RATELIMIT_ENABLE=0`** for load tests (kills both django-ratelimit and DRF throttles)
+9. **Horizontal scale**: the `web` service now has `deploy.replicas: 2` (overridable via `WEB_REPLICAS`) behind an internal `nginx` load balancer. Adding/removing replicas via `docker compose up --scale web=N` is picked up via Docker's embedded DNS + nginx `resolver` without an nginx reload.
+10. **Async `to-images`**: PDF→images rasterization (the worst sync offender at high DPI) now dispatches to Celery for any PDF over `ASYNC_THRESHOLD_PAGES` pages (default 5). Sync request returns 202 + `job_id` instead of blocking a worker.
+11. **Init container for migrations**: `manage.py migrate` and `collectstatic` were moved out of the web CMD into a one-shot `migrate` service so N replicas don't race through the migration locks at startup.
 
 ## Run history
 
@@ -77,7 +80,15 @@ template-rendered UI flow.
 | Useri | Spawn rate | Duration | Total req | req/s | Failures | 500s | Notes |
 |---|---|---|---|---|---|---|---|
 | 500 (8 gunicorn workers, before bug fixes) | 25/s | 5 min | 28,406 | 94.7 | **8.21 %** | 2,003 | drf-spectacular race, no pagination on `/outputs/` |
-| 500 (same setup, after bug fixes) | 25/s | 5 min | **36,149** | **120.5** | **0.17 %** | **3** | 27 % more throughput, 99.8 % fewer 500s |
+| 500 (1× web, 8 workers, after bug fixes) | 25/s | 5 min | **36,149** | **120.5** | **0.17 %** | **3** | 27 % more throughput, 99.8 % fewer 500s |
+| 500 (2× web replicas, 4 workers each, async to-images) | 25/s | 5 min | **53,580** | **179.3** | **0.15 %** | n/a | +48 % throughput at the same total worker count |
+
+The third row keeps the global worker count at 8 (4 × 2 replicas) but
+runs them as two separate Python processes behind the internal nginx
+load balancer. Each process owns its own GIL, so the gain comes from
+real parallelism on a second core rather than from adding capacity.
+`/to-images/` is also async now (Celery), which lets the request pool
+turn over faster on heavy ops.
 
 #### Resource saturation at 500u (after fixes)
 
