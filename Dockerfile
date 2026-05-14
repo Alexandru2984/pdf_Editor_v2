@@ -8,7 +8,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # System deps: tesseract for OCR (eng + ron language packs), ghostscript for
 # PDF/A conversion, libgl/libglib for Pillow image ops, libgomp1 for the
 # ONNX Runtime backend that powers fastembed (RAG embeddings).
-RUN apt-get update && apt-get install -y --no-install-recommends \
+#
+# `apt-get upgrade` pulls security patches that the python:3.12-slim base
+# image hasn't picked up yet — Debian ships fixes faster than the official
+# python image rebuilds. Trivy gates the CI build on CRITICAL/HIGH OS CVEs,
+# so skipping the upgrade means the next stale-base CVE breaks the build.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
         tesseract-ocr \
         tesseract-ocr-ron \
         ghostscript \
