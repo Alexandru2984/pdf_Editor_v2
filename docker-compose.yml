@@ -111,8 +111,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "8000:8000"
+    # No host port mapping — the `nginx` service below load-balances
+    # across replicas and is the only thing that listens on 8000 on
+    # the host. Each replica is reachable internally as web:8000
+    # (Docker's embedded DNS round-robins the A records).
+    expose:
+      - "8000"
+    deploy:
+      replicas: ${WEB_REPLICAS:-2}
     environment:
       <<: *app-env
       FASTEMBED_CACHE_DIR: /app/data/fastembed
@@ -120,6 +126,21 @@ services:
       - ./media:/app/media
       - ./staticfiles:/app/staticfiles
       - embeddings_cache:/app/data/fastembed
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      - web
+    ports:
+      - "8000:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/nginx-healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   worker:
