@@ -25,6 +25,20 @@ def safe_basename(path: str) -> str:
     return os.path.splitext(os.path.basename(path))[0]
 
 
+def pdf_page_count(pdf_path: str) -> int | None:
+    """Return the page count or None if the file can't be opened.
+
+    Used to gate sync vs async dispatch for heavy ops; cheap on typical
+    PDFs (single-digit ms even for 100-page docs since fitz.open just
+    parses the trailer + xref).
+    """
+    try:
+        with fitz.open(pdf_path) as doc:
+            return len(doc)
+    except Exception:  # noqa: BLE001 — caller decides on None
+        return None
+
+
 def parse_page_range(range_string: str, total_pages: int) -> list[int]:
     """Parse "1-3,5,7-9" -> 0-indexed page list. Empty -> all pages."""
     if not range_string or not range_string.strip():

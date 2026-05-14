@@ -45,6 +45,12 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 PDF_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 PDF_MAX_PAGES = int(os.environ.get("PDF_MAX_PAGES", 500))
 
+# Page count above which expensive ops (PDF→images rasterization) are
+# dispatched to Celery instead of running synchronously in the request
+# thread. Set to 0 to force everything async. Tuned from the load test:
+# below 5 pages the sync path returns in <500 ms.
+ASYNC_THRESHOLD_PAGES = int(os.environ.get("ASYNC_THRESHOLD_PAGES", 5))
+
 # Per-owner storage quota for uploaded PDFs (sum of file sizes). 0 = unlimited.
 # Default: anon 50 MB, authenticated 500 MB. Overridable via env.
 PDF_QUOTA_ANON_BYTES = int(os.environ.get("PDF_QUOTA_ANON_BYTES", 50 * 1024 * 1024))

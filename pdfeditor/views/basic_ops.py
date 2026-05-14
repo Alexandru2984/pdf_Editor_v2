@@ -37,6 +37,7 @@ from ..pdf_processor import (
     edit_pdf_metadata,
     flatten_pdf,
     merge_pdfs,
+    pdf_page_count,
     protect_pdf,
     read_pdf_metadata,
     read_pdf_outline,
@@ -1212,6 +1213,20 @@ def to_images_view(request):
     if request.method == "POST":
         form = PdfToImagesForm(request.POST)
         if form.is_valid():
+            threshold = getattr(settings, "ASYNC_THRESHOLD_PAGES", 5)
+            page_count = pdf_page_count(pdf_path) or 0
+            if page_count >= threshold:
+                job = _queue_async_job(
+                    request,
+                    kind=ProcessedPDF.KIND_TO_IMAGES,
+                    source=selected_pdf,
+                    params={
+                        "fmt": form.cleaned_data["fmt"],
+                        "dpi": form.cleaned_data["dpi"],
+                    },
+                )
+                messages.info(request, _("PDF → images queued."))
+                return redirect("job_detail", job_id=job.id)
             try:
                 output_path, page_count = convert_pdf_to_images(
                     pdf_path,

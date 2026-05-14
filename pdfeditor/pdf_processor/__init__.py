@@ -4,7 +4,7 @@ Public API preserved for backward compatibility with the previous
 monolithic ``pdf_processor.py`` module.
 """
 
-from ._common import check_pdf_has_text, parse_page_range
+from ._common import check_pdf_has_text, parse_page_range, pdf_page_count
 from .edit import (
     find_and_replace_text,
     rephrase_text_in_pdf,
@@ -44,6 +44,7 @@ from .ops import (
 __all__ = [
     "check_pdf_has_text",
     "parse_page_range",
+    "pdf_page_count",
     "split_pdf",
     "merge_pdfs",
     "compress_pdf",

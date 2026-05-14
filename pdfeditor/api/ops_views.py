@@ -27,6 +27,7 @@ from ..pdf_processor import (
     compress_pdf,
     convert_pdf_to_images,
     crop_pages,
+    pdf_page_count,
     edit_pdf_metadata,
     flatten_pdf,
     merge_pdfs,
@@ -456,14 +457,51 @@ class MetadataOpView(_BaseOpView):
         return edit_pdf_metadata(pdf_path, metadata, clear_dates=params["clear_dates"])
 
 
-@extend_schema(tags=["Operations"], request=_ToImagesSerializer, responses={201: ProcessedPDFSerializer})
-class ToImagesOpView(_BaseOpView):
-    kind = ProcessedPDF.KIND_TO_IMAGES
-    request_serializer = _ToImagesSerializer
+@extend_schema(
+    tags=["Operations"],
+    request=_ToImagesSerializer,
+    responses={
+        201: ProcessedPDFSerializer,
+        202: OpenApiResponse(description="Large PDF — queued async, poll status_url"),
+    },
+)
+class ToImagesOpView(APIView):
+    """Rasterize PDF pages to PNG/JPG.
 
-    def run(self, pdf_path, params):
-        out, _ = convert_pdf_to_images(pdf_path, fmt=params["fmt"], dpi=params["dpi"])
-        return out
+    Sync for small PDFs (< ASYNC_THRESHOLD_PAGES); above the threshold we
+    queue the work to Celery and return 202 + job_id. Sync monopolizes a
+    gunicorn worker for several seconds per page at typical DPI — the
+    threshold keeps small uploads instant while heavy ones don't block
+    the request pool.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from django.conf import settings as dj_settings
+
+        in_ser = _ToImagesSerializer(data=request.data)
+        in_ser.is_valid(raise_exception=True)
+        pdf = _user_pdf(request.user, in_ser.validated_data["pdf_id"])
+
+        threshold = getattr(dj_settings, "ASYNC_THRESHOLD_PAGES", 5)
+        page_count = pdf_page_count(pdf.path) or 0
+        if page_count >= threshold:
+            params = {"fmt": in_ser.validated_data["fmt"], "dpi": in_ser.validated_data["dpi"]}
+            job = _queue_async_api_job(request.user, ProcessedPDF.KIND_TO_IMAGES, pdf, params=params)
+            return _job_response(job, request)
+
+        try:
+            out, _ = convert_pdf_to_images(
+                pdf.path, fmt=in_ser.validated_data["fmt"], dpi=in_ser.validated_data["dpi"]
+            )
+        except ValueError as exc:
+            raise ValidationError({"detail": str(exc)}) from exc
+        output = _record(request, ProcessedPDF.KIND_TO_IMAGES, out, source=pdf)
+        return Response(
+            ProcessedPDFSerializer(output, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @extend_schema(tags=["Operations"], request=_PageNumbersSerializer, responses={201: ProcessedPDFSerializer})

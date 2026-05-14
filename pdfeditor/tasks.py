@@ -145,6 +145,32 @@ def run_convert_docx_task(job_id: str) -> str | None:
     return _safe_run(job_id, ProcessedPDF.KIND_CONVERT, run)
 
 
+@shared_task(name="pdfeditor.run_to_images")
+def run_to_images_task(job_id: str) -> str | None:
+    """Rasterize every PDF page to PNG/JPG and ZIP the result.
+
+    Heaviest CPU op in the catalog at high DPI — load testing put p95 at
+    ~3.8s sync, which monopolizes a gunicorn worker. Async dispatch keeps
+    the request-serving pool free.
+    """
+    from .pdf_processor import convert_pdf_to_images
+
+    def run(job: Job) -> str:
+        params = job.params or {}
+        out, page_count = convert_pdf_to_images(
+            job.source.path,
+            fmt=params.get("fmt", "png"),
+            dpi=int(params.get("dpi", 150)),
+        )
+        # Stash page_count on the job so the result template can show it.
+        merged = dict(job.params or {})
+        merged["page_count"] = page_count
+        Job.objects.filter(pk=job.pk).update(params=merged)
+        return out
+
+    return _safe_run(job_id, ProcessedPDF.KIND_TO_IMAGES, run)
+
+
 @shared_task(name="pdfeditor.run_chat_index")
 def run_chat_index_task(job_id: str) -> str | None:
     """Chunk + embed a PDF for RAG chat. Doesn't produce a ProcessedPDF —
@@ -218,6 +244,7 @@ KIND_TO_TASK = {
     ProcessedPDF.KIND_COMPARE: run_compare_task,
     ProcessedPDF.KIND_CONVERT: run_convert_docx_task,
     ProcessedPDF.KIND_CHAT_INDEX: run_chat_index_task,
+    ProcessedPDF.KIND_TO_IMAGES: run_to_images_task,
 }
 
 
