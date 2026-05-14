@@ -64,6 +64,7 @@ urlpatterns = [
     path("jobs/", views.jobs_list_view, name="jobs_list"),
     path("jobs/<uuid:job_id>/", views.job_detail_view, name="job_detail"),
     path("jobs/<uuid:job_id>/status/", views.job_status_view, name="job_status"),
+    path("jobs/<uuid:job_id>/events/", views.job_events_view, name="job_events"),
     path("jobs/<uuid:job_id>/download/", views.job_download_view, name="job_download"),
     path("chat/<uuid:pdf_id>/", views.chat_view, name="chat"),
     path("chat/<uuid:pdf_id>/message/", views.chat_message_view, name="chat_message"),

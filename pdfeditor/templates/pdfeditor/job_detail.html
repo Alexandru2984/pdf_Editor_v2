@@ -70,6 +70,7 @@
 <script>
 const JOB_ID = "{{ job.id }}";
 const STATUS_URL = "{% url 'job_status' job.id %}";
+const EVENTS_URL = "{% url 'job_events' job.id %}";
 const POLL_MS = 2000;
 
 function formatBytes(bytes) {
@@ -79,45 +80,48 @@ function formatBytes(bytes) {
     return (bytes / 1024 / 1024).toFixed(2) + " MB";
 }
 
+function applyUpdate(data) {
+    document.getElementById("job-status").textContent = data.status;
+    document.getElementById("job-status").className = "job-status-pill " + data.status;
+    document.getElementById("job-progress-text").textContent = data.progress + "%";
+    document.getElementById("job-progress-fill").style.width = data.progress + "%";
+
+    if (data.error_message) {
+        const errBox = document.getElementById("job-error");
+        errBox.textContent = data.error_message;
+        errBox.style.display = "block";
+    }
+
+    if (data.output_id) {
+        document.getElementById("job-output-name").textContent = data.output_name || "";
+        document.getElementById("job-output-meta").textContent = formatBytes(data.output_size);
+        document.getElementById("job-result").style.display = "block";
+        document.getElementById("job-title").textContent = "✅ {% trans 'Done!' %}";
+        document.getElementById("job-subtitle").textContent = "";
+    }
+
+    if (data.is_terminal) {
+        // chat_index has no downloadable output — bounce back to the chat
+        // page once indexing is done. Fetched via the polling endpoint
+        // since SSE only carries the core status payload.
+        if (data.status === "done" && data.follow_up_url) {
+            window.location.href = data.follow_up_url;
+            return true;
+        }
+        if (data.status === "failed") {
+            document.getElementById("job-title").textContent = "❌ {% trans 'Failed' %}";
+        }
+        return true;
+    }
+    return false;
+}
+
 async function poll() {
     try {
         const resp = await fetch(STATUS_URL, { credentials: "same-origin" });
         if (!resp.ok) throw new Error("status " + resp.status);
         const data = await resp.json();
-
-        document.getElementById("job-status").textContent = data.status;
-        document.getElementById("job-status").className = "job-status-pill " + data.status;
-        document.getElementById("job-progress-text").textContent = data.progress + "%";
-        document.getElementById("job-progress-fill").style.width = data.progress + "%";
-
-        if (data.error_message) {
-            const errBox = document.getElementById("job-error");
-            errBox.textContent = data.error_message;
-            errBox.style.display = "block";
-        }
-
-        if (data.output_id) {
-            document.getElementById("job-output-name").textContent = data.output_name || "";
-            document.getElementById("job-output-meta").textContent = formatBytes(data.output_size);
-            document.getElementById("job-result").style.display = "block";
-            document.getElementById("job-title").textContent = "✅ {% trans 'Done!' %}";
-            document.getElementById("job-subtitle").textContent = "";
-        }
-
-        if (data.is_terminal) {
-            // For ops that don't produce a downloadable file (like chat_index),
-            // jump the user back to where they should pick up — e.g. the chat
-            // page — so they don't have to navigate manually.
-            if (data.status === "done" && data.follow_up_url) {
-                window.location.href = data.follow_up_url;
-                return;
-            }
-            if (data.status === "failed") {
-                document.getElementById("job-title").textContent = "❌ {% trans 'Failed' %}";
-            }
-            return;  // stop polling
-        }
-
+        if (applyUpdate(data)) return;
         setTimeout(poll, POLL_MS);
     } catch (e) {
         console.error("poll error", e);
@@ -125,8 +129,54 @@ async function poll() {
     }
 }
 
+// SSE first; fall back to polling if the browser/proxy can't keep an
+// EventSource open (e.g. a corporate proxy that buffers indefinitely,
+// or a worker without uvicorn/ASGI to serve the stream).
+function startSSE() {
+    if (typeof EventSource === "undefined") {
+        poll();
+        return;
+    }
+    const es = new EventSource(EVENTS_URL, { withCredentials: true });
+    let receivedAny = false;
+    let fellBack = false;
+    function fallback(reason) {
+        if (fellBack) return;
+        fellBack = true;
+        es.close();
+        console.warn("SSE fallback to polling:", reason);
+        poll();
+    }
+    es.addEventListener("message", (e) => {
+        receivedAny = true;
+        try {
+            const data = JSON.parse(e.data);
+            if (applyUpdate(data)) {
+                es.close();
+                // Polling fetches follow_up_url which SSE doesn't ship —
+                // refresh once via the status endpoint for that one field.
+                if (data.is_terminal && data.status === "done") {
+                    fetch(STATUS_URL, { credentials: "same-origin" })
+                        .then((r) => r.json())
+                        .then(applyUpdate)
+                        .catch(() => {});
+                }
+            }
+        } catch (err) {
+            console.error("bad SSE frame", err);
+        }
+    });
+    es.addEventListener("error", () => {
+        if (es.readyState === EventSource.CLOSED) {
+            fallback("connection closed");
+        } else if (!receivedAny) {
+            fallback("no initial frame");
+        }
+    });
+}
+
 if (!{{ job.is_terminal|yesno:"true,false" }}) {
-    setTimeout(poll, POLL_MS);
+    startSSE();
 }
 </script>
 {% endblock %}

@@ -7,11 +7,13 @@ marks it running, executes the underlying op, and links the resulting
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 
 from celery import shared_task
 from celery.exceptions import SoftTimeLimitExceeded
+from django.conf import settings
 from django.utils import timezone
 
 from .metrics import EMBEDDINGS_CREATED, JOB_TOTAL, OP_DURATION_SECONDS, OP_TOTAL
@@ -20,11 +22,49 @@ from .models import Job, ProcessedPDF, UploadedPDF
 logger = logging.getLogger(__name__)
 
 
+def _job_channel(job_id) -> str:
+    return f"job:{job_id}"
+
+
+def _publish_job_event(job: Job) -> None:
+    """Broadcast the job's current state to anyone subscribed via SSE.
+
+    Best-effort: if Redis is unavailable or this Django install isn't
+    configured with a Redis cache backend, we just skip — the browser
+    will fall back to HTTP polling.
+    """
+    redis_url = (
+        getattr(settings, "REDIS_PUBSUB_URL", None)
+        or os.environ.get("REDIS_CACHE_URL")
+        or os.environ.get("REDIS_URL")
+    )
+    if not redis_url:
+        return
+    payload = {
+        "id": str(job.id),
+        "status": job.status,
+        "progress": job.progress,
+        "is_terminal": job.is_terminal(),
+        "error_message": job.error_message,
+        "output_id": str(job.output_id) if job.output_id else None,
+        "output_name": job.output.name if job.output_id else None,
+        "output_size": job.output.size if job.output_id else None,
+    }
+    try:
+        import redis as _redis
+
+        client = _redis.Redis.from_url(redis_url, socket_timeout=2)
+        client.publish(_job_channel(job.id), json.dumps(payload))
+    except Exception as exc:  # noqa: BLE001 — pub/sub is best-effort
+        logger.debug("Job event publish failed for %s: %s", job.id, exc)
+
+
 def _start(job: Job) -> None:
     job.status = Job.STATUS_RUNNING
     job.started_at = timezone.now()
     job.progress = 5
     job.save(update_fields=["status", "started_at", "progress"])
+    _publish_job_event(job)
 
 
 def _record_output(job: Job, kind: str, out_path: str) -> ProcessedPDF:
@@ -46,6 +86,7 @@ def _record_output(job: Job, kind: str, out_path: str) -> ProcessedPDF:
     if job.started_at:
         OP_DURATION_SECONDS.labels(kind=kind).observe((job.finished_at - job.started_at).total_seconds())
     OP_TOTAL.labels(kind=kind, outcome="success").inc()
+    _publish_job_event(job)
     return output
 
 
@@ -56,6 +97,7 @@ def _fail(job: Job, error: str) -> None:
     job.save(update_fields=["status", "error_message", "finished_at"])
     JOB_TOTAL.labels(kind=job.kind, status="failed").inc()
     OP_TOTAL.labels(kind=job.kind, outcome="failure").inc()
+    _publish_job_event(job)
 
 
 def _safe_run(job_id: str, kind: str, run):

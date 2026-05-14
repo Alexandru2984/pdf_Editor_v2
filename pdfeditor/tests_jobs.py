@@ -5,6 +5,7 @@ argv), so calling a task .delay() executes it synchronously and we can
 assert on the resulting Job/ProcessedPDF rows immediately.
 """
 
+import asyncio
 import io
 import os
 import shutil
@@ -13,7 +14,7 @@ import tempfile
 import fitz
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase, override_settings
+from django.test import AsyncClient, Client, TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient
 
@@ -160,6 +161,62 @@ class JobWebViewTests(_JobTestBase):
         bob_src = UploadedPDF.objects.create(user=other, name="b.pdf", path="/none", size=1)
         bob_job = Job.objects.create(user=other, kind="pdfa", source=bob_src)
         resp = self.client.get(reverse("job_detail", args=[bob_job.id]))
+        self.assertEqual(resp.status_code, 404)
+
+
+@override_settings(MEDIA_ROOT=_MEDIA_ROOT, REDIS_PUBSUB_URL="")
+class JobEventsTests(TransactionTestCase):
+    """SSE endpoint smoke tests. TransactionTestCase (not TestCase) because
+    AsyncClient + async views run handlers in a worker thread where the
+    transaction-wrapped fixture data isn't visible. REDIS_PUBSUB_URL=''
+    short-circuits the stream after the initial frame so we don't have
+    to spin up Redis."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="alice", password="pw")
+        self.client = AsyncClient()
+        # A terminal job so _stream_events emits the initial frame and
+        # returns — keeps the test deterministic without Redis.
+        src = UploadedPDF.objects.create(user=self.user, name="x.pdf", path="/none", size=1)
+        self.job = Job.objects.create(
+            user=self.user,
+            kind="pdfa",
+            source=src,
+            status=Job.STATUS_DONE,
+            progress=100,
+        )
+
+    def _read_stream(self, response) -> bytes:
+        async def _drain():
+            chunks = []
+            async for chunk in response.streaming_content:
+                chunks.append(chunk)
+            return b"".join(chunks)
+
+        return asyncio.run(_drain())
+
+    def test_events_endpoint_emits_initial_sse_frame(self):
+        async def go():
+            await self.client.aforce_login(self.user)
+            return await self.client.get(reverse("job_events", args=[self.job.id]))
+
+        resp = asyncio.run(go())
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "text/event-stream")
+        body = self._read_stream(resp)
+        self.assertIn(b"data:", body)
+        self.assertIn(str(self.job.id).encode(), body)
+
+    def test_events_404_for_other_users_job(self):
+        other = User.objects.create_user(username="bob", password="pw")
+        bob_src = UploadedPDF.objects.create(user=other, name="b.pdf", path="/none", size=1)
+        bob_job = Job.objects.create(user=other, kind="pdfa", source=bob_src, status=Job.STATUS_DONE)
+
+        async def go():
+            await self.client.aforce_login(self.user)
+            return await self.client.get(reverse("job_events", args=[bob_job.id]))
+
+        resp = asyncio.run(go())
         self.assertEqual(resp.status_code, 404)
 
 
