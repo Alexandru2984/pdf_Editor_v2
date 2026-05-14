@@ -175,13 +175,7 @@ def delete_pdf_view(request, pdf_id):
         messages.error(request, _("PDF not found."))
         return redirect("dashboard")
 
-    thumb_path = _thumbnail_path(pdf.id)
-    if os.path.exists(thumb_path):
-        try:
-            os.remove(thumb_path)
-        except OSError as exc:
-            logger.warning("Failed to remove thumbnail %s: %s", thumb_path, exc)
-
+    # post_delete signal in pdfeditor/signals.py cleans the file + thumbnail.
     pdf.delete()
     messages.success(request, _("PDF removed successfully."))
     return redirect("dashboard")

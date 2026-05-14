@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import Any
 
 from django import forms
@@ -135,35 +134,18 @@ class DeleteAccountForm(forms.Form):
         return value
 
 
-def _delete_user_files(user: Any) -> None:
-    """Best-effort removal of files owned by ``user`` from disk.
-
-    DB rows go via the FK CASCADE on User delete; we just have to clean up
-    the actual blobs. Errors are logged, not raised — a missing file
-    shouldn't block account deletion.
-    """
-    paths: list[str] = []
-    paths.extend(UploadedPDF.objects.filter(user=user).values_list("path", flat=True))
-    paths.extend(ProcessedPDF.objects.filter(user=user).values_list("path", flat=True))
-    for path in paths:
-        if not path:
-            continue
-        try:
-            if os.path.exists(path):
-                os.remove(path)
-        except OSError as exc:
-            logger.warning("Failed to remove %s while deleting user %s: %s", path, user.pk, exc)
-
-
 @login_required
 def delete_account_view(request: HttpRequest) -> HttpResponse:
-    """Permanent account deletion. Wipes user, FK-cascaded PDF rows, and on-disk files."""
+    """Permanent account deletion. Wipes user, FK-cascaded PDF rows, and on-disk files.
+
+    The post_delete signal in pdfeditor/signals.py fires for each cascaded
+    UploadedPDF/ProcessedPDF row and removes the matching file + thumbnail.
+    """
     if request.method == "POST":
         form = DeleteAccountForm(request.POST, user=request.user)
         if form.is_valid():
             user = request.user
             username = user.username
-            _delete_user_files(user)
             logout(request)
             user.delete()
             logger.info("Account deleted: %s", username)

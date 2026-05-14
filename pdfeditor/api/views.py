@@ -112,13 +112,8 @@ class UploadedPDFViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
-        obj = self.get_object()
-        try:
-            if obj.path and os.path.exists(obj.path):
-                os.remove(obj.path)
-        except OSError as exc:
-            logger.warning("API delete — could not remove %s: %s", obj.path, exc)
-        obj.delete()
+        # post_delete signal in pdfeditor/signals.py cleans the file + thumbnail.
+        self.get_object().delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
