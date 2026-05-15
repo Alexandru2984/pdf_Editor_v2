@@ -21,6 +21,34 @@ from .models import Job, ProcessedPDF, UploadedPDF
 
 logger = logging.getLogger(__name__)
 
+# Whitelist-style validation for params that arrive via job.params (a JSONField
+# populated from forms or the API). Forms already restrict these to known
+# choices, but the API path lets clients send raw JSON — re-clamping here
+# prevents a hostile payload from coaxing the worker into a high-DPI render
+# (OOM) or an invalid tesseract language string.
+_ALLOWED_OCR_LANGS = {"eng", "ron", "eng+ron"}
+_ALLOWED_PDFA_VERSIONS = {"1b", "2b", "3b"}
+_ALLOWED_IMAGE_FORMATS = {"png", "jpg"}
+_MIN_DPI = 72
+_MAX_DPI = 600
+# Hard ceiling on chunk count for chat indexing. A 500-page PDF of dense text
+# yields ~5k chunks; anything above this is almost certainly a "word-soup" PDF
+# crafted to exhaust the embedding pool.
+_MAX_CHAT_CHUNKS = 5000
+
+
+def _clamp_dpi(raw: object, default: int) -> int:
+    try:
+        dpi = int(raw)
+    except (TypeError, ValueError):
+        dpi = default
+    return max(_MIN_DPI, min(dpi, _MAX_DPI))
+
+
+def _validate_choice(raw: object, allowed: set[str], default: str) -> str:
+    value = raw if isinstance(raw, str) else default
+    return value if value in allowed else default
+
 
 def _job_channel(job_id) -> str:
     return f"job:{job_id}"
@@ -139,8 +167,8 @@ def run_ocr_task(job_id: str) -> str | None:
         params = job.params or {}
         out, _ = make_pdf_searchable(
             job.source.path,
-            language=params.get("language", "eng+ron"),
-            dpi=int(params.get("dpi", 200)),
+            language=_validate_choice(params.get("language"), _ALLOWED_OCR_LANGS, "eng+ron"),
+            dpi=_clamp_dpi(params.get("dpi"), 200),
         )
         return out
 
@@ -153,7 +181,10 @@ def run_pdfa_task(job_id: str) -> str | None:
 
     def run(job: Job) -> str:
         params = job.params or {}
-        out, _ = convert_to_pdfa(job.source.path, version=params.get("version", "2b"))
+        out, _ = convert_to_pdfa(
+            job.source.path,
+            version=_validate_choice(params.get("version"), _ALLOWED_PDFA_VERSIONS, "2b"),
+        )
         return out
 
     return _safe_run(job_id, ProcessedPDF.KIND_PDFA, run)
@@ -219,8 +250,8 @@ def run_to_images_task(job_id: str) -> str | None:
 
         out, page_count = convert_pdf_to_images(
             job.source.path,
-            fmt=params.get("fmt", "png"),
-            dpi=int(params.get("dpi", 150)),
+            fmt=_validate_choice(params.get("fmt"), _ALLOWED_IMAGE_FORMATS, "png"),
+            dpi=_clamp_dpi(params.get("dpi"), 150),
             progress_cb=on_page,
         )
         # Stash page_count on the job so the result template can show it.
@@ -253,6 +284,13 @@ def run_chat_index_task(job_id: str) -> str | None:
         chunks = list(chunk_pdf(job.source.path))
         if not chunks:
             _fail(job, "No extractable text — run OCR first to make this PDF searchable.")
+            return None
+        if len(chunks) > _MAX_CHAT_CHUNKS:
+            _fail(
+                job,
+                f"PDF has too many text segments ({len(chunks)} > {_MAX_CHAT_CHUNKS}). "
+                "Try a shorter document.",
+            )
             return None
 
         # Wipe any prior embeddings for this PDF so reindex is idempotent.
