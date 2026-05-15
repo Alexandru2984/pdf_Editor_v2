@@ -280,12 +280,14 @@ Setup details in [.github/DEPLOY.md](.github/DEPLOY.md).
 - Audit log · storage quotas · share links · API keys
 - Auto-deploy CI/CD (GHCR + Trivy + SSH) · Sentry error tracking
 - Multi-language (EN + RO) · CSP enforced · 665 tests
+- PWA (installable, offline cache via service worker) · mobile-responsive
+  UI · dark mode toggle
+- Prometheus `/metrics` endpoint (IP-allowlisted) · load tested with
+  Locust (baseline / realistic / stress profiles, see [scripts/loadtest/benchmarks.md](scripts/loadtest/benchmarks.md))
 
 🚧 In progress / next
 
-- Prometheus `/metrics` + Grafana dashboard
-- PWA (installable, offline cache) + dark mode toggle
-- Load testing scenarios with Locust
+- Grafana dashboard wired to `/metrics` (Prometheus already exposed)
 - ADRs (architecture decision records) for the major design choices
 
 ## Project structure
