@@ -38,9 +38,12 @@ _MAX_CHAT_CHUNKS = 5000
 
 
 def _clamp_dpi(raw: object, default: int) -> int:
-    try:
-        dpi = int(raw)
-    except (TypeError, ValueError):
+    if isinstance(raw, (int, float, str)) and not isinstance(raw, bool):
+        try:
+            dpi = int(raw)
+        except (TypeError, ValueError):
+            dpi = default
+    else:
         dpi = default
     return max(_MIN_DPI, min(dpi, _MAX_DPI))
 
