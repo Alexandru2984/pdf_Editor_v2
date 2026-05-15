@@ -48,9 +48,12 @@ def _clamp_dpi(raw: object, default: int) -> int:
     return max(_MIN_DPI, min(dpi, _MAX_DPI))
 
 
-def _validate_choice(raw: object, allowed: set[str], default: str) -> str:
-    value = raw if isinstance(raw, str) else default
-    return value if value in allowed else default
+def _check_choice(raw: object, allowed: set[str], param_label: str) -> str:
+    """Strict whitelist check. Raises ValueError so _safe_run records a
+    helpful error_message — silent fallback would mask client misuse."""
+    if not isinstance(raw, str) or raw not in allowed:
+        raise ValueError(f"Invalid {param_label}: {raw!r}. Allowed: {sorted(allowed)}")
+    return raw
 
 
 def _job_channel(job_id) -> str:
@@ -170,7 +173,7 @@ def run_ocr_task(job_id: str) -> str | None:
         params = job.params or {}
         out, _ = make_pdf_searchable(
             job.source.path,
-            language=_validate_choice(params.get("language"), _ALLOWED_OCR_LANGS, "eng+ron"),
+            language=_check_choice(params.get("language", "eng+ron"), _ALLOWED_OCR_LANGS, "OCR language"),
             dpi=_clamp_dpi(params.get("dpi"), 200),
         )
         return out
@@ -186,7 +189,7 @@ def run_pdfa_task(job_id: str) -> str | None:
         params = job.params or {}
         out, _ = convert_to_pdfa(
             job.source.path,
-            version=_validate_choice(params.get("version"), _ALLOWED_PDFA_VERSIONS, "2b"),
+            version=_check_choice(params.get("version", "2b"), _ALLOWED_PDFA_VERSIONS, "PDF/A version"),
         )
         return out
 
@@ -253,7 +256,7 @@ def run_to_images_task(job_id: str) -> str | None:
 
         out, page_count = convert_pdf_to_images(
             job.source.path,
-            fmt=_validate_choice(params.get("fmt"), _ALLOWED_IMAGE_FORMATS, "png"),
+            fmt=_check_choice(params.get("fmt", "png"), _ALLOWED_IMAGE_FORMATS, "image format"),
             dpi=_clamp_dpi(params.get("dpi"), 150),
             progress_cb=on_page,
         )
