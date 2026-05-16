@@ -287,6 +287,107 @@ class ThrottleApiTests(_ApiTestBase):
         self.assertEqual(throttle.scope, "api_key_op")
 
 
+class JobsApiTests(_ApiTestBase):
+    """List with filters + cancel action on /api/v1/jobs/."""
+
+    def _make_job(self, kind="ocr_layer", status_=None, celery_task_id=""):
+        from .models import Job
+
+        return Job.objects.create(
+            user=self.user,
+            kind=kind,
+            status=status_ or Job.STATUS_QUEUED,
+            celery_task_id=celery_task_id,
+        )
+
+    def test_list_returns_only_own_jobs(self):
+        from .models import Job
+
+        self._make_job()
+        other = User.objects.create_user(username="bob", password="pw12345!")
+        Job.objects.create(user=other, kind="ocr_layer")
+
+        resp = self.client.get(reverse("api:job-list"))
+        self.assertEqual(resp.status_code, 200)
+        results = resp.json()["results"]
+        self.assertEqual(len(results), 1)
+
+    def test_filter_by_status(self):
+        from .models import Job
+
+        self._make_job(status_=Job.STATUS_QUEUED)
+        self._make_job(status_=Job.STATUS_DONE)
+        self._make_job(status_=Job.STATUS_RUNNING)
+
+        # Single status
+        resp = self.client.get(reverse("api:job-list") + "?status=done")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.json()["results"]), 1)
+
+        # Multi-status (OR)
+        resp = self.client.get(reverse("api:job-list") + "?status=queued&status=running")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.json()["results"]), 2)
+
+    def test_filter_by_kind(self):
+        self._make_job(kind="ocr_layer")
+        self._make_job(kind="pdfa")
+        self._make_job(kind="pdfa")
+
+        resp = self.client.get(reverse("api:job-list") + "?kind=pdfa")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.json()["results"]), 2)
+
+    def test_invalid_status_filter_is_ignored(self):
+        # Garbage statuses are dropped silently so callers can't probe.
+        self._make_job()
+        resp = self.client.get(reverse("api:job-list") + "?status=garbage")
+        self.assertEqual(resp.status_code, 200)
+        # No valid status → whole filter skipped, all rows returned.
+        self.assertEqual(len(resp.json()["results"]), 1)
+
+    def test_cancel_queued_job(self):
+        from unittest.mock import patch
+
+        from .models import Job
+
+        job = self._make_job(celery_task_id="task-abc")
+        # Bypass actually touching the broker.
+        with patch("pdf_project.celery.app.control.revoke") as mock_revoke:
+            resp = self.client.post(reverse("api:job-cancel", args=[job.id]))
+
+        self.assertEqual(resp.status_code, 200, resp.content)
+        body = resp.json()
+        self.assertEqual(body["status"], Job.STATUS_FAILED)
+        self.assertEqual(body["error_message"], "Cancelled by user")
+        mock_revoke.assert_called_once_with("task-abc", terminate=True, signal="SIGTERM")
+
+    def test_cancel_terminal_job_returns_409(self):
+        from .models import Job
+
+        job = self._make_job(status_=Job.STATUS_DONE)
+        resp = self.client.post(reverse("api:job-cancel", args=[job.id]))
+        self.assertEqual(resp.status_code, 409)
+
+    def test_cancel_other_users_job_returns_404(self):
+        from .models import Job
+
+        other = User.objects.create_user(username="mallory", password="pw12345!")
+        job = Job.objects.create(user=other, kind="ocr_layer")
+        resp = self.client.post(reverse("api:job-cancel", args=[job.id]))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_cancel_without_celery_id_still_marks_failed(self):
+        # Jobs created before the field existed have no celery_task_id;
+        # cancel should still flip status to failed without trying to revoke.
+        from .models import Job
+
+        job = self._make_job(celery_task_id="")
+        resp = self.client.post(reverse("api:job-cancel", args=[job.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["status"], Job.STATUS_FAILED)
+
+
 class OpenApiSchemaTests(_ApiTestBase):
     def test_schema_endpoint_returns_yaml(self):
         # Schema and docs are public — use anon client.

@@ -10,8 +10,9 @@ import os
 from django.conf import settings
 from django.contrib import messages
 from django.http import Http404, JsonResponse, StreamingHttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
+from django.views.decorators.http import require_POST
 
 from ..models import Job
 from ._common import attachment_response, owner_filter
@@ -77,6 +78,26 @@ def job_download_view(request, job_id):
         messages.error(request, _("Job output not found."))
         raise Http404
     return attachment_response(job.output.path)
+
+
+@require_POST
+def job_cancel_view(request, job_id):
+    """POST endpoint hit by the cancel button on the job detail page."""
+    from django.urls import reverse
+
+    from ..tasks import cancel_job
+
+    job = _user_job(request, job_id)
+    if cancel_job(job):
+        messages.success(request, _("Job cancelled."))
+    else:
+        messages.info(request, _("Job already finished."))
+    # If the caller is an HTMX/fetch request expecting JSON, oblige; the
+    # default is a redirect back to the detail page so the form-POST flow
+    # works without JS.
+    if request.headers.get("Accept", "").startswith("application/json"):
+        return JsonResponse({"status": job.status, "error_message": job.error_message})
+    return redirect(reverse("job_detail", args=[job.id]))
 
 
 # ---------- Server-Sent Events ----------

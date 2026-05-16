@@ -49,6 +49,15 @@
         <div class="tool-form-actions">
             <a href="{% url 'jobs_list' %}" class="btn btn-secondary">📜 {% trans "All jobs" %}</a>
             <a href="{% url 'dashboard' %}" class="btn btn-secondary">← {% trans "Dashboard" %}</a>
+            {% if not job.is_terminal %}
+            <form method="post" action="{% url 'job_cancel' job.id %}" id="job-cancel-form" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary" id="job-cancel-btn"
+                        onclick="return confirm('{% trans "Cancel this job?" %}');">
+                    ✖ {% trans "Cancel job" %}
+                </button>
+            </form>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -101,6 +110,9 @@ function applyUpdate(data) {
     }
 
     if (data.is_terminal) {
+        // Hide the cancel form — there's nothing left to cancel.
+        const cancelForm = document.getElementById("job-cancel-form");
+        if (cancelForm) cancelForm.style.display = "none";
         // chat_index has no downloadable output — bounce back to the chat
         // page once indexing is done. Fetched via the polling endpoint
         // since SSE only carries the core status payload.

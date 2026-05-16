@@ -260,6 +260,10 @@ class Job(models.Model):
     params = models.JSONField(default=dict, blank=True)
     progress = models.PositiveSmallIntegerField(default=0)
     error_message = models.CharField(max_length=500, blank=True)
+    # Celery's AsyncResult.id; populated by enqueue_job. Stored so the
+    # cancel endpoint can call ``app.control.revoke`` on the right task.
+    # Blank for jobs created before the field existed.
+    celery_task_id = models.CharField(max_length=64, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)

@@ -85,6 +85,7 @@ from .form_fill import (
 from .health import admin_health_view, healthz, readyz
 from .history import history_delete_view, history_download_view, history_view
 from .jobs import (
+    job_cancel_view,
     job_detail_view,
     job_download_view,
     job_events_view,
@@ -244,6 +245,7 @@ __all__ = [
     "job_status_view",
     "job_events_view",
     "job_download_view",
+    "job_cancel_view",
     "chat_view",
     "chat_message_view",
     "start_index_view",

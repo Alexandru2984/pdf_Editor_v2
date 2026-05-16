@@ -355,9 +355,41 @@ KIND_TO_TASK = {
 
 def enqueue_job(job: Job) -> None:
     """Look up the task for the job's kind and dispatch it. Raises KeyError
-    if the kind isn't async-enabled."""
+    if the kind isn't async-enabled. Persists the Celery task id on the
+    row so the cancel endpoint can revoke it later."""
     task = KIND_TO_TASK[job.kind]
-    task.delay(str(job.id))
+    result = task.delay(str(job.id))
+    if getattr(result, "id", None):
+        Job.objects.filter(pk=job.pk).update(celery_task_id=result.id)
+        job.celery_task_id = result.id
+
+
+def cancel_job(job: Job) -> bool:
+    """Cancel an in-flight Job. Idempotent — calling on a terminal job
+    is a no-op (returns False). Returns True iff this call moved the job
+    into a terminal state."""
+    if job.is_terminal():
+        return False
+
+    if job.celery_task_id:
+        # Revoke broadcasts to all workers; ``terminate=True`` SIGTERMs the
+        # process if the task already started. Imported lazily so the
+        # module still works in environments where the broker is absent
+        # (e.g. unit tests with CELERY_TASK_ALWAYS_EAGER).
+        try:
+            from pdf_project.celery import app as celery_app
+
+            celery_app.control.revoke(job.celery_task_id, terminate=True, signal="SIGTERM")
+        except Exception as exc:
+            logger.warning("Job %s revoke failed: %s — marking failed anyway", job.id, exc)
+
+    job.status = Job.STATUS_FAILED
+    job.error_message = "Cancelled by user"
+    job.finished_at = timezone.now()
+    job.save(update_fields=["status", "error_message", "finished_at"])
+    JOB_TOTAL.labels(kind=job.kind, status="failed").inc()
+    _publish_job_event(job)
+    return True
 
 
 # Use UploadedPDF in a no-op import-time reference so static analysers see

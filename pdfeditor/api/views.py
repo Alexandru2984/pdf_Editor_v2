@@ -14,7 +14,7 @@ import fitz
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.http import FileResponse, Http404
-from drf_spectacular.utils import OpenApiResponse, OpenApiTypes, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -161,12 +161,83 @@ class ProcessedPDFViewSet(viewsets.ReadOnlyModelViewSet):
 
 @extend_schema(tags=["Operations"])
 class JobViewSet(viewsets.ReadOnlyModelViewSet):
-    """Read async job state (queued/running/done/failed) + result link."""
+    """Read async job state (queued/running/done/failed) + result link.
+
+    The list endpoint supports ``?status=`` and ``?kind=`` query params
+    for narrowing — e.g. ``?status=queued&status=running`` to see what's
+    in flight, or ``?kind=ocr_layer`` to scope to one op type.
+    """
 
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     lookup_field = "id"
     throttle_scope_category = "read"
+    # Posting to /jobs/<id>/cancel/ touches more state than a plain list,
+    # so route it into the *_op bucket. Other actions stay "read".
+    _action_throttle_categories = {"cancel": "op"}
+
+    def get_throttles(self):
+        self.throttle_scope_category = self._action_throttle_categories.get(
+            self.action, "read"
+        )
+        return super().get_throttles()
 
     def get_queryset(self):
-        return Job.objects.filter(user=self.request.user)
+        qs = Job.objects.filter(user=self.request.user)
+        statuses = self.request.query_params.getlist("status") if hasattr(self.request, "query_params") else []
+        if statuses:
+            valid = {s for s, _ in Job.STATUS_CHOICES}
+            statuses = [s for s in statuses if s in valid]
+            if statuses:
+                qs = qs.filter(status__in=statuses)
+        kind = self.request.query_params.get("kind") if hasattr(self.request, "query_params") else None
+        if kind:
+            qs = qs.filter(kind=kind)
+        return qs
+
+    @extend_schema(
+        summary="List jobs",
+        parameters=[
+            OpenApiParameter(
+                "status",
+                OpenApiTypes.STR,
+                description="Filter by status. Repeat for OR (e.g. ?status=queued&status=running).",
+                many=True,
+                enum=[s for s, _ in Job.STATUS_CHOICES],
+            ),
+            OpenApiParameter(
+                "kind",
+                OpenApiTypes.STR,
+                description="Filter by job kind (e.g. ocr_layer, pdfa, compare).",
+            ),
+        ],
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="Cancel a running job",
+        description=(
+            "Revoke the underlying Celery task (SIGTERM if already running) "
+            "and mark the job failed with `error_message='Cancelled by user'`. "
+            "Idempotent — calling on an already-terminal job returns 409."
+        ),
+        request=None,
+        responses={
+            200: JobSerializer,
+            409: OpenApiResponse(description="Job already finished — nothing to cancel"),
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="cancel")
+    def cancel(self, request, id=None):
+        from ..tasks import cancel_job
+
+        job = self.get_object()
+        if not cancel_job(job):
+            return Response(
+                {"detail": f"Job is already in terminal state '{job.status}'."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        # Refresh from DB to pick up the updated finished_at/status.
+        job.refresh_from_db()
+        return Response(self.get_serializer(job).data)
