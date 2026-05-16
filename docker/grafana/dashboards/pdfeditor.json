@@ -1,0 +1,178 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "title": "PDF Editor",
+  "uid": "pdfeditor-main",
+  "version": 1,
+  "schemaVersion": 39,
+  "tags": ["pdfeditor"],
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "refresh": "15s",
+  "templating": {
+    "list": [
+      {
+        "name": "replica",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "query": "label_values(django_http_requests_total_by_method_total, replica)",
+        "includeAll": true,
+        "multi": true,
+        "refresh": 2,
+        "current": {"selected": true, "text": "All", "value": "$__all"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Replicas up",
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "count(up{job=\"pdfeditor-web\"} == 1)", "legendFormat": "up", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "none", "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 1}, {"color": "green", "value": 2}]}}}
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Request rate (5m)",
+      "gridPos": {"x": 4, "y": 0, "w": 5, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(django_http_requests_total_by_method_total{replica=~\"$replica\"}[5m]))", "legendFormat": "req/s", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 1}}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "5xx rate (5m)",
+      "gridPos": {"x": 9, "y": 0, "w": 5, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(django_http_responses_total_by_status_view_method_total{status=~\"5..\",replica=~\"$replica\"}[5m]))", "legendFormat": "5xx/s", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 0.1}, {"color": "red", "value": 1}]}}}
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Queued + running jobs",
+      "gridPos": {"x": 14, "y": 0, "w": 5, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(pdfeditor_job_queue_depth)", "legendFormat": "jobs", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "none", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 20}, {"color": "red", "value": 100}]}}}
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "p95 latency (5m)",
+      "gridPos": {"x": 19, "y": 0, "w": 5, "h": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum by (le) (rate(django_http_requests_latency_seconds_by_view_method_bucket{replica=~\"$replica\"}[5m])))", "legendFormat": "p95", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "decimals": 2}}
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "HTTP request rate by status",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum by (status) (rate(django_http_responses_total_by_status_view_method_total{replica=~\"$replica\"}[1m]))", "legendFormat": "{{status}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "reqps"}}
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Request latency percentiles",
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum by (le) (rate(django_http_requests_latency_seconds_by_view_method_bucket{replica=~\"$replica\"}[5m])))", "legendFormat": "p50", "refId": "A"},
+        {"expr": "histogram_quantile(0.95, sum by (le) (rate(django_http_requests_latency_seconds_by_view_method_bucket{replica=~\"$replica\"}[5m])))", "legendFormat": "p95", "refId": "B"},
+        {"expr": "histogram_quantile(0.99, sum by (le) (rate(django_http_requests_latency_seconds_by_view_method_bucket{replica=~\"$replica\"}[5m])))", "legendFormat": "p99", "refId": "C"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "PDF ops rate by kind",
+      "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum by (kind) (rate(pdfeditor_op_total[1m]))", "legendFormat": "{{kind}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "ops"}}
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "PDF ops p95 duration by kind",
+      "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum by (le, kind) (rate(pdfeditor_op_duration_seconds_bucket[5m])))", "legendFormat": "{{kind}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "Job queue depth (by status)",
+      "gridPos": {"x": 0, "y": 20, "w": 12, "h": 7},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "pdfeditor_job_queue_depth", "legendFormat": "{{status}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "none"}}
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Uploads & API key auth (per outcome)",
+      "gridPos": {"x": 12, "y": 20, "w": 12, "h": 7},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum by (outcome) (rate(pdfeditor_upload_total[1m]))", "legendFormat": "upload {{outcome}}", "refId": "A"},
+        {"expr": "sum by (outcome) (rate(pdfeditor_api_key_auth_total[1m]))", "legendFormat": "apikey {{outcome}}", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "ops"}}
+    },
+    {
+      "id": 40,
+      "type": "timeseries",
+      "title": "DB query duration p95 (by alias)",
+      "gridPos": {"x": 0, "y": 27, "w": 12, "h": 7},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum by (le, alias) (rate(django_db_query_duration_seconds_bucket{replica=~\"$replica\"}[5m])))", "legendFormat": "{{alias}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "id": 41,
+      "type": "timeseries",
+      "title": "Per-replica req/s",
+      "gridPos": {"x": 12, "y": 27, "w": 12, "h": 7},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum by (replica) (rate(django_http_requests_total_by_method_total{replica=~\"$replica\"}[1m]))", "legendFormat": "{{replica}}", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "reqps"}}
+    }
+  ]
+}

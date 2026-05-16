@@ -145,3 +145,39 @@ class CustomErrorPageTests(TestCase):
         self.assertEqual(resp.status_code, 404)
         # Our custom template renders the "Page not found" string
         self.assertContains(resp, "Page not found", status_code=404)
+
+
+class MetricsAllowlistTests(TestCase):
+    def test_exact_ip_match(self):
+        from pdfeditor.views.metrics import _ip_allowed
+
+        self.assertTrue(_ip_allowed("127.0.0.1", {"127.0.0.1"}))
+        self.assertFalse(_ip_allowed("127.0.0.2", {"127.0.0.1"}))
+
+    def test_cidr_match(self):
+        from pdfeditor.views.metrics import _ip_allowed
+
+        self.assertTrue(_ip_allowed("172.18.0.7", {"172.16.0.0/12"}))
+        self.assertTrue(_ip_allowed("10.0.0.5", {"10.0.0.0/8"}))
+        self.assertFalse(_ip_allowed("192.168.1.1", {"172.16.0.0/12"}))
+
+    def test_mixed_entries(self):
+        from pdfeditor.views.metrics import _ip_allowed
+
+        allow = {"127.0.0.1", "172.16.0.0/12"}
+        self.assertTrue(_ip_allowed("127.0.0.1", allow))
+        self.assertTrue(_ip_allowed("172.19.5.5", allow))
+        self.assertFalse(_ip_allowed("8.8.8.8", allow))
+
+    def test_invalid_ip_rejected(self):
+        from pdfeditor.views.metrics import _ip_allowed
+
+        self.assertFalse(_ip_allowed("", {"127.0.0.1"}))
+        self.assertFalse(_ip_allowed("not-an-ip", {"127.0.0.1"}))
+
+    def test_garbage_allowlist_entry_skipped(self):
+        from pdfeditor.views.metrics import _ip_allowed
+
+        # A bad entry must not crash the matcher; it should just be ignored
+        # so the rest of the allowlist still works.
+        self.assertTrue(_ip_allowed("127.0.0.1", {"not-a-cidr", "127.0.0.1"}))

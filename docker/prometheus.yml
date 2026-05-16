@@ -1,0 +1,30 @@
+# Prometheus scrape config for the pdf-editor compose stack.
+#
+# `dns_sd_configs` resolves the `web` service name against Docker's
+# embedded DNS, which returns one A record per replica. Scaling via
+# `docker compose up --scale web=N` is picked up automatically on the
+# next refresh — no Prometheus reload needed.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    deployment: pdfeditor
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: pdfeditor-web
+    metrics_path: /metrics
+    dns_sd_configs:
+      - names: ["web"]
+        type: A
+        port: 8000
+        refresh_interval: 15s
+    relabel_configs:
+      # Tag the time series with the replica IP so Grafana panels can
+      # break things down per replica.
+      - source_labels: [__address__]
+        target_label: replica

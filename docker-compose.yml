@@ -29,6 +29,9 @@ x-app-env: &app-env
   # on so per-op anon quotas (5/h on auth, 20/h on ops) still apply.
   RATELIMIT_ENABLE: ${RATELIMIT_ENABLE:-1}
   GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+  # Default covers Docker compose's bridge subnet so the bundled
+  # `prometheus` service can scrape /metrics on each web replica.
+  PROMETHEUS_METRICS_ALLOW: ${PROMETHEUS_METRICS_ALLOW:-127.0.0.1,172.16.0.0/12}
 
 services:
   db:
@@ -194,7 +197,47 @@ services:
       - embeddings_cache:/app/data/fastembed
     restart: unless-stopped
 
+  # Prometheus scrapes the web replicas' /metrics endpoints via Docker's
+  # embedded DNS (one A record per replica). The port is bound to
+  # 127.0.0.1 so it isn't reachable from the public network — access it
+  # locally or via SSH tunnel.
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    depends_on:
+      - web
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    depends_on:
+      - prometheus
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:
   embeddings_cache:
+  prometheus_data:
+  grafana_data:
