@@ -152,3 +152,110 @@ class CleanupCommandTests(TestCase):
         with self._override_media(), override_settings(PDF_CLEANUP_HOURS=24):
             output = self._run()  # no --hours argument
         self.assertIn("Deleted", output)
+
+
+class SweepOrphanFilesCommandTests(TestCase):
+    """sweep_orphan_files is age-agnostic and defaults to dry-run."""
+
+    def setUp(self):
+        self.media_root = _media_tmp()
+        self.uploads = os.path.join(self.media_root, "uploads")
+        self.processed = os.path.join(self.media_root, "processed")
+        self.thumbs = os.path.join(self.media_root, "thumbs")
+        for d in (self.uploads, self.processed, self.thumbs):
+            os.makedirs(d, exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.media_root, ignore_errors=True)
+
+    def _override(self):
+        return override_settings(MEDIA_ROOT=self.media_root)
+
+    def _run(self, *extra):
+        out = StringIO()
+        call_command("sweep_orphan_files", *extra, stdout=out)
+        return out.getvalue()
+
+    def _make_thumb(self, name):
+        path = os.path.join(self.thumbs, name)
+        with open(path, "wb") as fh:
+            fh.write(b"\xff\xd8\xff\xe0FAKE")  # not a real JPEG but file exists
+        return path
+
+    def test_dry_run_keeps_files(self):
+        orphan_upload = _make_file(self.uploads, "orphan.pdf")
+        with self._override():
+            output = self._run()  # no --apply
+
+        self.assertTrue(os.path.exists(orphan_upload))
+        self.assertIn("DRY-RUN", output)
+        self.assertIn("Would delete", output)
+        self.assertIn("Run with --apply", output)
+
+    def test_apply_removes_orphan_uploads(self):
+        orphan = _make_file(self.uploads, "orphan.pdf")
+        with self._override():
+            output = self._run("--apply")
+
+        self.assertFalse(os.path.exists(orphan))
+        self.assertIn("APPLY", output)
+        self.assertIn("Removed 1 orphan", output)
+
+    def test_apply_keeps_tracked_uploads(self):
+        path = _make_file(self.uploads, "tracked.pdf")
+        UploadedPDF.objects.create(
+            session_key="abc", name="tracked.pdf", path=path, size=os.path.getsize(path)
+        )
+        with self._override():
+            self._run("--apply")
+        self.assertTrue(os.path.exists(path))
+
+    def test_apply_removes_orphan_processed(self):
+        orphan = _make_file(self.processed, "stale-out.pdf")
+        with self._override():
+            self._run("--apply")
+        self.assertFalse(os.path.exists(orphan))
+
+    def test_apply_removes_orphan_thumbnail(self):
+        # Thumb whose UUID stem matches no live UploadedPDF row.
+        thumb = self._make_thumb("11111111-1111-1111-1111-111111111111.jpg")
+        with self._override():
+            self._run("--apply")
+        self.assertFalse(os.path.exists(thumb))
+
+    def test_apply_keeps_thumbnail_for_existing_pdf(self):
+        path = _make_file(self.uploads, "live.pdf")
+        live = UploadedPDF.objects.create(
+            session_key="abc", name="live.pdf", path=path, size=os.path.getsize(path)
+        )
+        thumb = self._make_thumb(f"{live.id}.jpg")
+        with self._override():
+            self._run("--apply")
+        self.assertTrue(os.path.exists(thumb))
+
+    def test_only_restricts_category(self):
+        orphan_upload = _make_file(self.uploads, "u.pdf")
+        orphan_proc = _make_file(self.processed, "p.pdf")
+        with self._override():
+            self._run("--apply", "--only", "uploads")
+        self.assertFalse(os.path.exists(orphan_upload))
+        # processed wasn't in --only → preserved
+        self.assertTrue(os.path.exists(orphan_proc))
+
+    def test_skips_non_jpg_files_in_thumbs(self):
+        # Anything we don't recognise (e.g. a .gitkeep) must be left alone.
+        keep = os.path.join(self.thumbs, ".gitkeep")
+        with open(keep, "wb") as fh:
+            fh.write(b"")
+        with self._override():
+            self._run("--apply")
+        self.assertTrue(os.path.exists(keep))
+
+    def test_handles_missing_directories(self):
+        empty = tempfile.mkdtemp()
+        try:
+            with override_settings(MEDIA_ROOT=empty):
+                output = self._run("--apply")
+            self.assertIn("Removed 0", output)
+        finally:
+            shutil.rmtree(empty, ignore_errors=True)
