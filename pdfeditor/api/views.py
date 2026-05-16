@@ -47,6 +47,17 @@ class UploadedPDFViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UploadedPDFSerializer
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     lookup_field = "id"
+    # Default category for actions not listed in the map below.
+    throttle_scope_category = "read"
+    # Per-action override; create (upload) is the heaviest path, destroy
+    # rewrites filesystem state so it costs more than a plain read.
+    _action_throttle_categories = {"create": "upload", "destroy": "op"}
+
+    def get_throttles(self):
+        self.throttle_scope_category = self._action_throttle_categories.get(
+            self.action, "read"
+        )
+        return super().get_throttles()
 
     def get_queryset(self):
         return UploadedPDF.objects.filter(user=self.request.user)
@@ -124,6 +135,7 @@ class ProcessedPDFViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProcessedPDF.objects.all()
     serializer_class = ProcessedPDFSerializer
     lookup_field = "id"
+    throttle_scope_category = "read"
 
     def get_queryset(self):
         return ProcessedPDF.objects.filter(user=self.request.user)
@@ -154,6 +166,7 @@ class JobViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     lookup_field = "id"
+    throttle_scope_category = "read"
 
     def get_queryset(self):
         return Job.objects.filter(user=self.request.user)

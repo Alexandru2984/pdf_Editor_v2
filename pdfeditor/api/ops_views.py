@@ -111,6 +111,10 @@ class _BaseOpView(APIView):
     """Shared boilerplate for op endpoints."""
 
     permission_classes = [IsAuthenticated]
+    # Picked up by ScopedAuthAwareThrottle to route into the *_op rate
+    # buckets (api_key_op / user_op / anon_op). Top-level APIView classes
+    # below that don't inherit this set the attribute themselves.
+    throttle_scope_category = "op"
     kind: str
     op_callable: Callable
     request_serializer: type[serializers.Serializer]
@@ -288,6 +292,7 @@ class SplitOpView(_BaseOpView):
 @extend_schema(tags=["Operations"], request=_MergeSerializer, responses={201: ProcessedPDFSerializer})
 class MergeOpView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_scope_category = "op"
     request_serializer = _MergeSerializer
 
     def post(self, request):
@@ -320,6 +325,7 @@ class SearchableOpView(APIView):
     """Queue an OCR job. Returns 202 + job_id; poll /api/v1/jobs/<id>/ for status."""
 
     permission_classes = [IsAuthenticated]
+    throttle_scope_category = "op"
 
     def post(self, request):
         in_ser = _OcrSerializer(data=request.data)
@@ -339,6 +345,7 @@ class PdfaOpView(APIView):
     """Queue a PDF/A conversion. Returns 202 + job_id."""
 
     permission_classes = [IsAuthenticated]
+    throttle_scope_category = "op"
 
     def post(self, request):
         in_ser = _PdfaSerializer(data=request.data)
@@ -431,6 +438,7 @@ class CompareOpView(APIView):
     """Queue a comparison job. Returns 202 + job_id."""
 
     permission_classes = [IsAuthenticated]
+    throttle_scope_category = "op"
 
     def post(self, request):
         in_ser = _CompareSerializer(data=request.data)
@@ -476,6 +484,7 @@ class ToImagesOpView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_scope_category = "op"
 
     def post(self, request):
         from django.conf import settings as dj_settings
@@ -556,6 +565,7 @@ class ChatOpView(APIView):
     chat web flow or by enqueueing a chat_index Job manually."""
 
     permission_classes = [IsAuthenticated]
+    throttle_scope_category = "op"
 
     def post(self, request):
         in_ser = _ChatSerializer(data=request.data)
@@ -598,6 +608,7 @@ class ConvertDocxOpView(APIView):
     """Queue PDF→DOCX conversion. Returns 202 + job_id."""
 
     permission_classes = [IsAuthenticated]
+    throttle_scope_category = "op"
 
     def post(self, request):
         in_ser = _ConvertSerializer(data=request.data)
@@ -625,6 +636,7 @@ class ApiRootView(APIView):
 
     authentication_classes: list = []
     permission_classes: list = []  # public
+    throttle_scope_category = "read"
 
     def get(self, request):
         from django.urls import reverse

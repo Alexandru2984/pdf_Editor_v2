@@ -79,17 +79,28 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     # Throttle classes — empty list when RATELIMIT_ENABLE=0 (load testing).
+    # The scoped throttle picks a rate at request time from the
+    # auth_method × category matrix in DEFAULT_THROTTLE_RATES below.
     "DEFAULT_THROTTLE_CLASSES": (
-        [
-            "pdfeditor.api.throttles.ApiKeyRateThrottle",
-            "rest_framework.throttling.AnonRateThrottle",
-        ]
+        ["pdfeditor.api.throttles.ScopedAuthAwareThrottle"]
         if os.environ.get("RATELIMIT_ENABLE", "1").lower() not in ("0", "false", "no")
         else []
     ),
+    # Matrix of (auth_method × view category). Missing keys leave that
+    # combination unlimited. Tune budgets here, not in code.
+    #   read   – list/retrieve/download
+    #   op     – PDF operations (compress, rotate, watermark, …)
+    #   upload – multipart uploads (heaviest path, tightest cap)
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "20/hour",
-        "api_key": "300/hour",
+        "api_key_read":   "1000/hour",
+        "api_key_op":     "300/hour",
+        "api_key_upload": "60/hour",
+        "user_read":      "600/hour",
+        "user_op":        "150/hour",
+        "user_upload":    "30/hour",
+        "anon_read":      "60/hour",
+        "anon_op":        "10/hour",
+        "anon_upload":    "5/hour",
     },
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     # Paginate list endpoints. Without this, /api/v1/outputs/ serialized

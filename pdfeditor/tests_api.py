@@ -211,41 +211,80 @@ class OutputApiTests(_ApiTestBase):
 
 
 class ThrottleApiTests(_ApiTestBase):
-    """Verify our per-API-key throttle generates distinct keys; the actual
-    rate-limiting logic is upstream in DRF and well-covered there."""
+    """Verify scope selection on ScopedAuthAwareThrottle. The actual
+    request-counting logic is upstream in DRF and well-covered there."""
 
-    def test_throttle_key_is_per_api_key(self):
+    def _make_view(self, category):
+        class _View:
+            throttle_scope_category = category
+
+        return _View()
+
+    def test_scope_for_api_key_request(self):
         from rest_framework.test import APIRequestFactory
 
-        from .api.throttles import ApiKeyRateThrottle
+        from .api.throttles import ScopedAuthAwareThrottle
+
+        req = APIRequestFactory().get("/api/v1/pdfs/")
+        req.auth = self.api_key_obj
+        req.user = self.user
+
+        throttle = ScopedAuthAwareThrottle()
+        throttle.allow_request(req, self._make_view("op"))
+        self.assertEqual(throttle.scope, "api_key_op")
+
+    def test_scope_for_anon_upload(self):
+        from rest_framework.test import APIRequestFactory
+
+        from .api.throttles import ScopedAuthAwareThrottle
+
+        req = APIRequestFactory().get("/api/v1/pdfs/")
+        req.auth = None
+        # Default anon request from APIRequestFactory has user=None; mimic
+        # what DRF sets after auth runs.
+        from django.contrib.auth.models import AnonymousUser
+
+        req.user = AnonymousUser()
+
+        throttle = ScopedAuthAwareThrottle()
+        throttle.allow_request(req, self._make_view("upload"))
+        self.assertEqual(throttle.scope, "anon_upload")
+
+    def test_cache_key_distinct_per_api_key(self):
+        from rest_framework.test import APIRequestFactory
+
+        from .api.throttles import ScopedAuthAwareThrottle
 
         factory = APIRequestFactory()
         req1 = factory.get("/api/v1/pdfs/")
         req1.auth = self.api_key_obj
+        req1.user = self.user
 
         other_user = User.objects.create_user(username="zoe", password="pw")
         other_key, _ = ApiKey.create_for_user(other_user)
         req2 = factory.get("/api/v1/pdfs/")
         req2.auth = other_key
+        req2.user = other_user
 
-        throttle = ApiKeyRateThrottle()
-        key1 = throttle.get_cache_key(req1, view=None)
-        key2 = throttle.get_cache_key(req2, view=None)
-        self.assertIsNotNone(key1)
-        self.assertIsNotNone(key2)
-        self.assertNotEqual(key1, key2)
-        self.assertIn("api_key", key1)
+        t1 = ScopedAuthAwareThrottle()
+        t2 = ScopedAuthAwareThrottle()
+        t1.allow_request(req1, self._make_view("op"))
+        t2.allow_request(req2, self._make_view("op"))
+        self.assertNotEqual(t1.key, t2.key)
+        self.assertIn("api_key_op", t1.key)
 
-    def test_throttle_skips_session_auth(self):
-        """When request.auth is not an ApiKey (e.g. session login), our
-        throttle returns None so DRF falls back to the default throttles."""
+    def test_unknown_category_falls_back_to_op(self):
         from rest_framework.test import APIRequestFactory
 
-        from .api.throttles import ApiKeyRateThrottle
+        from .api.throttles import ScopedAuthAwareThrottle
 
         req = APIRequestFactory().get("/api/v1/pdfs/")
-        req.auth = None
-        self.assertIsNone(ApiKeyRateThrottle().get_cache_key(req, view=None))
+        req.auth = self.api_key_obj
+        req.user = self.user
+
+        throttle = ScopedAuthAwareThrottle()
+        throttle.allow_request(req, self._make_view("not-a-real-category"))
+        self.assertEqual(throttle.scope, "api_key_op")
 
 
 class OpenApiSchemaTests(_ApiTestBase):
