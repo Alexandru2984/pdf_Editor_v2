@@ -206,7 +206,11 @@ services:
     depends_on:
       - web
     ports:
-      - "127.0.0.1:9090:9090"
+      # 9090 on this host is already taken by a systemd-managed Prometheus
+      # (pre-dating this stack). Bind to 9091 so the containerized one
+      # coexists. The internal port stays 9090 so scrape configs etc.
+      # don't need to change.
+      - "127.0.0.1:9091:9090"
     volumes:
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -222,7 +226,10 @@ services:
     depends_on:
       - prometheus
     ports:
-      - "127.0.0.1:3000:3000"
+      # 3000 is taken by pixel-art-multiplayer (node), 3001 by a Rails
+      # Puma, 3002 by something else. 3003 is the first free slot in
+      # the 3xxx band on this host.
+      - "127.0.0.1:3003:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set in .env}
       GF_USERS_ALLOW_SIGN_UP: "false"

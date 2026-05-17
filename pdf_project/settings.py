@@ -337,6 +337,11 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = SECURE_SSL
 CSRF_COOKIE_SECURE = SECURE_SSL
 SECURE_SSL_REDIRECT = SECURE_SSL
+# /metrics is scraped from inside the docker network by Prometheus, which
+# speaks plain HTTP. Without this exempt, Django redirects to HTTPS and
+# Prometheus can't follow because uvicorn doesn't terminate TLS itself.
+# Healthchecks have the same problem when called by orchestration probes.
+SECURE_REDIRECT_EXEMPT = [r"^metrics$", r"^healthz$", r"^readyz$"]
 SECURE_HSTS_SECONDS = 31536000 if SECURE_SSL else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_SSL
 SECURE_HSTS_PRELOAD = SECURE_SSL
