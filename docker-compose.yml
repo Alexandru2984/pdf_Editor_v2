@@ -249,9 +249,39 @@ services:
       - grafana_data:/var/lib/grafana
     restart: unless-stopped
 
+  # Log aggregation: Loki stores logs, Promtail ships them off each
+  # container's stdout/stderr via the docker daemon socket. Logs are
+  # then queryable from Grafana via the provisioned Loki datasource.
+  loki:
+    image: grafana/loki:3.3.0
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./docker/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.3.0
+    depends_on:
+      - loki
+    volumes:
+      - ./docker/promtail-config.yml:/etc/promtail/config.yml:ro
+      # Read-only access to the docker socket + container log directory.
+      # Promtail uses the socket only for service discovery (listing
+      # containers + their labels); it reads log files directly.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - promtail_data:/promtail
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:
   embeddings_cache:
   prometheus_data:
   grafana_data:
+  loki_data:
+  promtail_data:
