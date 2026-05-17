@@ -37,6 +37,7 @@ from ..pdf_processor import (
     rotate_pages,
     set_pdf_outline,
     split_pdf,
+    summarize_pdf,
 )
 from ..tasks import enqueue_job
 from ..views._common import _client_ip
@@ -651,19 +652,55 @@ class ConvertDocxOpView(APIView):
         return _job_response(job, request)
 
 
+class _SummarizeSerializer(_PdfIdSerializer):
+    language = serializers.CharField(default="English", help_text="Output language (e.g. English, Romanian).")
+
+
 @extend_schema(
-    tags=["PDFs"],
+    tags=["Operations"],
+    request=_SummarizeSerializer,
     responses={
         200: inline_serializer(
-            name="OpenAPIRoot",
+            name="SummaryResponse",
             fields={
-                "version": serializers.CharField(),
-                "docs_url": serializers.CharField(),
-                "endpoints": serializers.DictField(),
+                "summary": serializers.CharField(),
+                "truncated": serializers.BooleanField(),
+                "chars_used": serializers.IntegerField(),
+                "language": serializers.CharField(),
             },
         ),
+        409: OpenApiResponse(description="No extractable text — run OCR first"),
+        502: OpenApiResponse(description="Upstream LLM error"),
     },
 )
+class SummarizeOpView(APIView):
+    """Single-shot document summary via Groq.
+
+    Sync — the LLM call is bounded (~30s) and there's no per-PDF state
+    to maintain, so we don't need a Job. Output is not persisted;
+    re-call to get a fresh summary."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope_category = "op"
+
+    def post(self, request):
+        in_ser = _SummarizeSerializer(data=request.data)
+        in_ser.is_valid(raise_exception=True)
+        pdf = _user_pdf(request.user, in_ser.validated_data["pdf_id"])
+        language = in_ser.validated_data["language"]
+        try:
+            result = summarize_pdf(pdf.path, language=language)
+        except ValueError as exc:
+            # "No extractable text" → 409 so clients can react (e.g. offer
+            # to run OCR first). Other ValueErrors (LLM upstream) → 502.
+            msg = str(exc)
+            if "OCR" in msg:
+                return Response({"detail": msg}, status=status.HTTP_409_CONFLICT)
+            return Response({"detail": msg}, status=status.HTTP_502_BAD_GATEWAY)
+        result["language"] = language
+        return Response(result)
+
+
 @extend_schema(tags=["Operations"], request=_BatchSerializer, responses={202: None})
 class BatchOpView(APIView):
     """Apply one op to many PDFs in a single async job.
@@ -721,6 +758,19 @@ class BatchOpView(APIView):
         return _job_response(job, request)
 
 
+@extend_schema(
+    tags=["PDFs"],
+    responses={
+        200: inline_serializer(
+            name="OpenAPIRoot",
+            fields={
+                "version": serializers.CharField(),
+                "docs_url": serializers.CharField(),
+                "endpoints": serializers.DictField(),
+            },
+        ),
+    },
+)
 class ApiRootView(APIView):
     """Discover endpoints + version, no auth required."""
 

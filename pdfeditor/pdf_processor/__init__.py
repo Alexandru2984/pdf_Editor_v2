@@ -40,6 +40,7 @@ from .ops import (
     split_pdf,
     verify_pdf_signatures,
 )
+from .summarize import summarize_pdf
 
 __all__ = [
     "check_pdf_has_text",
@@ -55,6 +56,7 @@ __all__ = [
     "convert_to_pdfa",
     "crop_pages",
     "flatten_pdf",
+    "summarize_pdf",
     "read_pdf_metadata",
     "read_pdf_outline",
     "set_pdf_outline",

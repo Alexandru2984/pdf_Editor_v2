@@ -287,6 +287,55 @@ class ThrottleApiTests(_ApiTestBase):
         self.assertEqual(throttle.scope, "api_key_op")
 
 
+class SummarizeApiTests(_ApiTestBase):
+    """The /ops/summarize/ endpoint. Mocks Groq so we don't hit the network."""
+
+    def test_returns_summary(self):
+        from unittest.mock import patch
+
+        pdf = self._upload(num_pages=1, name="doc.pdf")
+        with patch("pdfeditor.pdf_processor.summarize._call_groq") as mock_groq:
+            mock_groq.return_value = ("This document is about cats.", None)
+            resp = self.client.post(
+                reverse("api:op-summarize"),
+                {"pdf_id": str(pdf.id), "language": "English"},
+                format="json",
+            )
+
+        self.assertEqual(resp.status_code, 200, resp.content)
+        body = resp.json()
+        self.assertEqual(body["summary"], "This document is about cats.")
+        self.assertEqual(body["language"], "English")
+        self.assertFalse(body["truncated"])
+
+    def test_no_extractable_text_returns_409(self):
+        from unittest.mock import patch
+
+        pdf = self._upload(num_pages=1, name="scanned.pdf")
+        with patch("pdfeditor.pdf_processor.summarize.extract_text_from_pdf") as mock_extract:
+            mock_extract.return_value = "No text found in PDF. This might be a scanned document - try OCR instead."
+            resp = self.client.post(
+                reverse("api:op-summarize"),
+                {"pdf_id": str(pdf.id)},
+                format="json",
+            )
+        self.assertEqual(resp.status_code, 409)
+        self.assertIn("OCR", resp.json()["detail"])
+
+    def test_upstream_failure_returns_502(self):
+        from unittest.mock import patch
+
+        pdf = self._upload(num_pages=1, name="doc.pdf")
+        with patch("pdfeditor.pdf_processor.summarize._call_groq") as mock_groq:
+            mock_groq.return_value = ("", "Groq error 503")
+            resp = self.client.post(
+                reverse("api:op-summarize"),
+                {"pdf_id": str(pdf.id)},
+                format="json",
+            )
+        self.assertEqual(resp.status_code, 502)
+
+
 class BatchApiTests(_ApiTestBase):
     """End-to-end: POST /ops/batch/ → run task locally → check Job + outputs."""
 
