@@ -22,6 +22,7 @@ router.register(r"outputs", views.ProcessedPDFViewSet, basename="output")
 router.register(r"jobs", views.JobViewSet, basename="job")
 
 op_patterns = [
+    path("batch/", ops_views.BatchOpView.as_view(), name="op-batch"),
     path("compress/", ops_views.CompressOpView.as_view(), name="op-compress"),
     path("split/", ops_views.SplitOpView.as_view(), name="op-split"),
     path("merge/", ops_views.MergeOpView.as_view(), name="op-merge"),

@@ -364,6 +364,99 @@ def enqueue_job(job: Job) -> None:
         job.celery_task_id = result.id
 
 
+@shared_task(name="pdfeditor.run_batch")
+def run_batch_task(job_id: str) -> str | None:
+    """Apply one op to a list of PDFs, one after the other.
+
+    Unlike single-PDF tasks this produces multiple ProcessedPDF rows, so
+    we don't fit the ``_safe_run`` single-output contract. Per-PDF results
+    are kept in ``job.params['results']`` and progress advances after
+    each step so SSE/poll clients see motion instead of one big jump."""
+    from .api.batch_ops import BATCH_OPS
+
+    try:
+        job = Job.objects.get(id=job_id)
+    except Job.DoesNotExist:
+        logger.warning("Batch task fired for missing job %s", job_id)
+        return None
+
+    params = job.params or {}
+    op_name = params.get("op")
+    pdf_ids = params.get("pdf_ids") or []
+    op_params = params.get("op_params") or {}
+
+    if op_name not in BATCH_OPS:
+        _fail(job, f"Unknown batch op '{op_name}'.")
+        return None
+    if not pdf_ids:
+        _fail(job, "Empty batch — no PDFs to process.")
+        return None
+
+    output_kind, runner = BATCH_OPS[op_name]
+    _start(job)
+
+    results: list[dict] = []
+    successes = 0
+    total = len(pdf_ids)
+    for idx, pid in enumerate(pdf_ids):
+        pdf = UploadedPDF.objects.filter(user=job.user, id=pid).first()
+        if pdf is None or not pdf.exists_on_disk():
+            results.append({"pdf_id": str(pid), "error": "PDF not found"})
+        else:
+            try:
+                out_path = runner(pdf.path, op_params)
+                if isinstance(out_path, tuple):
+                    out_path = out_path[0]
+                output = ProcessedPDF.objects.create(
+                    user=job.user,
+                    session_key=job.session_key,
+                    kind=output_kind,
+                    source=pdf,
+                    name=os.path.basename(out_path),
+                    path=out_path,
+                    size=os.path.getsize(out_path) if os.path.exists(out_path) else 0,
+                )
+                results.append({"pdf_id": str(pid), "output_id": str(output.id)})
+                successes += 1
+                OP_TOTAL.labels(kind=output_kind, outcome="success").inc()
+            except SoftTimeLimitExceeded:
+                # The whole batch's budget is shared; abort the remaining
+                # items rather than push past the limit.
+                results.append({"pdf_id": str(pid), "error": "Batch timed out"})
+                break
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("Batch op %s failed for pdf %s", op_name, pid)
+                results.append({"pdf_id": str(pid), "error": f"{exc.__class__.__name__}: {exc}"[:200]})
+                OP_TOTAL.labels(kind=output_kind, outcome="failure").inc()
+
+        pct = int(((idx + 1) / total) * 100)
+        job.progress = min(pct, 99)
+        merged = dict(job.params or {})
+        merged["results"] = results
+        Job.objects.filter(pk=job.pk).update(progress=job.progress, params=merged)
+        _publish_job_event(job)
+
+    # Final state — done if at least one succeeded, otherwise failed.
+    job.refresh_from_db()
+    job.progress = 100
+    job.finished_at = timezone.now()
+    merged = dict(job.params or {})
+    merged["results"] = results
+    if successes == 0:
+        job.status = Job.STATUS_FAILED
+        job.error_message = "All PDFs in the batch failed."
+        JOB_TOTAL.labels(kind=job.kind, status="failed").inc()
+    else:
+        job.status = Job.STATUS_DONE
+        if successes < total:
+            job.error_message = f"{total - successes}/{total} PDFs failed (partial success)."
+        JOB_TOTAL.labels(kind=job.kind, status="done").inc()
+    job.params = merged
+    job.save(update_fields=["status", "progress", "error_message", "finished_at", "params"])
+    _publish_job_event(job)
+    return str(job.id)
+
+
 def cancel_job(job: Job) -> bool:
     """Cancel an in-flight Job. Idempotent — calling on a terminal job
     is a no-op (returns False). Returns True iff this call moved the job

@@ -236,6 +236,39 @@ class _WatermarkSerializer(_PdfIdSerializer):
     opacity = serializers.FloatField(min_value=0.05, max_value=1.0, default=0.3)
 
 
+class _BatchSerializer(serializers.Serializer):
+    """Apply one op to a list of PDFs. Params are passed through to the op
+    handler unchanged — per-PDF validation lives in the handler."""
+
+    op = serializers.ChoiceField(choices=[])  # populated in __init__
+    pdf_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        min_length=1,
+        help_text="UUIDs of UploadedPDFs to process.",
+    )
+    params = serializers.DictField(
+        required=False,
+        default=dict,
+        help_text="Op-specific parameters, applied identically to each PDF.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        from .batch_ops import BATCH_OPS, MAX_BATCH_SIZE
+
+        super().__init__(*args, **kwargs)
+        self.fields["op"].choices = sorted(BATCH_OPS.keys())
+        self._max_size = MAX_BATCH_SIZE
+
+    def validate_pdf_ids(self, value):
+        if len(value) > self._max_size:
+            raise serializers.ValidationError(
+                f"At most {self._max_size} PDFs per batch."
+            )
+        if len(set(value)) != len(value):
+            raise serializers.ValidationError("Duplicate pdf_ids in batch.")
+        return value
+
+
 class _ConvertSerializer(_PdfIdSerializer):
     pass
 
@@ -631,6 +664,63 @@ class ConvertDocxOpView(APIView):
         ),
     },
 )
+@extend_schema(tags=["Operations"], request=_BatchSerializer, responses={202: None})
+class BatchOpView(APIView):
+    """Apply one op to many PDFs in a single async job.
+
+    The same op + params are applied to each PDF; results live in the
+    Job's ``params['results']`` list (one entry per input). Progress
+    advances after each PDF completes, so SSE/poll clients see live
+    movement instead of one big jump at the end.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope_category = "op"
+
+    def post(self, request):
+        from .batch_ops import BATCH_OPS
+
+        in_ser = _BatchSerializer(data=request.data)
+        in_ser.is_valid(raise_exception=True)
+        op_name = in_ser.validated_data["op"]
+        pdf_ids = in_ser.validated_data["pdf_ids"]
+        op_params = in_ser.validated_data["params"]
+
+        # Validate ownership for every requested PDF before we accept
+        # the job — partial-batch rejection is friendlier than queueing
+        # work that's going to fail per-row on the worker.
+        owned = UploadedPDF.objects.filter(user=request.user, id__in=pdf_ids)
+        owned_ids = {str(pid) for pid in owned.values_list("id", flat=True)}
+        missing = [str(p) for p in pdf_ids if str(p) not in owned_ids]
+        if missing:
+            raise ValidationError({"pdf_ids": f"Not found: {missing}"})
+
+        # Sanity: confirm the op is in the registry. (DRF's ChoiceField
+        # already guards this; the extra check is for clarity + future
+        # registry edits.)
+        if op_name not in BATCH_OPS:
+            raise ValidationError({"op": f"Unknown op '{op_name}'."})
+
+        job = Job.objects.create(
+            user=request.user,
+            session_key="",
+            kind=f"batch:{op_name}",
+            params={
+                "op": op_name,
+                "pdf_ids": [str(p) for p in pdf_ids],
+                "op_params": op_params,
+            },
+        )
+        from ..tasks import run_batch_task
+
+        result = run_batch_task.delay(str(job.id))
+        if getattr(result, "id", None):
+            Job.objects.filter(pk=job.pk).update(celery_task_id=result.id)
+            job.celery_task_id = result.id
+
+        return _job_response(job, request)
+
+
 class ApiRootView(APIView):
     """Discover endpoints + version, no auth required."""
 

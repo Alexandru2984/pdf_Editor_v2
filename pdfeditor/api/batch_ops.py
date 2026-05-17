@@ -1,0 +1,108 @@
+"""Registry of sync-only PDF ops that the batch endpoint can dispatch.
+
+Each entry maps a public op name to:
+
+* the ``ProcessedPDF.kind`` to write on successful outputs, and
+* a runner ``(pdf_path, params) -> out_path``.
+
+Async-only ops (OCR layer, PDF/A, compare, convert-docx, to-images) are
+intentionally excluded — they already run as standalone jobs, batching
+them would just be a job spawning jobs. Multi-input ops (merge) are
+excluded too since the batch contract is "one op applied to each PDF".
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+
+from ..models import ProcessedPDF
+from ..pdf_processor import (
+    add_page_numbers,
+    add_watermark,
+    compress_pdf,
+    edit_pdf_metadata,
+    flatten_pdf,
+    protect_pdf,
+    redact_text,
+    remove_pdf_password,
+    rotate_pages,
+)
+
+OpRunner = Callable[[str, dict], str]
+
+
+def _compress(pdf_path: str, params: dict) -> str:
+    out, *_ = compress_pdf(pdf_path, quality=params.get("quality", "medium"))
+    return out
+
+
+def _rotate(pdf_path: str, params: dict) -> str:
+    return rotate_pages(
+        pdf_path,
+        rotation_angle=params["rotation_angle"],
+        page_range=params.get("page_range") or None,
+    )
+
+
+def _watermark(pdf_path: str, params: dict) -> str:
+    return add_watermark(
+        pdf_path,
+        params["text"],
+        opacity=params.get("opacity", 0.3),
+        color=params.get("color", "gray"),
+        size=params.get("size", 40),
+    )
+
+
+def _flatten(pdf_path: str, _params: dict) -> str:
+    return flatten_pdf(pdf_path)
+
+
+def _page_numbers(pdf_path: str, params: dict) -> str:
+    return add_page_numbers(
+        pdf_path,
+        position=params.get("position", "bottom-center"),
+    )
+
+
+def _metadata(pdf_path: str, params: dict) -> str:
+    return edit_pdf_metadata(pdf_path, params)
+
+
+def _protect(pdf_path: str, params: dict) -> str:
+    return protect_pdf(
+        pdf_path,
+        user_password=params["user_password"],
+        owner_password=params.get("owner_password") or None,
+    )
+
+
+def _unprotect(pdf_path: str, params: dict) -> str:
+    return remove_pdf_password(pdf_path, params["password"])
+
+
+def _redact(pdf_path: str, params: dict) -> str:
+    out, _ = redact_text(
+        pdf_path,
+        params["search_terms"],
+        page_range=params.get("page_range") or None,
+    )
+    return out
+
+
+BATCH_OPS: dict[str, tuple[str, OpRunner]] = {
+    "compress":     (ProcessedPDF.KIND_COMPRESS,     _compress),
+    "rotate":       (ProcessedPDF.KIND_ROTATE,       _rotate),
+    "watermark":    (ProcessedPDF.KIND_WATERMARK,    _watermark),
+    "flatten":      (ProcessedPDF.KIND_FLATTEN,      _flatten),
+    "page-numbers": (ProcessedPDF.KIND_PAGE_NUMBERS, _page_numbers),
+    "metadata":     (ProcessedPDF.KIND_METADATA,     _metadata),
+    "protect":      (ProcessedPDF.KIND_PROTECT,      _protect),
+    "unprotect":    (ProcessedPDF.KIND_UNPROTECT,    _unprotect),
+    "redact":       (ProcessedPDF.KIND_REDACT,       _redact),
+}
+
+#: Cap so a single user can't fan out an unbounded amount of work in one
+#: request. Picked to match the upload quota for typical users while
+#: still letting bulk archives through.
+MAX_BATCH_SIZE = 50

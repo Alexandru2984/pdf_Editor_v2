@@ -287,6 +287,116 @@ class ThrottleApiTests(_ApiTestBase):
         self.assertEqual(throttle.scope, "api_key_op")
 
 
+class BatchApiTests(_ApiTestBase):
+    """End-to-end: POST /ops/batch/ → run task locally → check Job + outputs."""
+
+    def test_rejects_unowned_pdf(self):
+        from .models import UploadedPDF
+
+        mine = self._upload(num_pages=1, name="mine.pdf")
+        other_user = User.objects.create_user(username="eve", password="pw")
+        their_pdf = UploadedPDF.objects.create(
+            user=other_user, session_key="", name="theirs.pdf",
+            path=os.path.join(_MEDIA_ROOT, "uploads", "theirs.pdf"), size=100,
+        )
+
+        resp = self.client.post(
+            reverse("api:op-batch"),
+            {"op": "compress", "pdf_ids": [str(mine.id), str(their_pdf.id)], "params": {}},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("Not found", str(resp.json()))
+
+    def test_rejects_unknown_op(self):
+        mine = self._upload(num_pages=1)
+        resp = self.client.post(
+            reverse("api:op-batch"),
+            {"op": "fly-to-mars", "pdf_ids": [str(mine.id)]},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("op", resp.json())
+
+    def test_rejects_oversized_batch(self):
+        from .api.batch_ops import MAX_BATCH_SIZE
+        from .models import UploadedPDF
+
+        pdf_ids = []
+        for i in range(MAX_BATCH_SIZE + 1):
+            row = UploadedPDF.objects.create(
+                user=self.user, session_key="", name=f"f{i}.pdf",
+                path=f"/dev/null/f{i}.pdf", size=10,
+            )
+            pdf_ids.append(str(row.id))
+
+        resp = self.client.post(
+            reverse("api:op-batch"),
+            {"op": "compress", "pdf_ids": pdf_ids},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    def test_runs_batch_inline(self):
+        from .models import Job, ProcessedPDF
+        from .tasks import run_batch_task
+
+        pdf_a = self._upload(num_pages=2, name="a.pdf")
+        pdf_b = self._upload(num_pages=1, name="b.pdf")
+
+        # The view returns 202 with job_id but in tests CELERY_TASK_ALWAYS_EAGER
+        # isn't set — so we submit the request, capture the job_id, then run
+        # the task synchronously to verify the worker side.
+        from unittest.mock import patch
+
+        with patch("pdfeditor.api.ops_views.run_batch_task") as mocked:
+            mocked.delay.return_value = type("R", (), {"id": "stub"})()
+            resp = self.client.post(
+                reverse("api:op-batch"),
+                {"op": "compress", "pdf_ids": [str(pdf_a.id), str(pdf_b.id)], "params": {"quality": "medium"}},
+                format="json",
+            )
+        self.assertEqual(resp.status_code, 202)
+        job_id = resp.json()["job_id"]
+
+        # Run the actual task body synchronously against the persisted Job.
+        run_batch_task(job_id)
+
+        job = Job.objects.get(id=job_id)
+        self.assertEqual(job.status, Job.STATUS_DONE)
+        self.assertEqual(job.progress, 100)
+        results = job.params["results"]
+        self.assertEqual(len(results), 2)
+        self.assertTrue(all("output_id" in r for r in results))
+        self.assertEqual(ProcessedPDF.objects.filter(user=self.user, kind=ProcessedPDF.KIND_COMPRESS).count(), 2)
+
+    def test_partial_failure_still_marks_done(self):
+        from .models import Job, UploadedPDF
+        from .tasks import run_batch_task
+
+        good = self._upload(num_pages=1, name="good.pdf")
+        # Row pointing to a non-existent path — runner sees this as a
+        # missing-on-disk PDF and skips it without aborting the batch.
+        bad = UploadedPDF.objects.create(
+            user=self.user, session_key="", name="ghost.pdf",
+            path="/tmp/does-not-exist.pdf", size=100,
+        )
+
+        # Create job directly to skip the API view (which would 400 on the
+        # bad pdf if its path happened to be a real file we don't own).
+        job = Job.objects.create(
+            user=self.user, session_key="", kind="batch:compress",
+            params={"op": "compress", "pdf_ids": [str(good.id), str(bad.id)], "op_params": {}},
+        )
+        run_batch_task(str(job.id))
+
+        job.refresh_from_db()
+        self.assertEqual(job.status, Job.STATUS_DONE)
+        self.assertIn("partial success", job.error_message)
+        self.assertEqual(len(job.params["results"]), 2)
+        self.assertEqual(sum(1 for r in job.params["results"] if "output_id" in r), 1)
+
+
 class JobsApiTests(_ApiTestBase):
     """List with filters + cancel action on /api/v1/jobs/."""
 
