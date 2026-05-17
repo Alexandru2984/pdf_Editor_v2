@@ -1,0 +1,147 @@
+apiVersion: 1
+
+# Each rule is evaluated against the Prometheus datasource (uid: prometheus)
+# every minute. The trailing `__expr__` query applies a threshold to the
+# Prometheus result so the alert only fires when the condition holds for
+# the `for:` duration — quick spikes don't page.
+groups:
+  - orgId: 1
+    name: pdfeditor
+    folder: PDF Editor
+    interval: 1m
+    rules:
+      # ---- 5xx error spike ------------------------------------------------
+      - uid: pdfeditor_5xx_spike
+        title: Web is serving 5xx errors
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: 'sum(rate(django_http_responses_total_by_status_view_method_total{status=~"5.."}[5m]))'
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 5m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: critical
+        annotations:
+          summary: "5xx rate {{ humanize $values.A.Value }} req/s — sustained 5 min"
+          description: "Web replicas are returning HTTP 5xx faster than 1/s. Check the Grafana dashboard + Sentry."
+
+      # ---- Latency degradation -------------------------------------------
+      - uid: pdfeditor_high_latency
+        title: Request latency p95 above 5s
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: 'histogram_quantile(0.95, sum by (le) (rate(django_http_requests_latency_seconds_by_view_method_bucket[5m])))'
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 10m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 latency {{ humanizeDuration $values.A.Value }} — sustained 10 min"
+          description: "Either gunicorn is CPU-saturated or one endpoint is slow. Open the dashboard → per-replica panel."
+
+      # ---- Job queue backed up -------------------------------------------
+      - uid: pdfeditor_queue_depth
+        title: Async job queue is backed up
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: 'sum(pdfeditor_job_queue_depth)'
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: gt, params: [50] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 10m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $values.A.Value }} jobs queued/running for 10+ min"
+          description: "Workers can't keep up — scale CELERY_CONCURRENCY or add a worker replica."
+
+      # ---- Replicas down --------------------------------------------------
+      - uid: pdfeditor_replicas_down
+        title: Web replicas missing
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: 'count(up{job="pdfeditor-web"} == 1)'
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 2m
+        noDataState: Alerting
+        execErrState: Alerting
+        labels:
+          severity: critical
+        annotations:
+          summary: "Zero healthy web replicas"
+          description: "Prometheus can't scrape any pdfeditor-web instance. Site is down or DNS broke."

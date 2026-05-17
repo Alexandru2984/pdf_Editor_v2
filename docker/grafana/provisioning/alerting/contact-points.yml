@@ -1,0 +1,18 @@
+apiVersion: 1
+
+# Default contact point — uses Grafana's built-in SMTP (configured via the
+# GF_SMTP_* env vars on the container) to email the operator. ALERT_EMAIL
+# is the recipient, resolved at provisioning time from the container env.
+# Swap to Discord/Slack/etc. by editing this file and adding the matching
+# receiver type — Grafana 11 supports them natively.
+contactPoints:
+  - orgId: 1
+    name: default-email
+    receivers:
+      - uid: default_email
+        type: email
+        settings:
+          addresses: "$__env{ALERT_EMAIL}"
+          singleEmail: false
+          subject: "[PDF Editor] {{ .GroupLabels.alertname }}"
+        disableResolveMessage: false
