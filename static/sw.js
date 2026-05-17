@@ -10,7 +10,8 @@
  * (which depend on session cookies).
  */
 
-const CACHE_NAME = "pdfeditor-shell-v1";
+// Bump on every deploy so clients with a stale SW pick up new assets.
+const CACHE_NAME = "pdfeditor-shell-v2";
 const APP_SHELL = [
     "/static/css/style.css",
     "/static/css/pdf-modal.css",
@@ -80,4 +81,25 @@ self.addEventListener("fetch", (event) => {
                 .catch(() => caches.match(req).then((cached) => cached || caches.match("/static/offline.html")))
         );
     }
+});
+
+// Clicking a notification should re-focus an existing tab on the matching
+// URL (the typical case: user opened a job page, switched tabs, got
+// notified, clicks). Falls back to opening a new tab.
+self.addEventListener("notificationclick", (event) => {
+    event.notification.close();
+    const target = (event.notification.data && event.notification.data.url) || "/";
+    event.waitUntil(
+        self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsList) => {
+            for (const client of clientsList) {
+                try {
+                    const u = new URL(client.url);
+                    if (u.pathname === target && "focus" in client) {
+                        return client.focus();
+                    }
+                } catch (_) { /* ignore */ }
+            }
+            return self.clients.openWindow(target);
+        })
+    );
 });

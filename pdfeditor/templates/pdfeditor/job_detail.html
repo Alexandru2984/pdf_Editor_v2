@@ -81,6 +81,43 @@ const JOB_ID = "{{ job.id }}";
 const STATUS_URL = "{% url 'job_status' job.id %}";
 const EVENTS_URL = "{% url 'job_events' job.id %}";
 const POLL_MS = 2000;
+const PAGE_LOADED_AT = Date.now();
+// Heuristic: only nudge for notification permission after the user has
+// been on the page long enough that an in-tab badge change wouldn't be
+// noticed — i.e. they likely backgrounded the tab.
+const NOTIFY_AFTER_MS = 10_000;
+
+function maybeNotifyJobDone(data) {
+    // SW + Notifications API both have to be available.
+    if (!("serviceWorker" in navigator) || !("Notification" in window)) return;
+    // Skip the "I was just looking at the page" case — they already saw
+    // it transition. Only fire if the tab has been backgrounded long
+    // enough that they'd appreciate the ping.
+    if (document.visibilityState === "visible" && Date.now() - PAGE_LOADED_AT < NOTIFY_AFTER_MS) {
+        return;
+    }
+    const ask = (Notification.permission === "default")
+        ? Notification.requestPermission()
+        : Promise.resolve(Notification.permission);
+    ask.then((perm) => {
+        if (perm !== "granted") return;
+        navigator.serviceWorker.ready.then((reg) => {
+            const ok = data.status === "done";
+            reg.showNotification(
+                ok ? "{% trans 'Job finished' %}" : "{% trans 'Job failed' %}",
+                {
+                    body: ok
+                        ? "{% trans 'Your file is ready to download.' %}"
+                        : (data.error_message || "{% trans 'The job did not complete.' %}"),
+                    icon: "/static/images/logo.jpg",
+                    badge: "/static/images/logo.jpg",
+                    tag: "job-" + JOB_ID,  // collapses repeated notifications for the same job
+                    data: { url: "{% url 'job_detail' job.id %}" },
+                }
+            );
+        });
+    });
+}
 
 function formatBytes(bytes) {
     if (!bytes && bytes !== 0) return "";
@@ -113,6 +150,8 @@ function applyUpdate(data) {
         // Hide the cancel form — there's nothing left to cancel.
         const cancelForm = document.getElementById("job-cancel-form");
         if (cancelForm) cancelForm.style.display = "none";
+        // Best-effort: ping the user if they've backgrounded the tab.
+        maybeNotifyJobDone(data);
         // chat_index has no downloadable output — bounce back to the chat
         // page once indexing is done. Fetched via the polling endpoint
         // since SSE only carries the core status payload.
