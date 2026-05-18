@@ -54,9 +54,7 @@ class UploadedPDFViewSet(viewsets.ReadOnlyModelViewSet):
     _action_throttle_categories = {"create": "upload", "destroy": "op"}
 
     def get_throttles(self):
-        self.throttle_scope_category = self._action_throttle_categories.get(
-            self.action, "read"
-        )
+        self.throttle_scope_category = self._action_throttle_categories.get(self.action, "read")
         return super().get_throttles()
 
     def get_queryset(self):
@@ -177,14 +175,14 @@ class JobViewSet(viewsets.ReadOnlyModelViewSet):
     _action_throttle_categories = {"cancel": "op"}
 
     def get_throttles(self):
-        self.throttle_scope_category = self._action_throttle_categories.get(
-            self.action, "read"
-        )
+        self.throttle_scope_category = self._action_throttle_categories.get(self.action, "read")
         return super().get_throttles()
 
     def get_queryset(self):
         qs = Job.objects.filter(user=self.request.user)
-        statuses = self.request.query_params.getlist("status") if hasattr(self.request, "query_params") else []
+        statuses = (
+            self.request.query_params.getlist("status") if hasattr(self.request, "query_params") else []
+        )
         if statuses:
             valid = {s for s, _ in Job.STATUS_CHOICES}
             statuses = [s for s in statuses if s in valid]

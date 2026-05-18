@@ -52,7 +52,7 @@ class Command(BaseCommand):
 
     def handle(self, *args: object, **options: object) -> None:
         apply: bool = bool(options.get("apply"))
-        only = options.get("only") or list(_CATEGORIES)
+        only: Iterable[str] = options.get("only") or list(_CATEGORIES)  # type: ignore[assignment]
 
         verb = "Deleting" if apply else "Would delete"
         mode_label = "APPLY" if apply else "DRY-RUN"
@@ -100,15 +100,11 @@ class Command(BaseCommand):
 
     @staticmethod
     def _live_upload_paths() -> set[str]:
-        return {
-            os.path.realpath(p) for p in UploadedPDF.objects.values_list("path", flat=True) if p
-        }
+        return {os.path.realpath(p) for p in UploadedPDF.objects.values_list("path", flat=True) if p}
 
     @staticmethod
     def _live_processed_paths() -> set[str]:
-        return {
-            os.path.realpath(p) for p in ProcessedPDF.objects.values_list("path", flat=True) if p
-        }
+        return {os.path.realpath(p) for p in ProcessedPDF.objects.values_list("path", flat=True) if p}
 
     def _sweep_dir(
         self,

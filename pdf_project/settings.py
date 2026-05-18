@@ -92,15 +92,15 @@ REST_FRAMEWORK = {
     #   op     – PDF operations (compress, rotate, watermark, …)
     #   upload – multipart uploads (heaviest path, tightest cap)
     "DEFAULT_THROTTLE_RATES": {
-        "api_key_read":   "1000/hour",
-        "api_key_op":     "300/hour",
+        "api_key_read": "1000/hour",
+        "api_key_op": "300/hour",
         "api_key_upload": "60/hour",
-        "user_read":      "600/hour",
-        "user_op":        "150/hour",
-        "user_upload":    "30/hour",
-        "anon_read":      "60/hour",
-        "anon_op":        "10/hour",
-        "anon_upload":    "5/hour",
+        "user_read": "600/hour",
+        "user_op": "150/hour",
+        "user_upload": "30/hour",
+        "anon_read": "60/hour",
+        "anon_op": "10/hour",
+        "anon_upload": "5/hour",
     },
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     # Paginate list endpoints. Without this, /api/v1/outputs/ serialized

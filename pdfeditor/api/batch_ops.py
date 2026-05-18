@@ -45,12 +45,12 @@ def _rotate(pdf_path: str, params: dict) -> str:
 
 
 def _watermark(pdf_path: str, params: dict) -> str:
+    options = {k: params[k] for k in ("position", "opacity", "rotation", "font_size") if k in params}
     return add_watermark(
         pdf_path,
-        params["text"],
-        opacity=params.get("opacity", 0.3),
-        color=params.get("color", "gray"),
-        size=params.get("size", 40),
+        watermark_type=params.get("watermark_type", "text"),
+        watermark_content=params["text"],
+        options=options or None,
     )
 
 
@@ -59,10 +59,8 @@ def _flatten(pdf_path: str, _params: dict) -> str:
 
 
 def _page_numbers(pdf_path: str, params: dict) -> str:
-    return add_page_numbers(
-        pdf_path,
-        position=params.get("position", "bottom-center"),
-    )
+    options = {k: params[k] for k in ("position", "format", "font_size", "start_page") if k in params}
+    return add_page_numbers(pdf_path, options=options or None)
 
 
 def _metadata(pdf_path: str, params: dict) -> str:
@@ -91,15 +89,15 @@ def _redact(pdf_path: str, params: dict) -> str:
 
 
 BATCH_OPS: dict[str, tuple[str, OpRunner]] = {
-    "compress":     (ProcessedPDF.KIND_COMPRESS,     _compress),
-    "rotate":       (ProcessedPDF.KIND_ROTATE,       _rotate),
-    "watermark":    (ProcessedPDF.KIND_WATERMARK,    _watermark),
-    "flatten":      (ProcessedPDF.KIND_FLATTEN,      _flatten),
+    "compress": (ProcessedPDF.KIND_COMPRESS, _compress),
+    "rotate": (ProcessedPDF.KIND_ROTATE, _rotate),
+    "watermark": (ProcessedPDF.KIND_WATERMARK, _watermark),
+    "flatten": (ProcessedPDF.KIND_FLATTEN, _flatten),
     "page-numbers": (ProcessedPDF.KIND_PAGE_NUMBERS, _page_numbers),
-    "metadata":     (ProcessedPDF.KIND_METADATA,     _metadata),
-    "protect":      (ProcessedPDF.KIND_PROTECT,      _protect),
-    "unprotect":    (ProcessedPDF.KIND_UNPROTECT,    _unprotect),
-    "redact":       (ProcessedPDF.KIND_REDACT,       _redact),
+    "metadata": (ProcessedPDF.KIND_METADATA, _metadata),
+    "protect": (ProcessedPDF.KIND_PROTECT, _protect),
+    "unprotect": (ProcessedPDF.KIND_UNPROTECT, _unprotect),
+    "redact": (ProcessedPDF.KIND_REDACT, _redact),
 }
 
 #: Cap so a single user can't fan out an unbounded amount of work in one

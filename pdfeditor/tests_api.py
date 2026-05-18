@@ -294,7 +294,7 @@ class SummarizeApiTests(_ApiTestBase):
         from unittest.mock import patch
 
         pdf = self._upload(num_pages=1, name="doc.pdf")
-        with patch("pdfeditor.pdf_processor.summarize._call_groq") as mock_groq:
+        with patch("pdfeditor.views.chat._call_groq") as mock_groq:
             mock_groq.return_value = ("This document is about cats.", None)
             resp = self.client.post(
                 reverse("api:op-summarize"),
@@ -313,7 +313,9 @@ class SummarizeApiTests(_ApiTestBase):
 
         pdf = self._upload(num_pages=1, name="scanned.pdf")
         with patch("pdfeditor.pdf_processor.summarize.extract_text_from_pdf") as mock_extract:
-            mock_extract.return_value = "No text found in PDF. This might be a scanned document - try OCR instead."
+            mock_extract.return_value = (
+                "No text found in PDF. This might be a scanned document - try OCR instead."
+            )
             resp = self.client.post(
                 reverse("api:op-summarize"),
                 {"pdf_id": str(pdf.id)},
@@ -326,7 +328,7 @@ class SummarizeApiTests(_ApiTestBase):
         from unittest.mock import patch
 
         pdf = self._upload(num_pages=1, name="doc.pdf")
-        with patch("pdfeditor.pdf_processor.summarize._call_groq") as mock_groq:
+        with patch("pdfeditor.views.chat._call_groq") as mock_groq:
             mock_groq.return_value = ("", "Groq error 503")
             resp = self.client.post(
                 reverse("api:op-summarize"),
@@ -345,8 +347,11 @@ class BatchApiTests(_ApiTestBase):
         mine = self._upload(num_pages=1, name="mine.pdf")
         other_user = User.objects.create_user(username="eve", password="pw")
         their_pdf = UploadedPDF.objects.create(
-            user=other_user, session_key="", name="theirs.pdf",
-            path=os.path.join(_MEDIA_ROOT, "uploads", "theirs.pdf"), size=100,
+            user=other_user,
+            session_key="",
+            name="theirs.pdf",
+            path=os.path.join(_MEDIA_ROOT, "uploads", "theirs.pdf"),
+            size=100,
         )
 
         resp = self.client.post(
@@ -374,8 +379,11 @@ class BatchApiTests(_ApiTestBase):
         pdf_ids = []
         for i in range(MAX_BATCH_SIZE + 1):
             row = UploadedPDF.objects.create(
-                user=self.user, session_key="", name=f"f{i}.pdf",
-                path=f"/dev/null/f{i}.pdf", size=10,
+                user=self.user,
+                session_key="",
+                name=f"f{i}.pdf",
+                path=f"/dev/null/f{i}.pdf",
+                size=10,
             )
             pdf_ids.append(str(row.id))
 
@@ -402,7 +410,11 @@ class BatchApiTests(_ApiTestBase):
             mocked.delay.return_value = type("R", (), {"id": "stub"})()
             resp = self.client.post(
                 reverse("api:op-batch"),
-                {"op": "compress", "pdf_ids": [str(pdf_a.id), str(pdf_b.id)], "params": {"quality": "medium"}},
+                {
+                    "op": "compress",
+                    "pdf_ids": [str(pdf_a.id), str(pdf_b.id)],
+                    "params": {"quality": "medium"},
+                },
                 format="json",
             )
         self.assertEqual(resp.status_code, 202)
@@ -417,7 +429,9 @@ class BatchApiTests(_ApiTestBase):
         results = job.params["results"]
         self.assertEqual(len(results), 2)
         self.assertTrue(all("output_id" in r for r in results))
-        self.assertEqual(ProcessedPDF.objects.filter(user=self.user, kind=ProcessedPDF.KIND_COMPRESS).count(), 2)
+        self.assertEqual(
+            ProcessedPDF.objects.filter(user=self.user, kind=ProcessedPDF.KIND_COMPRESS).count(), 2
+        )
 
     def test_partial_failure_still_marks_done(self):
         from .models import Job, UploadedPDF
@@ -427,14 +441,19 @@ class BatchApiTests(_ApiTestBase):
         # Row pointing to a non-existent path — runner sees this as a
         # missing-on-disk PDF and skips it without aborting the batch.
         bad = UploadedPDF.objects.create(
-            user=self.user, session_key="", name="ghost.pdf",
-            path="/tmp/does-not-exist.pdf", size=100,
+            user=self.user,
+            session_key="",
+            name="ghost.pdf",
+            path="/tmp/does-not-exist.pdf",
+            size=100,
         )
 
         # Create job directly to skip the API view (which would 400 on the
         # bad pdf if its path happened to be a real file we don't own).
         job = Job.objects.create(
-            user=self.user, session_key="", kind="batch:compress",
+            user=self.user,
+            session_key="",
+            kind="batch:compress",
             params={"op": "compress", "pdf_ids": [str(good.id), str(bad.id)], "op_params": {}},
         )
         run_batch_task(str(job.id))

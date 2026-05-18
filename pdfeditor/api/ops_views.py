@@ -39,7 +39,7 @@ from ..pdf_processor import (
     split_pdf,
     summarize_pdf,
 )
-from ..tasks import enqueue_job
+from ..tasks import enqueue_job, run_batch_task
 from ..views._common import _client_ip
 from .serializers import ProcessedPDFSerializer
 
@@ -262,9 +262,7 @@ class _BatchSerializer(serializers.Serializer):
 
     def validate_pdf_ids(self, value):
         if len(value) > self._max_size:
-            raise serializers.ValidationError(
-                f"At most {self._max_size} PDFs per batch."
-            )
+            raise serializers.ValidationError(f"At most {self._max_size} PDFs per batch.")
         if len(set(value)) != len(value):
             raise serializers.ValidationError("Duplicate pdf_ids in batch.")
         return value
@@ -748,8 +746,6 @@ class BatchOpView(APIView):
                 "op_params": op_params,
             },
         )
-        from ..tasks import run_batch_task
-
         result = run_batch_task.delay(str(job.id))
         if getattr(result, "id", None):
             Job.objects.filter(pk=job.pk).update(celery_task_id=result.id)
