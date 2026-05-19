@@ -79,7 +79,10 @@ jobs:
           ALLOWED_HOSTS: localhost,127.0.0.1
           SECURE_SSL: "0"
         run: |
-          coverage run --source=pdfeditor manage.py test pdfeditor
+          # --exclude-tag=e2e keeps the playwright-driven suite out of
+          # this matrix; it runs in the dedicated `e2e` job below where
+          # browsers are installed.
+          coverage run --source=pdfeditor manage.py test pdfeditor --exclude-tag=e2e
           coverage report --omit='*/migrations/*,*/tests*.py,*/templates/*'
           coverage xml --omit='*/migrations/*,*/tests*.py,*/templates/*'
 
@@ -98,3 +101,78 @@ jobs:
           name: coverage-xml
           path: coverage.xml
           if-no-files-found: ignore
+
+  e2e:
+    # Browser-driven smoke suite — proves login → upload → compress → download
+    # works end-to-end with real templates, JS, and multipart upload. Runs
+    # alongside the unit matrix (independent of it) and is required to be
+    # green before build-and-deploy fires, because deploy.yml gates on this
+    # whole workflow's conclusion.
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: pdfeditor_test
+          POSTGRES_USER: pdfeditor
+          POSTGRES_PASSWORD: testpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pdfeditor"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://pdfeditor:testpassword@localhost:5432/pdfeditor_test
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-ron ghostscript
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install playwright
+
+      # The Playwright browser binaries are ~300MB and don't change between
+      # most CI runs — caching them shaves ~30s off every E2E job. Cache key
+      # is the playwright version so an upgrade invalidates automatically.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('requirements.txt') }}-v1
+
+      - name: Install Playwright Chromium
+        # --with-deps pulls in the OS libraries Chromium needs (libnss3 etc).
+        # Skip the binary download on cache hit; --with-deps still runs apt
+        # because system deps don't live in ~/.cache/ms-playwright.
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            python -m playwright install-deps chromium
+          else
+            python -m playwright install --with-deps chromium
+          fi
+
+      - name: Run E2E suite
+        env:
+          SECRET_KEY: ci-secret-key-not-used-in-prod
+          DEBUG: "True"
+          ALLOWED_HOSTS: localhost,127.0.0.1
+          SECURE_SSL: "0"
+        run: python manage.py test pdfeditor.tests_e2e -v 2
