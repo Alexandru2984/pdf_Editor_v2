@@ -11,8 +11,11 @@ updates:
     ignore:
       # Stay on Django 5.2 LTS until 5.x EOL in April 2028. 6.x is non-LTS
       # and requires Python 3.12+, which would shrink our CI matrix.
+      # `update-types: semver-major` didn't fire for the range constraint
+      # `>=5.2,<5.3` (Dependabot opened PR #18 anyway). Pin the ignore by
+      # explicit version range instead — that always wins.
       - dependency-name: "Django"
-        update-types: ["version-update:semver-major"]
+        versions: [">=6"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

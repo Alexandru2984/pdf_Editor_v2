@@ -112,6 +112,323 @@ groups:
           summary: "{{ $values.A.Value }} jobs queued/running for 10+ min"
           description: "Workers can't keep up — scale CELERY_CONCURRENCY or add a worker replica."
 
+      # ---- SLO burn-rate alerts ------------------------------------------
+      # Two windows per SLO (1h critical, 6h warning) following the Google
+      # SRE Workbook multi-burn-rate pattern. Thresholds derive from the
+      # SLO target — see docs/SLOs.md for the math.
+      #
+      # SLO 1: API availability — target 99.9%, error budget 0.1%
+      #   critical threshold = 14.4 * 0.001 = 0.0144 (1.44% 5xx rate)
+      #   warning  threshold =  6.0 * 0.001 = 0.006  (0.6%  5xx rate)
+      - uid: slo_api_availability_fast_burn
+        title: SLO availability — fast burn (2% budget / 1h)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: |
+                sum(rate(django_http_responses_total_by_status_view_method_total{status=~"5.."}[1h]))
+                /
+                sum(rate(django_http_responses_total_by_status_view_method_total[1h]))
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: gt, params: [0.0144] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 5m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: critical
+          slo: api_availability
+        annotations:
+          summary: "Availability SLO burning fast: {{ printf \"%.2f\" (mul $values.A.Value 100.0) }}% 5xx over 1h"
+          description: "At this rate the 30-day error budget (43m) is gone in <2 days. See docs/RUNBOOK.md → 5xx-burst."
+
+      - uid: slo_api_availability_slow_burn
+        title: SLO availability — slow burn (5% budget / 6h)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 21600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: |
+                sum(rate(django_http_responses_total_by_status_view_method_total{status=~"5.."}[6h]))
+                /
+                sum(rate(django_http_responses_total_by_status_view_method_total[6h]))
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: gt, params: [0.006] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 30m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: warning
+          slo: api_availability
+        annotations:
+          summary: "Availability SLO drifting: {{ printf \"%.2f\" (mul $values.A.Value 100.0) }}% 5xx over 6h"
+          description: "Not paging-urgent yet, but the monthly budget will be exhausted in ≈ 10 days at this pace."
+
+      # SLO 2: API latency — target 95% under 1.0s, error budget 5%
+      #   critical = 14.4 * 0.05 = 0.72 (72% of requests over 1s)
+      #   warning  =  6.0 * 0.05 = 0.30 (30% of requests over 1s)
+      - uid: slo_api_latency_fast_burn
+        title: SLO latency — fast burn (2% budget / 1h)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: |
+                1 - (
+                  sum(rate(django_http_requests_latency_seconds_by_view_method_bucket{le="1.0"}[1h]))
+                  /
+                  sum(rate(django_http_requests_latency_seconds_by_view_method_count[1h]))
+                )
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: gt, params: [0.72] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 5m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: critical
+          slo: api_latency
+        annotations:
+          summary: "Latency SLO burning fast: {{ printf \"%.0f\" (mul $values.A.Value 100.0) }}% of requests > 1s over 1h"
+          description: "Likely gunicorn CPU-bound or a slow DB query. See docs/RUNBOOK.md → high-latency."
+
+      - uid: slo_api_latency_slow_burn
+        title: SLO latency — slow burn (5% budget / 6h)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 21600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: |
+                1 - (
+                  sum(rate(django_http_requests_latency_seconds_by_view_method_bucket{le="1.0"}[6h]))
+                  /
+                  sum(rate(django_http_requests_latency_seconds_by_view_method_count[6h]))
+                )
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: gt, params: [0.30] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 30m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: warning
+          slo: api_latency
+        annotations:
+          summary: "Latency SLO drifting: {{ printf \"%.0f\" (mul $values.A.Value 100.0) }}% of requests > 1s over 6h"
+          description: "Background latency creep — open the dashboard and check per-endpoint p95."
+
+      # SLO 3: Job success rate — target 99%, error budget 1%
+      #   critical = 14.4 * 0.01 = 0.144 (14.4% of jobs failing)
+      #   warning  =  6.0 * 0.01 = 0.06  (6%   of jobs failing)
+      - uid: slo_job_success_fast_burn
+        title: SLO jobs — fast burn (2% budget / 1h)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: |
+                sum(rate(pdfeditor_job_total{status="failed"}[1h]))
+                /
+                sum(rate(pdfeditor_job_total[1h]))
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: gt, params: [0.144] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 5m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: critical
+          slo: job_success
+        annotations:
+          summary: "Job-success SLO burning fast: {{ printf \"%.0f\" (mul $values.A.Value 100.0) }}% of jobs failing over 1h"
+          description: "Likely a regression in tasks.py or an upstream (OCR/Groq) down. See docs/RUNBOOK.md → workers-stuck."
+
+      - uid: slo_job_success_slow_burn
+        title: SLO jobs — slow burn (5% budget / 6h)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 21600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: |
+                sum(rate(pdfeditor_job_total{status="failed"}[6h]))
+                /
+                sum(rate(pdfeditor_job_total[6h]))
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: gt, params: [0.06] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 30m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: warning
+          slo: job_success
+        annotations:
+          summary: "Job-success SLO drifting: {{ printf \"%.0f\" (mul $values.A.Value 100.0) }}% of jobs failing over 6h"
+          description: "Look for a specific kind failing — `sum by (kind) (rate(pdfeditor_job_total{status=\"failed\"}[1h]))`."
+
+      # SLO 4: Op success rate — target 99.5%, error budget 0.5%
+      #   critical = 14.4 * 0.005 = 0.072 (7.2% of ops failing)
+      #   warning  =  6.0 * 0.005 = 0.03  (3%   of ops failing)
+      - uid: slo_op_success_fast_burn
+        title: SLO ops — fast burn (2% budget / 1h)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: |
+                sum(rate(pdfeditor_op_total{outcome="failure"}[1h]))
+                /
+                sum(rate(pdfeditor_op_total[1h]))
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: gt, params: [0.072] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 5m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: critical
+          slo: op_success
+        annotations:
+          summary: "Op-success SLO burning fast: {{ printf \"%.1f\" (mul $values.A.Value 100.0) }}% op failures over 1h"
+          description: "PDFs are coming back broken. Likely a regression in pdf_processor — bisect the offending kind."
+
+      - uid: slo_op_success_slow_burn
+        title: SLO ops — slow burn (5% budget / 6h)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 21600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: |
+                sum(rate(pdfeditor_op_total{outcome="failure"}[6h]))
+                /
+                sum(rate(pdfeditor_op_total[6h]))
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: gt, params: [0.03] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 30m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: warning
+          slo: op_success
+        annotations:
+          summary: "Op-success SLO drifting: {{ printf \"%.1f\" (mul $values.A.Value 100.0) }}% op failures over 6h"
+          description: "Low-rate breakage somewhere — check `sum by (kind) (rate(pdfeditor_op_total{outcome=\"failure\"}[6h]))`."
+
       # ---- Replicas down --------------------------------------------------
       - uid: pdfeditor_replicas_down
         title: Web replicas missing

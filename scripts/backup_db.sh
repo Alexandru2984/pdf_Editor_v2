@@ -28,9 +28,11 @@ if [[ ! -f .env ]]; then
 fi
 
 # Source POSTGRES_USER / POSTGRES_DB from .env without polluting the
-# environment with unrelated keys. `set -a` + grep is cheaper than `eval`.
-POSTGRES_USER="$(grep -E '^POSTGRES_USER=' .env | head -n1 | cut -d= -f2-)"
-POSTGRES_DB="$(grep -E '^POSTGRES_DB=' .env | head -n1 | cut -d= -f2-)"
+# environment with unrelated keys. `|| true` because grep exits 1 when
+# the key is absent (legitimate — docker-compose.yml supplies defaults);
+# without the guard `set -e` would kill the backup silently.
+POSTGRES_USER="$(grep -E '^POSTGRES_USER=' .env | head -n1 | cut -d= -f2- || true)"
+POSTGRES_DB="$(grep -E '^POSTGRES_DB=' .env | head -n1 | cut -d= -f2- || true)"
 : "${POSTGRES_USER:=pdfeditor}"
 : "${POSTGRES_DB:=pdfeditor}"
 

@@ -1,0 +1,189 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "title": "PDF Editor — SLOs",
+  "uid": "pdfeditor-slo",
+  "version": 1,
+  "schemaVersion": 39,
+  "tags": ["pdfeditor", "slo"],
+  "time": {"from": "now-30d", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "refresh": "1m",
+  "panels": [
+    {
+      "id": 100,
+      "type": "row",
+      "title": "SLO 1 — API availability (target 99.9% / 30d)",
+      "gridPos": {"x": 0, "y": 0, "w": 24, "h": 1},
+      "collapsed": false
+    },
+    {
+      "id": 101,
+      "type": "gauge",
+      "title": "30d SLI",
+      "gridPos": {"x": 0, "y": 1, "w": 6, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(django_http_responses_total_by_status_view_method_total{status!~\"5..\"}[30d])) / sum(rate(django_http_responses_total_by_status_view_method_total[30d]))", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0.99, "max": 1.0, "decimals": 4, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.998}, {"color": "green", "value": 0.999}]}}},
+      "options": {"showThresholdMarkers": true, "showThresholdLabels": false}
+    },
+    {
+      "id": 102,
+      "type": "stat",
+      "title": "Error budget remaining",
+      "gridPos": {"x": 6, "y": 1, "w": 6, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "clamp_min(1 - ((sum(rate(django_http_responses_total_by_status_view_method_total{status=~\"5..\"}[30d])) / sum(rate(django_http_responses_total_by_status_view_method_total[30d]))) / 0.001), 0)", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.2}, {"color": "green", "value": 0.5}]}}}
+    },
+    {
+      "id": 103,
+      "type": "timeseries",
+      "title": "Burn rate (1h vs 6h)",
+      "gridPos": {"x": 12, "y": 1, "w": 12, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "(sum(rate(django_http_responses_total_by_status_view_method_total{status=~\"5..\"}[1h])) / sum(rate(django_http_responses_total_by_status_view_method_total[1h]))) / 0.001", "legendFormat": "1h burn", "refId": "A"},
+        {"expr": "(sum(rate(django_http_responses_total_by_status_view_method_total{status=~\"5..\"}[6h])) / sum(rate(django_http_responses_total_by_status_view_method_total[6h]))) / 0.001", "legendFormat": "6h burn", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "none", "decimals": 2, "custom": {"axisPlacement": "auto", "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 6}, {"color": "red", "value": 14.4}]}}}
+    },
+
+    {
+      "id": 200,
+      "type": "row",
+      "title": "SLO 2 — API latency (target 95% < 1.0s / 30d)",
+      "gridPos": {"x": 0, "y": 7, "w": 24, "h": 1},
+      "collapsed": false
+    },
+    {
+      "id": 201,
+      "type": "gauge",
+      "title": "30d SLI",
+      "gridPos": {"x": 0, "y": 8, "w": 6, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(django_http_requests_latency_seconds_by_view_method_bucket{le=\"1.0\"}[30d])) / sum(rate(django_http_requests_latency_seconds_by_view_method_count[30d]))", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0.8, "max": 1.0, "decimals": 3, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.94}, {"color": "green", "value": 0.95}]}}},
+      "options": {"showThresholdMarkers": true}
+    },
+    {
+      "id": 202,
+      "type": "stat",
+      "title": "Error budget remaining",
+      "gridPos": {"x": 6, "y": 8, "w": 6, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "clamp_min(1 - ((1 - (sum(rate(django_http_requests_latency_seconds_by_view_method_bucket{le=\"1.0\"}[30d])) / sum(rate(django_http_requests_latency_seconds_by_view_method_count[30d])))) / 0.05), 0)", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.2}, {"color": "green", "value": 0.5}]}}}
+    },
+    {
+      "id": 203,
+      "type": "timeseries",
+      "title": "Burn rate (1h vs 6h)",
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "(1 - (sum(rate(django_http_requests_latency_seconds_by_view_method_bucket{le=\"1.0\"}[1h])) / sum(rate(django_http_requests_latency_seconds_by_view_method_count[1h])))) / 0.05", "legendFormat": "1h burn", "refId": "A"},
+        {"expr": "(1 - (sum(rate(django_http_requests_latency_seconds_by_view_method_bucket{le=\"1.0\"}[6h])) / sum(rate(django_http_requests_latency_seconds_by_view_method_count[6h])))) / 0.05", "legendFormat": "6h burn", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "none", "decimals": 2, "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 6}, {"color": "red", "value": 14.4}]}}}
+    },
+
+    {
+      "id": 300,
+      "type": "row",
+      "title": "SLO 3 — Job success rate (target 99% / 30d)",
+      "gridPos": {"x": 0, "y": 14, "w": 24, "h": 1},
+      "collapsed": false
+    },
+    {
+      "id": 301,
+      "type": "gauge",
+      "title": "30d SLI",
+      "gridPos": {"x": 0, "y": 15, "w": 6, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(pdfeditor_job_total{status=\"done\"}[30d])) / sum(rate(pdfeditor_job_total[30d]))", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0.9, "max": 1.0, "decimals": 3, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.98}, {"color": "green", "value": 0.99}]}}},
+      "options": {"showThresholdMarkers": true}
+    },
+    {
+      "id": 302,
+      "type": "stat",
+      "title": "Error budget remaining",
+      "gridPos": {"x": 6, "y": 15, "w": 6, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "clamp_min(1 - ((sum(rate(pdfeditor_job_total{status=\"failed\"}[30d])) / sum(rate(pdfeditor_job_total[30d]))) / 0.01), 0)", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.2}, {"color": "green", "value": 0.5}]}}}
+    },
+    {
+      "id": 303,
+      "type": "timeseries",
+      "title": "Burn rate (1h vs 6h)",
+      "gridPos": {"x": 12, "y": 15, "w": 12, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "(sum(rate(pdfeditor_job_total{status=\"failed\"}[1h])) / sum(rate(pdfeditor_job_total[1h]))) / 0.01", "legendFormat": "1h burn", "refId": "A"},
+        {"expr": "(sum(rate(pdfeditor_job_total{status=\"failed\"}[6h])) / sum(rate(pdfeditor_job_total[6h]))) / 0.01", "legendFormat": "6h burn", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "none", "decimals": 2, "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 6}, {"color": "red", "value": 14.4}]}}}
+    },
+
+    {
+      "id": 400,
+      "type": "row",
+      "title": "SLO 4 — Op success rate (target 99.5% / 30d)",
+      "gridPos": {"x": 0, "y": 21, "w": 24, "h": 1},
+      "collapsed": false
+    },
+    {
+      "id": 401,
+      "type": "gauge",
+      "title": "30d SLI",
+      "gridPos": {"x": 0, "y": 22, "w": 6, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(pdfeditor_op_total{outcome=\"success\"}[30d])) / sum(rate(pdfeditor_op_total[30d]))", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0.95, "max": 1.0, "decimals": 4, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.99}, {"color": "green", "value": 0.995}]}}},
+      "options": {"showThresholdMarkers": true}
+    },
+    {
+      "id": 402,
+      "type": "stat",
+      "title": "Error budget remaining",
+      "gridPos": {"x": 6, "y": 22, "w": 6, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "clamp_min(1 - ((sum(rate(pdfeditor_op_total{outcome=\"failure\"}[30d])) / sum(rate(pdfeditor_op_total[30d]))) / 0.005), 0)", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 1, "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 0.2}, {"color": "green", "value": 0.5}]}}}
+    },
+    {
+      "id": 403,
+      "type": "timeseries",
+      "title": "Burn rate (1h vs 6h)",
+      "gridPos": {"x": 12, "y": 22, "w": 12, "h": 6},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "(sum(rate(pdfeditor_op_total{outcome=\"failure\"}[1h])) / sum(rate(pdfeditor_op_total[1h]))) / 0.005", "legendFormat": "1h burn", "refId": "A"},
+        {"expr": "(sum(rate(pdfeditor_op_total{outcome=\"failure\"}[6h])) / sum(rate(pdfeditor_op_total[6h]))) / 0.005", "legendFormat": "6h burn", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "none", "decimals": 2, "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 6}, {"color": "red", "value": 14.4}]}}}
+    }
+  ]
+}
