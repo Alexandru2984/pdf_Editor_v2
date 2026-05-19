@@ -79,27 +79,24 @@ T_PG_READY=$(date +%s)
 
 # ---- Restore ---------------------------------------------------------------
 
-echo "→ Restoring dump (custom format, gunzipped on the fly)…"
+echo "→ Restoring dump (parallel, custom format)…"
 # pg_restore reads the custom-format dump produced by backup_db.sh.
+# Parallel restore (--jobs) requires SEEKABLE input — pipes from stdin
+# don't qualify. So gunzip + copy the dump into the container first,
+# then run pg_restore against the file path.
+#
 # --no-owner / --no-privileges so the restore user owns everything in
 # the drill DB, regardless of what role names were in the source dump.
-gunzip -c "$DUMP" | docker exec -i \
+TMP_DUMP="/tmp/restore-$$.dump"
+gunzip -c "$DUMP" | docker exec -i "$DRILL_NAME" sh -c "cat > $TMP_DUMP"
+docker exec \
     -e PGPASSWORD="$DRILL_PASS" \
     "$DRILL_NAME" \
     pg_restore --username="$DRILL_USER" --dbname="$DRILL_DB" \
                --no-owner --no-privileges \
                --jobs=2 \
-               --verbose >/dev/null 2>&1 || {
-    # pg_restore can exit non-zero on cosmetic warnings (missing roles,
-    # comments on extensions). Re-run without --jobs to capture the
-    # actual error rather than the parallel-worker summary.
-    echo "  ⚠ pg_restore exited non-zero, retrying serial with full output…"
-    gunzip -c "$DUMP" | docker exec -i \
-        -e PGPASSWORD="$DRILL_PASS" \
-        "$DRILL_NAME" \
-        pg_restore --username="$DRILL_USER" --dbname="$DRILL_DB" \
-                   --no-owner --no-privileges
-}
+               "$TMP_DUMP"
+docker exec "$DRILL_NAME" rm -f "$TMP_DUMP"
 
 T_RESTORE=$(date +%s)
 
