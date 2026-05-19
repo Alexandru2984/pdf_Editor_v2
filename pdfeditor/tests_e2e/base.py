@@ -36,6 +36,14 @@ from django.test import override_settings, tag  # noqa: E402
 
 User = get_user_model()
 
+# Default password used by make_user() / login(). Deliberately structured so
+# it doesn't pattern-match a real credential — GitHub Secret Scanning flagged
+# an earlier plausible-looking value as a leak. This one carries the word
+# "fixture" so a human (or a scanner heuristic) reading it can tell at a
+# glance. Cannot authenticate against anything outside the transaction-scoped
+# test DB; never use a real password here.
+_FIXTURE_PASSWORD = "e2e-fixture-not-a-real-credential"  # noqa: S105 — test fixture
+
 
 # Tagged "e2e" so CI can include or exclude this whole bucket with
 # --tag=e2e / --exclude-tag=e2e. The unit-test job runs without playwright
@@ -88,7 +96,7 @@ class PlaywrightTestCase(StaticLiveServerTestCase):
 
     # ---- helpers ----------------------------------------------------------
 
-    def make_user(self, username: str = "alice", password: str = "Sup3rSecret!42") -> User:
+    def make_user(self, username: str = "alice", password: str = _FIXTURE_PASSWORD) -> User:
         """Create an active user — bypasses the email-confirmation gate."""
         user = User.objects.create_user(
             username=username,
@@ -99,7 +107,7 @@ class PlaywrightTestCase(StaticLiveServerTestCase):
         user.save(update_fields=["is_active"])
         return user
 
-    def login(self, username: str = "alice", password: str = "Sup3rSecret!42") -> None:
+    def login(self, username: str = "alice", password: str = _FIXTURE_PASSWORD) -> None:
         """Walk through the real login form so cookies + CSRF land in the
         browser context, not just the session backend."""
         self.page.goto(f"{self.live_server_url}/accounts/login/")

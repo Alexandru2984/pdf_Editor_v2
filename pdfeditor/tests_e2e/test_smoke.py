@@ -95,7 +95,7 @@ class AuthGuardrailTests(PlaywrightTestCase):
         """Wrong password → render login.html again with an error message,
         do NOT redirect to dashboard. Catches the case where a regression
         accidentally trusts the form."""
-        self.make_user()  # creates alice / Sup3rSecret!42
+        self.make_user()  # creates `alice` with the fixture password from base.py
 
         self.page.goto(f"{self.live_server_url}/accounts/login/")
         form = self.page.locator("form.edit-form")
