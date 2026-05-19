@@ -13,7 +13,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # image hasn't picked up yet — Debian ships fixes faster than the official
 # python image rebuilds. Trivy gates the CI build on CRITICAL/HIGH OS CVEs,
 # so skipping the upgrade means the next stale-base CVE breaks the build.
-RUN apt-get update \
+#
+# APT_REFRESH_DATE is passed from CI as today's date so this layer is
+# rebuilt at least daily — otherwise BuildKit reuses the cached layer
+# with a stale `apt-get update` index and Trivy flags freshly-disclosed
+# CVEs even though Debian has fixes available.
+ARG APT_REFRESH_DATE=unset
+RUN echo "apt refresh: $APT_REFRESH_DATE" \
+    && apt-get update \
     && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends \
         tesseract-ocr \
