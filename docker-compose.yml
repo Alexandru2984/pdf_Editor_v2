@@ -10,11 +10,14 @@ x-app-env: &app-env
   # already bumped to 300 for headroom.
   DATABASE_URL: postgres://${POSTGRES_USER:-pdfeditor}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-pdfeditor}
   SENTRY_DSN: ${SENTRY_DSN:-}
-  CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
-  CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
+  # Redis is AUTH-protected (requirepass) so a SSRF in a PDF/image library
+  # can't inject Celery tasks into the broker → worker RCE. Password is
+  # baked into every connection URL; REDIS_PASSWORD is required in .env.
+  CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://:${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}@redis:6379/0}
+  CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://:${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}@redis:6379/1}
   # Shared cache + session store. DB index 2 keeps it isolated from
   # Celery's broker/result keyspaces (which live on 0 and 1).
-  REDIS_CACHE_URL: ${REDIS_CACHE_URL:-redis://redis:6379/2}
+  REDIS_CACHE_URL: ${REDIS_CACHE_URL:-redis://:${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}@redis:6379/2}
   # SMTP — Django reads both EMAIL_* and SMTP_* aliases. Without these in
   # the container, confirmation/reset emails silently fail.
   SMTP_HOST: ${SMTP_HOST:-}
@@ -94,11 +97,22 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    # --requirepass forces AUTH on every connection. Even though the port
+    # isn't published to the host, this blocks the SSRF→task-injection→RCE
+    # path: a forged request to redis:6379 from inside the network can't
+    # issue commands without the password.
+    command: >
+      redis-server --appendonly yes --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass "${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # redis-cli reads REDISCLI_AUTH from the env so the password never
+      # appears in `ps`/process args.
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 10
