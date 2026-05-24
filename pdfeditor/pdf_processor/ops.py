@@ -20,6 +20,35 @@ from ._common import parse_page_range, processed_dir, safe_basename, timestamp
 # clear message in environments where it isn't installed.
 GHOSTSCRIPT_CMD = os.environ.get("GHOSTSCRIPT_CMD") or shutil.which("gs") or "/usr/bin/gs"
 
+# Hard ceiling on the raster a single page may produce. The page-count limit
+# (500) bounds how many pages we render, but a page's *physical* size is an
+# independent factor: a 10000x10000-inch page at 600 DPI rasterises to a
+# multi-GB bitmap that OOM-kills the worker before the file ever hits disk.
+# We estimate the uncompressed footprint (w_px * h_px * 4 bytes RGBA) before
+# calling get_pixmap and refuse pages that blow past this. Override via env
+# for hosts with more headroom.
+MAX_PIXMAP_BYTES = int(os.environ.get("PDF_MAX_PIXMAP_BYTES", str(100 * 1024 * 1024)))
+
+
+def _guard_pixmap_memory(page: "fitz.Page", zoom: float, page_index: int) -> None:
+    """Reject a page whose rasterised footprint at ``zoom`` would exceed
+    ``MAX_PIXMAP_BYTES``, before any large allocation happens.
+
+    ``page_index`` is 1-indexed and only used for the error message.
+    """
+    rect = page.rect
+    width_px = rect.width * zoom
+    height_px = rect.height * zoom
+    # 4 bytes/pixel is the worst case (RGBA). Using it for RGB too keeps the
+    # guard conservative — better to reject slightly early than OOM.
+    estimated = width_px * height_px * 4
+    if estimated > MAX_PIXMAP_BYTES:
+        raise ValueError(
+            f"Page {page_index} is too large to render at this resolution "
+            f"(~{estimated / (1024 * 1024):.0f} MB, limit "
+            f"{MAX_PIXMAP_BYTES // (1024 * 1024)} MB). Lower the DPI or crop the page."
+        )
+
 
 def split_pdf(pdf_path: str, ranges: list[tuple[int, int]]) -> list[str]:
     """ranges: list of (start,end) 1-indexed inclusive."""
@@ -705,6 +734,12 @@ def convert_to_pdfa(pdf_path: str, version: str = "2b") -> tuple[str, str]:
 
     cmd = [
         GHOSTSCRIPT_CMD,
+        # -dSAFER sandboxes the interpreter: it blocks the PostScript file
+        # operators that a malicious PDF could use to read host files (e.g.
+        # .env) or run commands — Ghostscript's classic RCE/file-disclosure
+        # vector. GS >=9.50 enables it by default, but the host fallback gs
+        # at GHOSTSCRIPT_CMD may be older, so we never rely on that default.
+        "-dSAFER",
         "-dPDFA=" + str(level),
         "-dBATCH",
         "-dNOPAUSE",
@@ -1121,6 +1156,7 @@ def convert_pdf_to_images(
         total = len(doc)
         with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             for idx, page in enumerate(doc, 1):
+                _guard_pixmap_memory(page, zoom, idx)
                 pix = page.get_pixmap(matrix=matrix, alpha=(fmt == "png"))
                 if fmt == "png":
                     data = pix.tobytes("png")
