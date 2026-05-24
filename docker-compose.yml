@@ -124,8 +124,13 @@ services:
 
   redis:
     <<: *hardening
-    # redis-server starts as root then su-exec's to the redis user.
+    # The entrypoint runs as root: it chowns the /data AOF dir to fix
+    # ownership (CHOWN + DAC_OVERRIDE + FOWNER to traverse/chown files it
+    # doesn't own) then su-exec's down to the redis user (SETUID/SETGID).
     cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
       - SETGID
       - SETUID
     image: redis:7-alpine
