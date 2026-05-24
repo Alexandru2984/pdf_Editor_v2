@@ -894,6 +894,21 @@ class ConvertPdfToImagesTests(_MediaRootMixin, TestCase):
         with self.assertRaises(ValueError):
             convert_pdf_to_images("/no/such/file.pdf")
 
+    def test_oversized_page_at_high_dpi_is_rejected(self):
+        # A physically huge page (5000x5000 pt) at 300 DPI would rasterise to
+        # a multi-GB bitmap — the OOM/zip-bomb vector. The memory guard must
+        # refuse it before get_pixmap allocates anything.
+        doc = fitz.open()
+        doc.new_page(width=5000, height=5000)
+        fd, big = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        self.addCleanup(lambda: os.path.exists(big) and os.remove(big))
+        doc.save(big)
+        doc.close()
+        with self.assertRaises(ValueError) as ctx:
+            convert_pdf_to_images(big, fmt="png", dpi=300)
+        self.assertIn("too large", str(ctx.exception).lower())
+
     def test_higher_dpi_produces_larger_image_dimensions(self):
         low_zip, _ = convert_pdf_to_images(self.path, fmt="png", dpi=72)
         high_zip, _ = convert_pdf_to_images(self.path, fmt="png", dpi=300)

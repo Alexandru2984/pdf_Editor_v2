@@ -20,6 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 import fitz
 
 from ._common import processed_dir, safe_basename, timestamp
+from .ops import _guard_pixmap_memory
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,7 @@ def _ocr_one_page(args: tuple[str, int, int, str]) -> tuple[int, str]:
         layer_text = page.get_text()
         if layer_text.strip():
             return page_index, layer_text
+        _guard_pixmap_memory(page, dpi / 72.0, page_index + 1)
         pix = page.get_pixmap(dpi=dpi)
         img = Image.open(io.BytesIO(pix.tobytes("png")))
         return page_index, pytesseract.image_to_string(img, lang=lang)
@@ -157,6 +159,7 @@ def make_pdf_searchable(pdf_path: str, language: str = "eng+ron", dpi: int = 200
                     new_doc.insert_pdf(doc, from_page=page.number, to_page=page.number)
                     continue
 
+                _guard_pixmap_memory(page, dpi / 72.0, page.number + 1)
                 pix = page.get_pixmap(dpi=dpi, alpha=False)
                 img = Image.open(io.BytesIO(pix.tobytes("png")))
                 try:
