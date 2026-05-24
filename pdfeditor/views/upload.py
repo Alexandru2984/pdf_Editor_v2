@@ -12,7 +12,7 @@ from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 
 from ..models import UploadedPDF
-from ..pdf_processor import check_pdf_has_text
+from ..pdf_processor import check_pdf_has_text, sanitize_pdf
 from ._common import _owner_kwargs, get_uploaded_pdfs, owner_filter, storage_quota, storage_usage
 
 logger = logging.getLogger(__name__)
@@ -137,6 +137,10 @@ def upload_view(request):
             )
             continue
 
+        # Strip active content (JS, auto-actions) and rewrite the structure
+        # before the file is ever stored or re-processed. Best-effort.
+        sanitize_pdf(file_path)
+
         has_text, message = check_pdf_has_text(file_path)
         if not has_text:
             messages.warning(request, f"{uploaded_file.name}: {message}")
@@ -145,7 +149,8 @@ def upload_view(request):
             **_owner_kwargs(request),
             name=uploaded_file.name,
             path=file_path,
-            size=uploaded_file.size,
+            # On-disk size after sanitization, not the original upload size.
+            size=os.path.getsize(file_path),
         )
         # Best-effort: failure here only means the dashboard falls back to
         # the lazy-regen path in thumbnail_view.

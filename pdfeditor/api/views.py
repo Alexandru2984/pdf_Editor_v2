@@ -110,12 +110,17 @@ class UploadedPDFViewSet(viewsets.ReadOnlyModelViewSet):
             os.remove(file_path)
             raise ValidationError({"pdf_file": f"Document has {page_count} pages (max {max_pages})."})
 
+        # Strip active content (JS, auto-actions) + rewrite structure. Best-effort.
+        from ..pdf_processor import sanitize_pdf
+
+        sanitize_pdf(file_path)
+
         obj = UploadedPDF.objects.create(
             user=request.user,
             session_key="",
             name=uploaded.name,
             path=file_path,
-            size=uploaded.size,
+            size=os.path.getsize(file_path),
         )
         serializer = self.get_serializer(obj)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
