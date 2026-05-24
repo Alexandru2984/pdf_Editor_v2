@@ -158,6 +158,9 @@ services:
     <<: *hardening
     build: .
     image: pdfeditor:latest
+    read_only: true
+    tmpfs:
+      - /tmp
     depends_on:
       db:
         condition: service_healthy
@@ -178,6 +181,15 @@ services:
   web:
     <<: *hardening
     image: pdfeditor:latest
+    # Immutable root filesystem: the only writable paths are the explicit
+    # volumes (media, staticfiles, embeddings cache) and the tmpfs mounts
+    # below. A compromised process can't drop a webshell or patch app code.
+    #   /tmp                → Django upload temp, tesseract/OCR, pdf2docx scratch
+    #   /home/app/.gunicorn → gunicorn 26 control socket (verified needed)
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/app/.gunicorn
     depends_on:
       db:
         condition: service_healthy
@@ -230,6 +242,11 @@ services:
   worker:
     <<: *hardening
     image: pdfeditor:latest
+    # Same immutable rootfs as web. Celery's PDF tasks scratch to /tmp
+    # (OCR/docx) and write outputs to the media volume; no other writes.
+    read_only: true
+    tmpfs:
+      - /tmp
     depends_on:
       db:
         condition: service_healthy

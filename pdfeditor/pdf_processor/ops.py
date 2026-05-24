@@ -30,7 +30,7 @@ GHOSTSCRIPT_CMD = os.environ.get("GHOSTSCRIPT_CMD") or shutil.which("gs") or "/u
 MAX_PIXMAP_BYTES = int(os.environ.get("PDF_MAX_PIXMAP_BYTES", str(100 * 1024 * 1024)))
 
 
-def _guard_pixmap_memory(page: "fitz.Page", zoom: float, page_index: int) -> None:
+def _guard_pixmap_memory(page: fitz.Page, zoom: float, page_index: int) -> None:
     """Reject a page whose rasterised footprint at ``zoom`` would exceed
     ``MAX_PIXMAP_BYTES``, before any large allocation happens.
 
