@@ -161,19 +161,30 @@
     }
 </style>
 
+{{ existing_entries|json_script:"initial-entries-data" }}
 <script>
     const PAGE_COUNT = {{ page_count }};
-    const INITIAL_ENTRIES = {{ existing_entries_json|safe }};
+    // Outline titles come from the uploaded PDF and are untrusted. json_script
+    // serialises them into a typed <script> block that the parser treats as
+    // inert data, so a title like `</script>…` can't break out and run.
+    const INITIAL_ENTRIES = JSON.parse(
+        document.getElementById('initial-entries-data').textContent
+    );
 
     function addOutlineRow(level = 1, title = '', page = 1) {
         const tbody = document.getElementById('outline-rows');
         const tr = document.createElement('tr');
+        const lvl = Number.isFinite(Number(level)) ? Number(level) : 1;
+        const pg = Number.isFinite(Number(page)) ? Number(page) : 1;
         tr.innerHTML = `
-            <td><input type="number" min="1" max="6" value="${level}" class="row-level"></td>
-            <td><input type="text" value="${title.replace(/"/g, '&quot;')}" class="row-title" placeholder="{% trans 'Chapter title' %}"></td>
-            <td><input type="number" min="1" max="${PAGE_COUNT}" value="${page}" class="row-page"></td>
+            <td><input type="number" min="1" max="6" value="${lvl}" class="row-level"></td>
+            <td><input type="text" class="row-title" placeholder="{% trans 'Chapter title' %}"></td>
+            <td><input type="number" min="1" max="${PAGE_COUNT}" value="${pg}" class="row-page"></td>
             <td><button type="button" class="row-delete" onclick="this.closest('tr').remove()">✕</button></td>
         `;
+        // Assign the title via the DOM value property — never via innerHTML —
+        // so the browser stores it as text and never parses it as markup.
+        tr.querySelector('.row-title').value = title;
         tbody.appendChild(tr);
     }
 

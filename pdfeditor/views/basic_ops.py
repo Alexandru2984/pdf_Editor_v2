@@ -950,8 +950,9 @@ def outline_view(request):
             "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
             "uploaded_pdfs": uploaded_pdfs,
             "selected_pdf": selected_pdf,
+            # Rendered XSS-safe via {{ existing_entries|json_script }} in the
+            # template — no pre-serialized string handed to |safe anymore.
             "existing_entries": existing,
-            "existing_entries_json": json.dumps(existing, ensure_ascii=False),
             "page_count": page_count,
         },
     )
