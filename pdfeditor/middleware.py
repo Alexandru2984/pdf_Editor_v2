@@ -54,6 +54,35 @@ class RequestIDMiddleware:
         return response
 
 
+# Disable browser features the app never uses. Set at the Django layer (not
+# just the host nginx) so the header is present no matter what fronts the app
+# — including the docker-compose-only deploy, whose nginx sets no security
+# headers. CSP is intentionally NOT set here: the host nginx already sends one
+# and two CSP headers would both be enforced. Override via settings if needed.
+_DEFAULT_PERMISSIONS_POLICY = (
+    "accelerometer=(), autoplay=(), camera=(), display-capture=(), "
+    "encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), "
+    "magnetometer=(), microphone=(), midi=(), payment=(), usb=(), "
+    "interest-cohort=()"
+)
+
+
+class SecurityHeadersMiddleware:
+    """Add deploy-independent response security headers (Permissions-Policy)."""
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+        from django.conf import settings
+
+        self.permissions_policy = getattr(settings, "PERMISSIONS_POLICY", _DEFAULT_PERMISSIONS_POLICY)
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        response = self.get_response(request)
+        if self.permissions_policy:
+            response.setdefault("Permissions-Policy", self.permissions_policy)
+        return response
+
+
 class RequestIDLogFilter(logging.Filter):
     """Inject ``request_id`` onto every LogRecord so the formatter can render it."""
 

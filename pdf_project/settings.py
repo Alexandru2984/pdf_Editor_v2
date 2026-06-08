@@ -177,6 +177,7 @@ MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "pdfeditor.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "pdfeditor.middleware.SecurityHeadersMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",

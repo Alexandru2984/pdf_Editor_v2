@@ -110,9 +110,9 @@ def public_share_download_view(request, token: str):
     # under concurrency — read-modify-write (count = python_value + 1) could
     # let parallel requests blow past max_downloads.
     if link.max_downloads:
-        claimed = ShareLink.objects.filter(
-            pk=link.pk, download_count__lt=link.max_downloads
-        ).update(download_count=F("download_count") + 1)
+        claimed = ShareLink.objects.filter(pk=link.pk, download_count__lt=link.max_downloads).update(
+            download_count=F("download_count") + 1
+        )
         if not claimed:
             return render(request, "pdfeditor/share_unavailable.html", {"reason": "exhausted"}, status=410)
     else:
