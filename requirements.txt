@@ -4,7 +4,9 @@ dj-database-url>=2.1.0
 # non-LTS and drops Python 3.10/3.11 from the CI matrix — let Dependabot
 # keep patching 5.2.* but not jump to 6. See .github/dependabot.yml for
 # the matching ignore rule.
-Django>=5.2,<5.3
+# Floor bumped to 5.2.15: 5.2.14 carried PYSEC-2026-197..201. Stay on the
+# 5.2.* LTS line; Dependabot keeps patching within it.
+Django>=5.2.15,<5.3
 django-axes>=8.0.0
 django-ratelimit>=4.1.0
 celery[redis]>=5.4.0
@@ -26,3 +28,8 @@ requests>=2.28.0
 sentry-sdk[django]>=2.0.0
 sqlparse>=0.5.4
 uvicorn[standard]>=0.30.0
+# Transitive deps (pulled in via requests/httpx) pinned to a CVE-free floor:
+#   urllib3 <2.7.0  → PYSEC-2026-141/142
+#   idna    <3.15   → CVE-2026-45409
+urllib3>=2.7.0
+idna>=3.15

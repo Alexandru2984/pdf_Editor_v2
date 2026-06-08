@@ -33,7 +33,10 @@ RUN echo "apt refresh: $APT_REFRESH_DATE" \
 WORKDIR /app
 
 COPY requirements.txt ./
-RUN pip install -r requirements.txt && pip install gunicorn
+# Upgrade pip first — the base image's pip carries install-time CVEs
+# (CVE-2025-8869 et al.); a patched pip builds the rest of the deps.
+RUN python -m pip install --upgrade pip \
+    && pip install -r requirements.txt && pip install gunicorn
 
 COPY . .
 
