@@ -18,13 +18,7 @@ from django.http import Http404, HttpResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from ..metrics import refresh_queue_depth
-
-
-def _client_ip(request) -> str:
-    fwd = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    if fwd:
-        return fwd.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "")
+from ..netutils import client_ip
 
 
 def _ip_allowed(ip: str, allowlist: set[str]) -> bool:
@@ -50,7 +44,11 @@ def metrics_view(request):
     """Return Prometheus text-format metrics. 404 to non-allowlisted IPs."""
     allowlist: set[str] = getattr(settings, "PROMETHEUS_METRICS_ALLOW", set())
     if allowlist:
-        if not _ip_allowed(_client_ip(request), allowlist):
+        # client_ip() reads X-Forwarded-For from the RIGHT by trusted-proxy
+        # count, so a forged `X-Forwarded-For: 127.0.0.1` can't satisfy the
+        # allowlist. Prometheus scrapes web:8000 directly (no XFF), so it
+        # falls back to REMOTE_ADDR — its container IP, covered by the CIDR.
+        if not _ip_allowed(client_ip(request) or "", allowlist):
             raise Http404("not found")
     elif not settings.DEBUG:
         # No allowlist configured AND we're in prod — refuse rather than
