@@ -284,6 +284,7 @@ def download_merged_view(request):
 # ---------- Compress ----------
 
 
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
 def compress_view(request):
     selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
     if early:

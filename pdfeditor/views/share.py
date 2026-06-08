@@ -4,6 +4,7 @@ import os
 from datetime import timedelta
 
 from django.contrib import messages
+from django.db.models import F
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -104,8 +105,18 @@ def public_share_download_view(request, token: str):
     if not pdf or not pdf.exists_on_disk():
         return render(request, "pdfeditor/share_unavailable.html", {"reason": "missing"}, status=410)
 
-    # Increment counter atomically.
-    ShareLink.objects.filter(pk=link.pk).update(download_count=link.download_count + 1)
+    # Atomically claim a download slot. The is_exhausted() check above is a
+    # fast path; this conditional UPDATE is what actually enforces the cap
+    # under concurrency — read-modify-write (count = python_value + 1) could
+    # let parallel requests blow past max_downloads.
+    if link.max_downloads:
+        claimed = ShareLink.objects.filter(
+            pk=link.pk, download_count__lt=link.max_downloads
+        ).update(download_count=F("download_count") + 1)
+        if not claimed:
+            return render(request, "pdfeditor/share_unavailable.html", {"reason": "exhausted"}, status=410)
+    else:
+        ShareLink.objects.filter(pk=link.pk).update(download_count=F("download_count") + 1)
 
     try:
         return FileResponse(

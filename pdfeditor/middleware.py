@@ -10,12 +10,19 @@ from __future__ import annotations
 
 import contextvars
 import logging
+import re
 import uuid
 from collections.abc import Callable
 
 from django.http import HttpRequest, HttpResponse
 
 _request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="-")
+
+# An inbound X-Request-Id is echoed into logs and the response header, so it
+# must be inert: bounded length + no CR/LF or control chars. Anything that
+# doesn't match is discarded in favour of a fresh UUID (blocks log forging
+# and response-header injection).
+_VALID_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 
 def get_current_request_id() -> str:
@@ -36,7 +43,7 @@ class RequestIDMiddleware:
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         incoming = request.META.get(self.HEADER, "").strip()
-        rid = incoming or uuid.uuid4().hex
+        rid = incoming if _VALID_REQUEST_ID.match(incoming) else uuid.uuid4().hex
         token = _request_id_var.set(rid)
         request.request_id = rid
         try:
