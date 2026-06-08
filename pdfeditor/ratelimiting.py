@@ -25,15 +25,19 @@ from django.http import HttpRequest
 from django_ratelimit.core import is_ratelimited
 from django_ratelimit.exceptions import Ratelimited
 
+from .netutils import client_ip
+
 
 def _compute_key_and_rate(request: HttpRequest, *, anon_rate: str, user_rate: str) -> tuple[str, str]:
     user = getattr(request, "user", None)
     if user is not None and user.is_authenticated:
         return f"user:{user.pk}", user_rate
-    # Stable fallback keeps a missing REMOTE_ADDR (e.g. unit-test request
-    # factories that omit it) from clustering all anon traffic into one
-    # bucket — give it its own slot.
-    ip = request.META.get("REMOTE_ADDR") or "noip"
+    # Real client IP via netutils.client_ip (reads X-Forwarded-For with the
+    # trusted-proxy count) — NOT raw REMOTE_ADDR, which behind nginx is the
+    # proxy's own IP and would funnel every anon user into one shared bucket.
+    # "noip" keeps a missing address (e.g. test request factories) in its own
+    # slot rather than clustering all such traffic together.
+    ip = client_ip(request) or "noip"
     return f"ip:{ip}", anon_rate
 
 

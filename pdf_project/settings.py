@@ -193,16 +193,24 @@ AUTHENTICATION_BACKENDS = [
     "pdfeditor.auth_backends.CaseInsensitiveModelBackend",
 ]
 
+# Number of trusted reverse proxies in front of the app. Prod is
+# Cloudflare → host nginx → docker nginx = 3. Used by netutils.client_ip to
+# pick the real client IP from the *right* of X-Forwarded-For (spoof-safe).
+# Set to 2 for a bare-uvicorn-behind-host-nginx deploy, 1 for docker-only,
+# 0 to always use REMOTE_ADDR (no proxy).
+TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", 3))
+
 # django-axes: lock account for 1h after 5 failed admin logins
 AXES_ENABLED = not TESTING  # tests use Client.login() which can't pass a request to axes
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
 AXES_RESET_ON_SUCCESS = True
-# We sit behind nginx — without these, ipware reads REMOTE_ADDR (the proxy
-# itself) and every lockout records ip=None / 127.0.0.1.
-AXES_BEHIND_REVERSE_PROXY = True
-AXES_IPWARE_PROXY_COUNT = 1
+# Derive the lockout IP through our single source of truth so axes, the rate
+# limiter and the /metrics allowlist all key on the SAME client address.
+# (django-ipware isn't installed, so axes would otherwise silently fall back
+# to REMOTE_ADDR — the proxy IP — collapsing every lockout into one bucket.)
+AXES_CLIENT_IP_CALLABLE = "pdfeditor.netutils.client_ip"
 
 LOGGING = {
     "version": 1,
