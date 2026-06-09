@@ -1,0 +1,253 @@
+"""Regression tests for the 2026-06-08 security hardening.
+
+Each class pins one fix so a later refactor can't silently undo it — the
+way axes' IP keying silently broke once django-ipware wasn't installed.
+Most are DB-free (SimpleTestCase); only the ShareLink cap test needs the DB.
+"""
+
+from __future__ import annotations
+
+from datetime import timedelta
+
+from django.db.models import F
+from django.http import HttpResponse
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.utils import timezone
+
+from .middleware import _VALID_REQUEST_ID, RequestIDMiddleware, SecurityHeadersMiddleware
+from .models import ProcessedPDF, ShareLink
+from .netutils import client_ip
+from .ratelimiting import _compute_key_and_rate
+from .views.metrics import _ip_allowed
+
+
+class _Anon:
+    is_authenticated = False
+    pk = None
+
+
+# --------------------------------------------------------------------------
+# Stage 3/4: spoof-safe client IP derivation (netutils.client_ip)
+# --------------------------------------------------------------------------
+@override_settings(TRUSTED_PROXY_COUNT=3)
+class ClientIpTests(SimpleTestCase):
+    """Prod chain is Cloudflare → host nginx → docker nginx = 3 hops."""
+
+    def setUp(self):
+        self.rf = RequestFactory()
+
+    def _req(self, xff=None, remote="172.18.0.5"):
+        extra = {"REMOTE_ADDR": remote}
+        if xff is not None:
+            extra["HTTP_X_FORWARDED_FOR"] = xff
+        return self.rf.get("/", **extra)
+
+    def test_full_chain_returns_real_client(self):
+        self.assertEqual(client_ip(self._req("203.0.113.9, 198.51.100.2, 127.0.0.1")), "203.0.113.9")
+
+    def test_spoofed_left_prefix_is_ignored(self):
+        # Attacker prepends a fake entry; the real client still resolves.
+        r = self._req("1.2.3.4, 203.0.113.9, 198.51.100.2, 127.0.0.1")
+        self.assertEqual(client_ip(r), "203.0.113.9")
+
+    def test_no_xff_falls_back_to_remote_addr(self):
+        self.assertEqual(client_ip(self._req(None)), "172.18.0.5")
+
+    def test_xff_shorter_than_proxy_depth_uses_remote_addr(self):
+        # Don't trust a client-supplied leftmost value when the chain is short.
+        self.assertEqual(client_ip(self._req("9.9.9.9")), "172.18.0.5")
+
+    def test_missing_everything_returns_none(self):
+        r = self.rf.get("/")
+        r.META.pop("REMOTE_ADDR", None)
+        self.assertIsNone(client_ip(r))
+
+    @override_settings(TRUSTED_PROXY_COUNT=1)
+    def test_single_proxy_is_spoof_safe(self):
+        # docker nginx appends the real client; a spoofed left entry is ignored.
+        self.assertEqual(client_ip(self._req("1.2.3.4, 203.0.113.9")), "203.0.113.9")
+
+    @override_settings(TRUSTED_PROXY_COUNT=0)
+    def test_zero_proxies_uses_remote_addr_only(self):
+        # No trusted proxy: XFF is fully untrusted, use REMOTE_ADDR.
+        self.assertEqual(client_ip(self._req("203.0.113.9")), "172.18.0.5")
+
+
+# --------------------------------------------------------------------------
+# Stage 3: rate-limit anon keying no longer collapses behind a proxy
+# --------------------------------------------------------------------------
+@override_settings(TRUSTED_PROXY_COUNT=3)
+class RateLimitKeyingTests(SimpleTestCase):
+    def setUp(self):
+        self.rf = RequestFactory()
+
+    def _anon(self, xff, remote="172.18.0.5"):
+        r = self.rf.post("/x/", HTTP_X_FORWARDED_FOR=xff, REMOTE_ADDR=remote)
+        r.user = _Anon()
+        return r
+
+    def _key(self, xff):
+        key, _rate = _compute_key_and_rate(self._anon(xff), anon_rate="5/h", user_rate="100/h")
+        return key
+
+    def test_distinct_clients_get_distinct_keys(self):
+        # The regression: behind nginx these used to share one REMOTE_ADDR bucket.
+        k1 = self._key("203.0.113.9, 198.51.100.2, 127.0.0.1")
+        k2 = self._key("203.0.113.77, 198.51.100.2, 127.0.0.1")
+        self.assertEqual(k1, "ip:203.0.113.9")
+        self.assertNotEqual(k1, k2)
+
+    def test_spoofed_prefix_cannot_change_bucket(self):
+        base = self._key("203.0.113.9, 198.51.100.2, 127.0.0.1")
+        spoofed = self._key("9.9.9.9, 203.0.113.9, 198.51.100.2, 127.0.0.1")
+        self.assertEqual(base, spoofed)
+
+
+# --------------------------------------------------------------------------
+# Stage 4: /metrics allowlist uses the spoof-safe IP
+# --------------------------------------------------------------------------
+@override_settings(TRUSTED_PROXY_COUNT=3)
+class MetricsAllowlistTests(SimpleTestCase):
+    ALLOW = {"127.0.0.1", "172.16.0.0/12"}
+
+    def setUp(self):
+        self.rf = RequestFactory()
+
+    def test_direct_prometheus_scrape_allowed(self):
+        # No XFF on the internal scrape → REMOTE_ADDR (docker CIDR) is allowed.
+        r = self.rf.get("/metrics", REMOTE_ADDR="172.18.0.9")
+        self.assertTrue(_ip_allowed(client_ip(r) or "", self.ALLOW))
+
+    def test_spoofed_loopback_xff_rejected(self):
+        r = self.rf.get(
+            "/metrics",
+            REMOTE_ADDR="172.18.0.5",
+            HTTP_X_FORWARDED_FOR="127.0.0.1, 203.0.113.9, 198.51.100.2, 127.0.0.1",
+        )
+        ip = client_ip(r)
+        self.assertEqual(ip, "203.0.113.9")  # not the spoofed loopback
+        self.assertFalse(_ip_allowed(ip or "", self.ALLOW))
+
+
+# --------------------------------------------------------------------------
+# Stage 5: inbound X-Request-Id is sanitised (no log forging / header injection)
+# --------------------------------------------------------------------------
+class RequestIdSanitizationTests(SimpleTestCase):
+    UUID_HEX = r"^[0-9a-f]{32}$"
+
+    def setUp(self):
+        self.rf = RequestFactory()
+
+    def _echo(self, incoming=None):
+        mw = RequestIDMiddleware(lambda req: HttpResponse("ok"))
+        extra = {} if incoming is None else {"HTTP_X_REQUEST_ID": incoming}
+        return mw(self.rf.get("/", **extra))["X-Request-Id"]
+
+    def test_valid_id_is_echoed(self):
+        self.assertEqual(self._echo("abc-123_OK.9"), "abc-123_OK.9")
+
+    def test_crlf_injection_is_replaced(self):
+        rid = self._echo("evil\r\nSet-Cookie: x=y")
+        self.assertNotIn("\r", rid)
+        self.assertNotIn("\n", rid)
+        self.assertRegex(rid, self.UUID_HEX)
+
+    def test_overlong_id_is_replaced(self):
+        self.assertRegex(self._echo("a" * 65), self.UUID_HEX)
+
+    def test_absent_header_generates_fresh(self):
+        self.assertRegex(self._echo(None), self.UUID_HEX)
+
+    def test_regex_accepts_and_rejects(self):
+        self.assertTrue(_VALID_REQUEST_ID.match("good_id-1.2"))
+        self.assertFalse(_VALID_REQUEST_ID.match("has space"))
+        self.assertFalse(_VALID_REQUEST_ID.match(""))
+
+
+# --------------------------------------------------------------------------
+# Stage 6: deploy-independent Permissions-Policy
+# --------------------------------------------------------------------------
+class PermissionsPolicyTests(SimpleTestCase):
+    def setUp(self):
+        self.rf = RequestFactory()
+
+    def test_header_present_with_features_locked(self):
+        mw = SecurityHeadersMiddleware(lambda req: HttpResponse("ok"))
+        pp = mw(self.rf.get("/"))["Permissions-Policy"]
+        for directive in ("camera=()", "microphone=()", "geolocation=()", "usb=()", "payment=()"):
+            self.assertIn(directive, pp)
+
+    def test_does_not_override_existing_header(self):
+        def get_response(req):
+            resp = HttpResponse("ok")
+            resp["Permissions-Policy"] = "custom=()"
+            return resp
+
+        mw = SecurityHeadersMiddleware(get_response)
+        self.assertEqual(mw(self.rf.get("/"))["Permissions-Policy"], "custom=()")
+
+    @override_settings(PERMISSIONS_POLICY="")
+    def test_empty_setting_omits_header(self):
+        mw = SecurityHeadersMiddleware(lambda req: HttpResponse("ok"))
+        self.assertNotIn("Permissions-Policy", mw(self.rf.get("/")))
+
+
+# --------------------------------------------------------------------------
+# Stage 2: outline titles rendered XSS-safe (json_script, not |safe)
+# --------------------------------------------------------------------------
+class OutlineXssTests(SimpleTestCase):
+    def test_template_uses_json_script_not_safe(self):
+        import os
+
+        from django.conf import settings
+
+        path = os.path.join(settings.BASE_DIR, "pdfeditor", "templates", "pdfeditor", "outline.html")
+        with open(path, encoding="utf-8") as fh:
+            src = fh.read()
+        self.assertIn("json_script", src)
+        self.assertNotIn("existing_entries_json", src)
+        self.assertNotIn("|safe", src)
+
+    def test_json_script_escapes_script_breakout(self):
+        from django.template import engines
+
+        t = engines["django"].from_string('{{ entries|json_script:"d" }}')
+        out = t.render(
+            {"entries": [{"level": 1, "title": "</script><img src=x onerror=alert(1)>", "page": 1}]}
+        )
+        self.assertNotIn("<img", out)  # injected tag is escaped, never raw
+        self.assertIn("\\u003C/script\\u003E", out)  # the title's </script> is escaped
+        self.assertEqual(out.count("</script>"), 1)  # only json_script's own closing tag
+
+
+# --------------------------------------------------------------------------
+# Stage 5: ShareLink download cap is enforced atomically (no overrun)
+# --------------------------------------------------------------------------
+class ShareLinkCounterTests(TestCase):
+    def test_conditional_update_enforces_cap(self):
+        pdf = ProcessedPDF.objects.create(
+            user=None,
+            session_key="s",
+            kind=ProcessedPDF.KIND_COMPRESS,
+            name="x.pdf",
+            path="/nonexistent/x.pdf",
+            size=1,
+        )
+        link = ShareLink.objects.create(
+            processed_pdf=pdf,
+            creator=None,
+            session_key="s",
+            expires_at=timezone.now() + timedelta(hours=1),
+            max_downloads=2,
+        )
+
+        def claim():
+            return ShareLink.objects.filter(pk=link.pk, download_count__lt=link.max_downloads).update(
+                download_count=F("download_count") + 1
+            )
+
+        self.assertEqual(claim(), 1)  # 0 -> 1
+        self.assertEqual(claim(), 1)  # 1 -> 2
+        self.assertEqual(claim(), 0)  # cap reached: no slot left
+        link.refresh_from_db()
+        self.assertEqual(link.download_count, 2)
