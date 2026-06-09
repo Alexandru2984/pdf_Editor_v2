@@ -9,7 +9,7 @@
         {% if uploaded_pdfs|length > 1 %}
         <div class="tool-pdf-picker">
             <label for="pdf-selector">{% trans "📂 Select PDF to Split:" %}</label>
-            <select id="pdf-selector" onchange="window.location.href='{% url 'split' %}?pdf=' + encodeURIComponent(this.value)">
+            <select id="pdf-selector" data-nav-select="{% url 'split' %}">
                 {% for pdf in uploaded_pdfs %}
                 <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
                     📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
@@ -25,7 +25,7 @@
                 <h2>{% blocktrans with name=pdf_name %}✂️ Split PDF: {{ name }}{% endblocktrans %}</h2>
                 <p>{% trans "Split your PDF into multiple files based on page ranges." %}</p>
             </div>
-            <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview tool-preview-btn">
+            <button data-pdf-modal="/media/{{ pdf_path_relative }}" class="btn btn-preview tool-preview-btn">
                 {% trans "👁️ Preview PDF" %}
             </button>
         </div>

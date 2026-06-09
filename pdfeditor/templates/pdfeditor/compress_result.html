@@ -53,7 +53,7 @@
             <a href="{% url 'dashboard' %}" class="btn btn-secondary">
                 ← {% trans "Dashboard" %}
             </a>
-            <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
+            <button data-pdf-modal="/media/{{ pdf_path_relative }}" class="btn btn-preview">
                 👁️ {% trans "Preview Compressed PDF" %}
             </button>
             <a href="{% url 'download_compressed' %}" class="btn btn-primary">

@@ -12,7 +12,7 @@
             <label for="pdf-selector">
                 📂 {% trans "Select PDF:" %}
             </label>
-            <select id="pdf-selector" onchange="window.location.href='{% url 'outline' %}?pdf=' + encodeURIComponent(this.value)">
+            <select id="pdf-selector" data-nav-select="{% url 'outline' %}">
                 {% for pdf in uploaded_pdfs %}
                 <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
                     📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
@@ -32,7 +32,7 @@
                     <div class="tool-info-label">{% trans "Current File:" %}</div>
                     <div class="tool-info-value">{{ pdf_name }}</div>
                 </div>
-                <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview tool-info-bar-divider">
+                <button data-pdf-modal="/media/{{ pdf_path_relative }}" class="btn btn-preview tool-info-bar-divider">
                     👁️ {% trans "Preview" %}
                 </button>
             </div>
@@ -70,10 +70,10 @@
             </table>
 
             <div class="outline-actions">
-                <button type="button" class="btn btn-secondary" onclick="addOutlineRow()">
+                <button type="button" class="btn btn-secondary" id="add-row-btn">
                     ➕ {% trans "Add row" %}
                 </button>
-                <button type="button" class="btn btn-link" onclick="clearOutlineRows()">
+                <button type="button" class="btn btn-link" id="clear-rows-btn">
                     🗑 {% trans "Clear all" %}
                 </button>
             </div>
@@ -180,7 +180,7 @@
             <td><input type="number" min="1" max="6" value="${lvl}" class="row-level"></td>
             <td><input type="text" class="row-title" placeholder="{% trans 'Chapter title' %}"></td>
             <td><input type="number" min="1" max="${PAGE_COUNT}" value="${pg}" class="row-page"></td>
-            <td><button type="button" class="row-delete" onclick="this.closest('tr').remove()">✕</button></td>
+            <td><button type="button" class="row-delete">✕</button></td>
         `;
         // Assign the title via the DOM value property — never via innerHTML —
         // so the browser stores it as text and never parses it as markup.
@@ -208,6 +208,13 @@
 
     document.getElementById('outline-form').addEventListener('submit', () => {
         document.getElementById('entries_json').value = JSON.stringify(collectEntries());
+    });
+
+    // Toolbar buttons + per-row delete (delegated, rows are created in JS).
+    document.getElementById('add-row-btn').addEventListener('click', () => addOutlineRow());
+    document.getElementById('clear-rows-btn').addEventListener('click', clearOutlineRows);
+    document.getElementById('outline-rows').addEventListener('click', (e) => {
+        if (e.target.classList.contains('row-delete')) e.target.closest('tr').remove();
     });
 
     if (Array.isArray(INITIAL_ENTRIES) && INITIAL_ENTRIES.length > 0) {

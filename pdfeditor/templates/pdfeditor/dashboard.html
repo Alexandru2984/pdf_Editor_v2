@@ -17,9 +17,9 @@
         <form method="post" action="{% url 'upload' %}" enctype="multipart/form-data" id="upload-form">
             {% csrf_token %}
             <input type="file" name="pdf_file" id="file-input" accept=".pdf,application/pdf" multiple style="display: none;">
-            <button type="button" class="btn btn-primary btn-large" onclick="document.getElementById('file-input').click()">
+            <label for="file-input" class="btn btn-primary btn-large" style="cursor: pointer;">
                 {% trans "Choose Files" %}
-            </button>
+            </label>
         </form>
     </div>
 
@@ -252,8 +252,8 @@
         <div class="user-pdfs-grid">
             {% for pdf in uploaded_pdfs %}
             <div class="pdf-item-card">
-                <button type="button" onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="pdf-item-thumb" aria-label="{% blocktrans with name=pdf.name %}Preview {{ name }}{% endblocktrans %}">
-                    <img src="{% url 'pdf_thumbnail' pdf.id %}" alt="" loading="lazy" onerror="this.remove()">
+                <button type="button" data-pdf-modal="/media/uploads/{{ pdf.name }}" class="pdf-item-thumb" aria-label="{% blocktrans with name=pdf.name %}Preview {{ name }}{% endblocktrans %}">
+                    <img src="{% url 'pdf_thumbnail' pdf.id %}" alt="" loading="lazy" data-remove-on-error>
                     <span class="pdf-item-thumb-overlay" aria-hidden="true">👁️ {% trans "Preview" %}</span>
                 </button>
                 <div class="pdf-item-body">
@@ -264,8 +264,8 @@
                     </p>
                 </div>
                 <div class="pdf-item-actions">
-                    <button onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="btn btn-preview pdf-item-btn">👁️ {% trans "Preview" %}</button>
-                    <a href="{% url 'delete_pdf' pdf.id %}" onclick="return confirm('{% trans "Delete this PDF?" %}')" class="btn btn-delete pdf-item-btn">🗑️ {% trans "Delete" %}</a>
+                    <button data-pdf-modal="/media/uploads/{{ pdf.name }}" class="btn btn-preview pdf-item-btn">👁️ {% trans "Preview" %}</button>
+                    <a href="{% url 'delete_pdf' pdf.id %}" data-confirm="{% trans "Delete this PDF?" %}" class="btn btn-delete pdf-item-btn">🗑️ {% trans "Delete" %}</a>
                 </div>
             </div>
             {% endfor %}

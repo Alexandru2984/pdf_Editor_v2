@@ -83,7 +83,7 @@
     {% if new_api_key_token %}
     <div class="api-key-fresh">
         <strong>{% trans "Your new key — copy it now, it will not be shown again:" %}</strong>
-        <code class="api-key-token" onclick="navigator.clipboard.writeText('{{ new_api_key_token }}'); this.classList.add('copied');">{{ new_api_key_token }}</code>
+        <code class="api-key-token" data-copy="{{ new_api_key_token }}">{{ new_api_key_token }}</code>
     </div>
     {% endif %}
 
@@ -119,7 +119,7 @@
                 </td>
                 <td>
                     {% if key.is_active %}
-                    <form method="post" action="{% url 'revoke_api_key' key.id %}" style="display:inline;" onsubmit="return confirm('{% trans 'Revoke this key?' %}');">
+                    <form method="post" action="{% url 'revoke_api_key' key.id %}" style="display:inline;" data-confirm="{% trans 'Revoke this key?' %}">
                         {% csrf_token %}
                         <button type="submit" class="btn-link-danger">✕</button>
                     </form>

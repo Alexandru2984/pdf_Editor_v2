@@ -22,7 +22,7 @@
                     <div class="file-card-meta">{% blocktrans with size=file.size|filesizeformat %}Size: {{ size }}{% endblocktrans %}</div>
                 </div>
                 <div class="file-card-actions">
-                    <button onclick="pdfModal.open('/media/{{ file.path_relative }}')" class="btn btn-preview">
+                    <button data-pdf-modal="/media/{{ file.path_relative }}" class="btn btn-preview">
                         {% trans "👁️ Preview" %}
                     </button>
                     <a href="/download_split/?file={{ forloop.counter0 }}" class="btn btn-primary">

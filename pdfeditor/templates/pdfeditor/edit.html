@@ -12,7 +12,7 @@
         <label for="pdf-selector">
             {% trans "📂 Select PDF to Edit:" %}
         </label>
-        <select id="pdf-selector" onchange="window.location.href='{% url 'edit' %}?pdf=' + encodeURIComponent(this.value)">
+        <select id="pdf-selector" data-nav-select="{% url 'edit' %}">
             {% for pdf in uploaded_pdfs %}
             <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
                 📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
@@ -27,7 +27,7 @@
 
     <p class="pdf-info">
         {% blocktrans with name=pdf_name %}Editing: <strong>{{ name }}</strong>{% endblocktrans %}
-        <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
+        <button data-pdf-modal="/media/{{ pdf_path_relative }}" class="btn btn-preview">
             {% trans "👁️ Preview PDF" %}
         </button>
     </p>

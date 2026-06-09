@@ -134,6 +134,67 @@
                 });
             });
         }
+
+        // --- CSP-safe delegated handlers --------------------------------
+        // These replace former inline on* attributes so the page works
+        // under a strict Content-Security-Policy with no 'unsafe-inline'.
+        document.addEventListener('click', (e) => {
+            // Open a PDF in the preview modal: data-pdf-modal="/media/…"
+            const modalEl = e.target.closest('[data-pdf-modal]');
+            if (modalEl && window.pdfModal) {
+                e.preventDefault();
+                window.pdfModal.open(modalEl.getAttribute('data-pdf-modal'));
+                return;
+            }
+            // Copy text to clipboard: data-copy="…"
+            const copyEl = e.target.closest('[data-copy]');
+            if (copyEl) {
+                e.preventDefault();
+                if (navigator.clipboard) navigator.clipboard.writeText(copyEl.getAttribute('data-copy'));
+                copyEl.classList.add('copied');
+                return;
+            }
+            // Confirm before following a link/button: data-confirm="message"
+            const confirmEl = e.target.closest('[data-confirm]');
+            if (confirmEl && confirmEl.tagName !== 'FORM' && !window.confirm(confirmEl.getAttribute('data-confirm'))) {
+                e.preventDefault();
+            }
+        });
+
+        // Confirm before submitting a form: <form data-confirm="message">
+        document.addEventListener('submit', (e) => {
+            const f = e.target.closest('form[data-confirm]');
+            if (f && !window.confirm(f.getAttribute('data-confirm'))) {
+                e.preventDefault();
+            }
+        });
+
+        // "Switch PDF" dropdowns: data-nav-select="/tool/" → /tool/?pdf=<value>
+        document.addEventListener('change', (e) => {
+            const sel = e.target.closest('[data-nav-select]');
+            if (sel) {
+                window.location.href = sel.getAttribute('data-nav-select') + '?pdf=' + encodeURIComponent(sel.value);
+            }
+        });
+
+        // Live range-slider readout: data-range-output="spanId" [data-range-format="percent"]
+        document.addEventListener('input', (e) => {
+            const src = e.target.closest('[data-range-output]');
+            if (!src) return;
+            const out = document.getElementById(src.getAttribute('data-range-output'));
+            if (out) {
+                out.textContent = src.getAttribute('data-range-format') === 'percent'
+                    ? Math.round(src.value * 100)
+                    : src.value;
+            }
+        });
+
+        // Drop an image that fails to load: <img data-remove-on-error>.
+        // Capture phase, because the error event does not bubble for <img>.
+        document.addEventListener('error', (e) => {
+            const el = e.target;
+            if (el && el.matches && el.matches('[data-remove-on-error]')) el.remove();
+        }, true);
     </script>
     
     {% block extra_js %}{% endblock %}

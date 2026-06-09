@@ -32,7 +32,7 @@
                             <div class="pdf-name">📄 {{ pdf.name }}</div>
                             <div class="pdf-size">{{ pdf.size|filesizeformat }}</div>
                         </div>
-                        <button type="button" onclick="pdfModal.open('/media/uploads/{{ pdf.name }}')" class="btn btn-preview">
+                        <button type="button" data-pdf-modal="/media/uploads/{{ pdf.name }}" class="btn btn-preview">
                             {% trans "👁️ Preview" %}
                         </button>
                     </div>

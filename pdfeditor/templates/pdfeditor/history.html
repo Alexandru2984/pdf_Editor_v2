@@ -38,14 +38,14 @@
                     <td data-label="{% trans 'Size' %}" class="cell-muted">{{ item.size|filesizeformat }}</td>
                     <td data-label="{% trans 'Created' %}" class="cell-muted">{{ item.created_at|date:"Y-m-d H:i" }}</td>
                     <td class="cell-actions">
-                        <button onclick="pdfModal.open('/media/{{ item.path_relative }}')" class="btn btn-preview">
+                        <button data-pdf-modal="/media/{{ item.path_relative }}" class="btn btn-preview">
                             👁️
                         </button>
                         <a href="{% url 'history_download' item.id %}" class="btn btn-primary">
                             📥
                         </a>
                         <a href="{% url 'history_delete' item.id %}" class="btn btn-secondary"
-                           onclick="return confirm('{% trans "Remove this output from history?" %}')">
+                           data-confirm="{% trans "Remove this output from history?" %}">
                             🗑️
                         </a>
                     </td>

@@ -45,7 +45,7 @@
     {% endif %}
 
     <div style="margin-bottom: 1.5rem;">
-        <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview" style="width: 100%; padding: 1rem;">
+        <button data-pdf-modal="/media/{{ pdf_path_relative }}" class="btn btn-preview" style="width: 100%; padding: 1rem;">
             👁️ {% trans "Preview Modified PDF" %}
         </button>
     </div>

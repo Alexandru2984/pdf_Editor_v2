@@ -312,19 +312,19 @@
         <div class="pdf-viewer-header">
             <h3>📄 {{ pdf_name }}</h3>
             <div class="pdf-controls">
-                <button onclick="prevPage()">◀ {% trans "Prev" %}</button>
+                <button type="button" id="prev-page-btn">◀ {% trans "Prev" %}</button>
                 <span id="page-info">{% blocktrans %}Page 1 of ?{% endblocktrans %}</span>
-                <button onclick="nextPage()">{% trans "Next" %} ▶</button>
-                <button onclick="zoomOut()">−</button>
+                <button type="button" id="next-page-btn">{% trans "Next" %} ▶</button>
+                <button type="button" id="zoom-out-btn">−</button>
                 <span id="zoom-info">100%</span>
-                <button onclick="zoomIn()">+</button>
+                <button type="button" id="zoom-in-btn">+</button>
             </div>
         </div>
         <div id="pdf-viewer-container">
             <div id="pdf-canvas-container"></div>
         </div>
         <div style="padding: 1rem;">
-            <button class="btn btn-capture" onclick="clearSelection()">
+            <button type="button" class="btn btn-capture" id="clear-selection-btn">
                 🗑️ {% trans "Clear Selection" %}
             </button>
             <div id="selection-info" class="selection-info empty">
@@ -351,7 +351,7 @@
         <div class="pdf-selector">
             <label>📂 {% trans "Select PDF:" %}</label>
             <select name="pdf"
-                onchange="window.location.href='{% url 'rephrase' %}?pdf=' + encodeURIComponent(this.value)">
+                data-nav-select="{% url 'rephrase' %}">
 
                 {% for pdf in uploaded_pdfs %}
                 <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
@@ -415,7 +415,7 @@
             </div>
 
             <div class="btn-group">
-                <button type="button" class="btn btn-secondary" onclick="previewRephrase()">
+                <button type="button" class="btn btn-secondary" id="preview-rephrase-btn">
                     👁️ {% trans "Preview" %}
                 </button>
                 <button type="submit" class="btn btn-primary" id="apply-btn" disabled>
@@ -809,6 +809,14 @@ async function previewRephrase() {
    Init
 ========================= */
 loadPDF();
+
+// Wire viewer controls (former inline onclick handlers, CSP-safe).
+document.getElementById('prev-page-btn').addEventListener('click', prevPage);
+document.getElementById('next-page-btn').addEventListener('click', nextPage);
+document.getElementById('zoom-out-btn').addEventListener('click', zoomOut);
+document.getElementById('zoom-in-btn').addEventListener('click', zoomIn);
+document.getElementById('clear-selection-btn').addEventListener('click', clearSelection);
+document.getElementById('preview-rephrase-btn').addEventListener('click', previewRephrase);
 </script>
 
 {% endblock %}

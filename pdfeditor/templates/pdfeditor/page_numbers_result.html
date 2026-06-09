@@ -25,7 +25,7 @@
             <a href="{% url 'dashboard' %}" class="btn btn-secondary">
                 ← Dashboard
             </a>
-            <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
+            <button data-pdf-modal="/media/{{ pdf_path_relative }}" class="btn btn-preview">
                 👁️ Preview Numbered PDF
             </button>
             <a href="{% url 'download_numbered' %}" class="btn btn-primary">

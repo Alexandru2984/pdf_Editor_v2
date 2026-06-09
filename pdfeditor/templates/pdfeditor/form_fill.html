@@ -11,7 +11,7 @@
         <label for="pdf-selector">
             📂 Select PDF to fill:
         </label>
-        <select id="pdf-selector" onchange="window.location.href='{% url 'form_fill' %}?pdf=' + encodeURIComponent(this.value)">
+        <select id="pdf-selector" data-nav-select="{% url 'form_fill' %}">
             {% for pdf in uploaded_pdfs %}
             <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
                 📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
@@ -23,7 +23,7 @@
 
     <p class="pdf-info">
         Filling: <strong>{{ pdf_name }}</strong>
-        <button onclick="pdfModal.open('/media/{{ pdf_path_relative }}')" class="btn btn-preview">
+        <button data-pdf-modal="/media/{{ pdf_path_relative }}" class="btn btn-preview">
             👁️ Preview PDF
         </button>
     </p>

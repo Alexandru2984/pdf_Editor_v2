@@ -63,7 +63,7 @@
                 {% for entry in links %}
                 <tr class="{% if entry.is_new %}share-row-new{% endif %}">
                     <td>
-                        <code class="share-url" onclick="navigator.clipboard.writeText('{{ entry.url }}'); this.classList.add('copied');">{{ entry.url }}</code>
+                        <code class="share-url" data-copy="{{ entry.url }}">{{ entry.url }}</code>
                     </td>
                     <td>{{ entry.link.processed_pdf.name }}</td>
                     <td>
@@ -71,7 +71,7 @@
                     </td>
                     <td>{{ entry.link.expires_at|date:"Y-m-d H:i" }}</td>
                     <td>
-                        <form method="post" action="{% url 'revoke_share_link' entry.link.token %}" style="display:inline;" onsubmit="return confirm('{% trans 'Revoke this link?' %}');">
+                        <form method="post" action="{% url 'revoke_share_link' entry.link.token %}" style="display:inline;" data-confirm="{% trans 'Revoke this link?' %}">
                             {% csrf_token %}
                             <button type="submit" class="btn-link-danger">✕</button>
                         </form>

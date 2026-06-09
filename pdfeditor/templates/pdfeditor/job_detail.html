@@ -53,7 +53,7 @@
             <form method="post" action="{% url 'job_cancel' job.id %}" id="job-cancel-form" style="display: inline;">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-secondary" id="job-cancel-btn"
-                        onclick="return confirm('{% trans "Cancel this job?" %}');">
+                        data-confirm="{% trans "Cancel this job?" %}">
                     ✖ {% trans "Cancel job" %}
                 </button>
             </form>

@@ -12,7 +12,7 @@
             <label for="pdf-selector">
                 📂 {% trans "Select PDF:" %}
             </label>
-            <select id="pdf-selector" onchange="window.location.href='{% url 'rotate' %}?pdf=' + encodeURIComponent(this.value)">
+            <select id="pdf-selector" data-nav-select="{% url 'rotate' %}">
                 {% for pdf in uploaded_pdfs %}
                 <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
                     📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}

@@ -11,7 +11,7 @@
             <label for="pdf-selector">
                 📂 Select PDF:
             </label>
-            <select id="pdf-selector" onchange="window.location.href='{% url 'page_numbers' %}?pdf=' + encodeURIComponent(this.value)">
+            <select id="pdf-selector" data-nav-select="{% url 'page_numbers' %}">
                 {% for pdf in uploaded_pdfs %}
                 <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
                     📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
@@ -54,7 +54,7 @@
             <div class="form-grid-2">
                 <div class="tool-form-group" style="margin-bottom: 0;">
                     <label class="tool-form-label">{{ form.font_size.label }}: <span id="font-size-value">12</span></label>
-                    <input type="range" name="font_size" min="8" max="24" value="12" class="range-input" oninput="document.getElementById('font-size-value').textContent = this.value">
+                    <input type="range" name="font_size" min="8" max="24" value="12" class="range-input" data-range-output="font-size-value">
                 </div>
 
                 <div class="tool-form-group" style="margin-bottom: 0;">
