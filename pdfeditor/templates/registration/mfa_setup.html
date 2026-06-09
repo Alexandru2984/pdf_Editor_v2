@@ -1,0 +1,29 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Enable two-factor authentication" %}{% endblock %}
+
+{% block content %}
+<div class="mfa-card">
+    <h2>{% trans "Set up two-factor authentication" %}</h2>
+    <ol class="mfa-steps">
+        <li>{% trans "Scan this QR code in an authenticator app (Google Authenticator, Aegis, 1Password…)." %}</li>
+        <li>{% trans "Enter the 6-digit code it shows, to confirm it works." %}</li>
+    </ol>
+
+    <img class="mfa-qr" src="{{ qr_data_uri }}" alt="{% trans 'TOTP enrolment QR code' %}" width="200" height="200">
+
+    <p class="mfa-secret-help">{% trans "Can't scan? Enter this key manually:" %}</p>
+    <code class="mfa-secret">{{ secret }}</code>
+
+    <form method="post" class="mfa-confirm-form">
+        {% csrf_token %}
+        <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"
+               pattern="[0-9]*" maxlength="6" placeholder="123456" required autofocus>
+        <button type="submit" class="profile-btn primary">{% trans "Confirm & enable" %}</button>
+    </form>
+    <a href="{% url 'profile' %}" class="mfa-cancel">{% trans "Cancel" %}</a>
+</div>
+
+{% include 'registration/_mfa_styles.html' %}
+{% endblock %}

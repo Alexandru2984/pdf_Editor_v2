@@ -118,11 +118,13 @@ urlpatterns = [
     path("healthz", views.healthz, name="healthz"),
     path("readyz", views.readyz, name="readyz"),
     # Auth — login/logout/register; password change/reset added in phase 4
-    path(
-        "accounts/login/",
-        auth_views.LoginView.as_view(template_name="registration/login.html"),
-        name="login",
-    ),
+    # Login is a thin LoginView subclass that inserts a TOTP step for users
+    # who enabled MFA (pdfeditor/views/mfa.py).
+    path("accounts/login/", views.MfaLoginView.as_view(), name="login"),
+    path("accounts/mfa/verify/", views.mfa_verify_view, name="mfa_verify"),
+    path("accounts/mfa/setup/", views.mfa_setup_view, name="mfa_setup"),
+    path("accounts/mfa/disable/", views.mfa_disable_view, name="mfa_disable"),
+    path("accounts/mfa/backup-codes/", views.mfa_backup_codes_view, name="mfa_backup_codes"),
     path(
         "accounts/logout/",
         auth_views.LogoutView.as_view(next_page=reverse_lazy("dashboard")),

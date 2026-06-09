@@ -1,0 +1,21 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Two-factor verification" %}{% endblock %}
+
+{% block content %}
+<div class="mfa-card">
+    <h2>{% trans "Enter your code" %}</h2>
+    <p>{% trans "Open your authenticator app and enter the 6-digit code. Lost your device? Use one of your backup codes." %}</p>
+
+    <form method="post" class="mfa-confirm-form">
+        {% csrf_token %}
+        <input type="text" name="code" autocomplete="one-time-code" maxlength="20"
+               placeholder="{% trans '6-digit or backup code' %}" required autofocus>
+        <button type="submit" class="profile-btn primary">{% trans "Verify" %}</button>
+    </form>
+    <a href="{% url 'login' %}" class="mfa-cancel">{% trans "Back to login" %}</a>
+</div>
+
+{% include 'registration/_mfa_styles.html' %}
+{% endblock %}

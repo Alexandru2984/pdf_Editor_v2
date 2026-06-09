@@ -1,0 +1,26 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Backup codes" %}{% endblock %}
+
+{% block content %}
+<div class="mfa-card">
+    {% if fresh %}
+        <h2>{% trans "Two-factor authentication enabled" %} ✓</h2>
+    {% else %}
+        <h2>{% trans "Your new backup codes" %}</h2>
+    {% endif %}
+
+    <p class="mfa-warn">
+        {% trans "Save these somewhere safe. Each code works once if you lose your authenticator — they will not be shown again." %}
+    </p>
+
+    <ul class="mfa-codes">
+        {% for code in codes %}<li><code>{{ code }}</code></li>{% endfor %}
+    </ul>
+
+    <a href="{% url 'profile' %}" class="profile-btn primary">{% trans "Done" %}</a>
+</div>
+
+{% include 'registration/_mfa_styles.html' %}
+{% endblock %}

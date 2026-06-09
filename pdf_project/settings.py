@@ -328,6 +328,9 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "dashboard"
 
+# Issuer label shown in users' authenticator apps for TOTP MFA.
+MFA_ISSUER = os.environ.get("MFA_ISSUER", "PDF Editor")
+
 # Email backend — console for dev (prints emails to stdout), SMTP for prod.
 # Override EMAIL_BACKEND in .env for prod (e.g. django.core.mail.backends.smtp.EmailBackend).
 EMAIL_BACKEND = os.environ.get(

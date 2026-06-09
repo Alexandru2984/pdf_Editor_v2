@@ -1,6 +1,28 @@
 from django.contrib import admin
 
-from .models import ApiKey, AuditLog, Job, ProcessedPDF, ShareLink, TrustAnchor, UploadedPDF
+from .models import (
+    ApiKey,
+    AuditLog,
+    Job,
+    MfaDevice,
+    ProcessedPDF,
+    ShareLink,
+    TrustAnchor,
+    UploadedPDF,
+)
+
+
+@admin.register(MfaDevice)
+class MfaDeviceAdmin(admin.ModelAdmin):
+    list_display = ("user", "confirmed", "created_at", "confirmed_at")
+    list_filter = ("confirmed", "created_at")
+    search_fields = ("user__username", "user__email")
+    readonly_fields = ("user", "confirmed", "created_at", "confirmed_at")
+    # Never surface the TOTP secret (or per-code hashes) in the admin.
+    exclude = ("secret",)
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(UploadedPDF)

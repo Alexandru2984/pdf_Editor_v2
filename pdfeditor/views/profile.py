@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 
-from ..models import ApiKey, ProcessedPDF, UploadedPDF
+from ..models import ApiKey, MfaDevice, ProcessedPDF, UploadedPDF
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,9 @@ def profile_view(request: HttpRequest) -> HttpResponse:
     api_keys = ApiKey.objects.filter(user=user)
     new_token = request.session.pop("new_api_key_token", None)
 
+    mfa_device = MfaDevice.objects.filter(user=user, confirmed=True).first()
+    backup_codes_left = mfa_device.backup_codes.filter(used_at__isnull=True).count() if mfa_device else 0
+
     return render(
         request,
         "pdfeditor/profile.html",
@@ -36,6 +39,8 @@ def profile_view(request: HttpRequest) -> HttpResponse:
             "processed_count": processed_count,
             "api_keys": api_keys,
             "new_api_key_token": new_token,
+            "mfa_enabled": mfa_device is not None,
+            "backup_codes_left": backup_codes_left,
         },
     )
 

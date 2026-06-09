@@ -11,14 +11,17 @@ from datetime import timedelta
 from io import BytesIO
 from unittest.mock import MagicMock, patch
 
+import pyotp
+from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import F
 from django.http import HttpResponse
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 
+from .mfa import generate_backup_codes
 from .middleware import _VALID_REQUEST_ID, RequestIDMiddleware, SecurityHeadersMiddleware
-from .models import ProcessedPDF, ShareLink, UploadedPDF
+from .models import MfaDevice, ProcessedPDF, ShareLink, UploadedPDF
 from .netutils import client_ip
 from .ratelimiting import _compute_key_and_rate
 from .scanning import UploadBlocked, scan_fileobj
@@ -312,3 +315,87 @@ class UploadScanIntegrationTests(TestCase):
         ):
             self.client.post("/upload/", {"pdf_file": upload})
         self.assertEqual(UploadedPDF.objects.count(), 0)
+
+
+# --------------------------------------------------------------------------
+# Stage 8: optional TOTP MFA (enrol, two-step login, recovery, disable)
+# --------------------------------------------------------------------------
+_PW = "pw-correct-horse-battery"
+_BACKEND = "pdfeditor.auth_backends.CaseInsensitiveModelBackend"
+
+
+@override_settings(RATELIMIT_ENABLE=False)
+class MfaFlowTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="alice", password=_PW, is_active=True)
+
+    def _enable_mfa(self, secret: str | None = None) -> str:
+        secret = secret or pyotp.random_base32()
+        MfaDevice.objects.create(user=self.user, secret=secret, confirmed=True)
+        return secret
+
+    def _login(self):
+        return self.client.post("/accounts/login/", {"username": "alice", "password": _PW})
+
+    def _logged_in(self) -> bool:
+        return "_auth_user_id" in self.client.session
+
+    def test_user_without_mfa_logs_in_one_step(self):
+        self._login()
+        self.assertTrue(self._logged_in())
+
+    def test_unconfirmed_device_does_not_gate_login(self):
+        MfaDevice.objects.create(user=self.user, confirmed=False)
+        self._login()
+        self.assertTrue(self._logged_in())
+
+    def test_login_with_mfa_requires_code_then_succeeds(self):
+        secret = self._enable_mfa()
+        resp = self._login()
+        self.assertRedirects(resp, "/accounts/mfa/verify/", fetch_redirect_response=False)
+        self.assertFalse(self._logged_in())  # password alone is not enough
+
+        self.client.post("/accounts/mfa/verify/", {"code": pyotp.TOTP(secret).now()})
+        self.assertTrue(self._logged_in())
+
+    def test_wrong_totp_does_not_authenticate(self):
+        self._enable_mfa()
+        self._login()
+        self.client.post("/accounts/mfa/verify/", {"code": "000000"})
+        self.assertFalse(self._logged_in())
+
+    def test_backup_code_works_once_only(self):
+        self._enable_mfa()
+        device = MfaDevice.objects.get(user=self.user)
+        codes = generate_backup_codes(device)
+
+        self._login()
+        self.client.post("/accounts/mfa/verify/", {"code": codes[0]})
+        self.assertTrue(self._logged_in())
+
+        # The same code must not work a second time.
+        self.client.logout()
+        self._login()
+        self.client.post("/accounts/mfa/verify/", {"code": codes[0]})
+        self.assertFalse(self._logged_in())
+
+    def test_setup_confirm_enables_and_issues_backup_codes(self):
+        self.client.force_login(self.user, backend=_BACKEND)
+        self.assertEqual(self.client.get("/accounts/mfa/setup/").status_code, 200)
+        device = MfaDevice.objects.get(user=self.user)
+        self.assertFalse(device.confirmed)
+
+        self.client.post("/accounts/mfa/setup/", {"code": pyotp.TOTP(device.secret).now()})
+        device.refresh_from_db()
+        self.assertTrue(device.confirmed)
+        self.assertEqual(device.backup_codes.count(), 10)
+
+    def test_disable_requires_correct_password(self):
+        self._enable_mfa()
+        self.client.force_login(self.user, backend=_BACKEND)
+
+        self.client.post("/accounts/mfa/disable/", {"password": "wrong"})
+        self.assertTrue(MfaDevice.objects.filter(user=self.user).exists())
+
+        self.client.post("/accounts/mfa/disable/", {"password": _PW})
+        self.assertFalse(MfaDevice.objects.filter(user=self.user).exists())

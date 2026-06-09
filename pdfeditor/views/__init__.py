@@ -111,6 +111,13 @@ from .layout_ops import (
     watermark_view,
 )
 from .metrics import metrics_view
+from .mfa import (
+    MfaLoginView,
+    mfa_backup_codes_view,
+    mfa_disable_view,
+    mfa_setup_view,
+    mfa_verify_view,
+)
 from .profile import (
     create_api_key_view,
     delete_account_view,
@@ -249,4 +256,9 @@ __all__ = [
     "chat_view",
     "chat_message_view",
     "start_index_view",
+    "MfaLoginView",
+    "mfa_verify_view",
+    "mfa_setup_view",
+    "mfa_disable_view",
+    "mfa_backup_codes_view",
 ]

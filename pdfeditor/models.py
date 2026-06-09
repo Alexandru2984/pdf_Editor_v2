@@ -320,6 +320,47 @@ class Embedding(models.Model):
         return f"chunk {self.chunk_index} p{self.page_number} of {self.uploaded_pdf_id}"
 
 
+def _default_mfa_secret() -> str:
+    import pyotp
+
+    return pyotp.random_base32()
+
+
+class MfaDevice(models.Model):
+    """A user's TOTP authenticator. One per user; ``confirmed`` flips true
+    only after the user proves they can generate a valid code, so a
+    half-finished enrolment never gates login."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="mfa_device",
+    )
+    secret = models.CharField(max_length=64, default=_default_mfa_secret)
+    confirmed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"MFA({self.user.username}, {'on' if self.confirmed else 'pending'})"
+
+
+class MfaBackupCode(models.Model):
+    """A single-use recovery code (stored only as a SHA-256 hash)."""
+
+    device = models.ForeignKey(
+        MfaDevice,
+        on_delete=models.CASCADE,
+        related_name="backup_codes",
+    )
+    code_hash = models.CharField(max_length=64, db_index=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        state = "used" if self.used_at else "unused"
+        return f"backup:{self.code_hash[:8]} ({state})"
+
+
 def _default_share_token() -> str:
     return uuid.uuid4().hex
 
