@@ -101,7 +101,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 (function () {
     const top = document.getElementById("{{ form.top.id_for_label }}");
     const bottom = document.getElementById("{{ form.bottom.id_for_label }}");

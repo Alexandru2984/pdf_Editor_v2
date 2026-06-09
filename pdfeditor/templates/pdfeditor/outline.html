@@ -162,10 +162,10 @@
 </style>
 
 {{ existing_entries|json_script:"initial-entries-data" }}
-<script>
+<script nonce="{{ request.csp_nonce }}">
     const PAGE_COUNT = {{ page_count }};
     // Outline titles come from the uploaded PDF and are untrusted. json_script
-    // serialises them into a typed <script> block that the parser treats as
+    // serialises them into a typed application/json block that the parser treats as
     // inert data, so a title like `</script>…` can't break out and run.
     const INITIAL_ENTRIES = JSON.parse(
         document.getElementById('initial-entries-data').textContent

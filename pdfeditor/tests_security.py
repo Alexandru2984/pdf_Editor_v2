@@ -7,6 +7,7 @@ Most are DB-free (SimpleTestCase); only the ShareLink cap test needs the DB.
 
 from __future__ import annotations
 
+import re
 from datetime import timedelta
 from io import BytesIO
 from unittest.mock import MagicMock, patch
@@ -399,3 +400,65 @@ class MfaFlowTests(TestCase):
 
         self.client.post("/accounts/mfa/disable/", {"password": _PW})
         self.assertFalse(MfaDevice.objects.filter(user=self.user).exists())
+
+
+# --------------------------------------------------------------------------
+# Stage 9: strict nonce-based Content-Security-Policy
+# --------------------------------------------------------------------------
+class CspMiddlewareTests(SimpleTestCase):
+    def setUp(self):
+        self.rf = RequestFactory()
+
+    def _csp(self, path="/"):
+        mw = SecurityHeadersMiddleware(lambda req: HttpResponse("ok"))
+        req = self.rf.get(path)
+        return mw(req), req
+
+    def test_app_page_csp_carries_request_nonce(self):
+        resp, req = self._csp("/")
+        self.assertIn(f"nonce-{req.csp_nonce}", resp["Content-Security-Policy"])
+
+    def test_script_src_drops_unsafe_inline_keeps_eval(self):
+        csp = self._csp("/")[0]["Content-Security-Policy"]
+        script_src = csp.split("script-src-elem")[0]  # the script-src directive
+        self.assertNotIn("'unsafe-inline'", script_src)  # inline scripts only via nonce
+        self.assertIn("'unsafe-eval'", script_src)  # kept for the PDF.js viewer
+        self.assertIn("style-src 'self' 'unsafe-inline'", csp)  # styles intentionally keep it
+
+    def test_admin_and_api_are_skipped(self):
+        for path in ("/admin/", "/admin/health/", "/api/v1/docs/"):
+            resp, _ = self._csp(path)
+            self.assertFalse(resp.has_header("Content-Security-Policy"), path)
+
+    def test_nonce_is_unique_per_request(self):
+        _, r1 = self._csp("/")
+        _, r2 = self._csp("/")
+        self.assertNotEqual(r1.csp_nonce, r2.csp_nonce)
+
+    @override_settings(SECURE_SSL=True)
+    def test_upgrade_insecure_requests_only_on_https(self):
+        mw = SecurityHeadersMiddleware(lambda req: HttpResponse("ok"))
+        self.assertIn("upgrade-insecure-requests", mw(self.rf.get("/"))["Content-Security-Policy"])
+
+    @override_settings(SECURE_SSL=False)
+    def test_no_upgrade_insecure_requests_on_http(self):
+        mw = SecurityHeadersMiddleware(lambda req: HttpResponse("ok"))
+        self.assertNotIn("upgrade-insecure-requests", mw(self.rf.get("/"))["Content-Security-Policy"])
+
+
+class CspRenderTests(TestCase):
+    def test_login_page_inline_scripts_carry_matching_nonce(self):
+        """End-to-end: the nonce in the CSP header matches every inline
+        <script> the template rendered (proves base.html is wired up)."""
+        resp = self.client.get("/accounts/login/")
+        match = re.search(r"nonce-([A-Za-z0-9_-]+)", resp["Content-Security-Policy"])
+        self.assertIsNotNone(match)
+        nonce = match.group(1)
+
+        body = resp.content.decode()
+        inline_scripts = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>", body)
+        self.assertTrue(inline_scripts)  # base.html ships inline scripts
+        for tag in inline_scripts:
+            if 'type="application/json"' in tag:
+                continue  # data island, not executed — no nonce needed
+            self.assertIn(f'nonce="{nonce}"', tag)

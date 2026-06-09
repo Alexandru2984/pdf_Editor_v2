@@ -13,7 +13,7 @@
     <link rel="icon" type="image/jpeg" href="/static/images/logo.jpg">
     <title>{% block title %}{% trans "PDF Platform" %}{% endblock %}</title>
 
-    <script>
+    <script nonce="{{ request.csp_nonce }}">
         // Apply saved theme before stylesheet loads — prevents flash of wrong theme.
         (function () {
             try {
@@ -102,7 +102,7 @@
     <!-- PDF Modal JS -->
     <script src="/static/js/pdf-modal.js"></script>
     
-    <script>
+    <script nonce="{{ request.csp_nonce }}">
         // Auto-hide messages after 5 seconds
         setTimeout(() => {
             const messages = document.querySelectorAll('.message');

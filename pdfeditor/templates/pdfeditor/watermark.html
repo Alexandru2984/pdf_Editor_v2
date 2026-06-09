@@ -101,7 +101,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 const textFields = document.getElementById('text-fields');
 const imageFields = document.getElementById('image-fields');
 const watermarkTypeOptions = document.querySelectorAll('.watermark-type-option');

@@ -72,7 +72,7 @@
 </div>
 
 <script src="{% static 'js/Sortable.min.js' %}"></script>
-<script>
+<script nonce="{{ request.csp_nonce }}">
 (function () {
     const input = document.getElementById("image-input");
     const btnAdd = document.getElementById("btn-add-images");

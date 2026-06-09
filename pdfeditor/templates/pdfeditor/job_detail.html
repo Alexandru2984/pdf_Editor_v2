@@ -76,7 +76,7 @@
     .job-result { margin-top: 1rem; }
 </style>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 const JOB_ID = "{{ job.id }}";
 const STATUS_URL = "{% url 'job_status' job.id %}";
 const EVENTS_URL = "{% url 'job_events' job.id %}";

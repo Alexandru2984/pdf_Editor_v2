@@ -153,7 +153,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>
+<script nonce="{{ request.csp_nonce }}">
 // ===== SURPRISE REVEAL ANIMATION =====
 const canvas = document.getElementById('confetti-canvas');
 const ctx = canvas.getContext('2d');

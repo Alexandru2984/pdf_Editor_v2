@@ -85,7 +85,7 @@
 </div>
 
 <script src="{% static 'js/Sortable.min.js' %}"></script>
-<script>
+<script nonce="{{ request.csp_nonce }}">
 (function () {
     const grid = document.getElementById("page-grid");
     const hiddenInput = document.getElementById("id_page_order");

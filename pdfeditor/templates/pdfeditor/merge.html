@@ -64,7 +64,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 const checkboxes = document.querySelectorAll('.pdf-checkbox');
 const selectedInput = document.querySelector('input[name="selected_pdfs"]');
 const mergeBtn = document.getElementById('merge-btn');

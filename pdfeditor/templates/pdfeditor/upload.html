@@ -29,7 +29,7 @@
     </form>
 </div>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 const noFileMsg = '{% trans "No file selected" %}';
 document.getElementById('pdf_file').addEventListener('change', function(e) {
     const fileName = e.target.files[0]?.name || noFileMsg;

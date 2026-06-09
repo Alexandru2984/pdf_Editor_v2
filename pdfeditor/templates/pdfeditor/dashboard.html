@@ -300,7 +300,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 // Drag and drop functionality
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');

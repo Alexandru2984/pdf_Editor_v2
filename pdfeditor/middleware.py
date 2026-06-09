@@ -11,6 +11,7 @@ from __future__ import annotations
 import contextvars
 import logging
 import re
+import secrets
 import uuid
 from collections.abc import Callable
 
@@ -66,20 +67,61 @@ _DEFAULT_PERMISSIONS_POLICY = (
     "interest-cohort=()"
 )
 
+# Strict Content-Security-Policy for the app's own pages. Inline scripts are
+# allowed only via the per-request nonce ('{nonce}' is substituted at runtime)
+# — no 'unsafe-inline' for scripts. 'unsafe-eval' is kept solely for the PDF.js
+# viewer. Mirrors the host-nginx policy for every other directive so moving CSP
+# ownership into Django changes nothing but the inline-script gate. 'unsafe-
+# inline' stays for STYLES (the app has many inline style= attributes/blocks).
+_DEFAULT_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://unpkg.com "
+    "https://analytics.micutu.com https://static.cloudflareinsights.com https://*.cloudflare.com; "
+    "script-src-elem 'self' 'nonce-{nonce}' https://unpkg.com "
+    "https://analytics.micutu.com https://static.cloudflareinsights.com https://*.cloudflare.com; "
+    "worker-src 'self' blob: https://unpkg.com; "
+    "style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data: blob: https:; "
+    "font-src 'self' data:; "
+    "connect-src 'self' https://analytics.micutu.com https://*.cloudflare.com https://cloudflareinsights.com; "
+    "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+)
+# Appended only when serving over HTTPS (SECURE_SSL). On the plain-HTTP dev
+# server / e2e it would force subresources to https://localhost and break them.
+_CSP_HTTPS_SUFFIX = "; upgrade-insecure-requests"
+
+# Paths skipped by the strict CSP: Django admin and the DRF/Swagger API UIs
+# render third-party inline scripts we don't control. They keep relying on the
+# host nginx CSP (which still carries 'unsafe-inline'); applying the nonce
+# policy here would break them.
+_CSP_SKIP_PREFIXES = ("/admin/", "/api/")
+
 
 class SecurityHeadersMiddleware:
-    """Add deploy-independent response security headers (Permissions-Policy)."""
+    """Per-request CSP nonce + Permissions-Policy.
+
+    Exposes ``request.csp_nonce`` (used by inline ``<script nonce>`` tags) and
+    sets a strict, nonce-based Content-Security-Policy on the app's own pages.
+    """
 
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
         from django.conf import settings
 
         self.permissions_policy = getattr(settings, "PERMISSIONS_POLICY", _DEFAULT_PERMISSIONS_POLICY)
+        self.csp_template = getattr(settings, "CSP_POLICY", _DEFAULT_CSP)
+        if getattr(settings, "SECURE_SSL", False):
+            self.csp_template += _CSP_HTTPS_SUFFIX
+        self.csp_skip_prefixes = tuple(getattr(settings, "CSP_SKIP_PREFIXES", _CSP_SKIP_PREFIXES))
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
+        nonce = secrets.token_urlsafe(16)
+        request.csp_nonce = nonce
         response = self.get_response(request)
         if self.permissions_policy:
             response.setdefault("Permissions-Policy", self.permissions_policy)
+        if self.csp_template and not request.path.startswith(self.csp_skip_prefixes):
+            response.setdefault("Content-Security-Policy", self.csp_template.replace("{nonce}", nonce))
         return response
 
 
