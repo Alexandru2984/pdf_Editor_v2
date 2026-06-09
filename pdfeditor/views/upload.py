@@ -13,6 +13,7 @@ from django.utils.translation import gettext as _
 
 from ..models import UploadedPDF
 from ..pdf_processor import check_pdf_has_text, sanitize_pdf
+from ..scanning import UploadBlocked, scan_fileobj
 from ._common import _owner_kwargs, get_uploaded_pdfs, owner_filter, storage_quota, storage_usage
 
 logger = logging.getLogger(__name__)
@@ -112,6 +113,21 @@ def upload_view(request):
             messages.warning(
                 request,
                 _('Skipped "%(name)s" - not a valid PDF file.') % {"name": uploaded_file.name},
+            )
+            continue
+
+        # Malware scan before the file is written to disk (no-op unless
+        # CLAMAV_ENABLED). Blocks infected files — and, when fail-closed,
+        # uploads while clamd is unreachable.
+        try:
+            scan_fileobj(uploaded_file)
+        except UploadBlocked as exc:
+            logger.warning(
+                "Upload blocked by scanner: %s (%s/%s)", uploaded_file.name, exc.reason, exc.detail
+            )
+            messages.warning(
+                request,
+                _('Skipped "%(name)s" - failed the malware scan.') % {"name": uploaded_file.name},
             )
             continue
 

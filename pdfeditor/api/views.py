@@ -96,6 +96,15 @@ class UploadedPDFViewSet(viewsets.ReadOnlyModelViewSet):
         if header != b"%PDF-":
             raise ValidationError({"pdf_file": "Not a valid PDF file."})
 
+        # Malware scan before the file touches disk (no-op unless CLAMAV_ENABLED).
+        from ..scanning import UploadBlocked, scan_fileobj
+
+        try:
+            scan_fileobj(uploaded)
+        except UploadBlocked as exc:
+            logger.warning("API upload blocked by scanner: %s/%s", exc.reason, exc.detail)
+            raise ValidationError({"pdf_file": "File failed the malware scan."}) from exc
+
         fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "uploads"))
         safe_name = os.path.basename(uploaded.name)
         filename = fs.save(safe_name, uploaded)

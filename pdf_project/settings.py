@@ -56,6 +56,16 @@ ASYNC_THRESHOLD_PAGES = int(os.environ.get("ASYNC_THRESHOLD_PAGES", 5))
 PDF_QUOTA_ANON_BYTES = int(os.environ.get("PDF_QUOTA_ANON_BYTES", 50 * 1024 * 1024))
 PDF_QUOTA_USER_BYTES = int(os.environ.get("PDF_QUOTA_USER_BYTES", 500 * 1024 * 1024))
 
+# Optional ClamAV scanning of uploads (pdfeditor/scanning.py). Off by default
+# so deployments without a clamd service are unaffected; turn on once the
+# `clamav` docker-compose service is up. FAIL_OPEN=0 rejects uploads when
+# clamd is unreachable (secure default); set 1 to prefer availability.
+CLAMAV_ENABLED = env_bool("CLAMAV_ENABLED", False)
+CLAMAV_HOST = os.environ.get("CLAMAV_HOST", "clamav")
+CLAMAV_PORT = int(os.environ.get("CLAMAV_PORT", 3310))
+CLAMAV_TIMEOUT = float(os.environ.get("CLAMAV_TIMEOUT", 30))
+CLAMAV_FAIL_OPEN = env_bool("CLAMAV_FAIL_OPEN", False)
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

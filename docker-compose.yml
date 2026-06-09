@@ -35,6 +35,13 @@ x-app-env: &app-env
   # Default covers Docker compose's bridge subnet so the bundled
   # `prometheus` service can scrape /metrics on each web replica.
   PROMETHEUS_METRICS_ALLOW: ${PROMETHEUS_METRICS_ALLOW:-127.0.0.1,172.16.0.0/12}
+  # Optional ClamAV upload scanning. Off by default; flip CLAMAV_ENABLED=1
+  # once the `clamav` service below is healthy. FAIL_OPEN=0 rejects uploads
+  # while clamd is unreachable (secure default).
+  CLAMAV_ENABLED: ${CLAMAV_ENABLED:-0}
+  CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+  CLAMAV_PORT: ${CLAMAV_PORT:-3310}
+  CLAMAV_FAIL_OPEN: ${CLAMAV_FAIL_OPEN:-0}
 
 # Baseline container hardening, merged into every service via `<<: *hardening`.
 #   no-new-privileges:true → a compromised process can never gain privileges
@@ -276,6 +283,34 @@ services:
       - embeddings_cache:/app/data/fastembed
     restart: unless-stopped
 
+  # ClamAV malware scanner. Only used when CLAMAV_ENABLED=1 — web/worker
+  # connect to it lazily per upload, so this is a *soft* dependency and the
+  # default (scanning off) stack doesn't wait on it. First boot runs freshclam
+  # to pull the signature DB (~1-2 min); the healthcheck gates on clamd ready.
+  clamav:
+    <<: *hardening
+    # Entrypoint starts as root to fix /var/lib/clamav ownership, then drops
+    # to the clamav user (same chown+su pattern as redis/db above).
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    image: clamav/clamav:1.4
+    # Port 3310 stays on the compose network — never published to the host.
+    expose:
+      - "3310"
+    volumes:
+      - clamav_db:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+
   # Prometheus scrapes the web replicas' /metrics endpoints via Docker's
   # embedded DNS (one A record per replica). The port is bound to
   # 127.0.0.1 so it isn't reachable from the public network — access it
@@ -375,6 +410,7 @@ services:
 volumes:
   pgdata:
   redisdata:
+  clamav_db:
   embeddings_cache:
   prometheus_data:
   grafana_data:

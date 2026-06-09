@@ -8,16 +8,20 @@ Most are DB-free (SimpleTestCase); only the ShareLink cap test needs the DB.
 from __future__ import annotations
 
 from datetime import timedelta
+from io import BytesIO
+from unittest.mock import MagicMock, patch
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import F
 from django.http import HttpResponse
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 
 from .middleware import _VALID_REQUEST_ID, RequestIDMiddleware, SecurityHeadersMiddleware
-from .models import ProcessedPDF, ShareLink
+from .models import ProcessedPDF, ShareLink, UploadedPDF
 from .netutils import client_ip
 from .ratelimiting import _compute_key_and_rate
+from .scanning import UploadBlocked, scan_fileobj
 from .views.metrics import _ip_allowed
 
 
@@ -251,3 +255,60 @@ class ShareLinkCounterTests(TestCase):
         self.assertEqual(claim(), 0)  # cap reached: no slot left
         link.refresh_from_db()
         self.assertEqual(link.download_count, 2)
+
+
+# --------------------------------------------------------------------------
+# Stage 7: optional ClamAV upload scanning (pdfeditor/scanning.py)
+# --------------------------------------------------------------------------
+class ClamAvScanTests(SimpleTestCase):
+    @override_settings(CLAMAV_ENABLED=False)
+    def test_disabled_is_noop_no_clamd_contact(self):
+        with patch("pdfeditor.scanning._build_client") as build:
+            scan_fileobj(BytesIO(b"%PDF-1.4 data"))
+        build.assert_not_called()
+
+    @override_settings(CLAMAV_ENABLED=True)
+    def test_clean_file_passes_and_resets_stream(self):
+        client = MagicMock()
+        client.instream.return_value = {"stream": ("OK", None)}
+        buf = BytesIO(b"%PDF-1.4 data")
+        with patch("pdfeditor.scanning._build_client", return_value=client):
+            scan_fileobj(buf)
+        self.assertEqual(buf.tell(), 0)  # rewound so the caller can still save it
+
+    @override_settings(CLAMAV_ENABLED=True)
+    def test_infected_file_is_blocked(self):
+        client = MagicMock()
+        client.instream.return_value = {"stream": ("FOUND", "Eicar-Test-Signature")}
+        with (
+            patch("pdfeditor.scanning._build_client", return_value=client),
+            self.assertRaises(UploadBlocked) as ctx,
+        ):
+            scan_fileobj(BytesIO(b"infected"))
+        self.assertEqual(ctx.exception.reason, "infected")
+        self.assertEqual(ctx.exception.detail, "Eicar-Test-Signature")
+
+    @override_settings(CLAMAV_ENABLED=True, CLAMAV_FAIL_OPEN=False)
+    def test_scanner_unreachable_fail_closed_rejects(self):
+        with (
+            patch("pdfeditor.scanning._build_client", side_effect=OSError("connection refused")),
+            self.assertRaises(UploadBlocked) as ctx,
+        ):
+            scan_fileobj(BytesIO(b"%PDF-"))
+        self.assertEqual(ctx.exception.reason, "scanner-unavailable")
+
+    @override_settings(CLAMAV_ENABLED=True, CLAMAV_FAIL_OPEN=True)
+    def test_scanner_unreachable_fail_open_allows(self):
+        with patch("pdfeditor.scanning._build_client", side_effect=OSError("connection refused")):
+            scan_fileobj(BytesIO(b"%PDF-"))  # must not raise
+
+
+class UploadScanIntegrationTests(TestCase):
+    def test_infected_web_upload_is_not_stored(self):
+        upload = SimpleUploadedFile("doc.pdf", b"%PDF-1.4 pretend", content_type="application/pdf")
+        with patch(
+            "pdfeditor.views.upload.scan_fileobj",
+            side_effect=UploadBlocked("infected", "Eicar-Test-Signature"),
+        ):
+            self.client.post("/upload/", {"pdf_file": upload})
+        self.assertEqual(UploadedPDF.objects.count(), 0)
