@@ -128,6 +128,38 @@ class SecurityHeadersMiddleware:
         return response
 
 
+class SessionLastSeenMiddleware:
+    """Keep ``UserSession.last_seen`` fresh, at most one DB write per session
+    per 5 minutes (throttled through the cache so request latency is flat).
+
+    Must sit after ``AuthenticationMiddleware`` — it needs ``request.user``.
+    """
+
+    THROTTLE_SECONDS = 300
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        response = self.get_response(request)
+        try:
+            user = getattr(request, "user", None)
+            session_key = request.session.session_key if hasattr(request, "session") else None
+            if user is not None and user.is_authenticated and session_key:
+                from django.core.cache import cache
+
+                marker = f"session-seen:{session_key}"
+                if cache.add(marker, 1, self.THROTTLE_SECONDS):
+                    from django.utils import timezone
+
+                    from .models import UserSession
+
+                    UserSession.objects.filter(session_key=session_key).update(last_seen=timezone.now())
+        except Exception:  # noqa: BLE001 — bookkeeping must never break a response
+            pass
+        return response
+
+
 class RequestIDLogFilter(logging.Filter):
     """Inject ``request_id`` onto every LogRecord so the formatter can render it."""
 

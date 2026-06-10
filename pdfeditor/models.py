@@ -483,3 +483,34 @@ class ShareLink(models.Model):
 
     def __str__(self):
         return f"share:{self.token[:8]} → {self.processed_pdf_id}"
+
+
+class UserSession(models.Model):
+    """Maps a logged-in user to one of their Django sessions, with device
+    metadata — powers the profile "Sessions & security" page (list / revoke /
+    log out everywhere) and new-device sign-in alerts.
+
+    Django's own Session table can't answer "which sessions belong to user X"
+    without decoding every row, so we record the mapping at login time and
+    drop it on logout/revoke. Rows whose backing session has expired are
+    pruned lazily when the user views the page.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="login_sessions",
+    )
+    session_key = models.CharField(max_length=40, unique=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-last_seen"]
+        indexes = [models.Index(fields=["user", "-last_seen"])]
+
+    def __str__(self):
+        return f"session:{self.session_key[:8]} ({self.user})"

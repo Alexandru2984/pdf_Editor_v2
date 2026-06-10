@@ -194,6 +194,9 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Needs request.user → after AuthenticationMiddleware. Cache-throttled
+    # last_seen bookkeeping for the profile "Sessions & security" page.
+    "pdfeditor.middleware.SessionLastSeenMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "axes.middleware.AxesMiddleware",
@@ -322,7 +325,9 @@ PDF_CLEANUP_HOURS = 24
 # pdfeditor/objectstore.py. Off unless R2_ENABLED=1 AND the four settings
 # below are present. R2_ENDPOINT_URL is the per-account root
 # (https://<account_id>.r2.cloudflarestorage.com) WITHOUT the bucket suffix.
-R2_ENABLED = env_bool("R2_ENABLED", False)
+# `not TESTING`: unit tests must never touch the real bucket — the R2 test
+# suite opts back in per-test via override_settings with a mocked client.
+R2_ENABLED = env_bool("R2_ENABLED", False) and not TESTING
 R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", "")
 R2_BUCKET = os.environ.get("R2_BUCKET", "pdf-editor")
 R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "")

@@ -1,0 +1,75 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Sessions & security" %}{% endblock %}
+
+{% block content %}
+<div class="profile-card">
+    <h2>🛡️ {% trans "Sessions & security" %}</h2>
+    <p class="sessions-intro">
+        {% trans "Every device currently signed in to your account. Revoke anything you don't recognise — that device is signed out instantly." %}
+    </p>
+
+    <div class="sessions-list">
+        {% for s in sessions %}
+        <div class="session-row {% if s.is_current %}session-current{% endif %}">
+            <div class="session-icon">{% if s.is_current %}💻{% else %}🌐{% endif %}</div>
+            <div class="session-info">
+                <div class="session-device" title="{{ s.row.user_agent }}">
+                    {{ s.device }}
+                    {% if s.is_current %}<span class="session-badge">{% trans "This device" %}</span>{% endif %}
+                </div>
+                <div class="session-meta">
+                    {% trans "IP" %}: {{ s.row.ip_address|default:_("unknown") }}
+                    · {% trans "Signed in" %}: {{ s.row.created_at|date:"d M Y H:i" }}
+                    · {% trans "Last active" %}: {{ s.row.last_seen|timesince }} {% trans "ago" %}
+                </div>
+            </div>
+            {% if not s.is_current %}
+            <form method="post" action="{% url 'revoke_session' s.row.id %}">
+                {% csrf_token %}
+                <button type="submit" class="profile-btn danger session-revoke">{% trans "Revoke" %}</button>
+            </form>
+            {% endif %}
+        </div>
+        {% empty %}
+        <p>{% trans "No active sessions recorded." %}</p>
+        {% endfor %}
+    </div>
+
+    {% if sessions|length > 1 %}
+    <form method="post" action="{% url 'revoke_other_sessions' %}" class="sessions-revoke-all">
+        {% csrf_token %}
+        <button type="submit" class="profile-btn danger">
+            🚪 {% trans "Sign out everywhere else" %}
+        </button>
+    </form>
+    {% endif %}
+
+    <div class="sessions-footer">
+        <a href="{% url 'profile' %}" class="profile-btn neutral">← {% trans "Back to profile" %}</a>
+    </div>
+</div>
+
+<style>
+    .sessions-intro { color: #6b7280; margin: 0.5rem 0 1.5rem; }
+    .sessions-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .session-row {
+        display: flex; align-items: center; gap: 1rem;
+        padding: 1rem; border: 1px solid #e5e7eb; border-radius: 10px;
+    }
+    .session-current { border-color: #6366f1; background: #eef2ff; }
+    .session-icon { font-size: 1.5rem; }
+    .session-info { flex: 1; min-width: 0; }
+    .session-device { font-weight: 600; color: #1f2937; }
+    .session-badge {
+        margin-left: 0.5rem; padding: 0.1rem 0.5rem; border-radius: 999px;
+        background: #6366f1; color: white; font-size: 0.72rem; font-weight: 600;
+        vertical-align: middle;
+    }
+    .session-meta { color: #6b7280; font-size: 0.85rem; margin-top: 0.2rem; }
+    .session-revoke { white-space: nowrap; }
+    .sessions-revoke-all { margin-top: 1.25rem; }
+    .sessions-footer { margin-top: 1.5rem; }
+</style>
+{% endblock %}

@@ -132,6 +132,11 @@ from .rephrase import (
     rephrase_result_view,
     rephrase_view,
 )
+from .sessions import (
+    revoke_other_sessions_view,
+    revoke_session_view,
+    security_sessions_view,
+)
 from .share import (
     create_share_link_view,
     public_share_download_view,
@@ -142,6 +147,9 @@ from .upload import dashboard_view, delete_pdf_view, thumbnail_view, upload_view
 
 __all__ = [
     "csp_report_view",
+    "revoke_other_sessions_view",
+    "revoke_session_view",
+    "security_sessions_view",
     "serve_media_view",
     "dashboard_view",
     "upload_view",

@@ -133,6 +133,17 @@ urlpatterns = [
     ),
     path("accounts/register/", views.register_view, name="register"),
     path("accounts/profile/", views.profile_view, name="profile"),
+    path("accounts/security/sessions/", views.security_sessions_view, name="security_sessions"),
+    path(
+        "accounts/security/sessions/<uuid:session_id>/revoke/",
+        views.revoke_session_view,
+        name="revoke_session",
+    ),
+    path(
+        "accounts/security/sessions/revoke-others/",
+        views.revoke_other_sessions_view,
+        name="revoke_other_sessions",
+    ),
     path("accounts/profile/export/", views.export_data_view, name="export_data"),
     path("accounts/profile/delete/", views.delete_account_view, name="delete_account"),
     path("accounts/profile/api-keys/create/", views.create_api_key_view, name="create_api_key"),
