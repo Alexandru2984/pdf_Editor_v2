@@ -16,6 +16,7 @@ from celery.exceptions import SoftTimeLimitExceeded
 from django.conf import settings
 from django.utils import timezone
 
+from . import objectstore
 from .metrics import EMBEDDINGS_CREATED, JOB_TOTAL, OP_DURATION_SECONDS, OP_TOTAL
 from .models import Job, ProcessedPDF, UploadedPDF
 
@@ -121,6 +122,7 @@ def _record_output(job: Job, kind: str, out_path: str) -> ProcessedPDF:
         OP_DURATION_SECONDS.labels(kind=kind).observe((job.finished_at - job.started_at).total_seconds())
     OP_TOTAL.labels(kind=kind, outcome="success").inc()
     _publish_job_event(job)
+    objectstore.schedule_mirror(output)
     return output
 
 
@@ -351,6 +353,17 @@ KIND_TO_TASK = {
     ProcessedPDF.KIND_CHAT_INDEX: run_chat_index_task,
     ProcessedPDF.KIND_TO_IMAGES: run_to_images_task,
 }
+
+
+@shared_task(name="pdfeditor.mirror_output_to_r2")
+def mirror_output_to_r2(processed_id: str) -> None:
+    """Best-effort upload of a fresh output to the R2 bucket (objectstore.py)."""
+    processed = ProcessedPDF.objects.filter(id=processed_id).first()
+    if not processed or not os.path.exists(processed.path):
+        return
+    key = objectstore.mirror_processed(processed)
+    if key:
+        ProcessedPDF.objects.filter(pk=processed.pk).update(r2_key=key)
 
 
 def enqueue_job(job: Job) -> None:

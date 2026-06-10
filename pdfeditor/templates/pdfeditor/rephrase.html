@@ -4,7 +4,7 @@
 {% block title %}{% trans "AI Text Rephrase" %}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://unpkg.com/pdfjs-dist@3.4.120/web/pdf_viewer.css">
+<link rel="stylesheet" href="/static/vendor/pdfjs/pdf_viewer.css">
 <style>
 
 .rephrase-container {
@@ -437,13 +437,12 @@
     </div>
 </div>
 
-<script src="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
+<script src="/static/vendor/pdfjs/pdf.min.js"></script>
 <script nonce="{{ request.csp_nonce }}">
 /* =========================
    PDF.js setup
 ========================= */
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js';
 
 let pdfDoc = null;
 let currentPage = 1;
@@ -468,7 +467,7 @@ function getCSRFToken() {
 ========================= */
 async function loadPDF() {
   try {
-    pdfDoc = await pdfjsLib.getDocument(pdfUrl).promise;
+    pdfDoc = await pdfjsLib.getDocument({ url: pdfUrl, isEvalSupported: false }).promise;
     pageInfoEl.textContent = `{% trans "Page" %} ${currentPage} {% trans "of" %} ${pdfDoc.numPages}`;
     await renderPage(currentPage);
   } catch (err) {

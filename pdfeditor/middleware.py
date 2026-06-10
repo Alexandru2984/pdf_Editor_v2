@@ -69,22 +69,25 @@ _DEFAULT_PERMISSIONS_POLICY = (
 
 # Strict Content-Security-Policy for the app's own pages. Inline scripts are
 # allowed only via the per-request nonce ('{nonce}' is substituted at runtime)
-# — no 'unsafe-inline' for scripts. 'unsafe-eval' is kept solely for the PDF.js
-# viewer. Mirrors the host-nginx policy for every other directive so moving CSP
-# ownership into Django changes nothing but the inline-script gate. 'unsafe-
-# inline' stays for STYLES (the app has many inline style= attributes/blocks).
+# — no 'unsafe-inline' and no 'unsafe-eval' for scripts. PDF.js is self-hosted
+# under /static/vendor/pdfjs/ with isEvalSupported:false, so no CDN script
+# origins are needed. 'unsafe-inline' stays for STYLES (the app has many
+# inline style= attributes/blocks).
 _DEFAULT_CSP = (
     "default-src 'self'; "
-    "script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://unpkg.com "
+    "script-src 'self' 'nonce-{nonce}' "
     "https://analytics.micutu.com https://static.cloudflareinsights.com https://*.cloudflare.com; "
-    "script-src-elem 'self' 'nonce-{nonce}' https://unpkg.com "
+    "script-src-elem 'self' 'nonce-{nonce}' "
     "https://analytics.micutu.com https://static.cloudflareinsights.com https://*.cloudflare.com; "
-    "worker-src 'self' blob: https://unpkg.com; "
+    "worker-src 'self' blob:; "
     "style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data: blob: https:; "
     "font-src 'self' data:; "
     "connect-src 'self' https://analytics.micutu.com https://*.cloudflare.com https://cloudflareinsights.com; "
-    "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
+    # Browsers POST violation reports here (views/csp.py) — log + Prometheus
+    # counter, so a policy regression is an alert, not silent breakage.
+    "report-uri /csp-report/"
 )
 # Appended only when serving over HTTPS (SECURE_SSL). On the plain-HTTP dev
 # server / e2e it would force subresources to https://localhost and break them.

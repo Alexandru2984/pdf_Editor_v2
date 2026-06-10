@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import redirect, render
 
+from .. import objectstore
 from ..models import ProcessedPDF
 from ._common import attachment_response, owner_filter
 
@@ -53,9 +54,12 @@ def history_view(request):
 def history_download_view(request, output_id):
     """Download any past output, gated by ownership (user or anonymous session)."""
     output = ProcessedPDF.objects.filter(owner_filter(request), id=output_id).first()
-    if not output or not output.exists_on_disk():
+    r2_url = objectstore.presigned_download_url(output) if output else None
+    if not output or not (output.exists_on_disk() or r2_url):
         messages.error(request, "File not found or no longer available.")
         return redirect("history")
+    if r2_url:
+        return redirect(r2_url)
     try:
         return attachment_response(output.path)
     except Http404:

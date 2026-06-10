@@ -65,6 +65,7 @@ from .basic_ops import (
     verify_signature_view,
 )
 from .chat import chat_message_view, chat_view, start_index_view
+from .csp import csp_report_view
 from .edit import (
     download_view,
     edit_view,
@@ -140,6 +141,7 @@ from .share import (
 from .upload import dashboard_view, delete_pdf_view, thumbnail_view, upload_view
 
 __all__ = [
+    "csp_report_view",
     "serve_media_view",
     "dashboard_view",
     "upload_view",

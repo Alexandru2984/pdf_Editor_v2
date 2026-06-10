@@ -30,10 +30,11 @@ DEBUG = env_bool("DEBUG", False)
 
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
+# Comma-separated in the env; localhost origins belong in a dev .env, not here.
 CSRF_TRUSTED_ORIGINS = [
-    "https://pdf.micutu.com",
-    "http://127.0.0.1:8001",
-    "http://localhost:8001",
+    o.strip()
+    for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "https://pdf.micutu.com").split(",")
+    if o.strip()
 ]
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
@@ -316,6 +317,18 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 PDF_CLEANUP_HOURS = 24
+
+# Cloudflare R2 (S3-compatible) mirror for processed outputs — see
+# pdfeditor/objectstore.py. Off unless R2_ENABLED=1 AND the four settings
+# below are present. R2_ENDPOINT_URL is the per-account root
+# (https://<account_id>.r2.cloudflarestorage.com) WITHOUT the bucket suffix.
+R2_ENABLED = env_bool("R2_ENABLED", False)
+R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", "")
+R2_BUCKET = os.environ.get("R2_BUCKET", "pdf-editor")
+R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "")
+R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+# Presigned download URLs stay valid this long (seconds).
+R2_PRESIGN_TTL = int(os.environ.get("R2_PRESIGN_TTL", 300))
 
 # RFC 3161 timestamp authority used when signing with `add_timestamp` toggled.
 # freetsa.org is free, public, and supports anonymous requests over HTTPS.

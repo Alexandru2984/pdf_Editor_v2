@@ -127,6 +127,10 @@ class ProcessedPDF(models.Model):
     name = models.CharField(max_length=255)
     path = models.CharField(max_length=500)
     size = models.BigIntegerField()
+    # Key of the mirrored copy in the R2 bucket ("" = not mirrored). Set by
+    # the pdfeditor.mirror_output_to_r2 Celery task; downloads prefer a
+    # presigned R2 URL when this is present, falling back to local disk.
+    r2_key = models.CharField(max_length=600, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -340,6 +344,9 @@ class MfaDevice(models.Model):
     confirmed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
+    # Highest TOTP timestep already accepted — codes at or below it are
+    # rejected, so a sniffed code can't be replayed inside its ±1 window.
+    last_verified_step = models.BigIntegerField(default=0)
 
     def __str__(self):
         return f"MFA({self.user.username}, {'on' if self.confirmed else 'pending'})"
@@ -362,7 +369,9 @@ class MfaBackupCode(models.Model):
 
 
 def _default_share_token() -> str:
-    return uuid.uuid4().hex
+    import secrets
+
+    return secrets.token_urlsafe(32)
 
 
 def _default_api_key_token() -> str:

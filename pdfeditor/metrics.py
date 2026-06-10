@@ -77,6 +77,13 @@ API_KEY_AUTH_TOTAL = Counter(
     ["outcome"],
 )
 
+CSP_VIOLATION_TOTAL = Counter(
+    "pdfeditor_csp_violation_total",
+    "Content-Security-Policy violation reports received from browsers, "
+    "labelled by the violated directive (script-src, style-src, …).",
+    ["directive"],
+)
+
 
 def refresh_queue_depth() -> None:
     """Recompute the JOB_QUEUE_DEPTH gauge from the database. Called by

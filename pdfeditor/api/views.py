@@ -13,7 +13,7 @@ import os
 import fitz
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponseRedirect
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiTypes, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -161,7 +161,12 @@ class ProcessedPDFViewSet(viewsets.ReadOnlyModelViewSet):
     )
     @action(detail=True, methods=["get"], url_path="download")
     def download(self, request, id=None):
+        from .. import objectstore
+
         obj = self.get_object()
+        r2_url = objectstore.presigned_download_url(obj)
+        if r2_url:
+            return HttpResponseRedirect(r2_url)
         if not obj.path or not os.path.exists(obj.path):
             raise Http404("File missing")
         return FileResponse(

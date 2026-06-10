@@ -20,7 +20,7 @@ from django.http import HttpResponse
 from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 
-from .mfa import generate_backup_codes
+from .mfa import consume_backup_code, generate_backup_codes, verify_totp
 from .middleware import _VALID_REQUEST_ID, RequestIDMiddleware, SecurityHeadersMiddleware
 from .models import MfaDevice, ProcessedPDF, ShareLink, UploadedPDF
 from .netutils import client_ip
@@ -403,6 +403,134 @@ class MfaFlowTests(TestCase):
 
 
 # --------------------------------------------------------------------------
+# 2026-06-10 audit: TOTP replay protection + backup-code hardening
+# --------------------------------------------------------------------------
+class TotpReplayTests(TestCase):
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="bob", password="x", is_active=True)
+        self.device = MfaDevice.objects.create(user=user, secret=pyotp.random_base32(), confirmed=True)
+
+    def test_accepted_code_cannot_be_replayed(self):
+        code = pyotp.TOTP(self.device.secret).now()
+        self.assertTrue(verify_totp(self.device, code))
+        self.assertFalse(verify_totp(self.device, code))  # same window, must be burned
+
+    def test_next_step_code_works_after_previous_one(self):
+        import time as _time
+
+        totp = pyotp.TOTP(self.device.secret)
+        self.assertTrue(verify_totp(self.device, totp.at(_time.time() - 30)))
+        self.assertTrue(verify_totp(self.device, totp.now()))  # newer step, accepted
+
+    def test_backup_codes_carry_80_bits(self):
+        codes = generate_backup_codes(self.device)
+        for code in codes:
+            self.assertRegex(code, r"^[0-9a-f]{10}-[0-9a-f]{10}$")
+
+    def test_backup_code_consume_is_single_shot(self):
+        codes = generate_backup_codes(self.device)
+        self.assertTrue(consume_backup_code(self.device, codes[0]))
+        self.assertFalse(consume_backup_code(self.device, codes[0]))
+
+
+# --------------------------------------------------------------------------
+# 2026-06-10 audit: AuditLog keys on the spoof-safe client IP
+# --------------------------------------------------------------------------
+@override_settings(TRUSTED_PROXY_COUNT=3)
+class AuditLogIpTests(SimpleTestCase):
+    def test_record_output_ip_ignores_spoofed_left_prefix(self):
+        from .views._common import _client_ip
+
+        req = RequestFactory().get(
+            "/",
+            HTTP_X_FORWARDED_FOR="6.6.6.6, 198.51.100.7, 10.0.0.2, 172.18.0.3",
+            REMOTE_ADDR="172.18.0.3",
+        )
+        # 3 trusted proxies → real client is the 3rd from the right, not the
+        # attacker-chosen leftmost entry.
+        self.assertEqual(_client_ip(req), "198.51.100.7")
+
+
+# --------------------------------------------------------------------------
+# 2026-06-10 audit: share tokens use secrets.token_urlsafe; public download
+# endpoint is rate limited
+# --------------------------------------------------------------------------
+class ShareTokenTests(TestCase):
+    def test_default_token_is_long_urlsafe(self):
+        from .models import _default_share_token
+
+        token = _default_share_token()
+        self.assertGreaterEqual(len(token), 43)  # 32 bytes of entropy, base64url
+        self.assertRegex(token, r"^[A-Za-z0-9_-]+$")
+
+    @override_settings(RATELIMIT_USE_CACHE="default")
+    def test_public_download_is_rate_limited(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        self.addCleanup(cache.clear)  # don't leak a full bucket into later tests
+        last = None
+        for _ in range(61):  # anon rate is 60/h per IP
+            last = self.client.get("/s/no-such-token/")
+        self.assertEqual(last.status_code, 403)  # Ratelimited → PermissionDenied
+
+
+# --------------------------------------------------------------------------
+# CSP violation reporting endpoint (views/csp.py)
+# --------------------------------------------------------------------------
+class CspReportEndpointTests(TestCase):
+    _LEGACY = {
+        "csp-report": {
+            "effective-directive": "script-src-elem",
+            "blocked-uri": "https://evil.example/x.js",
+            "document-uri": "https://pdf.micutu.com/upload/",
+        }
+    }
+
+    def test_policy_carries_report_uri(self):
+        csp = SecurityHeadersMiddleware(lambda req: HttpResponse("ok"))(RequestFactory().get("/"))[
+            "Content-Security-Policy"
+        ]
+        self.assertIn("report-uri /csp-report/", csp)
+
+    def test_legacy_report_is_counted(self):
+        import json as _json
+
+        from prometheus_client import REGISTRY
+
+        before = (
+            REGISTRY.get_sample_value("pdfeditor_csp_violation_total", {"directive": "script-src-elem"}) or 0
+        )
+        resp = self.client.post(
+            "/csp-report/", _json.dumps(self._LEGACY), content_type="application/csp-report"
+        )
+        self.assertEqual(resp.status_code, 204)
+        after = REGISTRY.get_sample_value("pdfeditor_csp_violation_total", {"directive": "script-src-elem"})
+        self.assertEqual(after, before + 1)
+
+    def test_reporting_api_format_is_counted(self):
+        import json as _json
+
+        payload = [{"type": "csp-violation", "body": {"effectiveDirective": "img-src", "blockedURL": "x"}}]
+        resp = self.client.post("/csp-report/", _json.dumps(payload), content_type="application/reports+json")
+        self.assertEqual(resp.status_code, 204)
+
+    def test_garbage_and_oversized_bodies_are_swallowed(self):
+        self.assertEqual(
+            self.client.post("/csp-report/", "not json", content_type="application/csp-report").status_code,
+            204,
+        )
+        big = "x" * (17 * 1024)
+        self.assertEqual(
+            self.client.post("/csp-report/", big, content_type="application/csp-report").status_code,
+            204,
+        )
+
+    def test_get_is_rejected(self):
+        self.assertEqual(self.client.get("/csp-report/").status_code, 405)
+
+
+# --------------------------------------------------------------------------
 # Stage 9: strict nonce-based Content-Security-Policy
 # --------------------------------------------------------------------------
 class CspMiddlewareTests(SimpleTestCase):
@@ -418,11 +546,12 @@ class CspMiddlewareTests(SimpleTestCase):
         resp, req = self._csp("/")
         self.assertIn(f"nonce-{req.csp_nonce}", resp["Content-Security-Policy"])
 
-    def test_script_src_drops_unsafe_inline_keeps_eval(self):
+    def test_script_src_drops_unsafe_inline_and_eval(self):
         csp = self._csp("/")[0]["Content-Security-Policy"]
         script_src = csp.split("script-src-elem")[0]  # the script-src directive
         self.assertNotIn("'unsafe-inline'", script_src)  # inline scripts only via nonce
-        self.assertIn("'unsafe-eval'", script_src)  # kept for the PDF.js viewer
+        self.assertNotIn("'unsafe-eval'", script_src)  # PDF.js is self-hosted with isEvalSupported:false
+        self.assertNotIn("unpkg.com", csp)  # no third-party CDN scripts (supply chain)
         self.assertIn("style-src 'self' 'unsafe-inline'", csp)  # styles intentionally keep it
 
     def test_admin_and_api_are_skipped(self):

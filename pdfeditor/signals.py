@@ -43,3 +43,7 @@ def _on_uploaded_pdf_delete(sender, instance: UploadedPDF, **_):
 @receiver(post_delete, sender=ProcessedPDF)
 def _on_processed_pdf_delete(sender, instance: ProcessedPDF, **_):
     _unlink(instance.path, "processed PDF")
+    if instance.r2_key:
+        from . import objectstore
+
+        objectstore.delete_object(instance.r2_key)

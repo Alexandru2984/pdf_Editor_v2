@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 
+from .. import objectstore
 from ..forms import ShareLinkForm
 from ..models import ProcessedPDF, ShareLink
 from ..ratelimiting import auth_aware_ratelimit
@@ -93,6 +94,7 @@ def revoke_share_link_view(request, token: str):
     return redirect("share_links")
 
 
+@auth_aware_ratelimit(anon_rate="60/h", user_rate="120/h", method="GET")
 def public_share_download_view(request, token: str):
     """Public, no-auth endpoint that serves the PDF behind a share token."""
     link = get_object_or_404(ShareLink, token=token)
@@ -102,7 +104,8 @@ def public_share_download_view(request, token: str):
         return render(request, "pdfeditor/share_unavailable.html", {"reason": "exhausted"}, status=410)
 
     pdf = link.processed_pdf
-    if not pdf or not pdf.exists_on_disk():
+    r2_url = objectstore.presigned_download_url(pdf) if pdf else None
+    if not pdf or not (pdf.exists_on_disk() or r2_url):
         return render(request, "pdfeditor/share_unavailable.html", {"reason": "missing"}, status=410)
 
     # Atomically claim a download slot. The is_exhausted() check above is a
@@ -118,6 +121,10 @@ def public_share_download_view(request, token: str):
     else:
         ShareLink.objects.filter(pk=link.pk).update(download_count=F("download_count") + 1)
 
+    if r2_url:
+        # Serve straight from the R2 mirror: the presigned URL is short-lived
+        # and download-count was already claimed above.
+        return redirect(r2_url)
     try:
         return FileResponse(
             open(pdf.path, "rb"),

@@ -119,7 +119,8 @@ class PDFPreviewModal {
             // Load PDF
             const loadingTask = pdfjsLib.getDocument({
                 url: pdfUrl,
-                withCredentials: false
+                withCredentials: false,
+                isEvalSupported: false
             });
 
             this.pdfDoc = await loadingTask.promise;
@@ -201,18 +202,14 @@ class PDFPreviewModal {
 // Initialize modal on page load
 let pdfModal;
 document.addEventListener('DOMContentLoaded', () => {
-    // Load PDF.js from unpkg (more reliable CDN)
+    // Load self-hosted PDF.js — no CDN, so the strict CSP needs no
+    // third-party script-src entries and no 'unsafe-eval'.
     const script = document.createElement('script');
-    script.src = 'https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.min.mjs';
-    script.type = 'module';
-    
-    // For module scripts, we need a different approach
-    // Use legacy build instead for better compatibility
-    script.src = 'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.min.js';
+    script.src = '/static/vendor/pdfjs/pdf.min.js';
     script.type = 'text/javascript';
-    
+
     script.onload = () => {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js';
         pdfModal = new PDFPreviewModal();
     };
     

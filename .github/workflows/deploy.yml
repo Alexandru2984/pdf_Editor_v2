@@ -17,6 +17,8 @@ concurrency:
 permissions:
   contents: read
   packages: write
+  # OIDC token for cosign keyless image signing (sigstore).
+  id-token: write
 
 jobs:
   # 1. Build a docker image and push it to GitHub Container Registry.
@@ -61,6 +63,7 @@ jobs:
           echo "apt_refresh_date=$(date -u +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
 
       - name: Build and push image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -88,6 +91,29 @@ jobs:
           exit-code: "1"
           ignore-unfixed: true
           vuln-type: os,library
+
+      # Software Bill of Materials for the exact image we ship — auditors
+      # (and future-us) can answer "did we ever ship libfoo 1.2?" without
+      # rebuilding. Stored as a build artifact next to the run.
+      - name: Generate SBOM (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.short_sha }}
+          format: spdx-json
+          artifact-name: sbom-${{ steps.meta.outputs.short_sha }}.spdx.json
+
+      # Keyless (OIDC) signature over the image digest. Verifiable with:
+      #   cosign verify ghcr.io/<repo>@<digest> \
+      #     --certificate-identity-regexp 'github.com/<repo>' \
+      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign image (keyless)
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
 
   # 3. SSH into the VPS and run the deploy script with the new tag.
   deploy:

@@ -13,7 +13,9 @@ from django.db import models
 from django.db.models import Q
 from django.http import FileResponse, Http404, HttpRequest
 
+from .. import objectstore
 from ..models import AuditLog, ProcessedPDF, UploadedPDF
+from ..netutils import client_ip
 
 
 def storage_usage(request: HttpRequest) -> int:
@@ -29,10 +31,10 @@ def storage_quota(request: HttpRequest) -> int:
 
 
 def _client_ip(request: HttpRequest) -> str | None:
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip() or None
-    return request.META.get("REMOTE_ADDR") or None
+    # Audit-trail IP must use the same spoof-safe XFF derivation as the rate
+    # limiter and axes — a client-supplied leftmost XFF entry must not be able
+    # to forge AuditLog rows.
+    return client_ip(request)
 
 
 def ensure_session_key(request: HttpRequest) -> str:
@@ -105,6 +107,7 @@ def record_output(request: HttpRequest, *, kind: str, path: str, source=None) ->
     except Exception:  # noqa: BLE001 — audit must never break the user flow
         pass
 
+    objectstore.schedule_mirror(output)
     return output
 
 

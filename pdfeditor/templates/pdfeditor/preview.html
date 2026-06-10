@@ -156,11 +156,11 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- PDF.js from CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- PDF.js, self-hosted (supply-chain: no CDN scripts in CSP) -->
+<script src="/static/vendor/pdfjs/pdf.min.js"></script>
 <script nonce="{{ request.csp_nonce }}">
 // PDF.js configuration
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js';
 
 // PDF viewer state
 let pdfDoc = null;
@@ -175,7 +175,7 @@ const ctx = canvas.getContext('2d');
 // Load PDF
 const url = '{{ pdf_url }}';
 
-pdfjsLib.getDocument(url).promise.then(pdf => {
+pdfjsLib.getDocument({ url: url, isEvalSupported: false }).promise.then(pdf => {
     pdfDoc = pdf;
     document.getElementById('page-count').textContent = pdf.numPages;
     renderPage(pageNum);

@@ -42,6 +42,14 @@ x-app-env: &app-env
   CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
   CLAMAV_PORT: ${CLAMAV_PORT:-3310}
   CLAMAV_FAIL_OPEN: ${CLAMAV_FAIL_OPEN:-0}
+  # Cloudflare R2 output mirror (pdfeditor/objectstore.py). Off by default;
+  # set R2_ENABLED=1 plus the endpoint/credentials in .env to turn on.
+  R2_ENABLED: ${R2_ENABLED:-0}
+  R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
+  R2_BUCKET: ${R2_BUCKET:-pdf-editor}
+  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+  R2_PRESIGN_TTL: ${R2_PRESIGN_TTL:-300}
 
 # Baseline container hardening, merged into every service via `<<: *hardening`.
 #   no-new-privileges:true → a compromised process can never gain privileges
