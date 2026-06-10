@@ -35,6 +35,17 @@
 
         <button type="submit" class="btn btn-primary btn-block">{% trans "Sign In" %}</button>
 
+        <div data-passkey-ui class="passkey-login-wrap">
+            <div class="passkey-divider"><span>{% trans "or" %}</span></div>
+            <button type="button" class="btn btn-secondary btn-block"
+                    data-passkey-login="{% url 'passkey_login' %}"
+                    data-passkey-login-options="{% url 'passkey_auth_options' %}"
+                    data-passkey-error="passkey-login-error">
+                🔑 {% trans "Sign in with a passkey" %}
+            </button>
+            <div id="passkey-login-error" class="alert-box alert-box--error" style="display:none; margin-top:0.5rem;"></div>
+        </div>
+
         <p class="auth-footer">
             {% trans "Don't have an account?" %}
             <a href="{% url 'register' %}" class="auth-link-strong">{% trans "Create one" %}</a>
@@ -47,4 +58,16 @@
         </p>
     </form>
 </div>
+
+<style>
+    .passkey-login-wrap { margin-top: 0.75rem; }
+    .passkey-divider {
+        display: flex; align-items: center; gap: 0.75rem;
+        color: #9ca3af; font-size: 0.85rem; margin: 0.75rem 0;
+    }
+    .passkey-divider::before, .passkey-divider::after {
+        content: ""; flex: 1; border-top: 1px solid #e5e7eb;
+    }
+</style>
+<script src="/static/js/passkeys.js"></script>
 {% endblock %}

@@ -21,7 +21,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 
-from ..models import UserSession
+from ..models import UserSession, WebAuthnCredential
 
 
 def _kill_django_session(session_key: str) -> None:
@@ -90,7 +90,14 @@ def security_sessions_view(request: HttpRequest) -> HttpResponse:
     ]
     # Current session first, then most recently seen.
     sessions.sort(key=lambda s: (not s["is_current"],))
-    return render(request, "pdfeditor/security_sessions.html", {"sessions": sessions})
+    return render(
+        request,
+        "pdfeditor/security_sessions.html",
+        {
+            "sessions": sessions,
+            "passkeys": WebAuthnCredential.objects.filter(user=request.user),
+        },
+    )
 
 
 @login_required

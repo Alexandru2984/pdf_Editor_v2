@@ -152,7 +152,7 @@
     </div>
 </div>
 
-<script src="/static/vendor/pdfjs/pdf.min.js"></script>
+<script src="/static/vendor/pdfjs/pdf.min.js?v=3.11.174"></script>
 <script nonce="{{ request.csp_nonce }}">
 // ===== SURPRISE REVEAL ANIMATION =====
 const canvas = document.getElementById('confetti-canvas');
@@ -227,7 +227,7 @@ tabBtns.forEach(btn => {
 });
 
 // ===== PDF.js setup =====
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js?v=3.11.174';
 
 let currentPdfId = null;
 let currentPdfPath = null;

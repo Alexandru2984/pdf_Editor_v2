@@ -514,3 +514,35 @@ class UserSession(models.Model):
 
     def __str__(self):
         return f"session:{self.session_key[:8]} ({self.user})"
+
+
+class WebAuthnCredential(models.Model):
+    """A registered passkey (WebAuthn credential) for password-less sign-in.
+
+    Only the public half lives here — the private key never leaves the
+    user's authenticator. ``sign_count`` is the authenticator's signature
+    counter: the verifier rejects assertions whose count didn't increase,
+    which flags cloned credentials.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="passkeys",
+    )
+    # base64url-encoded raw credential ID, as the browser reports it.
+    credential_id = models.CharField(max_length=1023, unique=True, db_index=True)
+    # base64url-encoded COSE public key.
+    public_key = models.TextField()
+    sign_count = models.BigIntegerField(default=0)
+    transports = models.CharField(max_length=255, blank=True, default="")
+    label = models.CharField(max_length=80, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"passkey:{self.credential_id[:12]} ({self.user})"

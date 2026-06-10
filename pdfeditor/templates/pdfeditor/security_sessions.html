@@ -46,6 +46,47 @@
     </form>
     {% endif %}
 
+    <h3 class="passkeys-title" data-passkey-ui>🔑 {% trans "Passkeys" %}</h3>
+    <p class="sessions-intro" data-passkey-ui>
+        {% trans "Sign in without a password using your device's fingerprint, face or PIN. Passkeys are phishing-resistant — they only ever work on this site." %}
+    </p>
+
+    <div class="sessions-list" data-passkey-ui>
+        {% for pk in passkeys %}
+        <div class="session-row">
+            <div class="session-icon">🔑</div>
+            <div class="session-info">
+                <div class="session-device">{{ pk.label|default:_("Unnamed passkey") }}</div>
+                <div class="session-meta">
+                    {% trans "Added" %}: {{ pk.created_at|date:"d M Y" }}
+                    {% if pk.last_used_at %}· {% trans "Last used" %}: {{ pk.last_used_at|timesince }} {% trans "ago" %}{% endif %}
+                </div>
+            </div>
+            <form method="post" action="{% url 'passkey_delete' pk.id %}"
+                  data-confirm="{% trans 'Remove this passkey? You will no longer be able to sign in with it.' %}">
+                {% csrf_token %}
+                <button type="submit" class="profile-btn danger session-revoke">{% trans "Remove" %}</button>
+            </form>
+        </div>
+        {% empty %}
+        <p class="session-meta">{% trans "No passkeys yet." %}</p>
+        {% endfor %}
+    </div>
+
+    <div class="passkey-add" data-passkey-ui>
+        {% csrf_token %}
+        <input type="text" id="passkey-label" class="passkey-label-input"
+               maxlength="80" placeholder="{% trans 'Name (e.g. Laptop, Phone)' %}">
+        <button type="button" class="profile-btn primary"
+                data-passkey-register="{% url 'passkey_register_options' %}"
+                data-passkey-verify="{% url 'passkey_register' %}"
+                data-passkey-label="passkey-label"
+                data-passkey-error="passkey-reg-error">
+            ➕ {% trans "Add a passkey" %}
+        </button>
+        <div id="passkey-reg-error" class="alert-box alert-box--error" style="display:none;"></div>
+    </div>
+
     <div class="sessions-footer">
         <a href="{% url 'profile' %}" class="profile-btn neutral">← {% trans "Back to profile" %}</a>
     </div>
@@ -71,5 +112,12 @@
     .session-revoke { white-space: nowrap; }
     .sessions-revoke-all { margin-top: 1.25rem; }
     .sessions-footer { margin-top: 1.5rem; }
+    .passkeys-title { margin-top: 2rem; }
+    .passkey-add { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
+    .passkey-label-input {
+        flex: 1; min-width: 180px; padding: 0.55rem 0.75rem;
+        border: 1px solid #e5e7eb; border-radius: 8px;
+    }
 </style>
+<script src="/static/js/passkeys.js"></script>
 {% endblock %}

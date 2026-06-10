@@ -134,6 +134,20 @@ urlpatterns = [
     path("accounts/register/", views.register_view, name="register"),
     path("accounts/profile/", views.profile_view, name="profile"),
     path("accounts/security/sessions/", views.security_sessions_view, name="security_sessions"),
+    # Passkeys (WebAuthn): enrolment is authenticated; the login pair is anonymous.
+    path(
+        "accounts/security/passkeys/options/",
+        views.passkey_register_options_view,
+        name="passkey_register_options",
+    ),
+    path("accounts/security/passkeys/register/", views.passkey_register_view, name="passkey_register"),
+    path(
+        "accounts/security/passkeys/<uuid:passkey_id>/delete/",
+        views.passkey_delete_view,
+        name="passkey_delete",
+    ),
+    path("accounts/passkeys/login/options/", views.passkey_auth_options_view, name="passkey_auth_options"),
+    path("accounts/passkeys/login/", views.passkey_login_view, name="passkey_login"),
     path(
         "accounts/security/sessions/<uuid:session_id>/revoke/",
         views.revoke_session_view,

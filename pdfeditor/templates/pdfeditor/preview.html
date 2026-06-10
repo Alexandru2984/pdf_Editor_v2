@@ -157,10 +157,10 @@
 
 {% block extra_js %}
 <!-- PDF.js, self-hosted (supply-chain: no CDN scripts in CSP) -->
-<script src="/static/vendor/pdfjs/pdf.min.js"></script>
+<script src="/static/vendor/pdfjs/pdf.min.js?v=3.11.174"></script>
 <script nonce="{{ request.csp_nonce }}">
 // PDF.js configuration
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js?v=3.11.174';
 
 // PDF viewer state
 let pdfDoc = null;

@@ -26,6 +26,8 @@ psycopg2-binary>=2.9.9
 pdf2docx>=0.5.13
 pyHanko[image-support]==0.35.0
 PyMuPDF>=1.27.0,<2.0
+# WebAuthn/passkeys: server-side ceremony validation (pdfeditor/views/passkeys.py).
+webauthn>=2.0.0
 # TOTP MFA: secret/code handling (pyotp) + enrolment QR codes (qrcode).
 pyotp>=2.9.0
 qrcode[pil]>=7.4.0

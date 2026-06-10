@@ -205,11 +205,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load self-hosted PDF.js — no CDN, so the strict CSP needs no
     // third-party script-src entries and no 'unsafe-eval'.
     const script = document.createElement('script');
-    script.src = '/static/vendor/pdfjs/pdf.min.js';
+    script.src = '/static/vendor/pdfjs/pdf.min.js?v=3.11.174';
     script.type = 'text/javascript';
 
     script.onload = () => {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js?v=3.11.174';
         pdfModal = new PDFPreviewModal();
     };
     

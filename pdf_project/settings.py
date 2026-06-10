@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 import dj_database_url
 import sentry_sdk
@@ -348,6 +349,14 @@ LOGOUT_REDIRECT_URL = "dashboard"
 
 # Issuer label shown in users' authenticator apps for TOTP MFA.
 MFA_ISSUER = os.environ.get("MFA_ISSUER", "PDF Editor")
+
+# WebAuthn / passkeys. RP ID must be the registrable domain the site is
+# served on (no scheme/port); origin must match the browser's exactly.
+# Both derive from SITE_URL so one env var keeps them consistent.
+_site_url = os.environ.get("SITE_URL", "http://localhost:8000")
+WEBAUTHN_RP_ID = os.environ.get("WEBAUTHN_RP_ID", urlparse(_site_url).hostname or "localhost")
+WEBAUTHN_ORIGIN = os.environ.get("WEBAUTHN_ORIGIN", _site_url)
+WEBAUTHN_RP_NAME = os.environ.get("WEBAUTHN_RP_NAME", "PDF Editor")
 
 # Email backend — console for dev (prints emails to stdout), SMTP for prod.
 # Override EMAIL_BACKEND in .env for prod (e.g. django.core.mail.backends.smtp.EmailBackend).

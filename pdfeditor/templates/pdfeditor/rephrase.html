@@ -4,7 +4,7 @@
 {% block title %}{% trans "AI Text Rephrase" %}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="/static/vendor/pdfjs/pdf_viewer.css">
+<link rel="stylesheet" href="/static/vendor/pdfjs/pdf_viewer.css?v=3.11.174">
 <style>
 
 .rephrase-container {
@@ -437,12 +437,12 @@
     </div>
 </div>
 
-<script src="/static/vendor/pdfjs/pdf.min.js"></script>
+<script src="/static/vendor/pdfjs/pdf.min.js?v=3.11.174"></script>
 <script nonce="{{ request.csp_nonce }}">
 /* =========================
    PDF.js setup
 ========================= */
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js?v=3.11.174';
 
 let pdfDoc = null;
 let currentPage = 1;

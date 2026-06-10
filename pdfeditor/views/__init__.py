@@ -119,6 +119,13 @@ from .mfa import (
     mfa_setup_view,
     mfa_verify_view,
 )
+from .passkeys import (
+    passkey_auth_options_view,
+    passkey_delete_view,
+    passkey_login_view,
+    passkey_register_options_view,
+    passkey_register_view,
+)
 from .profile import (
     create_api_key_view,
     delete_account_view,
@@ -147,6 +154,11 @@ from .upload import dashboard_view, delete_pdf_view, thumbnail_view, upload_view
 
 __all__ = [
     "csp_report_view",
+    "passkey_auth_options_view",
+    "passkey_delete_view",
+    "passkey_login_view",
+    "passkey_register_options_view",
+    "passkey_register_view",
     "revoke_other_sessions_view",
     "revoke_session_view",
     "security_sessions_view",
