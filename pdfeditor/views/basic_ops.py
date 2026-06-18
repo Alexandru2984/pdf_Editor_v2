@@ -49,6 +49,7 @@ from ..pdf_processor import (
     verify_pdf_signatures,
 )
 from ..ratelimiting import auth_aware_ratelimit
+from ..scanning import UploadBlocked, scan_fileobj
 from ..tasks import enqueue_job
 from ._common import (
     attachment_response,
@@ -1451,6 +1452,14 @@ def images_to_pdf_view(request):
                             "name": f.name,
                             "mb": _IMAGES_TO_PDF_MAX_BYTES_PER_FILE // (1024 * 1024),
                         },
+                    )
+                    continue
+                try:
+                    scan_fileobj(f)
+                except UploadBlocked:
+                    messages.warning(
+                        request,
+                        _('Skipped "%(name)s" - failed the malware scan.') % {"name": f.name},
                     )
                     continue
                 valid_files.append(f)

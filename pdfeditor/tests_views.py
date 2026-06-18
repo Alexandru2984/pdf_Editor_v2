@@ -422,16 +422,18 @@ class ImagesToPdfViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 200)
 
     def test_full_workflow_single_png_auto(self):
-        resp = self.client.post(
-            reverse("images_to_pdf"),
-            {
-                "page_size": "auto",
-                "fit_mode": "fit",
-                "images_order": "",
-                "images": [_img_upload("a.png")],
-            },
-        )
+        with patch("pdfeditor.views.basic_ops.scan_fileobj") as scan:
+            resp = self.client.post(
+                reverse("images_to_pdf"),
+                {
+                    "page_size": "auto",
+                    "fit_mode": "fit",
+                    "images_order": "",
+                    "images": [_img_upload("a.png")],
+                },
+            )
         self.assertEqual(resp.status_code, 302)
+        scan.assert_called_once()
 
         result = self.client.get(reverse("images_to_pdf_result"))
         self.assertEqual(result.status_code, 200)
@@ -502,6 +504,25 @@ class ImagesToPdfViewTests(_ViewTestBase):
             },
         )
         # Only invalid file → no valid images → re-render (200), no session output.
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("images_to_pdf_id", self.client.session)
+
+    def test_malware_scan_failure_skips_image(self):
+        from .scanning import UploadBlocked
+
+        with patch(
+            "pdfeditor.views.basic_ops.scan_fileobj",
+            side_effect=UploadBlocked("infected", "test-signature"),
+        ):
+            resp = self.client.post(
+                reverse("images_to_pdf"),
+                {
+                    "page_size": "auto",
+                    "fit_mode": "fit",
+                    "images_order": "",
+                    "images": [_img_upload("a.png")],
+                },
+            )
         self.assertEqual(resp.status_code, 200)
         self.assertNotIn("images_to_pdf_id", self.client.session)
 
@@ -1479,17 +1500,41 @@ class WatermarkViewTests(_ViewTestBase):
     def test_image_watermark_workflow(self):
         self.upload()
         png = SimpleUploadedFile("logo.png", _png_bytes(), content_type="image/png")
-        resp = self.client.post(
-            reverse("watermark"),
-            {
-                "watermark_type": "image",
-                "watermark_image": png,
-                "position": "top-right",
-                "opacity": 0.5,
-                "rotation": 0,
-            },
-        )
+        with patch("pdfeditor.views.layout_ops.scan_fileobj") as scan:
+            resp = self.client.post(
+                reverse("watermark"),
+                {
+                    "watermark_type": "image",
+                    "watermark_image": png,
+                    "position": "top-right",
+                    "opacity": 0.5,
+                    "rotation": 0,
+                },
+            )
         self.assertEqual(resp.status_code, 302)
+        scan.assert_called_once()
+
+    def test_image_watermark_scan_failure_blocks_output(self):
+        from .scanning import UploadBlocked
+
+        self.upload()
+        png = SimpleUploadedFile("logo.png", _png_bytes(), content_type="image/png")
+        with patch(
+            "pdfeditor.views.layout_ops.scan_fileobj",
+            side_effect=UploadBlocked("infected", "test-signature"),
+        ):
+            resp = self.client.post(
+                reverse("watermark"),
+                {
+                    "watermark_type": "image",
+                    "watermark_image": png,
+                    "position": "top-right",
+                    "opacity": 0.5,
+                    "rotation": 0,
+                },
+            )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn("watermarked_pdf_id", self.client.session)
 
     def test_text_watermark_missing_content_invalid(self):
         self.upload()

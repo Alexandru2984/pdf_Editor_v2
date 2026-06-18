@@ -22,6 +22,7 @@ from ..pdf_processor import (
     rotate_pages,
 )
 from ..ratelimiting import auth_aware_ratelimit
+from ..scanning import UploadBlocked, scan_fileobj
 from ._common import (
     attachment_response,
     get_pdf_by_id,
@@ -52,6 +53,20 @@ def _fetch_output(request, session_key):
     return ProcessedPDF.objects.filter(owner_filter(request), id=output_id).first()
 
 
+def _render_watermark_form(request, *, form, selected_pdf, uploaded_pdfs, pdf_path):
+    return render(
+        request,
+        "pdfeditor/watermark.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+        },
+    )
+
+
 # ---------- Watermark ----------
 
 
@@ -76,6 +91,17 @@ def watermark_view(request):
                     output_path = add_watermark(pdf_path, "text", form.cleaned_data["text_content"], options)
                 else:
                     uploaded_image = form.cleaned_data["watermark_image"]
+                    try:
+                        scan_fileobj(uploaded_image)
+                    except UploadBlocked:
+                        messages.error(request, _("Watermark image failed the malware scan."))
+                        return _render_watermark_form(
+                            request,
+                            form=form,
+                            selected_pdf=selected_pdf,
+                            uploaded_pdfs=uploaded_pdfs,
+                            pdf_path=pdf_path,
+                        )
                     fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, "temp"))
                     safe_image_name = os.path.basename(uploaded_image.name)
                     image_filename = fs.save(safe_image_name, uploaded_image)

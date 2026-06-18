@@ -101,6 +101,7 @@ def mfa_verify_view(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@auth_aware_ratelimit(anon_rate="10/h", user_rate="10/h", method="POST")
 def mfa_setup_view(request: HttpRequest) -> HttpResponse:
     """Enrol an authenticator: show the QR, confirm one code, reveal backups."""
     device, _created = MfaDevice.objects.get_or_create(user=request.user)
@@ -129,6 +130,7 @@ def mfa_setup_view(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@auth_aware_ratelimit(anon_rate="5/h", user_rate="5/h", method="POST")
 @require_http_methods(["POST"])
 def mfa_disable_view(request: HttpRequest) -> HttpResponse:
     """Turn MFA off — re-auth with the account password first."""
@@ -141,6 +143,7 @@ def mfa_disable_view(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@auth_aware_ratelimit(anon_rate="5/h", user_rate="5/h", method="POST")
 @require_http_methods(["POST"])
 def mfa_backup_codes_view(request: HttpRequest) -> HttpResponse:
     """Regenerate backup codes (invalidates the old set)."""
