@@ -249,7 +249,10 @@ services:
     depends_on:
       - web
     ports:
-      - "8000:80"
+      # Host nginx is the public TLS edge and proxies to 127.0.0.1:8000.
+      # Keep this internal load balancer loopback-only so it cannot be hit
+      # directly with spoofed Host / X-Forwarded-* headers.
+      - "127.0.0.1:8000:80"
     volumes:
       - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
     healthcheck:
