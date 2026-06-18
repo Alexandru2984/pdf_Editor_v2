@@ -341,6 +341,12 @@ class SummarizeApiTests(_ApiTestBase):
 class BatchApiTests(_ApiTestBase):
     """End-to-end: POST /ops/batch/ → run task locally → check Job + outputs."""
 
+    def test_batch_registry_excludes_password_ops(self):
+        from .api.batch_ops import BATCH_OPS
+
+        self.assertNotIn("protect", BATCH_OPS)
+        self.assertNotIn("unprotect", BATCH_OPS)
+
     def test_rejects_unowned_pdf(self):
         from .models import UploadedPDF
 
@@ -545,7 +551,8 @@ class JobsApiTests(_ApiTestBase):
                 "user_password": "secret",
                 "owner_password": "owner-secret",
                 "safe": "visible",
-            }
+            },
+            "nested": [{"api_key": "abc123", "label": "visible"}],
         }
         job.save(update_fields=["params"])
 
@@ -555,6 +562,8 @@ class JobsApiTests(_ApiTestBase):
         self.assertEqual(params["op_params"]["user_password"], "[redacted]")
         self.assertEqual(params["op_params"]["owner_password"], "[redacted]")
         self.assertEqual(params["op_params"]["safe"], "visible")
+        self.assertEqual(params["nested"][0]["api_key"], "[redacted]")
+        self.assertEqual(params["nested"][0]["label"], "visible")
 
     def test_cancel_queued_job(self):
         from unittest.mock import patch

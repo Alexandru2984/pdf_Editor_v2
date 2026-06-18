@@ -13,6 +13,7 @@ from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 import pyotp
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import F
@@ -265,6 +266,10 @@ class ShareLinkCounterTests(TestCase):
 # Stage 7: optional ClamAV upload scanning (pdfeditor/scanning.py)
 # --------------------------------------------------------------------------
 class ClamAvScanTests(SimpleTestCase):
+    def test_test_settings_disable_env_configured_clamav(self):
+        self.assertTrue(settings.TESTING)
+        self.assertFalse(settings.CLAMAV_ENABLED)
+
     @override_settings(CLAMAV_ENABLED=False)
     def test_disabled_is_noop_no_clamd_contact(self):
         with patch("pdfeditor.scanning._build_client") as build:
