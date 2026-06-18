@@ -17,6 +17,12 @@ class _Anon:
     pk = None
 
 
+class _BrokenLazyUser:
+    @property
+    def is_authenticated(self):
+        raise IndexError("session user lookup failed")
+
+
 class ComputeKeyAndRateTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
@@ -43,6 +49,14 @@ class ComputeKeyAndRateTests(TestCase):
         request.META.pop("REMOTE_ADDR", None)
         key, _rate = _compute_key_and_rate(request, anon_rate="1/h", user_rate="1/h")
         self.assertEqual(key, "ip:noip")
+
+    def test_broken_lazy_user_falls_back_to_anon_bucket(self):
+        request = self.factory.post("/x/")
+        request.user = _BrokenLazyUser()
+        request.META["REMOTE_ADDR"] = "203.0.113.8"
+        key, rate = _compute_key_and_rate(request, anon_rate="20/h", user_rate="100/h")
+        self.assertEqual(key, "ip:203.0.113.8")
+        self.assertEqual(rate, "20/h")
 
 
 class AuthAwareRatelimitDecoratorTests(TestCase):

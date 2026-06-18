@@ -30,8 +30,13 @@ from .netutils import client_ip
 
 def _compute_key_and_rate(request: HttpRequest, *, anon_rate: str, user_rate: str) -> tuple[str, str]:
     user = getattr(request, "user", None)
-    if user is not None and user.is_authenticated:
-        return f"user:{user.pk}", user_rate
+    try:
+        if user is not None and user.is_authenticated:
+            return f"user:{user.pk}", user_rate
+    except Exception:  # noqa: BLE001
+        # Lazy user resolution can fail on stale/corrupt sessions; rate
+        # limiting must degrade to the anonymous bucket, not break the view.
+        user = None
     # Real client IP via netutils.client_ip (reads X-Forwarded-For with the
     # trusted-proxy count) — NOT raw REMOTE_ADDR, which behind nginx is the
     # proxy's own IP and would funnel every anon user into one shared bucket.
