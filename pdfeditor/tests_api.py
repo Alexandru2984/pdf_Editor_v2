@@ -372,6 +372,20 @@ class BatchApiTests(_ApiTestBase):
         self.assertEqual(resp.status_code, 400)
         self.assertIn("op", resp.json())
 
+    def test_rejects_password_ops_in_batch(self):
+        mine = self._upload(num_pages=1)
+        resp = self.client.post(
+            reverse("api:op-batch"),
+            {
+                "op": "protect",
+                "pdf_ids": [str(mine.id)],
+                "params": {"user_password": "should-not-persist"},
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("op", resp.json())
+
     def test_rejects_oversized_batch(self):
         from .api.batch_ops import MAX_BATCH_SIZE
         from .models import UploadedPDF
@@ -523,6 +537,24 @@ class JobsApiTests(_ApiTestBase):
         self.assertEqual(resp.status_code, 200)
         # No valid status → whole filter skipped, all rows returned.
         self.assertEqual(len(resp.json()["results"]), 1)
+
+    def test_job_params_redact_sensitive_keys(self):
+        job = self._make_job()
+        job.params = {
+            "op_params": {
+                "user_password": "secret",
+                "owner_password": "owner-secret",
+                "safe": "visible",
+            }
+        }
+        job.save(update_fields=["params"])
+
+        resp = self.client.get(reverse("api:job-detail", args=[job.id]))
+        self.assertEqual(resp.status_code, 200)
+        params = resp.json()["params"]
+        self.assertEqual(params["op_params"]["user_password"], "[redacted]")
+        self.assertEqual(params["op_params"]["owner_password"], "[redacted]")
+        self.assertEqual(params["op_params"]["safe"], "visible")
 
     def test_cancel_queued_job(self):
         from unittest.mock import patch

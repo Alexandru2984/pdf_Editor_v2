@@ -9,6 +9,8 @@ Async-only ops (OCR layer, PDF/A, compare, convert-docx, to-images) are
 intentionally excluded — they already run as standalone jobs, batching
 them would just be a job spawning jobs. Multi-input ops (merge) are
 excluded too since the batch contract is "one op applied to each PDF".
+Password-bearing ops are also excluded because batch params are stored on
+the async Job row.
 """
 
 from __future__ import annotations
@@ -22,9 +24,7 @@ from ..pdf_processor import (
     compress_pdf,
     edit_pdf_metadata,
     flatten_pdf,
-    protect_pdf,
     redact_text,
-    remove_pdf_password,
     rotate_pages,
 )
 
@@ -67,18 +67,6 @@ def _metadata(pdf_path: str, params: dict) -> str:
     return edit_pdf_metadata(pdf_path, params)
 
 
-def _protect(pdf_path: str, params: dict) -> str:
-    return protect_pdf(
-        pdf_path,
-        user_password=params["user_password"],
-        owner_password=params.get("owner_password") or None,
-    )
-
-
-def _unprotect(pdf_path: str, params: dict) -> str:
-    return remove_pdf_password(pdf_path, params["password"])
-
-
 def _redact(pdf_path: str, params: dict) -> str:
     out, _ = redact_text(
         pdf_path,
@@ -95,8 +83,6 @@ BATCH_OPS: dict[str, tuple[str, OpRunner]] = {
     "flatten": (ProcessedPDF.KIND_FLATTEN, _flatten),
     "page-numbers": (ProcessedPDF.KIND_PAGE_NUMBERS, _page_numbers),
     "metadata": (ProcessedPDF.KIND_METADATA, _metadata),
-    "protect": (ProcessedPDF.KIND_PROTECT, _protect),
-    "unprotect": (ProcessedPDF.KIND_UNPROTECT, _unprotect),
     "redact": (ProcessedPDF.KIND_REDACT, _redact),
 }
 

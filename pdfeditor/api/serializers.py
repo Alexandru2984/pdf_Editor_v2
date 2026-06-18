@@ -6,6 +6,26 @@ from rest_framework import serializers
 from ..models import ApiKey, Job, ProcessedPDF, ShareLink, UploadedPDF
 
 
+_SENSITIVE_PARAM_TOKENS = ("password", "secret", "token", "key")
+_REDACTED = "[redacted]"
+
+
+def redact_sensitive_params(value):
+    """Return a copy of a JSON-like value with sensitive keys redacted."""
+    if isinstance(value, dict):
+        out = {}
+        for key, item in value.items():
+            key_s = str(key)
+            if any(token in key_s.lower() for token in _SENSITIVE_PARAM_TOKENS):
+                out[key] = _REDACTED
+            else:
+                out[key] = redact_sensitive_params(item)
+        return out
+    if isinstance(value, list):
+        return [redact_sensitive_params(item) for item in value]
+    return value
+
+
 class UploadedPDFSerializer(serializers.ModelSerializer):
     class Meta:
         model = UploadedPDF
@@ -63,6 +83,7 @@ class JobSerializer(serializers.ModelSerializer):
     output_id = serializers.PrimaryKeyRelatedField(source="output", read_only=True)
     output_download_url = serializers.SerializerMethodField()
     is_terminal = serializers.SerializerMethodField()
+    params = serializers.SerializerMethodField()
 
     class Meta:
         model = Job
@@ -85,6 +106,10 @@ class JobSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.BooleanField())
     def get_is_terminal(self, obj) -> bool:
         return obj.is_terminal()
+
+    @extend_schema_field(serializers.JSONField())
+    def get_params(self, obj):
+        return redact_sensitive_params(obj.params or {})
 
     @extend_schema_field(serializers.URLField(allow_null=True))
     def get_output_download_url(self, obj) -> str | None:
