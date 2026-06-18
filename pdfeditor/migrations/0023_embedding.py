@@ -12,6 +12,28 @@ def _create_vector_extension(apps, schema_editor):
         schema_editor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
 
 
+def _create_embedding_hnsw_index(apps, schema_editor):
+    """Create the pgvector HNSW index only on Postgres.
+
+    SQLite can create the VectorField column for unit tests, but pgvector's
+    HNSW index compiles to Postgres-only SQL.
+    """
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS embedding_hnsw_cos
+            ON pdfeditor_embedding
+            USING hnsw (embedding vector_cosine_ops)
+            WITH (m = 16, ef_construction = 64);
+            """
+        )
+
+
+def _drop_embedding_hnsw_index(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute("DROP INDEX IF EXISTS embedding_hnsw_cos;")
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -36,7 +58,24 @@ class Migration(migrations.Migration):
             ],
             options={
                 'ordering': ['uploaded_pdf_id', 'chunk_index'],
-                'indexes': [models.Index(fields=['uploaded_pdf', 'chunk_index'], name='pdfeditor_e_uploade_658f56_idx'), pgvector.django.indexes.HnswIndex(ef_construction=64, fields=['embedding'], m=16, name='embedding_hnsw_cos', opclasses=['vector_cosine_ops'])],
+                'indexes': [models.Index(fields=['uploaded_pdf', 'chunk_index'], name='pdfeditor_e_uploade_658f56_idx')],
             },
+        ),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(_create_embedding_hnsw_index, reverse_code=_drop_embedding_hnsw_index),
+            ],
+            state_operations=[
+                migrations.AddIndex(
+                    model_name='embedding',
+                    index=pgvector.django.indexes.HnswIndex(
+                        ef_construction=64,
+                        fields=['embedding'],
+                        m=16,
+                        name='embedding_hnsw_cos',
+                        opclasses=['vector_cosine_ops'],
+                    ),
+                ),
+            ],
         ),
     ]

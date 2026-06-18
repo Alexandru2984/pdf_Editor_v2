@@ -62,7 +62,7 @@ PDF_QUOTA_USER_BYTES = int(os.environ.get("PDF_QUOTA_USER_BYTES", 500 * 1024 * 1
 # so deployments without a clamd service are unaffected; turn on once the
 # `clamav` docker-compose service is up. FAIL_OPEN=0 rejects uploads when
 # clamd is unreachable (secure default); set 1 to prefer availability.
-CLAMAV_ENABLED = env_bool("CLAMAV_ENABLED", False)
+CLAMAV_ENABLED = env_bool("CLAMAV_ENABLED", False) and not TESTING
 CLAMAV_HOST = os.environ.get("CLAMAV_HOST", "clamav")
 CLAMAV_PORT = int(os.environ.get("CLAMAV_PORT", 3310))
 CLAMAV_TIMEOUT = float(os.environ.get("CLAMAV_TIMEOUT", 30))
