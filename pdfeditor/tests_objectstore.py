@@ -74,6 +74,14 @@ class MirrorTests(TestCase):
         output.refresh_from_db()
         self.assertEqual(output.r2_key, f"processed/{output.id}/out.pdf")
 
+    def test_mirror_uses_output_content_type(self):
+        output = _make_output("s1", name="pages.zip")
+        client = MagicMock()
+        with patch.object(objectstore, "_client", return_value=client):
+            mirror_output_to_r2(str(output.id))
+        extra_args = client.upload_file.call_args[1]["ExtraArgs"]
+        self.assertEqual(extra_args["ContentType"], "application/zip")
+
     def test_upload_failure_leaves_key_empty(self):
         output = _make_output("s1")
         client = MagicMock()
@@ -93,6 +101,15 @@ class MirrorTests(TestCase):
         disposition = client.generate_presigned_url.call_args[1]["Params"]["ResponseContentDisposition"]
         self.assertNotIn('";', disposition.replace('filename="', ""))
         self.assertNotIn("\\", disposition)
+
+    def test_presign_uses_output_content_type(self):
+        output = _make_output("s1", name="pages.zip", r2_key="processed/x/pages.zip")
+        client = MagicMock()
+        client.generate_presigned_url.return_value = "https://r2.example/signed"
+        with patch.object(objectstore, "_client", return_value=client):
+            objectstore.presigned_download_url(output)
+        params = client.generate_presigned_url.call_args[1]["Params"]
+        self.assertEqual(params["ResponseContentType"], "application/zip")
 
 
 @override_settings(**_R2_SETTINGS)

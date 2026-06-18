@@ -18,11 +18,16 @@ literal ``"auto"``, and only signature v4 is supported.
 from __future__ import annotations
 
 import logging
+import mimetypes
 from functools import lru_cache
 
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
+
+
+def content_type_for_name(name: str) -> str:
+    return mimetypes.guess_type(name or "")[0] or "application/octet-stream"
 
 
 def enabled() -> bool:
@@ -62,12 +67,13 @@ def mirror_processed(processed) -> str | None:
     if not enabled():
         return None
     key = object_key(processed)
+    content_type = content_type_for_name(processed.name)
     try:
         _client().upload_file(
             processed.path,
             settings.R2_BUCKET,
             key,
-            ExtraArgs={"ContentType": "application/pdf"},
+            ExtraArgs={"ContentType": content_type},
         )
     except Exception as exc:  # noqa: BLE001 — mirroring must never break the op
         logger.warning("R2 mirror failed for %s: %s", processed.id, exc)
@@ -82,6 +88,7 @@ def presigned_download_url(processed) -> str | None:
     # The filename lands inside a quoted Content-Disposition value — strip
     # quote/control characters so a crafted name can't break the header.
     safe_name = "".join(c for c in processed.name if c.isprintable() and c not in '";\\') or "output.pdf"
+    content_type = content_type_for_name(safe_name)
     try:
         return _client().generate_presigned_url(
             "get_object",
@@ -89,7 +96,7 @@ def presigned_download_url(processed) -> str | None:
                 "Bucket": settings.R2_BUCKET,
                 "Key": processed.r2_key,
                 "ResponseContentDisposition": f'attachment; filename="{safe_name}"',
-                "ResponseContentType": "application/pdf",
+                "ResponseContentType": content_type,
             },
             ExpiresIn=int(getattr(settings, "R2_PRESIGN_TTL", 300)),
         )
