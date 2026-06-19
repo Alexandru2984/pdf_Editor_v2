@@ -5,7 +5,6 @@ from rest_framework import serializers
 
 from ..models import ApiKey, Job, ProcessedPDF, ShareLink, UploadedPDF
 
-
 _SENSITIVE_PARAM_TOKENS = ("password", "secret", "token", "key")
 _REDACTED = "[redacted]"
 
