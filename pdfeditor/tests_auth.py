@@ -92,7 +92,12 @@ class RegisterViewTests(_AuthTestBase):
         self.assertIn("alice@example.com", mail.outbox[0].to)
         self.assertIn("/accounts/confirm/", mail.outbox[0].body)
 
-    def test_post_rejects_duplicate_email(self):
+    def test_duplicate_email_does_not_leak_and_notifies_owner(self):
+        """Registering with a taken email must look identical to a fresh
+        sign-up (no account-existence oracle): no duplicate account, same
+        redirect, and the *existing* owner — not the requester — is told."""
+        from django.core import mail
+
         User.objects.create_user(username="bob", email="bob@example.com", password="x")
         resp = self.client.post(
             reverse("register"),
@@ -103,8 +108,18 @@ class RegisterViewTests(_AuthTestBase):
                 "password2": "Sup3rSecret!Long",
             },
         )
-        self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "already exists")
+        # Same outcome as a genuine sign-up: redirect to login, no leak.
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(resp.url.endswith(reverse("login")))
+
+        # No duplicate account was created.
+        self.assertFalse(User.objects.filter(username="bob2").exists())
+        self.assertEqual(User.objects.filter(email__iexact="bob@example.com").count(), 1)
+
+        # The real owner got a notice — and it is NOT a confirmation link.
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("bob@example.com", mail.outbox[0].to)
+        self.assertNotIn("/accounts/confirm/", mail.outbox[0].body)
 
     def test_post_rejects_password_mismatch(self):
         resp = self.client.post(

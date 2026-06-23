@@ -72,6 +72,44 @@ def send_confirmation_email(user: AbstractBaseUser) -> bool:
         return False
 
 
+def send_account_exists_notice(user: AbstractBaseUser) -> bool:
+    """Tell an existing account that someone tried to register with its email.
+
+    Used by the registration view's anti-enumeration path: instead of telling
+    the *requester* that the address is taken (an account-existence oracle),
+    we notify the real owner and show the requester the same generic
+    "check your email" message as a genuine sign-up. Best-effort.
+    """
+    email = getattr(user, "email", "") or ""
+    if not email:
+        return False
+
+    from django.core.mail import send_mail
+
+    login_url = f"{settings.SITE_URL.rstrip('/')}{reverse('login')}"
+    reset_url = f"{settings.SITE_URL.rstrip('/')}{reverse('password_reset')}"
+    try:
+        send_mail(
+            subject="You already have a PDF Editor account",
+            message=(
+                f"Hi {getattr(user, 'username', 'there')},\n\n"
+                "Someone just tried to create a PDF Editor account using this "
+                "email address, but you already have one.\n\n"
+                f"If this was you, just sign in: {login_url}\n"
+                f"Forgot your password? Reset it here: {reset_url}\n\n"
+                "If it wasn't you, you can safely ignore this email — no "
+                "account was created and nothing changed."
+            ),
+            from_email=None,  # DEFAULT_FROM_EMAIL
+            recipient_list=[email],
+            fail_silently=False,
+        )
+        return True
+    except Exception as exc:  # noqa: BLE001 — same broad-catch policy as the others
+        logger.warning("Failed to send account-exists notice to %s: %s", email, exc)
+        return False
+
+
 def decode_uid(uidb64: str) -> AbstractBaseUser | None:
     """Recover the User from a urlsafe-base64 PK, or None if it's invalid."""
     try:

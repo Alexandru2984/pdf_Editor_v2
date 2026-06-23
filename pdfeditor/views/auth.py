@@ -23,6 +23,7 @@ from django.utils.translation import gettext_lazy as _lazy
 from ..email_utils import (
     decode_uid,
     is_token_valid,
+    send_account_exists_notice,
     send_confirmation_email,
     send_email_change_confirmation,
     verify_email_change_token,
@@ -45,10 +46,11 @@ class RegisterForm(UserCreationForm):
         fields = ("username", "email")
 
     def clean_email(self) -> str:
-        email = (self.cleaned_data.get("email") or "").strip().lower()
-        if email and User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError(_("An account with this email already exists."))
-        return email
+        # Normalise only. Uniqueness is NOT enforced here on purpose: raising
+        # "this email already exists" would turn registration into an
+        # account-existence oracle. The view handles the duplicate case
+        # without revealing it (anti-enumeration) — see register_view.
+        return (self.cleaned_data.get("email") or "").strip().lower()
 
     def save(self, commit: bool = True) -> Any:
         user = super().save(commit=False)
@@ -66,24 +68,26 @@ def register_view(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = RegisterForm(request.POST)
         if form.is_valid():
-            user = form.save(commit=False)
-            user.is_active = False  # activated only after email confirmation
-            user.save()
-
-            sent = send_confirmation_email(user)
-            if sent:
-                messages.success(
-                    request,
-                    _("Account created! Check your email to confirm your address before signing in."),
-                )
+            email = form.cleaned_data["email"]
+            existing = User.objects.filter(email__iexact=email).first() if email else None
+            if existing is not None:
+                # Address already in use. Don't tell the requester (that would
+                # be an account-existence oracle) — notify the real owner and
+                # fall through to the SAME generic message below. No duplicate
+                # account is created, preserving email uniqueness.
+                send_account_exists_notice(existing)
             else:
-                messages.warning(
-                    request,
-                    _(
-                        "Account created, but we couldn't send the confirmation email. "
-                        "Contact support to activate your account."
-                    ),
-                )
+                user = form.save(commit=False)
+                user.is_active = False  # activated only after email confirmation
+                user.save()
+                send_confirmation_email(user)
+
+            # Identical response whether or not the email was already taken, so
+            # response content/timing can't be used to enumerate accounts.
+            messages.success(
+                request,
+                _("Almost there — check your email to confirm your address and finish signing up."),
+            )
             return redirect("login")
     else:
         form = RegisterForm()
