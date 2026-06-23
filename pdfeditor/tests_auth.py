@@ -335,6 +335,12 @@ class EmailConfirmationTests(_AuthTestBase):
         self.assertTrue(user.is_active)
         self.assertIn("_auth_user_id", self.client.session)
 
+        # The auto-login must actually persist on the NEXT request — it only
+        # does if login() named a backend listed in AUTHENTICATION_BACKENDS
+        # (otherwise get_user() silently falls back to AnonymousUser).
+        follow = self.client.get(reverse("profile"))
+        self.assertEqual(follow.status_code, 200)
+
     def test_invalid_token_returns_400_page(self):
         user, uidb64, _token = self._register_and_get_token()
         resp = self.client.get(reverse("confirm_email", args=[uidb64, "totally-bogus-token"]))

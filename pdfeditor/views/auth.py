@@ -105,8 +105,11 @@ def confirm_email_view(request: HttpRequest, uidb64: str, token: str) -> HttpRes
         user.is_active = True
         user.save(update_fields=["is_active"])
 
-    # Auto-login on confirmation — same UX as most SaaS apps.
-    login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+    # Auto-login on confirmation — same UX as most SaaS apps. Must name a
+    # backend that's actually in AUTHENTICATION_BACKENDS, otherwise Django's
+    # get_user() drops the session to AnonymousUser on the next request and
+    # the "login" silently doesn't stick.
+    login(request, user, backend="pdfeditor.auth_backends.CaseInsensitiveModelBackend")
     messages.success(request, _("Email confirmed! Welcome aboard."))
     return redirect("dashboard")
 
