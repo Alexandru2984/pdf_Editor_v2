@@ -596,3 +596,41 @@ class CspRenderTests(TestCase):
             if 'type="application/json"' in tag:
                 continue  # data island, not executed — no nonce needed
             self.assertIn(f'nonce="{nonce}"', tag)
+
+
+# --------------------------------------------------------------------------
+# 2026-06-23: SSRF guard on signature-revocation fetching (ssrf_guard.py)
+# --------------------------------------------------------------------------
+class SsrfGuardTests(SimpleTestCase):
+    """A crafted signing certificate must not make the server reach internal
+    services via its embedded AIA/CRL/OCSP URLs."""
+
+    def test_internal_and_metadata_targets_are_blocked(self):
+        from .pdf_processor.ssrf_guard import BlockedOutboundURL, validate_outbound_url
+
+        for url in (
+            "http://127.0.0.1/crl",
+            "http://169.254.169.254/latest/meta-data/",  # cloud metadata
+            "http://10.0.0.5/crl",
+            "https://192.168.1.1/ocsp",
+            "http://[::1]/",
+            "file:///etc/passwd",  # non-http scheme
+            "http://prometheus:9090/",  # internal docker hostname (unresolvable)
+        ):
+            with self.assertRaises(BlockedOutboundURL):
+                validate_outbound_url(url)
+
+    def test_public_literal_ip_targets_are_allowed(self):
+        # Literal public IPs need no DNS, so this stays offline-safe.
+        from .pdf_processor.ssrf_guard import validate_outbound_url
+
+        validate_outbound_url("http://8.8.8.8/crl.pem")
+        validate_outbound_url("https://1.1.1.1/ocsp")
+
+    def test_backend_builds_guarded_fetchers(self):
+        from .pdf_processor.ssrf_guard import guarded_fetcher_backend
+
+        fetchers = guarded_fetcher_backend().get_fetchers()
+        self.assertTrue(hasattr(fetchers, "ocsp_fetcher"))
+        self.assertTrue(hasattr(fetchers, "crl_fetcher"))
+        self.assertTrue(hasattr(fetchers, "cert_fetcher"))

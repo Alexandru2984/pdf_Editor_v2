@@ -256,7 +256,15 @@ def sign_pdf(
         if embed_validation_info:
             # PAdES B-LT requires the PAdES subfilter; ValidationContext fetches
             # OCSP/CRL for the signer chain at signing time and we embed it.
-            validation_context = ValidationContext(allow_fetching=True)
+            # The chain comes from the user's uploaded .p12, so route every
+            # fetch through an SSRF-guarded backend that refuses URLs resolving
+            # to internal/loopback/link-local addresses.
+            from .ssrf_guard import guarded_fetcher_backend
+
+            validation_context = ValidationContext(
+                allow_fetching=True,
+                fetcher_backend=guarded_fetcher_backend(),
+            )
             meta_kwargs["subfilter"] = SigSeedSubFilter.PADES
             meta_kwargs["embed_validation_info"] = True
             meta_kwargs["validation_context"] = validation_context
@@ -396,8 +404,14 @@ def verify_pdf_signatures(pdf_path: str, extra_trust_certs: list[bytes] | None =
                         cn = sig.signer_cert.subject.human_friendly
                     report["signer_name"] = cn
 
+                    # allow_fetching=False: this endpoint is unauthenticated and
+                    # the signer cert (with its AIA/CRL/OCSP URLs) is fully
+                    # attacker-controlled, so live fetching would be an SSRF
+                    # vector. Trust + revocation are still checked against the
+                    # provided anchors and any revocation info embedded in the
+                    # PDF's DSS — we just never reach out to URLs from the cert.
                     vc = ValidationContext(
-                        allow_fetching=True,
+                        allow_fetching=False,
                         extra_trust_roots=extra_anchors or None,
                         revocation_mode="soft-fail",
                     )
