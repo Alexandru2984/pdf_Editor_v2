@@ -200,6 +200,31 @@ class JobEventsHelperTests(TestCase):
         self.assertTrue(frame.endswith(b"\n\n"))
         self.assertIn(b'"status": "running"', frame)
 
+    def test_sse_concurrency_cap_blocks_and_releases(self):
+        """A single owner can't pin more than the cap of live streams; a
+        release frees a slot again."""
+        from django.core.cache import cache
+
+        from .views.jobs import (
+            _SSE_MAX_CONCURRENT,
+            _sse_counter_key,
+            _sse_release,
+            _sse_try_acquire,
+        )
+
+        cache.clear()
+        anon = type("U", (), {"is_authenticated": False})()
+        key = _sse_counter_key(anon, "sess-abc")
+
+        # The first MAX acquisitions succeed; the next is refused.
+        self.assertTrue(all(_sse_try_acquire(key) for _ in range(_SSE_MAX_CONCURRENT)))
+        self.assertFalse(_sse_try_acquire(key))
+
+        # Releasing one slot lets exactly one more connection in.
+        _sse_release(key)
+        self.assertTrue(_sse_try_acquire(key))
+        self.assertFalse(_sse_try_acquire(key))
+
 
 class JobApiTests(_JobTestBase):
     def setUp(self):

@@ -7,9 +7,11 @@ import json
 import logging
 import os
 
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.contrib import messages
-from django.http import Http404, JsonResponse, StreamingHttpResponse
+from django.core.cache import cache
+from django.http import Http404, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
@@ -110,6 +112,43 @@ def job_cancel_view(request, job_id):
 # connection, and close as soon as the job hits a terminal state.
 
 _HEARTBEAT_SECONDS = 15
+# Cap concurrent SSE streams per owner. Each open stream holds a Redis
+# pub/sub subscription and a long-lived connection, so an unbounded count is
+# a cheap resource-exhaustion vector. The counter carries a TTL so a leaked
+# slot (process killed mid-stream) self-heals instead of locking the owner out.
+_SSE_MAX_CONCURRENT = 5
+_SSE_COUNTER_TTL = 3600
+
+
+def _sse_counter_key(user, session_key: str | None) -> str:
+    if getattr(user, "is_authenticated", False):
+        return f"sse-conns:user:{user.pk}"
+    return f"sse-conns:sess:{session_key or 'none'}"
+
+
+def _sse_try_acquire(key: str) -> bool:
+    """Atomically claim a connection slot. False if the owner is at the cap."""
+    cache.add(key, 0, _SSE_COUNTER_TTL)
+    try:
+        count = cache.incr(key)
+    except ValueError:
+        # Key expired between add and incr — reseed and retry once.
+        cache.add(key, 0, _SSE_COUNTER_TTL)
+        count = cache.incr(key)
+    if count > _SSE_MAX_CONCURRENT:
+        cache.decr(key)
+        return False
+    return True
+
+
+def _sse_release(key: str) -> None:
+    try:
+        if cache.decr(key) < 0:
+            cache.set(key, 0, _SSE_COUNTER_TTL)
+    except ValueError:
+        pass
+
+
 _SSE_HEADERS = {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
@@ -144,53 +183,59 @@ def _sse_frame(payload: dict) -> bytes:
     return f"data: {json.dumps(payload)}\n\n".encode()
 
 
-async def _stream_events(job_id: str, initial: dict):
+async def _stream_events(job_id: str, initial: dict, release_key: str | None = None):
     """Yield SSE-formatted bytes until the job hits a terminal state or
-    the client disconnects."""
-    yield _sse_frame(initial)
-    if initial.get("is_terminal"):
-        return
-
-    redis_url = _redis_url()
-    if not redis_url:
-        # No Redis configured — the client will fall back to polling.
-        return
-
+    the client disconnects. Always releases the concurrency slot on exit."""
     try:
-        import redis.asyncio as redis_async
-    except ImportError:
-        return
+        yield _sse_frame(initial)
+        if initial.get("is_terminal"):
+            return
 
-    client = redis_async.from_url(redis_url)
-    pubsub = client.pubsub()
-    try:
-        await pubsub.subscribe(f"job:{job_id}")
-        while True:
-            msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=_HEARTBEAT_SECONDS)
-            if msg is None:
-                # No data this window — emit a comment frame to keep
-                # the connection from being reaped by an idle timeout.
-                yield b": heartbeat\n\n"
-                continue
-            try:
-                data = json.loads(msg["data"])
-            except (TypeError, ValueError):
-                continue
-            yield _sse_frame(data)
-            if data.get("is_terminal"):
-                return
-    except asyncio.CancelledError:
-        # Client disconnected — let it bubble so Django closes cleanly.
-        raise
-    except Exception as exc:  # noqa: BLE001 — never crash the connection
-        logger.warning("SSE stream error for job %s: %s", job_id, exc)
-    finally:
+        redis_url = _redis_url()
+        if not redis_url:
+            # No Redis configured — the client will fall back to polling.
+            return
+
         try:
-            await pubsub.unsubscribe(f"job:{job_id}")
-            await pubsub.aclose()
-            await client.aclose()
-        except Exception:  # noqa: BLE001
-            pass
+            import redis.asyncio as redis_async
+        except ImportError:
+            return
+
+        client = redis_async.from_url(redis_url)
+        pubsub = client.pubsub()
+        try:
+            await pubsub.subscribe(f"job:{job_id}")
+            while True:
+                msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=_HEARTBEAT_SECONDS)
+                if msg is None:
+                    # No data this window — emit a comment frame to keep
+                    # the connection from being reaped by an idle timeout.
+                    yield b": heartbeat\n\n"
+                    continue
+                try:
+                    data = json.loads(msg["data"])
+                except (TypeError, ValueError):
+                    continue
+                yield _sse_frame(data)
+                if data.get("is_terminal"):
+                    return
+        except asyncio.CancelledError:
+            # Client disconnected — let it bubble so Django closes cleanly.
+            raise
+        except Exception as exc:  # noqa: BLE001 — never crash the connection
+            logger.warning("SSE stream error for job %s: %s", job_id, exc)
+        finally:
+            try:
+                await pubsub.unsubscribe(f"job:{job_id}")
+                await pubsub.aclose()
+                await client.aclose()
+            except Exception:  # noqa: BLE001
+                pass
+    finally:
+        # Free the per-owner connection slot no matter how the stream ends
+        # (terminal job, no Redis, error, or client disconnect).
+        if release_key is not None:
+            await sync_to_async(_sse_release)(release_key)
 
 
 async def job_events_view(request, job_id):
@@ -205,8 +250,17 @@ async def job_events_view(request, job_id):
         job = await Job.objects.filter(user__isnull=True, session_key=session_key, id=job_id).afirst()
     if job is None:
         raise Http404("Job not found")
+
+    # Bound concurrent streams per owner so a client can't pin an unbounded
+    # number of Redis subscriptions / open connections.
+    counter_key = _sse_counter_key(user, request.session.session_key)
+    if not await sync_to_async(_sse_try_acquire)(counter_key):
+        resp = HttpResponse("Too many live connections", status=429)
+        resp["Retry-After"] = str(_HEARTBEAT_SECONDS)
+        return resp
+
     initial = _job_payload(job)
-    response = StreamingHttpResponse(_stream_events(str(job_id), initial))
+    response = StreamingHttpResponse(_stream_events(str(job_id), initial, release_key=counter_key))
     for header, value in _SSE_HEADERS.items():
         response[header] = value
     return response
