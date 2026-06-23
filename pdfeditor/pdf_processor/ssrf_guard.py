@@ -61,7 +61,7 @@ def validate_outbound_url(url: str) -> None:
         infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
     except OSError as exc:
         raise BlockedOutboundURL(f"could not resolve {host!r}: {exc}") from exc
-    addrs = {info[4][0] for info in infos}
+    addrs = {str(info[4][0]) for info in infos}
     if not addrs:
         raise BlockedOutboundURL(f"no addresses for {host!r}")
     for ip in addrs:
@@ -82,8 +82,11 @@ def guarded_fetcher_backend(per_request_timeout: int = 10):
         RequestsCRLFetcher,
         RequestsOCSPFetcher,
     )
+    from pyhanko_certvalidator.fetchers.requests_fetchers.util import RequestsFetcherMixin
 
-    class _GuardMixin:
+    # Base on pyHanko's own fetcher mixin so super()._get/_post resolves to the
+    # real request logic; we only interpose the SSRF check in front of it.
+    class _GuardMixin(RequestsFetcherMixin):
         def _get(self, url, **kwargs):
             validate_outbound_url(url)
             return super()._get(url, **kwargs)
