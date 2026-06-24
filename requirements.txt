@@ -1,5 +1,5 @@
 asgiref==3.11.0
-dj-database-url>=2.1.0
+dj-database-url>=3.1.2
 # Pinned to the 5.2 LTS series (support window ends April 2028). 6.x is
 # non-LTS and drops Python 3.10/3.11 from the CI matrix — let Dependabot
 # keep patching 5.2.* but not jump to 6. See .github/dependabot.yml for
