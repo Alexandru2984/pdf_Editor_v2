@@ -1,0 +1,91 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Termenii serviciului{% endblock %}
+
+{% block content %}
+<div class="card legal-page">
+    <h2>📜 Termenii serviciului</h2>
+    <p class="legal-updated">Ultima actualizare: 10 iulie 2026</p>
+
+    <p>
+        Folosind PDF Platform (<a href="https://pdf.micutu.com">pdf.micutu.com</a>)
+        ești de acord cu termenii de mai jos. Serviciul este un proiect personal,
+        gratuit și open-source (licență MIT —
+        <a href="https://github.com/Alexandru2984/pdf_Editor_v2" rel="noopener"
+        target="_blank">codul sursă</a>), operat din Uniunea Europeană.
+        Contact: <a href="mailto:984.alexmihai@gmail.com">984.alexmihai@gmail.com</a>.
+    </p>
+
+    <h3>Serviciul</h3>
+    <p>PDF Platform oferă unelte de procesare a documentelor PDF (împărțire,
+        unire, OCR, semnare digitală, conversii etc.), un API REST și funcții
+        opționale bazate pe AI. Serviciul este oferit gratuit, fără garanții de
+        disponibilitate (fără SLA) — este un proiect personal, nu un produs
+        comercial cu suport dedicat.</p>
+
+    <h3>Contul tău</h3>
+    <ul>
+        <li>Poți folosi multe operațiuni și fără cont; contul adaugă istoric
+            persistent, chei API și limite mai generoase.</li>
+        <li>Ești responsabil de păstrarea în siguranță a parolei și a cheilor API.
+            Îți recomandăm activarea autentificării în doi pași sau a
+            passkey-urilor.</li>
+        <li>Conturile care abuzează de serviciu pot fi limitate sau suspendate.</li>
+    </ul>
+
+    <h3>Utilizare acceptabilă</h3>
+    <ul>
+        <li>Încarcă doar documente asupra cărora ai drepturile necesare.</li>
+        <li>Este interzisă încărcarea de conținut ilegal sau de fișiere
+            rău-intenționate — fișierele încărcate sunt scanate antivirus, iar
+            cele infectate sunt respinse.</li>
+        <li>Este interzisă ocolirea limitelor de utilizare, sondarea
+            vulnerabilităților fără acord (vezi politica de divulgare din
+            <a href="https://github.com/Alexandru2984/pdf_Editor_v2/blob/main/SECURITY.md"
+            rel="noopener" target="_blank">SECURITY.md</a>) sau generarea de
+            trafic automatizat excesiv în afara limitelor documentate ale API-ului.</li>
+    </ul>
+
+    <h3>Conținutul tău</h3>
+    <ul>
+        <li>Documentele rămân ale tale. Ne acorzi doar o licență tehnică, limitată,
+            de a le stoca și procesa strict pentru operațiunile pe care le ceri.</li>
+        <li>Fișierele sunt șterse automat după cel mult 24 de ore — descarcă-ți
+            rezultatele la timp.</li>
+        <li>Linkurile de partajare pe care le creezi sunt responsabilitatea ta:
+            oricine are linkul poate descărca fișierul până la expirare.</li>
+    </ul>
+
+    <h3>Funcțiile AI</h3>
+    <p>Când folosești chat-ul cu PDF, rezumatul sau reformularea, fragmente din
+        document sunt trimise unui furnizor extern de modele lingvistice (Groq).
+        Răspunsurile AI pot fi inexacte — verifică-le înainte să te bazezi pe ele.</p>
+
+    <h3>Semnături digitale</h3>
+    <p>Uneltele de semnare (PAdES, marcaje temporale, verificare) sunt oferite ca
+        atare. Certificatele self-signed generate de platformă sunt destinate
+        testării. Este responsabilitatea ta să verifici ce cerințe legale se aplică
+        semnăturilor electronice în jurisdicția ta.</p>
+
+    <h3>Fără garanții; limitarea răspunderii</h3>
+    <p>Serviciul este furnizat „ca atare", fără garanții de orice fel, în măsura
+        maximă permisă de lege. Nu răspundem pentru pierderi de date, profit sau
+        alte daune indirecte rezultate din folosirea serviciului; pentru un
+        serviciu gratuit, răspunderea totală este limitată la valoarea plătită
+        pentru el (zero).</p>
+
+    <h3>Încetare</h3>
+    <p>Îți poți șterge contul oricând, din pagina de profil. Putem suspenda accesul
+        pentru încălcarea acestor termeni; datele asociate urmează politica de
+        retenție din <a href="/privacy/">Politica de confidențialitate</a>.</p>
+
+    <h3>Modificări</h3>
+    <p>Putem actualiza serviciul și acești termeni; data ultimei actualizări este
+        afișată sus. Folosirea în continuare a serviciului înseamnă acceptarea
+        termenilor actualizați.</p>
+
+    <h3>Legea aplicabilă</h3>
+    <p>Acești termeni sunt guvernați de legea română, iar litigiile sunt de
+        competența instanțelor din România.</p>
+</div>
+{% endblock %}

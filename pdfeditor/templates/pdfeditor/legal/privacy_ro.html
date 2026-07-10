@@ -1,0 +1,108 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Politica de confidențialitate{% endblock %}
+
+{% block content %}
+<div class="card legal-page">
+    <h2>🔒 Politica de confidențialitate</h2>
+    <p class="legal-updated">Ultima actualizare: 10 iulie 2026</p>
+
+    <p>
+        PDF Platform (<a href="https://pdf.micutu.com">pdf.micutu.com</a>) este un
+        proiect open-source, operat din Uniunea Europeană de către dezvoltatorul său.
+        Pentru orice întrebare legată de datele tale ne poți scrie la
+        <a href="mailto:984.alexmihai@gmail.com">984.alexmihai@gmail.com</a>.
+    </p>
+
+    <h3>Ce date prelucrăm</h3>
+    <ul>
+        <li><strong>Date de cont</strong> — nume de utilizator, adresă de e-mail
+            (pentru confirmare și resetarea parolei) și parola (stocată doar sub
+            formă de hash). Dacă activezi autentificarea în doi pași sau passkeys,
+            stocăm și datele tehnice necesare acestora.</li>
+        <li><strong>Documentele tale</strong> — fișierele PDF/imaginile pe care le
+            încarci și rezultatele generate din ele. Sunt prelucrate exclusiv
+            pentru operațiunile pe care le ceri tu.</li>
+        <li><strong>Metadate de utilizare și securitate</strong> — un jurnal de
+            audit al operațiunilor (utilizator, adresă IP, browser, tipul
+            operațiunii, numele fișierelor, momentul), sesiunile active și
+            încercările eșuate de autentificare.</li>
+        <li><strong>Statistici agregate</strong> — folosim un serviciu de analiză
+            self-hosted, fără cookie-uri, care nu construiește profiluri
+            individuale.</li>
+    </ul>
+
+    <h3>Cât timp păstrăm datele</h3>
+    <ul>
+        <li><strong>Fișierele</strong> (încărcate și generate) sunt <strong>șterse
+            automat după cel mult 24 de ore</strong>.</li>
+        <li><strong>Copiile de siguranță</strong> (baza de date și fișierele) sunt
+            rotite după 14 zile.</li>
+        <li><strong>Contul</strong> există până îl ștergi tu — ștergerea este
+            self-service, din pagina de profil, și elimină fișierele, istoricul,
+            cheile API și sesiunile asociate.</li>
+        <li><strong>Jurnalul de audit</strong> este păstrat cât timp există contul,
+            în scop de securitate.</li>
+    </ul>
+
+    <h3>Unde ajung datele</h3>
+    <ul>
+        <li><strong>Cloudflare</strong> — traficul către site trece prin rețeaua
+            Cloudflare (DNS, proxy, protecție DDoS).</li>
+        <li><strong>Cloudflare R2</strong> — rezultatele procesării pot fi
+            oglindite temporar în stocarea obiectuală R2 pentru descărcări fiabile;
+            se șterg odată cu fișierele, în aceeași fereastră de 24 de ore.</li>
+        <li><strong>Groq</strong> (SUA) — <em>doar</em> atunci când folosești
+            funcțiile AI (chat cu PDF, rezumat, reformulare), fragmente relevante
+            de text din document sunt trimise către API-ul Groq, conform politicii
+            de confidențialitate Groq. Dacă nu folosești funcțiile AI, documentele
+            tale nu părăsesc niciodată serverul nostru.</li>
+        <li><strong>E-mail</strong> — mesajele de confirmare/resetare pleacă
+            printr-un server de e-mail propriu, self-hosted.</li>
+    </ul>
+    <p>Nu vindem și nu închiriem datele tale. Nu există reclame și nici trackere
+        publicitare.</p>
+
+    <h3>Cookie-uri și stocare locală</h3>
+    <ul>
+        <li><code>sessionid</code> — te ține autentificat;</li>
+        <li><code>csrftoken</code> — protecție împotriva falsificării cererilor;</li>
+        <li><code>django_language</code> — limba aleasă de tine;</li>
+        <li>preferința de temă (întunecat/luminos) este ținută în
+            <em>localStorage</em>, nu într-un cookie.</li>
+    </ul>
+    <p>Toate sunt strict funcționale — niciun cookie de urmărire sau publicitate.</p>
+
+    <h3>Temeiul legal (GDPR)</h3>
+    <p>Prelucrăm datele pe baza executării contractului (furnizarea serviciului pe
+        care îl ceri), a interesului legitim (securitate, prevenirea abuzurilor) și,
+        pentru funcțiile AI, a acțiunii tale explicite de a le folosi.</p>
+
+    <h3>Drepturile tale</h3>
+    <ul>
+        <li><strong>Acces și portabilitate</strong> — din pagina de profil poți
+            exporta toate datele contului tău.</li>
+        <li><strong>Ștergere</strong> — din pagina de profil îți poți șterge contul
+            complet, oricând.</li>
+        <li><strong>Rectificare</strong> — îți poți schimba adresa de e-mail din
+            profil.</li>
+        <li><strong>Plângere</strong> — dacă ceva nu e în regulă, scrie-ne întâi;
+            ai oricând dreptul să te adresezi autorității de supraveghere
+            (în România: <a href="https://www.dataprotection.ro" rel="noopener"
+            target="_blank">ANSPDCP</a>).</li>
+    </ul>
+
+    <h3>Securitate</h3>
+    <p>Conexiunile sunt exclusiv HTTPS, parolele și cheile API sunt stocate doar ca
+        hash-uri, fișierele încărcate sunt scanate antivirus, iar contul poate fi
+        protejat suplimentar cu autentificare în doi pași (TOTP) sau passkeys.
+        Operațiunile sunt limitate în frecvență și jurnalizate.</p>
+
+    <h3>Copii</h3>
+    <p>Serviciul nu se adresează copiilor sub 16 ani.</p>
+
+    <h3>Modificări</h3>
+    <p>Dacă politica se schimbă, actualizăm această pagină și data de mai sus.
+        Modificările semnificative vor fi anunțate vizibil pe site.</p>
+</div>
+{% endblock %}

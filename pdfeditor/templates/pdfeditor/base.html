@@ -99,6 +99,13 @@
     {% block content %}
     {% endblock %}
 
+    <footer class="site-footer">
+        <span>© 2026 PDF Platform</span>
+        <a href="{% url 'privacy' %}">{% trans "Privacy Policy" %}</a>
+        <a href="{% url 'terms' %}">{% trans "Terms of Service" %}</a>
+        <a href="https://github.com/Alexandru2984/pdf_Editor_v2" target="_blank" rel="noopener">{% trans "Open source" %} (MIT)</a>
+    </footer>
+
     <!-- PDF Modal JS -->
     <script src="/static/js/pdf-modal.js"></script>
     

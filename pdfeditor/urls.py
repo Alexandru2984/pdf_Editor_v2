@@ -118,6 +118,9 @@ urlpatterns = [
     # Health checks (skipped from rate-limit + axes; safe for LBs)
     path("healthz", views.healthz, name="healthz"),
     path("readyz", views.readyz, name="readyz"),
+    # Legal
+    path("privacy/", views.privacy_view, name="privacy"),
+    path("terms/", views.terms_view, name="terms"),
     # Auth — login/logout/register; password change/reset added in phase 4
     # Login is a thin LoginView subclass that inserts a TOTP step for users
     # who enabled MFA (pdfeditor/views/mfa.py).

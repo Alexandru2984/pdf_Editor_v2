@@ -111,6 +111,7 @@ from .layout_ops import (
     watermark_result_view,
     watermark_view,
 )
+from .legal import privacy_view, terms_view
 from .metrics import metrics_view
 from .mfa import (
     MfaLoginView,
@@ -255,6 +256,8 @@ __all__ = [
     "readyz",
     "admin_health_view",
     "metrics_view",
+    "privacy_view",
+    "terms_view",
     "register_view",
     "confirm_email_view",
     "resend_confirmation_view",

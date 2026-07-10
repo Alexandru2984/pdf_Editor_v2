@@ -1,0 +1,106 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}Privacy Policy{% endblock %}
+
+{% block content %}
+<div class="card legal-page">
+    <h2>🔒 Privacy Policy</h2>
+    <p class="legal-updated">Last updated: July 10, 2026</p>
+
+    <p>
+        PDF Platform (<a href="https://pdf.micutu.com">pdf.micutu.com</a>) is an
+        open-source project operated from the European Union by its developer.
+        For any question about your data, write to
+        <a href="mailto:984.alexmihai@gmail.com">984.alexmihai@gmail.com</a>.
+    </p>
+
+    <h3>What we process</h3>
+    <ul>
+        <li><strong>Account data</strong> — username, e-mail address (for
+            confirmation and password resets) and your password (stored only as a
+            hash). If you enable two-factor authentication or passkeys, we also
+            store the technical data they require.</li>
+        <li><strong>Your documents</strong> — the PDFs/images you upload and the
+            outputs generated from them. They are processed exclusively for the
+            operations you request.</li>
+        <li><strong>Usage and security metadata</strong> — an audit log of
+            operations (user, IP address, browser, operation type, file names,
+            timestamps), active sessions, and failed login attempts.</li>
+        <li><strong>Aggregate statistics</strong> — we use a self-hosted,
+            cookie-less analytics service that builds no individual profiles.</li>
+    </ul>
+
+    <h3>How long we keep it</h3>
+    <ul>
+        <li><strong>Files</strong> (uploaded and generated) are <strong>deleted
+            automatically after at most 24 hours</strong>.</li>
+        <li><strong>Backups</strong> (database and files) are rotated after
+            14 days.</li>
+        <li><strong>Your account</strong> exists until you delete it — deletion is
+            self-service from your profile page and removes your files, history,
+            API keys and sessions.</li>
+        <li><strong>The audit log</strong> is retained for as long as the account
+            exists, for security purposes.</li>
+    </ul>
+
+    <h3>Where data goes</h3>
+    <ul>
+        <li><strong>Cloudflare</strong> — traffic to the site passes through
+            Cloudflare's network (DNS, proxy, DDoS protection).</li>
+        <li><strong>Cloudflare R2</strong> — processing outputs may be temporarily
+            mirrored to R2 object storage for reliable downloads; they are purged
+            together with the files, within the same 24-hour window.</li>
+        <li><strong>Groq</strong> (US) — <em>only</em> when you use the AI features
+            (chat with PDF, summarize, rephrase), relevant text excerpts from the
+            document are sent to the Groq API, subject to Groq's privacy policy.
+            If you don't use the AI features, your documents never leave our
+            server.</li>
+        <li><strong>E-mail</strong> — confirmation/reset messages are sent through
+            our own self-hosted mail server.</li>
+    </ul>
+    <p>We do not sell or rent your data. There are no ads and no advertising
+        trackers.</p>
+
+    <h3>Cookies and local storage</h3>
+    <ul>
+        <li><code>sessionid</code> — keeps you signed in;</li>
+        <li><code>csrftoken</code> — protection against request forgery;</li>
+        <li><code>django_language</code> — the language you picked;</li>
+        <li>your theme preference (dark/light) lives in <em>localStorage</em>,
+            not in a cookie.</li>
+    </ul>
+    <p>All strictly functional — no tracking or advertising cookies.</p>
+
+    <h3>Legal basis (GDPR)</h3>
+    <p>We process data to perform the contract (providing the service you
+        request), on legitimate interest (security, abuse prevention) and, for the
+        AI features, on your explicit action of invoking them.</p>
+
+    <h3>Your rights</h3>
+    <ul>
+        <li><strong>Access and portability</strong> — you can export all your
+            account data from the profile page.</li>
+        <li><strong>Erasure</strong> — you can delete your account entirely, at
+            any time, from the profile page.</li>
+        <li><strong>Rectification</strong> — you can change your e-mail address
+            from the profile.</li>
+        <li><strong>Complaint</strong> — if something seems wrong, write to us
+            first; you always have the right to contact your supervisory
+            authority (in Romania: <a href="https://www.dataprotection.ro"
+            rel="noopener" target="_blank">ANSPDCP</a>).</li>
+    </ul>
+
+    <h3>Security</h3>
+    <p>Connections are HTTPS-only, passwords and API keys are stored only as
+        hashes, uploaded files are scanned for malware, and your account can be
+        further protected with two-factor authentication (TOTP) or passkeys.
+        Operations are rate-limited and audit-logged.</p>
+
+    <h3>Children</h3>
+    <p>The service is not directed at children under 16.</p>
+
+    <h3>Changes</h3>
+    <p>If this policy changes, we update this page and the date above. Material
+        changes will be announced visibly on the site.</p>
+</div>
+{% endblock %}

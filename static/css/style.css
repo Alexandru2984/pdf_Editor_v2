@@ -2536,3 +2536,67 @@ footer {
 .mb-1 { margin-bottom: var(--spacing-sm); }
 .mb-2 { margin-bottom: var(--spacing-md); }
 .mb-3 { margin-bottom: var(--spacing-lg); }
+
+/* ============================================
+   Site footer + legal pages
+   ============================================ */
+
+.site-footer {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.site-footer span,
+.site-footer a {
+    margin: 0 var(--spacing-sm);
+    white-space: nowrap;
+}
+
+.site-footer a {
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+
+.site-footer a:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.legal-page {
+    max-width: 780px;
+    margin: var(--spacing-lg) auto;
+    padding: var(--spacing-lg);
+}
+
+.legal-page h3 {
+    margin: var(--spacing-lg) 0 var(--spacing-sm);
+    color: var(--text-primary);
+}
+
+.legal-page p,
+.legal-page li {
+    line-height: 1.65;
+    color: var(--text-secondary);
+}
+
+.legal-page ul {
+    padding-left: 1.25rem;
+}
+
+.legal-page li {
+    margin-bottom: var(--spacing-sm);
+}
+
+.legal-updated {
+    font-size: 0.85rem;
+    opacity: 0.75;
+}
+
+.legal-consent {
+    text-align: center;
+    margin-top: var(--spacing-sm);
+}

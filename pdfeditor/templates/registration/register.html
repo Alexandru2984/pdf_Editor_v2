@@ -32,6 +32,11 @@
 
         <button type="submit" class="btn btn-primary btn-block">{% trans "Create Account" %}</button>
 
+        <p class="form-field-help legal-consent">
+            {% url 'terms' as terms_url %}{% url 'privacy' as privacy_url %}
+            {% blocktrans %}By creating an account you agree to the <a href="{{ terms_url }}">Terms of Service</a> and the <a href="{{ privacy_url }}">Privacy Policy</a>.{% endblocktrans %}
+        </p>
+
         <p class="auth-footer">
             {% trans "Already have an account?" %}
             <a href="{% url 'login' %}" class="auth-link-strong">{% trans "Sign in" %}</a>
