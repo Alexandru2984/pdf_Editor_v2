@@ -420,7 +420,9 @@ Pushes to `main` trigger:
    scans with Trivy (fail on HIGH/CRITICAL), publishes an SPDX SBOM and
    signs the image with cosign (keyless), then SSHes into the VPS and
    runs `scripts/deploy.sh` which pulls the new image, retags the previous
-   as `pdfeditor:rollback`, and `docker compose up -d --no-build`.
+   as `pdfeditor:rollback`, `docker compose up -d --no-build`, then
+   smoke-tests the public `/readyz` endpoint — if the stack doesn't come
+   back healthy the deploy job fails instead of lying green.
 
 Migrations run as a one-shot `migrate` init container that web/worker
 `depends_on` with `service_completed_successfully` — N replicas can't race

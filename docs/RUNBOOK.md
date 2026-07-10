@@ -281,6 +281,30 @@ written, fix the runbook *before* fixing anything else.
 
 ---
 
+## External uptime monitoring
+
+Grafana's alerts run *on* the VPS — if the whole box (or its network)
+goes down, nothing fires. The only alert that survives a dead server is
+one sent by someone else's infrastructure, so keep an external monitor
+pointed at the public endpoints:
+
+- **`https://pdf.micutu.com/healthz`** — liveness; 200 means a replica
+  answered through Cloudflare + both nginx layers.
+- **`https://pdf.micutu.com/readyz`** — deep check; also proves the
+  database answers. Poll this one less often (it does a `SELECT 1`).
+
+Any free tier works (UptimeRobot, Better Stack, healthchecks.io — the
+last one also does dead-man checks you can ping from the backup crons).
+Suggested config: check `/healthz` every 1–5 min, alert after 2
+consecutive failures, notify via e-mail and/or the same Telegram chat
+the cron alerts use.
+
+`scripts/deploy.sh` runs its own `/readyz` smoke test after every
+deploy and exits non-zero if the stack doesn't come back — a failed
+deploy shows up red in GitHub Actions, not as silent downtime.
+
+---
+
 ## Scheduled jobs (root crontab)
 
 All periodic maintenance runs from root's crontab on the VPS

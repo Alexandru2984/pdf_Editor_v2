@@ -59,4 +59,24 @@ echo "→ Waiting for healthy startup…"
 sleep 8
 docker compose ps
 
-echo "✓ Deployed ${REGISTRY_IMAGE}:${TAG}"
+# Smoke test through the real public path (Cloudflare → host nginx →
+# internal LB → replica → DB). /readyz does a SELECT 1, so a deploy that
+# boots gunicorn but can't reach Postgres still fails here — and a
+# non-zero exit makes the CI deploy job go red instead of lying green.
+SMOKE_URL="${SMOKE_URL:-https://pdf.micutu.com/readyz}"
+echo "→ Smoke test: ${SMOKE_URL}…"
+for _ in $(seq 1 12); do
+    if curl -fsS --max-time 5 "$SMOKE_URL" >/dev/null 2>&1; then
+        echo "✓ ${SMOKE_URL} healthy."
+        echo "✓ Deployed ${REGISTRY_IMAGE}:${TAG}"
+        exit 0
+    fi
+    sleep 5
+done
+
+echo "✗ ${SMOKE_URL} still failing after ~60s — deploy is NOT healthy." >&2
+echo "  Recent logs:" >&2
+docker compose logs --tail=30 web nginx >&2 || true
+echo "  Roll back with:" >&2
+echo "    docker tag pdfeditor:rollback pdfeditor:latest && docker compose up -d --no-build" >&2
+exit 1
