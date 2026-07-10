@@ -4,7 +4,7 @@
 [![deploy](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml/badge.svg)](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml)
 ![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
 ![django](https://img.shields.io/badge/django-5.2%20LTS-092e20)
-![tests](https://img.shields.io/badge/tests-700%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-833%20passing-brightgreen)
 ![security](https://img.shields.io/badge/security-bandit%20%2B%20pip--audit%20%2B%20trivy-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
@@ -29,12 +29,12 @@ and a CI gate that blocks deploys on critical CVEs.
 | **Sustained load** | **500 concurrent users**, 53,580 requests over 5 min, **0.15% failure rate** |
 | **Peak throughput** | **179 req/s** at 8 workers across 2 replicas (+48% vs single-replica baseline) |
 | **Endpoint speedup story** | `/api/v1/outputs/` **60s → 1.2s** after pagination + cache + DB tuning |
-| **Tests** | **700 passing** across Django + SDK · 3.10/3.11/3.12 matrix · pgvector required |
+| **Tests** | **833 passing** across Django + SDK · 3.10/3.11/3.12 matrix · pgvector required |
 | **Lines of Python** | ~21,500 (excluding migrations) |
 | **PDF ops** | 25+, all reachable both from web UI and REST API |
 | **Async jobs** | 6 kinds (OCR, PDF/A, Compare, Convert, RAG-index, ToImages) — sub-5-page sync, threshold-async |
 | **Security review** | No exploitable findings (path traversal, SSE auth, race conditions, XSS, open redirect, Redis pub/sub all clean) |
-| **Compose services** | 11 (db · pgbouncer · redis · migrate · web×N · worker · nginx · prometheus · grafana · loki · promtail) |
+| **Compose services** | 12 (db · pgbouncer · redis · migrate · web×N · worker · nginx · clamav · prometheus · grafana · loki · promtail) |
 
 Full benchmark write-up with per-endpoint p95 and the tuning story in [`scripts/loadtest/benchmarks.md`](scripts/loadtest/benchmarks.md).
 
@@ -63,9 +63,13 @@ Full benchmark write-up with per-endpoint p95 and the tuning story in [`scripts/
   4 provisioned alert rules (5xx spike, p95 latency, queue depth, replicas
   down) that email through the app's own SMTP relay.
 - **🔐 Production-grade auth + security** — registration + email confirmation,
-  password reset, account export (GDPR), share links with TTL + download caps,
-  SHA-256-hashed API keys, `django-axes` lockout, CSP enforced at nginx,
-  HSTS preload, realpath path-traversal guard, full audit log.
+  TOTP two-factor auth with single-use backup codes, WebAuthn **passkeys**,
+  active-session management with new-device login alerts, password reset,
+  GDPR account export + self-service delete, privacy policy + ToS pages
+  (RO/EN), share links with TTL + download caps, SHA-256-hashed API keys,
+  `django-axes` lockout, strict nonce-based CSP with `/csp-report/`
+  violation endpoint, HSTS preload, realpath path-traversal guard, ClamAV
+  upload scanning, full audit log.
 - **🌐 Horizontal scaling** — `web` service runs N replicas (default 2) behind
   an internal `nginx` load balancer that picks up scale changes via Docker's
   embedded DNS without a reload (`docker compose up --scale web=N`).
@@ -127,15 +131,18 @@ Cloudflare · systemd timers (cleanup, daily backup)
 **Observability** Prometheus 2.55 (DNS service discovery for replicas) ·
 Grafana 11 (provisioned datasource + dashboard + alert rules) · Loki 3 +
 Promtail (container log shipping) · `django-prometheus` middleware + custom
-business metrics · Sentry · request-ID tracing via custom middleware
+business metrics · Sentry (optional — set `SENTRY_DSN`) · request-ID tracing
+via custom middleware · `/healthz` + `/readyz` endpoints
 
 **LLM / AI** Groq API (Llama 3.3 70B + others, model picker) · Ollama
 (local fallback for rephrase) · HuggingFace `paraphrase-multilingual-MiniLM-L12-v2`
 embeddings · 80k-char context cap with truncation flag
 
 **Security** Bandit (SAST) · pip-audit (dep CVEs) · Trivy (image scan,
-fail on HIGH/CRITICAL with `ignore-unfixed:true`) · SHA-256 API key hashes ·
-CSP enforced (no report-only) · HSTS preload · `realpath` path guard
+fail on HIGH/CRITICAL with `ignore-unfixed:true`) · SPDX SBOM + cosign
+keyless image signing · TOTP MFA + WebAuthn passkeys · ClamAV upload
+scanning · SHA-256 API key hashes · strict nonce-based CSP (enforced, with
+report endpoint) · HSTS preload · `realpath` path guard
 
 ## Features at a glance
 
@@ -153,6 +160,7 @@ CSP enforced (no report-only) · HSTS preload · `realpath` path guard
 | **AI** | Chat with PDF (RAG, multi-doc) · single-shot summarize · rephrase regions |
 | **Batch** | Apply one op to up to 50 PDFs in a single Celery job, with live progress |
 | **Sharing** | Public token links with TTL + download caps |
+| **Account security** | TOTP 2FA + backup codes, passkeys (WebAuthn), session manager with revoke + new-device alerts, GDPR export/delete |
 | **Admin** | API keys, audit log, storage quotas, history, health dashboard |
 
 ## REST API quick start
@@ -326,7 +334,16 @@ service needed.
   api_key/user/anon × read/op/upload. Each viewset/action picks its bucket;
   uploads cap at 60/h on API keys, anon ops at 10/h.
 - **CSRF** on every state-changing endpoint, including JSON POSTs.
-- **CSP enforced** at nginx (no report-only) — script-src/connect-src allowlists.
+- **Strict CSP** — nonce-based script policy set per-request by middleware
+  (no `unsafe-inline`/`unsafe-eval` for scripts); violations POST to
+  `/csp-report/` (logged + Prometheus counter). Host nginx keeps a baseline
+  policy for the admin/API paths.
+- **MFA** — TOTP with replay protection and single-use backup codes;
+  **passkeys** (WebAuthn, discoverable credentials, user verification
+  required); session manager with per-device revoke, "sign out everywhere
+  else", and new-device login alert emails.
+- **Supply chain** — Trivy image gate, SPDX SBOM published per build,
+  cosign keyless image signatures.
 - **HSTS preload**, secure + HttpOnly + SameSite cookies, HTTPS-only.
 - **Path traversal** blocked via `realpath` + ownership check on every
   `/media/` access.
@@ -341,7 +358,7 @@ service needed.
 
 | Check | Status |
 |-------|--------|
-| Test count | **700 passing** (684 Django + 16 SDK; pgvector required for the Django suite) |
+| Test count | **833 passing** (817 Django + 16 SDK; pgvector required for the Django suite) |
 | Coverage | reports uploaded as CI artifact (`coverage.xml`) |
 | Linting | `ruff check` + `ruff format` |
 | Types | `mypy` strict on `pdf_processor/` |
@@ -397,10 +414,11 @@ celery -A pdf_project worker --loglevel=info
 Pushes to `main` trigger:
 
 1. **`tests` workflow** — Python 3.10/3.11/3.12 matrix, ruff + mypy + bandit
-   + pip-audit + 684 Django tests + Django deploy check.
+   + pip-audit + 817 Django tests + Django deploy check.
 2. **`build-and-deploy`** (workflow_run after tests success) — builds the
    image, pushes to `ghcr.io/alexandru2984/pdf_editor_v2:{latest,sha-XXXXX}`,
-   scans with Trivy (fail on HIGH/CRITICAL), then SSHes into the VPS and
+   scans with Trivy (fail on HIGH/CRITICAL), publishes an SPDX SBOM and
+   signs the image with cosign (keyless), then SSHes into the VPS and
    runs `scripts/deploy.sh` which pulls the new image, retags the previous
    as `pdfeditor:rollback`, and `docker compose up -d --no-build`.
 
@@ -471,6 +489,7 @@ pdfeditor/
 │   ├── chat.py         RAG chat with PDF
 │   ├── jobs.py         Status + SSE + cancel
 │   ├── share.py        Public token download links
+│   ├── legal.py        Privacy policy + ToS (per-language templates)
 │   └── …
 ├── management/commands/
 │   ├── cleanup_old_pdfs.py     Age-based retention sweep
