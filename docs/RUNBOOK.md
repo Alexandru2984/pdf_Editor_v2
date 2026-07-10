@@ -250,9 +250,11 @@ du -sh ./media/* 2>/dev/null
   docker compose exec web python manage.py sweep_orphan_files --apply
   ```
 - **Old processed PDFs piling up:** `cleanup_old_pdfs` is the retention
-  sweep — runs on a schedule, but you can force one.
+  sweep — cron runs it hourly (see [Scheduled jobs](#scheduled-jobs-root-crontab)),
+  but you can force one. Unlike the orphan sweep it has no `--apply` flag —
+  it deletes immediately; `--hours N` overrides the retention window.
   ```bash
-  docker compose exec web python manage.py cleanup_old_pdfs --apply
+  docker compose exec web python manage.py cleanup_old_pdfs
   ```
 - **Still no room:** Docker logs are usually the next-biggest culprit.
   Find them with `du -sh /var/lib/docker/containers/*/*-json.log` and
@@ -276,3 +278,31 @@ The runbook is only useful if you've run it once before being paged.
 Twice a quarter, pick one section and execute it against a staging
 copy of the stack, cold. Time yourself. If a step doesn't work as
 written, fix the runbook *before* fixing anything else.
+
+---
+
+## Scheduled jobs (root crontab)
+
+All periodic maintenance runs from root's crontab on the VPS
+(`sudo crontab -l`) — not systemd timers, not Celery beat. The
+pre-Docker `pdfeditor*.service` units were removed on 2026-07-10;
+if a schedule silently stops, this section is the source of truth
+for what *should* be running.
+
+| When | Job | Log |
+|------|-----|-----|
+| hourly at :15 | `cleanup_old_pdfs` — enforces the 24h retention the UI promises | `/var/log/pdfeditor-cleanup.log` |
+| daily 03:00 UTC | `scripts/backup_db.sh` — pg_dump, 14-day rotation | `/var/log/pdfeditor-backup.log` |
+
+```cron
+15 * * * * cd /home/micu/pdf_Editor_v2 && docker compose exec -T web python manage.py cleanup_old_pdfs >> /var/log/pdfeditor-cleanup.log 2>&1
+0 3 * * * cd /home/micu/pdf_Editor_v2 && scripts/backup_db.sh >> /var/log/pdfeditor-backup.log 2>&1
+```
+
+Both logs rotate monthly via `/etc/logrotate.d/pdfeditor` (6 kept,
+compressed). Verify the jobs are alive:
+
+```bash
+tail -2 /var/log/pdfeditor-cleanup.log   # one summary line per hour
+tail -4 /var/log/pdfeditor-backup.log    # "✓ Backup done." every morning
+```
