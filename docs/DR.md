@@ -27,9 +27,13 @@ for disk IO on a small VPS.
 Cron entries (root crontab on the VPS):
 
 ```cron
-0  3 * * * cd /home/micu/pdf_Editor_v2 && scripts/backup_db.sh    >> /var/log/pdfeditor-backup.log 2>&1
-30 3 * * * cd /home/micu/pdf_Editor_v2 && scripts/backup_media.sh >> /var/log/pdfeditor-backup.log 2>&1
+0  3 * * * cd /home/micu/pdf_Editor_v2 && scripts/backup_db.sh    >> /var/log/pdfeditor-backup.log 2>&1 || /home/micu/pdf_Editor_v2/scripts/notify_fail.sh "daily DB backup"
+30 3 * * * cd /home/micu/pdf_Editor_v2 && scripts/backup_media.sh >> /var/log/pdfeditor-backup.log 2>&1 || /home/micu/pdf_Editor_v2/scripts/notify_fail.sh "daily media backup"
 ```
+
+A failed run pings Telegram through `scripts/notify_fail.sh` (bot
+credentials in `/root/.backup_vps_env`, shared with the box-wide weekly
+rclone backup). Silence in the log is no longer the only failure signal.
 
 The DB dump is the system of record for *relationships*. The media
 tarball is the system of record for the *bytes behind those rows*.

@@ -293,11 +293,19 @@ for what *should* be running.
 |------|-----|-----|
 | hourly at :15 | `cleanup_old_pdfs` — enforces the 24h retention the UI promises | `/var/log/pdfeditor-cleanup.log` |
 | daily 03:00 UTC | `scripts/backup_db.sh` — pg_dump, 14-day rotation | `/var/log/pdfeditor-backup.log` |
+| daily 03:30 UTC | `scripts/backup_media.sh` — media tarball, 14-day rotation | `/var/log/pdfeditor-backup.log` |
 
 ```cron
-15 * * * * cd /home/micu/pdf_Editor_v2 && docker compose exec -T web python manage.py cleanup_old_pdfs >> /var/log/pdfeditor-cleanup.log 2>&1
-0 3 * * * cd /home/micu/pdf_Editor_v2 && scripts/backup_db.sh >> /var/log/pdfeditor-backup.log 2>&1
+15 * * * * cd /home/micu/pdf_Editor_v2 && docker compose exec -T web python manage.py cleanup_old_pdfs >> /var/log/pdfeditor-cleanup.log 2>&1 || /home/micu/pdf_Editor_v2/scripts/notify_fail.sh "retention cleanup"
+0 3 * * * cd /home/micu/pdf_Editor_v2 && scripts/backup_db.sh >> /var/log/pdfeditor-backup.log 2>&1 || /home/micu/pdf_Editor_v2/scripts/notify_fail.sh "daily DB backup"
+30 3 * * * cd /home/micu/pdf_Editor_v2 && scripts/backup_media.sh >> /var/log/pdfeditor-backup.log 2>&1 || /home/micu/pdf_Editor_v2/scripts/notify_fail.sh "daily media backup"
 ```
+
+Every job alerts on failure via `scripts/notify_fail.sh` — a Telegram
+ping using the bot credentials in `/root/.backup_vps_env` (the same ones
+the box-wide weekly rclone backup uses; that weekly backup also snapshots
+this crontab into its `meta/crontab_root.txt`, which is the restore
+source if the crontab is ever lost).
 
 Both logs rotate monthly via `/etc/logrotate.d/pdfeditor` (6 kept,
 compressed). Verify the jobs are alive:
