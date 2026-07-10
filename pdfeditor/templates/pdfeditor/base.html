@@ -24,13 +24,10 @@
         })();
     </script>
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Main CSS -->
-    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Main CSS (Inter is self-hosted via @font-face inside — no Google
+         Fonts requests: the strict CSP blocked them anyway, and skipping
+         the third-party fetch is the GDPR-friendly default) -->
+    <link rel="stylesheet" href="/static/css/style.css?v=20260710">
     <link rel="stylesheet" href="/static/css/pdf-modal.css">
     
     {% block extra_css %}{% endblock %}

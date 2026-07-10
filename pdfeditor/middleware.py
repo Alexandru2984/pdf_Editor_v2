@@ -75,15 +75,20 @@ _DEFAULT_PERMISSIONS_POLICY = (
 # inline style= attributes/blocks).
 _DEFAULT_CSP = (
     "default-src 'self'; "
+    # Script origins are exact hosts on purpose: a *.cloudflare.com
+    # wildcard would also allow cdnjs.cloudflare.com — a public CDN full
+    # of hijackable libraries, i.e. a textbook CSP bypass. The insights
+    # host stays so Cloudflare Web Analytics can be toggled on without a
+    # code change (its beacon posts to cloudflareinsights.com).
     "script-src 'self' 'nonce-{nonce}' "
-    "https://analytics.micutu.com https://static.cloudflareinsights.com https://*.cloudflare.com; "
+    "https://analytics.micutu.com https://static.cloudflareinsights.com; "
     "script-src-elem 'self' 'nonce-{nonce}' "
-    "https://analytics.micutu.com https://static.cloudflareinsights.com https://*.cloudflare.com; "
+    "https://analytics.micutu.com https://static.cloudflareinsights.com; "
     "worker-src 'self' blob:; "
     "style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data: blob: https:; "
     "font-src 'self' data:; "
-    "connect-src 'self' https://analytics.micutu.com https://*.cloudflare.com https://cloudflareinsights.com; "
+    "connect-src 'self' https://analytics.micutu.com https://cloudflareinsights.com; "
     "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
     # Browsers POST violation reports here (views/csp.py) — log + Prometheus
     # counter, so a policy regression is an alert, not silent breakage.

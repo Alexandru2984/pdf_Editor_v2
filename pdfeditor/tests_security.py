@@ -498,6 +498,15 @@ class CspReportEndpointTests(TestCase):
         ]
         self.assertIn("report-uri /csp-report/", csp)
 
+    def test_policy_has_no_wildcard_or_eval_script_origins(self):
+        """*.cloudflare.com covers cdnjs — a public CDN, i.e. a CSP bypass."""
+        csp = SecurityHeadersMiddleware(lambda req: HttpResponse("ok"))(RequestFactory().get("/"))[
+            "Content-Security-Policy"
+        ]
+        self.assertNotIn("*.cloudflare.com", csp)
+        self.assertNotIn("unsafe-eval", csp)
+        self.assertNotIn("fonts.googleapis.com", csp)  # fonts are self-hosted
+
     def test_legacy_report_is_counted(self):
         import json as _json
 
