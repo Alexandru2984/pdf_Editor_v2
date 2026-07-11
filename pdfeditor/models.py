@@ -380,6 +380,12 @@ def _default_api_key_token() -> str:
     return secrets.token_urlsafe(32)
 
 
+def _default_webhook_secret() -> str:
+    import secrets
+
+    return secrets.token_urlsafe(32)
+
+
 class ApiKey(models.Model):
     """Per-user API key for programmatic access to the REST API.
 
@@ -433,6 +439,56 @@ class ApiKey(models.Model):
             ),
             token,
         )
+
+
+class Webhook(models.Model):
+    """A user-registered HTTPS endpoint that receives a signed POST when one of
+    that user's async jobs reaches a terminal state (``job.completed`` /
+    ``job.failed``) — the push alternative to polling ``/api/v1/jobs/``.
+
+    Webhooks are a logged-in-only feature: anonymous sessions have no durable
+    account to attach an endpoint to. Unlike :class:`ApiKey`, the ``secret`` is
+    stored in the clear on purpose — the server needs it to *sign* each
+    delivery (HMAC-SHA256), and the user needs the same value to *verify* the
+    signature on their side. It is a per-webhook signing key, not a credential
+    that grants access to anything.
+
+    The delivery target is user-supplied, so it is an SSRF vector: it is
+    validated against ``pdfeditor.webhooks.validate_webhook_url`` (public IP,
+    https) both when saved and again at delivery time (DNS-rebind defence).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="webhooks",
+    )
+    url = models.URLField(max_length=500, help_text="HTTPS endpoint that receives the signed POST.")
+    secret = models.CharField(
+        max_length=64,
+        default=_default_webhook_secret,
+        help_text="Signing secret — verify the X-PDF-Signature HMAC with it.",
+    )
+    description = models.CharField(max_length=100, blank=True, help_text="Friendly name for this endpoint.")
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_triggered_at = models.DateTimeField(null=True, blank=True)
+    # Short human-readable result of the most recent delivery ("200",
+    # "error: ConnectTimeout", "blocked: …") — surfaced in the management UI.
+    last_status = models.CharField(max_length=50, blank=True, default="")
+    # Consecutive fully-failed deliveries; reset to 0 on any success. The
+    # delivery task auto-disables the endpoint once it crosses the threshold so
+    # a dead URL isn't retried forever.
+    failure_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "-created_at"])]
+
+    def __str__(self):
+        state = "active" if self.is_active else "disabled"
+        return f"{self.description or self.url} · {self.user.username} ({state})"
 
 
 class ShareLink(models.Model):

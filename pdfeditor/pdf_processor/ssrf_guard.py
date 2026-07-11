@@ -51,6 +51,21 @@ def _ip_is_public(ip: str) -> bool:
 _ALLOWED_PORTS = frozenset({80, 443})
 
 
+def hostname_resolves_public(host: str, port: int) -> bool:
+    """True iff every address ``host`` resolves to is a public IP.
+
+    Shared with the webhook-URL validator so user-supplied delivery targets get
+    the exact same anti-SSRF classification as certificate fetches — one place
+    to keep the private/loopback/link-local/metadata rules correct.
+    """
+    try:
+        infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
+    except OSError:
+        return False
+    addrs = {str(info[4][0]) for info in infos}
+    return bool(addrs) and all(_ip_is_public(ip) for ip in addrs)
+
+
 def validate_outbound_url(url: str) -> None:
     """Raise :class:`BlockedOutboundURL` unless ``url`` is http(s) on a standard
     web port to a public IP.

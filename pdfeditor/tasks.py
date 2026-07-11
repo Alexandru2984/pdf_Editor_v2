@@ -11,14 +11,16 @@ import json
 import logging
 import os
 
+import requests
 from celery import shared_task
 from celery.exceptions import SoftTimeLimitExceeded
 from django.conf import settings
+from django.core.cache import cache
 from django.utils import timezone
 
-from . import objectstore
+from . import objectstore, webhooks
 from .metrics import EMBEDDINGS_CREATED, JOB_TOTAL, OP_DURATION_SECONDS, OP_TOTAL
-from .models import Job, ProcessedPDF, UploadedPDF
+from .models import Job, ProcessedPDF, UploadedPDF, Webhook
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +70,13 @@ def _publish_job_event(job: Job) -> None:
     configured with a Redis cache backend, we just skip — the browser
     will fall back to HTTP polling.
     """
+    # Terminal jobs also fan out to the owner's registered webhooks. Done here
+    # because every state transition funnels through this call; runs before the
+    # Redis early-return below so a delivery never depends on the SSE pub/sub
+    # being configured. Owner-scoped + deduped inside _trigger_webhooks.
+    if job.is_terminal():
+        _trigger_webhooks(job)
+
     redis_url = (
         getattr(settings, "REDIS_PUBSUB_URL", None)
         or os.environ.get("REDIS_CACHE_URL")
@@ -92,6 +101,87 @@ def _publish_job_event(job: Job) -> None:
         client.publish(_job_channel(job.id), json.dumps(payload))
     except Exception as exc:  # noqa: BLE001 — pub/sub is best-effort
         logger.debug("Job event publish failed for %s: %s", job.id, exc)
+
+
+def _trigger_webhooks(job: Job) -> None:
+    """Enqueue a signed delivery to each of the job owner's active webhooks.
+
+    Logged-in users only (anonymous jobs have no ``user``). A single indexed
+    query short-circuits the common no-webhooks case before any cache write; a
+    short-lived ``cache.add`` flag makes delivery fire at most once per job even
+    if the terminal state is published more than once.
+    """
+    if not job.user_id:
+        return
+    hook_ids = list(
+        Webhook.objects.filter(user_id=job.user_id, is_active=True).values_list("id", flat=True)
+    )
+    if not hook_ids:
+        return
+    if not cache.add(f"webhook-fired:{job.id}", "1", 3600):
+        return
+    event = "job.completed" if job.status == Job.STATUS_DONE else "job.failed"
+    payload = webhooks.build_job_payload(job, event, timezone.now().isoformat())
+    for wid in hook_ids:
+        deliver_webhook.delay(str(wid), event, payload)
+
+
+@shared_task(bind=True, max_retries=5, name="pdfeditor.deliver_webhook")
+def deliver_webhook(self, webhook_id: str, event: str, payload: dict) -> None:
+    """POST one signed job event to one webhook.
+
+    Retries with exponential backoff on any non-2xx or transport failure; once
+    an endpoint has failed ``MAX_CONSECUTIVE_FAILURES`` whole events in a row it
+    is auto-disabled so a dead URL isn't retried forever.
+    """
+    hook = Webhook.objects.filter(id=webhook_id, is_active=True).first()
+    if hook is None:
+        return
+
+    # Re-validate at delivery time: the URL passed the SSRF check when it was
+    # saved, but DNS could have rebound to an internal address since.
+    try:
+        webhooks.validate_webhook_url(hook.url)
+    except webhooks.InvalidWebhookURL as exc:
+        Webhook.objects.filter(pk=hook.pk).update(is_active=False, last_status=f"blocked: {exc}"[:50])
+        return
+
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "PDFEditor-Webhook/1",
+        webhooks.SIGNATURE_HEADER: f"sha256={webhooks.sign_payload(hook.secret, body)}",
+        webhooks.EVENT_HEADER: event,
+        webhooks.ID_HEADER: str(hook.id),
+    }
+    status = ""
+    ok = False
+    try:
+        # allow_redirects=False: a 3xx could bounce the signed payload to an
+        # internal address that would sidestep the SSRF check above.
+        resp = requests.post(hook.url, data=body, headers=headers, timeout=10, allow_redirects=False)
+        status = str(resp.status_code)
+        ok = 200 <= resp.status_code < 300
+    except requests.RequestException as exc:
+        status = f"error: {type(exc).__name__}"
+
+    if ok:
+        Webhook.objects.filter(pk=hook.pk).update(
+            last_triggered_at=timezone.now(), last_status=status, failure_count=0
+        )
+        return
+
+    Webhook.objects.filter(pk=hook.pk).update(last_status=status[:50])
+    if self.request.retries < self.max_retries:
+        raise self.retry(countdown=min(600, 60 * (2**self.request.retries)))
+
+    # Retries exhausted for this event: count it and disable the endpoint if it
+    # has now failed too many events back to back.
+    new_count = (hook.failure_count or 0) + 1
+    updates: dict = {"failure_count": new_count, "last_status": f"failed: {status}"[:50]}
+    if new_count >= webhooks.MAX_CONSECUTIVE_FAILURES:
+        updates["is_active"] = False
+    Webhook.objects.filter(pk=hook.pk).update(**updates)
 
 
 def _start(job: Job) -> None:
