@@ -1,0 +1,108 @@
+# Changelog
+
+All notable changes to PDF Editor are documented here. The format follows
+[Keep a Changelog](https://keepachangelog.com/); this project ships
+continuously to <https://pdf.micutu.com> rather than tagging releases, so
+entries are grouped by the period the work landed.
+
+## [Unreleased] — production-finish sweep (2026-07)
+
+### Added
+- **Legal pages** — `/privacy/` and `/terms/`, served as full per-language
+  documents (Romanian/English, picked by the active language with English
+  fallback). Linked from a new site-wide footer; the register form now
+  states account-creation consent.
+- **Modern CSP violation reporting** — the policy now advertises the
+  Reporting API (`report-to` + `Reporting-Endpoints` header) alongside the
+  legacy `report-uri`, so current Chrome actually delivers violation
+  reports again.
+- **Scheduled media backups** — `scripts/backup_media.sh` is now on a daily
+  cron; every backup/cleanup cron alerts to Telegram on failure via
+  `scripts/notify_fail.sh`.
+- **Post-deploy smoke test** — `scripts/deploy.sh` polls the public
+  `/readyz` after bring-up and fails the deploy (with logs + rollback hint)
+  if the stack doesn't come back healthy.
+- **Disaster-recovery drill verified** — the newest DB dump restores into
+  an ephemeral Postgres in ~5s with all sanity checks green.
+
+### Changed
+- **Retention now enforced** — `cleanup_old_pdfs` runs hourly from cron,
+  matching the "files auto-delete after 24h" promise in the UI. (A backlog
+  of ~20k files / 2.4 GB that had accumulated since the pre-Docker timer
+  disappeared was purged.)
+- **Self-hosted Inter font** — the Google Fonts stylesheet had been
+  silently blocked by the strict CSP since it shipped; Inter now ships as a
+  self-hosted variable `woff2`. No third-party browser requests remain.
+- **Tighter CSP** — dropped the `https://*.cloudflare.com` script wildcard
+  (it also allowed `cdnjs`, a public-CDN bypass); only exact hosts remain.
+- **Romanian translation catalog completed** — 888/888 strings translated,
+  zero fuzzy (was 846 translated / 282 untranslated). Catalogs regenerated
+  without the framework-string pollution the old ones carried.
+- **Docs synced with reality** — README test counts, feature list (MFA,
+  passkeys, sessions, ClamAV, SBOM/cosign), and service inventory corrected;
+  RUNBOOK gained scheduled-jobs and external-uptime sections.
+
+## Security hardening (2026-06)
+
+### Added
+- **TOTP two-factor authentication** with single-use backup codes and
+  replay protection (per-device last-verified timestep).
+- **WebAuthn passkeys** — discoverable credentials, user verification
+  required, passwordless login.
+- **Session management** — per-device active-session list with instant
+  revoke, "sign out everywhere else", and new-device login alert emails.
+- **Cloudflare R2 output mirror** — processed files mirrored to object
+  storage with presigned-URL downloads; purged in step with retention.
+- **CSP violation endpoint** (`/csp-report/`) with a Prometheus counter, so
+  a policy regression is an alert rather than silent breakage.
+- **Supply-chain provenance** — SPDX SBOM published per build and cosign
+  keyless image signatures, on top of the existing Trivy gate.
+- **ClamAV upload scanning** (opt-in) for uploaded PDFs and images.
+- **GDPR** self-service data export and account deletion.
+
+### Changed
+- Audit-log, rate-limit, and metrics IP handling unified on a
+  correctly-counted `X-Forwarded-For` parser (spoof-resistant).
+- pdf.js vendored locally with `isEvalSupported:false`; `unsafe-eval` and
+  the unpkg origin removed from the CSP.
+- Strict nonce-based CSP set per-request by middleware.
+
+## REST API, AI, and scale (2026-06)
+
+### Added
+- **REST API** (DRF + OpenAPI 3) with per-user SHA-256-hashed API keys and
+  a scope-aware 9-cell rate-limit matrix; Swagger + Redoc docs.
+- **Python SDK + `pdf-edit` CLI** (`sdk/`).
+- **Async job pipeline** — Celery worker for long ops (OCR, PDF/A, compare,
+  convert, RAG-index, to-images) with live Server-Sent-Events progress and
+  a polling fallback; jobs are cancellable mid-flight.
+- **Chat with PDF (RAG)** — pgvector retrieval, local ONNX embeddings,
+  Groq LLM with citations; plus a single-shot `/ops/summarize/`.
+- **Batch operations** — one op across up to 50 PDFs in a single job.
+- **Observability stack** — Prometheus (per-replica service discovery),
+  Grafana (provisioned dashboard + alert rules), Loki + Promtail logs.
+- **Horizontal scaling** — N `web` replicas behind an internal nginx load
+  balancer; PgBouncer transaction pooling.
+
+## PDF toolbox (2026-05)
+
+### Added
+- **25+ PDF operations** reachable from both the web UI and the API:
+  split, merge, compress, convert (PDF↔DOCX, PDF↔images, images→PDF),
+  metadata editor, crop, flatten, rotate, page numbers, watermark,
+  reorder/delete pages, bookmark/outline editor, find & replace, AI
+  rephrase, true text redaction, OCR text extraction + searchable-PDF
+  layer, AcroForm detect/fill, compare two PDFs, PDF/A-1b/2b.
+- **Digital signatures** — PKCS#7 / PAdES B-B, B-T, B-LT, B-LTA with TSA
+  timestamps and LTV; a signature-verification endpoint; self-signed
+  certificate generator; server-side trust anchors.
+- **Password protect / remove** (AES-256 via PyMuPDF).
+- **Share links** — public token downloads with TTL and download caps.
+- **Accounts** — registration with email confirmation, password reset,
+  persistent per-user history and storage quotas.
+- **PWA** — installable, offline app shell, mobile-responsive UI with dark
+  mode, browser notification when a backgrounded job finishes.
+- **i18n** — full Romanian + English catalogs, including a JavaScript
+  message catalog for static JS.
+- **Custom error pages** (400/403/404/500) and an `/admin/health/`
+  platform-stats dashboard.
