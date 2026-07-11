@@ -418,6 +418,25 @@ services:
     command: -config.file=/etc/promtail/config.yml
     restart: unless-stopped
 
+  # Host-level metrics exporter. The app's /metrics endpoint lives inside a
+  # container and can't see the host filesystem, so node-exporter is what
+  # feeds the low-disk Grafana alert (node_filesystem_avail_bytes) plus
+  # host CPU/memory. Reads the host root read-only; --path.rootfs strips the
+  # /host prefix so mountpoints report normally. Needs no capabilities — the
+  # metrics it reads (/proc, /sys, the ro rootfs mount) are world-readable —
+  # so it keeps the baseline cap_drop:[ALL] hardening. Never published to the
+  # host; Prometheus scrapes it internally as node-exporter:9100.
+  node-exporter:
+    <<: *hardening
+    image: prom/node-exporter:v1.8.2
+    command:
+      - --path.rootfs=/host
+    expose:
+      - "9100"
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:

@@ -22,6 +22,9 @@ entries are grouped by the period the work landed.
 - **Post-deploy smoke test** — `scripts/deploy.sh` polls the public
   `/readyz` after bring-up and fails the deploy (with logs + rollback hint)
   if the stack doesn't come back healthy.
+- **Low-disk alert** — a `node-exporter` service now feeds host disk/CPU/
+  memory into Prometheus; a Grafana rule emails when any host filesystem
+  drops below 15% free. Closes the disk-full gap the runbook flagged.
 - **Disaster-recovery drill verified** — the newest DB dump restores into
   an ephemeral Postgres in ~5s with all sanity checks green.
 

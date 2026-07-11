@@ -34,7 +34,7 @@ and a CI gate that blocks deploys on critical CVEs.
 | **PDF ops** | 25+, all reachable both from web UI and REST API |
 | **Async jobs** | 6 kinds (OCR, PDF/A, Compare, Convert, RAG-index, ToImages) — sub-5-page sync, threshold-async |
 | **Security review** | No exploitable findings (path traversal, SSE auth, race conditions, XSS, open redirect, Redis pub/sub all clean) |
-| **Compose services** | 12 (db · pgbouncer · redis · migrate · web×N · worker · nginx · clamav · prometheus · grafana · loki · promtail) |
+| **Compose services** | 13 (db · pgbouncer · redis · migrate · web×N · worker · nginx · clamav · prometheus · grafana · loki · promtail · node-exporter) |
 
 Full benchmark write-up with per-endpoint p95 and the tuning story in [`scripts/loadtest/benchmarks.md`](scripts/loadtest/benchmarks.md).
 
@@ -58,10 +58,12 @@ Full benchmark write-up with per-endpoint p95 and the tuning story in [`scripts/
   50 owned PDFs in a single Celery job with incremental progress; partial
   success allowed (`done` if any PDF succeeded, per-row error capture).
 - **📈 Full observability stack** — Prometheus scrapes web replicas via Docker
-  DNS service discovery; Grafana dashboard with 13 panels + variable for
-  per-replica drill-down; **Loki + Promtail** for cross-container log search;
-  4 provisioned alert rules (5xx spike, p95 latency, queue depth, replicas
-  down) that email through the app's own SMTP relay.
+  DNS service discovery; **node-exporter** feeds host disk/CPU/memory;
+  Grafana dashboard with 13 panels + variable for per-replica drill-down;
+  **Loki + Promtail** for cross-container log search; 13 provisioned alert
+  rules — core ops (5xx spike, p95 latency, queue depth, replicas down, low
+  disk) plus multi-window SLO burn-rate alerts — that email through the
+  app's own SMTP relay.
 - **🔐 Production-grade auth + security** — registration + email confirmation,
   TOTP two-factor auth with single-use backup codes, WebAuthn **passkeys**,
   active-session management with new-device login alerts, password reset,
@@ -303,7 +305,8 @@ online with no manual UI clicks.
 | Component | Role | Host port |
 |---|---|---|
 | **Prometheus** | Scrapes `web:8000/metrics` from every replica via Docker DNS service discovery; 15-day retention | 9091 (loopback) |
-| **Grafana** | Provisioned datasource + 13-panel dashboard with per-replica drill-down · 4 alert rules → email | 3003 (loopback) |
+| **node-exporter** | Host disk/CPU/memory metrics (reads host rootfs read-only); powers the low-disk alert | — (internal) |
+| **Grafana** | Provisioned datasource + 13-panel dashboard with per-replica drill-down · 13 alert rules → email | 3003 (loopback) |
 | **Loki** | Stores logs (7-day retention), exposed as a Grafana datasource | 3100 (loopback) |
 | **Promtail** | Tails container stdout/stderr via the docker socket; labels logs with the compose service name | — |
 

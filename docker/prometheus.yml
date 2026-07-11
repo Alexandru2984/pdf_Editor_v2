@@ -28,3 +28,10 @@ scrape_configs:
       # break things down per replica.
       - source_labels: [__address__]
         target_label: replica
+
+  # Host-level metrics (disk / CPU / memory) from node-exporter. The
+  # app's /metrics can't see the underlying filesystem, so this is what
+  # powers the low-disk alert. Single static target on the compose net.
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]

@@ -231,9 +231,10 @@ docker compose exec worker celery -A pdf_project inspect active_queues
 
 ## 5. Disk full on media volume
 
-**Page source:** Usually *no direct alert* (TODO: add one); symptom is
-upload 5xx with "No space left on device" in Sentry, or jobs failing
-right at the output-write step.
+**Page source:** `pdfeditor_low_disk` — host filesystem below 15% free
+for 15 min (warning, emailed). If it somehow slips past that: upload 5xx
+with "No space left on device" in Sentry, or jobs failing right at the
+output-write step.
 
 ### Confirm
 
@@ -267,8 +268,13 @@ du -sh ./media/* 2>/dev/null
   the DB. The `post_delete` signal in `pdfeditor/signals.py` should
   catch all deletes; the gap is usually an op that writes to disk
   before the DB row commits.
-- Add a `node_filesystem_avail_bytes` alert at 15% — disk-full is one
-  of the loudest, most-recoverable, most-preventable incidents.
+- The `pdfeditor_low_disk` alert (node-exporter → Prometheus → Grafana)
+  fires at 15% free — disk-full is one of the loudest, most-recoverable,
+  most-preventable incidents, so it now pages early. Note: node-exporter's
+  Prometheus/Grafana configs are bind-mounted files — after editing
+  `docker/prometheus.yml` or the Grafana rules, `docker compose up -d`
+  alone won't reload them on an already-running box; recreate with
+  `docker compose up -d --force-recreate prometheus grafana`.
 
 ---
 

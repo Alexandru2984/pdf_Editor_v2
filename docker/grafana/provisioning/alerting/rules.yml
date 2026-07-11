@@ -462,3 +462,42 @@ groups:
         annotations:
           summary: "Zero healthy web replicas"
           description: "Prometheus can't scrape any pdfeditor-web instance. Site is down or DNS broke."
+
+      # ---- Low disk space -------------------------------------------------
+      # Worst-case free ratio across the host's real filesystems (media,
+      # DB volume, and Docker's own tree all live on the root fs). Retention
+      # runs hourly so growth is normally bounded — this catches a stuck job,
+      # a log blowup, or backups outpacing rotation before writes start
+      # failing with ENOSPC. Warning, not critical: it fires with headroom.
+      - uid: pdfeditor_low_disk
+        title: Low disk space on host
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              expr: 'min(node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs|fuse.*"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs|fuse.*"})'
+              instant: true
+              refId: A
+          - refId: B
+            relativeTimeRange: { from: 0, to: 0 }
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator: { type: lt, params: [0.15] }
+                  operator: { type: and }
+                  query: { params: ["A"] }
+                  reducer: { type: last }
+                  type: query
+              expression: A
+              refId: B
+        for: 15m
+        noDataState: NoData
+        execErrState: Alerting
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host filesystem below 15% free ({{ humanizePercentage $values.A.Value }} left)"
+          description: "A real filesystem on the VPS is running low. Check `df -h`; sweep with `docker compose exec web python manage.py cleanup_old_pdfs` and `docker system df`. Retention runs hourly — if disk is still filling, something is writing faster than it rotates."
