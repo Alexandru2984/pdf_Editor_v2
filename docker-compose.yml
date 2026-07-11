@@ -292,6 +292,15 @@ services:
     # Half the box's 12 cores. A parallel OCR/ghostscript batch can burst
     # hard; this keeps it from pegging all 12 and starving the neighbours.
     cpus: 6
+    # gVisor (runsc) sandbox: the worker is where untrusted PDFs meet C/C++
+    # parsers (ghostscript, PyMuPDF/MuPDF, tesseract, pdf2docx) whose memory-
+    # safety bugs are a recurring RCE source. gVisor interposes a user-space
+    # kernel between those libs and the host, so a parser RCE can't issue raw
+    # host syscalls. `runsc-net` (defined in /etc/docker/daemon.json — see
+    # docs/RUNBOOK.md) uses --network=host so Docker DNS + the Redis/DB network
+    # still work; syscall interposition — the RCE containment — is unaffected.
+    # Verified compatible with the full native stack incl. onnxruntime/fastembed.
+    runtime: runsc-net
     image: pdfeditor:latest
     # Same immutable rootfs as web. Celery's PDF tasks scratch to /tmp
     # (OCR/docx) and write outputs to the media volume; no other writes.

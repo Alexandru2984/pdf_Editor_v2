@@ -8,6 +8,12 @@ entries are grouped by the period the work landed.
 ## [Unreleased] — production-finish sweep (2026-07)
 
 ### Security
+- **gVisor sandbox for the worker** — the Celery worker (where untrusted PDFs
+  meet ghostscript / PyMuPDF / tesseract / pdf2docx, a recurring C/C++ RCE
+  surface) now runs under the `runsc` runtime, so a parser exploit is contained
+  by gVisor's user-space kernel instead of reaching host syscalls. On top of
+  the existing `cap_drop: ALL` + read-only rootfs + non-root + seccomp. Verified
+  compatible with the full native stack, including onnxruntime/fastembed.
 - **Hash-pinned dependency lockfile** — `requirements.lock` pins every dep +
   transitive to an exact version and SHA-256; the image installs with
   `pip install --require-hashes`, so builds are reproducible and a tampered

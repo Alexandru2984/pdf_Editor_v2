@@ -311,6 +311,36 @@ deploy shows up red in GitHub Actions, not as silent downtime.
 
 ---
 
+## Host Docker runtime — gVisor for the worker
+
+The `worker` service pins `runtime: runsc-net` in `docker-compose.yml`, so it
+runs under **gVisor** (untrusted PDFs meet C/C++ parsers there; gVisor's
+user-space kernel contains a parser RCE). That runtime is **host config, not
+in git** — it lives in `/etc/docker/daemon.json`:
+
+```json
+"runtimes": {
+  "runsc":     { "path": "/usr/bin/runsc", "runtimeArgs": ["--network=none"] },
+  "runsc-net": { "path": "/usr/bin/runsc", "runtimeArgs": ["--network=host"] }
+}
+```
+
+`runsc-net` uses `--network=host` on purpose: gVisor's `--network=sandbox`
+netstack fails on this Docker bridge (`cannot run with network enabled in root
+network namespace`), and host-passthrough networking keeps Docker DNS + the
+Redis/DB network working while syscall interposition (the RCE containment) is
+unchanged. Add a runtime with `sudo systemctl reload docker` (SIGHUP — reloads
+`runtimes` **without** restarting any container).
+
+**If the box is rebuilt** and this runtime is missing, `docker compose up -d`
+fails to start the worker (`unknown runtime runsc-net`). Recreate the
+daemon.json block above, reload docker, then redeploy. To roll gVisor *off*
+in a hurry (e.g. a suspected gVisor incompatibility after a dependency bump):
+drop `runtime: runsc-net` from the worker service and `docker compose up -d
+worker` — it falls back to `runc`. Confirm the sandbox is active with
+`docker exec pdf_editor_v2-worker-1 cat /proc/version` (gVisor reports the
+`Linux version 4.4.0 … 2016` signature, not the host kernel).
+
 ## Scheduled jobs (root crontab)
 
 All periodic maintenance runs from root's crontab on the VPS
