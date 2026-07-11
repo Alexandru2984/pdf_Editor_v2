@@ -64,9 +64,22 @@ x-hardening: &hardening
   cap_drop:
     - ALL
 
+# Cap every container's json-file log so runaway output can't fill the host
+# disk (promtail already ships logs to Loki, so the on-disk copy is only a
+# short local buffer). Merged into each service alongside *hardening via
+# `<<: [*hardening, *logging]` — 10 MB × 3 files = 30 MB ceiling per service.
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
   db:
-    <<: *hardening
+    <<: [*hardening, *logging]
+    # shared_buffers=512MB + per-connection work_mem across up to 300 conns.
+    mem_limit: 2g
     # Postgres' entrypoint chowns PGDATA and drops from root to the postgres
     # user, so it needs these back: file-ownership + setuid/setgid only.
     cap_add:
@@ -104,7 +117,7 @@ services:
     restart: unless-stopped
 
   pgbouncer:
-    <<: *hardening
+    <<: [*hardening, *logging]
     # edoburu/pgbouncer's entrypoint su's from root to the postgres user.
     cap_add:
       - SETGID
@@ -138,7 +151,9 @@ services:
     restart: unless-stopped
 
   redis:
-    <<: *hardening
+    <<: [*hardening, *logging]
+    # maxmemory is already 256mb (allkeys-lru); 512m leaves AOF/COW headroom.
+    mem_limit: 512m
     # The entrypoint runs as root: it chowns the /data AOF dir to fix
     # ownership (CHOWN + DAC_OVERRIDE + FOWNER to traverse/chown files it
     # doesn't own) then su-exec's down to the redis user (SETUID/SETGID).
@@ -175,7 +190,7 @@ services:
   # web CMD would have all replicas racing through advisory locks; this
   # pattern is the canonical fix and keeps the startup quiet.
   migrate:
-    <<: *hardening
+    <<: [*hardening, *logging]
     build: .
     image: pdfeditor:latest
     read_only: true
@@ -199,7 +214,11 @@ services:
     restart: "no"
 
   web:
-    <<: *hardening
+    <<: [*hardening, *logging]
+    # Ceiling, not a target (idles ~320 MB). Caps the blast radius on a VPS
+    # shared with ~10 other projects: a leak or pathological request OOM-kills
+    # this replica, not the neighbours. nginx LB routes around it.
+    mem_limit: 1g
     image: pdfeditor:latest
     # Immutable root filesystem: the only writable paths are the explicit
     # volumes (media, staticfiles, embeddings cache) and the tmpfs mounts
@@ -237,7 +256,7 @@ services:
     restart: unless-stopped
 
   nginx:
-    <<: *hardening
+    <<: [*hardening, *logging]
     # Master binds :80 (NET_BIND_SERVICE), forks workers as the nginx user
     # (SETUID/SETGID), and chowns its cache/temp dirs (CHOWN).
     cap_add:
@@ -263,7 +282,11 @@ services:
     restart: unless-stopped
 
   worker:
-    <<: *hardening
+    <<: [*hardening, *logging]
+    # Generous — this is the only service running unbounded, user-controlled
+    # heavy work (OCR, pdf2docx, ghostscript PDF/A, fastembed). A pathological
+    # PDF gets its task OOM-killed at 4 GB instead of eating all host RAM.
+    mem_limit: 4g
     image: pdfeditor:latest
     # Same immutable rootfs as web. Celery's PDF tasks scratch to /tmp
     # (OCR/docx) and write outputs to the media volume; no other writes.
@@ -299,7 +322,9 @@ services:
   # default (scanning off) stack doesn't wait on it. First boot runs freshclam
   # to pull the signature DB (~1-2 min); the healthcheck gates on clamd ready.
   clamav:
-    <<: *hardening
+    <<: [*hardening, *logging]
+    # Holds the full signature DB in memory (~1 GB steady); 2g covers scans.
+    mem_limit: 2g
     # Entrypoint starts as root to fix /var/lib/clamav ownership, then drops
     # to the clamav user (same chown+su pattern as redis/db above).
     cap_add:
@@ -327,7 +352,8 @@ services:
   # 127.0.0.1 so it isn't reachable from the public network — access it
   # locally or via SSH tunnel.
   prometheus:
-    <<: *hardening
+    <<: [*hardening, *logging]
+    mem_limit: 1g
     image: prom/prometheus:v2.55.1
     depends_on:
       - web
@@ -348,7 +374,8 @@ services:
     restart: unless-stopped
 
   grafana:
-    <<: *hardening
+    <<: [*hardening, *logging]
+    mem_limit: 512m
     image: grafana/grafana:11.3.1
     depends_on:
       - prometheus
@@ -387,7 +414,8 @@ services:
   # container's stdout/stderr via the docker daemon socket. Logs are
   # then queryable from Grafana via the provisioned Loki datasource.
   loki:
-    <<: *hardening
+    <<: [*hardening, *logging]
+    mem_limit: 1g
     image: grafana/loki:3.3.0
     ports:
       - "127.0.0.1:3100:3100"
@@ -398,7 +426,7 @@ services:
     restart: unless-stopped
 
   promtail:
-    <<: *hardening
+    <<: [*hardening, *logging]
     # Runs as root to read the docker socket (660 root:docker) and the
     # root-owned container log files — DAC_OVERRIDE lets it bypass those
     # permission bits without any other privilege.
@@ -427,7 +455,7 @@ services:
   # so it keeps the baseline cap_drop:[ALL] hardening. Never published to the
   # host; Prometheus scrapes it internally as node-exporter:9100.
   node-exporter:
-    <<: *hardening
+    <<: [*hardening, *logging]
     image: prom/node-exporter:v1.8.2
     command:
       - --path.rootfs=/host
