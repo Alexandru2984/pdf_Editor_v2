@@ -7,7 +7,26 @@ entries are grouped by the period the work landed.
 
 ## [Unreleased] — production-finish sweep (2026-07)
 
+### Security
+- **Hash-pinned dependency lockfile** — `requirements.lock` pins every dep +
+  transitive to an exact version and SHA-256; the image installs with
+  `pip install --require-hashes`, so builds are reproducible and a tampered
+  or typosquatted PyPI wheel can't slip in. (pip-audit on the lock: clean.)
+- **SSRF guard port allowlist** — certificate-revocation fetches (pyHanko
+  signing path) are now restricted to ports 80/443 on top of the existing
+  public-IP check, shrinking the internal-service target set even under a
+  DNS-rebind.
+- **Full security audit** (2026-07) across ~20 categories — injection,
+  SSRF, path traversal, IDOR, XSS, deserialization, upload safety, auth
+  rate-limiting, crypto, secrets handling: no new exploitable findings; the
+  one residual (a low-severity DNS-rebind window on the authenticated
+  signing path) is documented and partially mitigated by the port allowlist.
+
 ### Added
+- **`/readyz` now checks Redis too** — readiness round-trips through the
+  cache (the same Redis that backs the Celery broker and sessions) and
+  returns 503 if either Postgres or Redis is unreachable, so the deploy
+  smoke test and uptime monitors see a truthful signal.
 - **Legal pages** — `/privacy/` and `/terms/`, served as full per-language
   documents (Romanian/English, picked by the active language with English
   fallback). Linked from a new site-wide footer; the register form now
