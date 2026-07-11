@@ -152,6 +152,12 @@ from .share import (
     share_links_view,
 )
 from .upload import dashboard_view, delete_pdf_view, thumbnail_view, upload_view
+from .webhooks import (
+    create_webhook_view,
+    delete_webhook_view,
+    toggle_webhook_view,
+    webhooks_view,
+)
 
 __all__ = [
     "csp_report_view",
@@ -258,6 +264,10 @@ __all__ = [
     "metrics_view",
     "privacy_view",
     "terms_view",
+    "webhooks_view",
+    "create_webhook_view",
+    "toggle_webhook_view",
+    "delete_webhook_view",
     "register_view",
     "confirm_email_view",
     "resend_confirmation_view",

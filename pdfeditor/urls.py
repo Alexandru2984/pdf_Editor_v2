@@ -165,6 +165,11 @@ urlpatterns = [
     path("accounts/profile/delete/", views.delete_account_view, name="delete_account"),
     path("accounts/profile/api-keys/create/", views.create_api_key_view, name="create_api_key"),
     path("accounts/profile/api-keys/<uuid:key_id>/revoke/", views.revoke_api_key_view, name="revoke_api_key"),
+    # Webhooks (logged-in only)
+    path("accounts/profile/webhooks/", views.webhooks_view, name="webhooks"),
+    path("accounts/profile/webhooks/create/", views.create_webhook_view, name="create_webhook"),
+    path("accounts/profile/webhooks/<uuid:webhook_id>/toggle/", views.toggle_webhook_view, name="toggle_webhook"),
+    path("accounts/profile/webhooks/<uuid:webhook_id>/delete/", views.delete_webhook_view, name="delete_webhook"),
     path(
         "accounts/confirm/<str:uidb64>/<str:token>/",
         views.confirm_email_view,

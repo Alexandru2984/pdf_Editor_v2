@@ -134,6 +134,12 @@
     <p class="muted">{% trans "No API keys yet." %}</p>
     {% endif %}
 
+    <p class="api-keys-help" style="margin-top:1rem;">
+        🔔 {% trans "Prefer push over polling?" %}
+        <a href="{% url 'webhooks' %}">{% trans "Manage webhooks" %}</a>
+        — {% trans "get a signed POST when a job finishes." %}
+    </p>
+
     <h3 class="profile-section-title danger-section">{% trans "Your data" %}</h3>
     <div class="profile-actions">
         <a href="{% url 'export_data' %}" class="profile-btn neutral">⬇️ {% trans "Export my data (JSON)" %}</a>
