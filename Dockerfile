@@ -32,11 +32,17 @@ RUN echo "apt refresh: $APT_REFRESH_DATE" \
 
 WORKDIR /app
 
-COPY requirements.txt ./
+COPY requirements.txt requirements.lock ./
 # Upgrade pip first — the base image's pip carries install-time CVEs
-# (CVE-2025-8869 et al.); a patched pip builds the rest of the deps.
+# (CVE-2025-8869 et al.); a patched pip installs the rest of the deps.
+#
+# Install from the hash-pinned lockfile with --require-hashes: pip refuses
+# to install anything whose SHA-256 isn't listed, so a compromised or
+# typosquatted PyPI mirror can't slip an altered wheel into the image, and
+# every build is byte-for-byte reproducible. requirements.lock is generated
+# from requirements.txt (see that file's header); gunicorn is included there.
 RUN python -m pip install --upgrade pip \
-    && pip install -r requirements.txt && pip install gunicorn
+    && pip install --require-hashes -r requirements.lock
 
 COPY . .
 

@@ -39,6 +39,9 @@ requests>=2.28.0
 sentry-sdk[django]>=2.0.0
 sqlparse>=0.5.4
 uvicorn[standard]>=0.30.0
+# WSGI/ASGI server for the container (installed into the image; the exact
+# pin + hash lives in requirements.lock, which is what Docker installs).
+gunicorn>=23.0.0
 # Transitive deps (pulled in via requests/httpx) pinned to a CVE-free floor:
 #   urllib3 <2.7.0  → PYSEC-2026-141/142
 #   idna    <3.15   → CVE-2026-45409
