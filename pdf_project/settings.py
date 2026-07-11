@@ -284,6 +284,16 @@ if _database_url:
     DATABASES = {
         "default": dj_database_url.parse(_database_url, conn_max_age=600, conn_health_checks=True),
     }
+    # We reach Postgres through pgbouncer in *transaction* pooling mode
+    # (docker-compose.yml → POOL_MODE=transaction). A transaction pooler can
+    # hand each transaction a different server backend, which breaks
+    # server-side cursors: the DECLARE runs on one backend, the FETCH on
+    # another. Django's docs require disabling them behind such a pooler.
+    # Without this, any QuerySet.iterator() (large exports, future code)
+    # passes the tests — which hit Postgres directly — but returns wrong
+    # data or errors in production. Belt-and-suspenders even though no
+    # .iterator() call exists today.
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
 else:
     DATABASES = {
         "default": {
