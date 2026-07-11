@@ -36,7 +36,9 @@ entries are grouped by the period the work landed.
   at 10 MB × 3 (was unbounded — a disk-fill risk on the box we now alert on);
   the real memory consumers (web, worker, db, redis, clamav, prometheus,
   grafana, loki) get generous `mem_limit` ceilings so a runaway can't OOM
-  neighbouring projects on the shared VPS.
+  neighbouring projects on the shared VPS. The CPU-heavy services (worker 6,
+  web 3, db 4, clamav 2 of the 12 cores) also get `cpus` caps so a parallel
+  OCR/ghostscript batch can't peg every core.
 - **Retention now enforced** — `cleanup_old_pdfs` runs hourly from cron,
   matching the "files auto-delete after 24h" promise in the UI. (A backlog
   of ~20k files / 2.4 GB that had accumulated since the pre-Docker timer

@@ -80,6 +80,7 @@ services:
     <<: [*hardening, *logging]
     # shared_buffers=512MB + per-connection work_mem across up to 300 conns.
     mem_limit: 2g
+    cpus: 4
     # Postgres' entrypoint chowns PGDATA and drops from root to the postgres
     # user, so it needs these back: file-ownership + setuid/setgid only.
     cap_add:
@@ -219,6 +220,7 @@ services:
     # shared with ~10 other projects: a leak or pathological request OOM-kills
     # this replica, not the neighbours. nginx LB routes around it.
     mem_limit: 1g
+    cpus: 3
     image: pdfeditor:latest
     # Immutable root filesystem: the only writable paths are the explicit
     # volumes (media, staticfiles, embeddings cache) and the tmpfs mounts
@@ -287,6 +289,9 @@ services:
     # heavy work (OCR, pdf2docx, ghostscript PDF/A, fastembed). A pathological
     # PDF gets its task OOM-killed at 4 GB instead of eating all host RAM.
     mem_limit: 4g
+    # Half the box's 12 cores. A parallel OCR/ghostscript batch can burst
+    # hard; this keeps it from pegging all 12 and starving the neighbours.
+    cpus: 6
     image: pdfeditor:latest
     # Same immutable rootfs as web. Celery's PDF tasks scratch to /tmp
     # (OCR/docx) and write outputs to the media volume; no other writes.
@@ -325,6 +330,7 @@ services:
     <<: [*hardening, *logging]
     # Holds the full signature DB in memory (~1 GB steady); 2g covers scans.
     mem_limit: 2g
+    cpus: 2
     # Entrypoint starts as root to fix /var/lib/clamav ownership, then drops
     # to the clamav user (same chown+su pattern as redis/db above).
     cap_add:
