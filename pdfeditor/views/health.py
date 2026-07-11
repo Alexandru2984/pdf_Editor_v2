@@ -6,7 +6,8 @@ from datetime import timedelta
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model
-from django.db import OperationalError, connection
+from django.core.cache import cache
+from django.db import connection
 from django.db.models import Count, Sum
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -21,7 +22,17 @@ def healthz(request: HttpRequest) -> JsonResponse:
 
 
 def readyz(request: HttpRequest) -> JsonResponse:
-    """Readiness check — verifies that we can talk to the primary database."""
+    """Readiness — verifies this instance can reach the stateful backends it
+    needs to actually serve: Postgres (via pgbouncer) and Redis (which backs
+    the cache, sessions, the Celery broker, and the rate-limit store).
+
+    Returns 503 if either is unreachable. NOTE: the internal nginx LB is
+    stock (not Plus), so it does *passive* failover only — it never polls
+    /readyz — so a 503 here can't yank a live node out of rotation on its
+    own. This endpoint is consumed by the post-deploy smoke test and external
+    uptime monitors, for which "degraded when a backend is down" is the
+    honest, actionable answer.
+    """
     checks: dict[str, str] = {}
     overall_ok = True
 
@@ -30,11 +41,24 @@ def readyz(request: HttpRequest) -> JsonResponse:
             cur.execute("SELECT 1")
             cur.fetchone()
         checks["database"] = "ok"
-    except OperationalError as exc:
+    except Exception as exc:  # noqa: BLE001 — readiness must never itself 500
         checks["database"] = f"error: {exc}"
         overall_ok = False
-    except Exception as exc:
-        checks["database"] = f"error: {exc}"
+
+    # Redis reachability through Django's cache — the same Redis server also
+    # backs the Celery broker and session store, so a round-trip here proves
+    # the whole Redis dependency. (In tests/dev with LocMemCache this is a
+    # local no-op that always passes, which is correct — there's no Redis to
+    # be down.)
+    try:
+        canary = f"readyz-{id(request)}"
+        cache.set(canary, "1", 5)
+        if cache.get(canary) != "1":
+            raise RuntimeError("cache round-trip returned unexpected value")
+        cache.delete(canary)
+        checks["redis"] = "ok"
+    except Exception as exc:  # noqa: BLE001
+        checks["redis"] = f"error: {exc}"
         overall_ok = False
 
     if not overall_ok:

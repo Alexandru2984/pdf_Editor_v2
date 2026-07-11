@@ -89,6 +89,7 @@ class HealthEndpointTests(TestCase):
         body = resp.json()
         self.assertEqual(body["status"], "ok")
         self.assertEqual(body["checks"]["database"], "ok")
+        self.assertEqual(body["checks"]["redis"], "ok")
 
     def test_readyz_returns_503_when_db_fails(self):
         from django.db import OperationalError
@@ -101,6 +102,17 @@ class HealthEndpointTests(TestCase):
         body = resp.json()
         self.assertEqual(body["status"], "degraded")
         self.assertIn("connection refused", body["checks"]["database"])
+
+    def test_readyz_returns_503_when_redis_fails(self):
+        with patch("pdfeditor.views.health.cache") as mock_cache:
+            mock_cache.set.side_effect = ConnectionError("redis down")
+            resp = self.client.get(reverse("readyz"))
+
+        self.assertEqual(resp.status_code, 503)
+        body = resp.json()
+        self.assertEqual(body["status"], "degraded")
+        self.assertEqual(body["checks"]["database"], "ok")
+        self.assertIn("redis down", body["checks"]["redis"])
 
 
 class AdminHealthDashboardTests(TestCase):
