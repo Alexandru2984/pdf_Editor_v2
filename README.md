@@ -4,7 +4,7 @@
 [![deploy](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml/badge.svg)](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml)
 ![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
 ![django](https://img.shields.io/badge/django-5.2%20LTS-092e20)
-![tests](https://img.shields.io/badge/tests-833%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-834%20passing-brightgreen)
 ![security](https://img.shields.io/badge/security-bandit%20%2B%20pip--audit%20%2B%20trivy-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
@@ -29,7 +29,7 @@ and a CI gate that blocks deploys on critical CVEs.
 | **Sustained load** | **500 concurrent users**, 53,580 requests over 5 min, **0.15% failure rate** |
 | **Peak throughput** | **179 req/s** at 8 workers across 2 replicas (+48% vs single-replica baseline) |
 | **Endpoint speedup story** | `/api/v1/outputs/` **60s → 1.2s** after pagination + cache + DB tuning |
-| **Tests** | **833 passing** across Django + SDK · 3.10/3.11/3.12 matrix · pgvector required |
+| **Tests** | **834 passing** across Django + SDK · 3.10/3.11/3.12 matrix · pgvector required |
 | **Lines of Python** | ~21,500 (excluding migrations) |
 | **PDF ops** | 25+, all reachable both from web UI and REST API |
 | **Async jobs** | 6 kinds (OCR, PDF/A, Compare, Convert, RAG-index, ToImages) — sub-5-page sync, threshold-async |
@@ -358,7 +358,7 @@ service needed.
 
 | Check | Status |
 |-------|--------|
-| Test count | **833 passing** (817 Django + 16 SDK; pgvector required for the Django suite) |
+| Test count | **834 passing** (818 Django + 16 SDK; pgvector required for the Django suite) |
 | Coverage | reports uploaded as CI artifact (`coverage.xml`) |
 | Linting | `ruff check` + `ruff format` |
 | Types | `mypy` strict on `pdf_processor/` |
@@ -414,7 +414,7 @@ celery -A pdf_project worker --loglevel=info
 Pushes to `main` trigger:
 
 1. **`tests` workflow** — Python 3.10/3.11/3.12 matrix, ruff + mypy + bandit
-   + pip-audit + 817 Django tests + Django deploy check.
+   + pip-audit + 818 Django tests + Django deploy check.
 2. **`build-and-deploy`** (workflow_run after tests success) — builds the
    image, pushes to `ghcr.io/alexandru2984/pdf_editor_v2:{latest,sha-XXXXX}`,
    scans with Trivy (fail on HIGH/CRITICAL), publishes an SPDX SBOM and
