@@ -113,9 +113,7 @@ def _trigger_webhooks(job: Job) -> None:
     """
     if not job.user_id:
         return
-    hook_ids = list(
-        Webhook.objects.filter(user_id=job.user_id, is_active=True).values_list("id", flat=True)
-    )
+    hook_ids = list(Webhook.objects.filter(user_id=job.user_id, is_active=True).values_list("id", flat=True))
     if not hook_ids:
         return
     if not cache.add(f"webhook-fired:{job.id}", "1", 3600):

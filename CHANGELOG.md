@@ -23,6 +23,12 @@ entries are grouped by the period the work landed.
   signing path) is documented and partially mitigated by the port allowlist.
 
 ### Added
+- **Webhooks** — logged-in users can register HTTPS endpoints
+  (`/accounts/profile/webhooks/`) that receive an HMAC-SHA256-signed POST when
+  one of their async jobs finishes, instead of polling. Delivery is SSRF-guarded
+  (public https only, re-validated at send time), doesn't follow redirects,
+  retries with exponential backoff, and auto-disables an endpoint after 15
+  consecutive failures.
 - **`/readyz` now checks Redis too** — readiness round-trips through the
   cache (the same Redis that backs the Celery broker and sessions) and
   returns 503 if either Postgres or Redis is unreachable, so the deploy

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-10 22:32+0000\n"
+"POT-Creation-Date: 2026-07-11 17:49+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -549,19 +549,19 @@ msgstr ""
 msgid "Back to admin"
 msgstr ""
 
-#: pdfeditor/templates/pdfeditor/base.html:55
+#: pdfeditor/templates/pdfeditor/base.html:52
 msgid "Toggle dark mode"
 msgstr ""
 
-#: pdfeditor/templates/pdfeditor/base.html:63
+#: pdfeditor/templates/pdfeditor/base.html:60
 msgid "Switch language"
 msgstr ""
 
-#: pdfeditor/templates/pdfeditor/base.html:68
+#: pdfeditor/templates/pdfeditor/base.html:65
 msgid "Toggle navigation"
 msgstr ""
 
-#: pdfeditor/templates/pdfeditor/base.html:74
+#: pdfeditor/templates/pdfeditor/base.html:71
 #: pdfeditor/templates/pdfeditor/chat.html:21
 #: pdfeditor/templates/pdfeditor/compare_result.html:36
 #: pdfeditor/templates/pdfeditor/compress_result.html:54
@@ -587,11 +587,11 @@ msgstr ""
 msgid "Dashboard"
 msgstr ""
 
-#: pdfeditor/templates/pdfeditor/base.html:79
+#: pdfeditor/templates/pdfeditor/base.html:76
 msgid "Sign Out"
 msgstr ""
 
-#: pdfeditor/templates/pdfeditor/base.html:82
+#: pdfeditor/templates/pdfeditor/base.html:79
 #: pdfeditor/templates/registration/login.html:4
 #: pdfeditor/templates/registration/login.html:8
 #: pdfeditor/templates/registration/login.html:36
@@ -599,19 +599,19 @@ msgstr ""
 msgid "Sign In"
 msgstr ""
 
-#: pdfeditor/templates/pdfeditor/base.html:83
+#: pdfeditor/templates/pdfeditor/base.html:80
 msgid "Register"
 msgstr ""
 
-#: pdfeditor/templates/pdfeditor/base.html:104
+#: pdfeditor/templates/pdfeditor/base.html:101
 msgid "Privacy Policy"
 msgstr ""
 
-#: pdfeditor/templates/pdfeditor/base.html:105
+#: pdfeditor/templates/pdfeditor/base.html:102
 msgid "Terms of Service"
 msgstr ""
 
-#: pdfeditor/templates/pdfeditor/base.html:106
+#: pdfeditor/templates/pdfeditor/base.html:103
 msgid "Open source"
 msgstr ""
 
@@ -1450,7 +1450,7 @@ msgstr ""
 
 #: pdfeditor/templates/pdfeditor/delete_account.html:4
 #: pdfeditor/templates/pdfeditor/delete_account.html:8
-#: pdfeditor/templates/pdfeditor/profile.html:140
+#: pdfeditor/templates/pdfeditor/profile.html:146
 msgid "Delete account"
 msgstr ""
 
@@ -1735,6 +1735,7 @@ msgstr ""
 #: pdfeditor/templates/pdfeditor/job_detail.html:20
 #: pdfeditor/templates/pdfeditor/jobs_list.html:21
 #: pdfeditor/templates/pdfeditor/profile.html:104
+#: pdfeditor/templates/pdfeditor/webhooks.html:40
 msgid "Status"
 msgstr ""
 
@@ -2295,6 +2296,7 @@ msgid "Last used"
 msgstr ""
 
 #: pdfeditor/templates/pdfeditor/profile.html:116
+#: pdfeditor/templates/pdfeditor/webhooks.html:54
 msgid "active"
 msgstr ""
 
@@ -2310,11 +2312,23 @@ msgstr ""
 msgid "No API keys yet."
 msgstr ""
 
-#: pdfeditor/templates/pdfeditor/profile.html:137
-msgid "Your data"
+#: pdfeditor/templates/pdfeditor/profile.html:138
+msgid "Prefer push over polling?"
 msgstr ""
 
 #: pdfeditor/templates/pdfeditor/profile.html:139
+msgid "Manage webhooks"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:140
+msgid "get a signed POST when a job finishes."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:143
+msgid "Your data"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/profile.html:145
 msgid "Export my data (JSON)"
 msgstr ""
 
@@ -2848,6 +2862,7 @@ msgid "Add a passkey"
 msgstr ""
 
 #: pdfeditor/templates/pdfeditor/security_sessions.html:91
+#: pdfeditor/templates/pdfeditor/webhooks.html:85
 msgid "Back to profile"
 msgstr ""
 
@@ -3303,6 +3318,77 @@ msgstr ""
 
 #: pdfeditor/templates/pdfeditor/watermark_result.html:33
 msgid "Download Watermarked PDF"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:4
+#: pdfeditor/templates/pdfeditor/webhooks.html:8
+msgid "Webhooks"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:10
+msgid ""
+"When one of your async jobs (OCR, PDF/A, compare, convert…) finishes, we "
+"POST a signed JSON event to each active endpoint below — no polling needed."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:11
+msgid "API docs"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:16
+msgid "Signing secret — copy it now, it's shown only once:"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:19
+msgid ""
+"Verify each delivery by computing HMAC-SHA256 of the raw request body with "
+"this secret and comparing it (constant-time) to the"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:20
+msgid "header"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:28
+msgid "Description (optional)"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:29
+msgid "Add webhook"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:32
+msgid ""
+"HTTPS only. The URL must resolve to a public address — internal hosts are "
+"rejected."
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:39
+msgid "Endpoint"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:41
+msgid "Last delivery"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:56
+msgid "disabled"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:70
+msgid "Disable"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:70
+msgid "Enable"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:72
+msgid "Delete this webhook?"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:82
+msgid "No webhooks yet."
 msgstr ""
 
 #: pdfeditor/templates/registration/confirm_email_invalid.html:4
@@ -4133,4 +4219,30 @@ msgstr ""
 
 #: pdfeditor/views/upload.py:201
 msgid "PDF removed successfully."
+msgstr ""
+
+#: pdfeditor/views/webhooks.py:58
+#, python-format
+msgid "You can have at most %(n)s webhooks."
+msgstr ""
+
+#: pdfeditor/views/webhooks.py:67
+#, python-format
+msgid "Invalid webhook URL: %(err)s"
+msgstr ""
+
+#: pdfeditor/views/webhooks.py:73
+msgid "Webhook created. Save the signing secret now — it's shown only once."
+msgstr ""
+
+#: pdfeditor/views/webhooks.py:89
+msgid "Webhook enabled."
+msgstr ""
+
+#: pdfeditor/views/webhooks.py:89
+msgid "Webhook disabled."
+msgstr ""
+
+#: pdfeditor/views/webhooks.py:99
+msgid "Webhook deleted."
 msgstr ""

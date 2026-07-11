@@ -57,6 +57,11 @@ Full benchmark write-up with per-endpoint p95 and the tuning story in [`scripts/
 - **🪣 Batch operations** — `POST /api/v1/ops/batch/` applies one op to up to
   50 owned PDFs in a single Celery job with incremental progress; partial
   success allowed (`done` if any PDF succeeded, per-row error capture).
+- **🪝 Webhooks** — logged-in users register HTTPS endpoints that receive an
+  HMAC-SHA256-signed POST the moment an async job finishes, instead of polling.
+  Delivery targets are SSRF-guarded (public https only, re-checked at send
+  time), with exponential-backoff retries and auto-disable after repeated
+  failure.
 - **📈 Full observability stack** — Prometheus scrapes web replicas via Docker
   DNS service discovery; **node-exporter** feeds host disk/CPU/memory;
   Grafana dashboard with 13 panels + variable for per-replica drill-down;
@@ -296,6 +301,38 @@ the page threshold) run in a separate Celery worker container. The flow:
 
 In CI, `CELERY_TASK_ALWAYS_EAGER=True` runs tasks inline so tests don't need
 a broker.
+
+## Webhooks
+
+Instead of polling `/api/v1/jobs/`, a logged-in user can register HTTPS
+endpoints at `/accounts/profile/webhooks/`. When one of their async jobs
+reaches a terminal state, every active endpoint gets a signed POST:
+
+```http
+POST /your/endpoint HTTP/1.1
+Content-Type: application/json
+X-PDF-Event: job.completed
+X-PDF-Webhook-Id: 3f2a…
+X-PDF-Signature: sha256=9b1c…
+
+{"event":"job.completed","delivered_at":"2026-07-11T13:20:00+00:00",
+ "job":{"id":"…","kind":"pdfa","status":"done","output_id":"…",
+        "error_message":null,"created_at":"…","finished_at":"…"}}
+```
+
+Verify authenticity by recomputing the HMAC over the **raw body** with the
+per-webhook signing secret (shown once on creation):
+
+```python
+import hashlib, hmac
+expected = "sha256=" + hmac.new(secret.encode(), request.body, hashlib.sha256).hexdigest()
+assert hmac.compare_digest(expected, request.headers["X-PDF-Signature"])
+```
+
+Security: delivery URLs must be **public https** — internal/RFC1918/loopback
+targets are rejected on save and re-validated at send time (DNS-rebind
+defence); redirects aren't followed; failed deliveries retry with exponential
+backoff and the endpoint auto-disables after 15 consecutive failures.
 
 ## Observability
 

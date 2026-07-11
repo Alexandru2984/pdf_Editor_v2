@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-10 22:32+0000\n"
+"POT-Creation-Date: 2026-07-11 17:49+0000\n"
 "PO-Revision-Date: 2026-05-03 17:30+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -124,12 +124,10 @@ msgid "Image fit"
 msgstr "Modul de încadrare"
 
 #: pdfeditor/forms.py:417 pdfeditor/forms.py:419
-#| msgid "Invalid page order format."
 msgid "Invalid image order."
 msgstr "Ordinea imaginilor este invalidă."
 
 #: pdfeditor/forms.py:421
-#| msgid "Page order cannot contain duplicates."
 msgid "Image order cannot contain duplicates."
 msgstr "Ordinea imaginilor nu poate conține duplicate."
 
@@ -455,7 +453,6 @@ msgstr ""
 
 #: pdfeditor/signals.py:88 pdfeditor/signals.py:89
 #: pdfeditor/templates/pdfeditor/security_sessions.html:23
-#| msgid "Unknown error"
 msgid "unknown"
 msgstr "necunoscut"
 
@@ -593,19 +590,19 @@ msgstr "Încărcate + procesate"
 msgid "Back to admin"
 msgstr "Înapoi la admin"
 
-#: pdfeditor/templates/pdfeditor/base.html:55
+#: pdfeditor/templates/pdfeditor/base.html:52
 msgid "Toggle dark mode"
 msgstr "Comută modul întunecat"
 
-#: pdfeditor/templates/pdfeditor/base.html:63
+#: pdfeditor/templates/pdfeditor/base.html:60
 msgid "Switch language"
 msgstr "Schimbă limba"
 
-#: pdfeditor/templates/pdfeditor/base.html:68
+#: pdfeditor/templates/pdfeditor/base.html:65
 msgid "Toggle navigation"
 msgstr "Comută navigarea"
 
-#: pdfeditor/templates/pdfeditor/base.html:74
+#: pdfeditor/templates/pdfeditor/base.html:71
 #: pdfeditor/templates/pdfeditor/chat.html:21
 #: pdfeditor/templates/pdfeditor/compare_result.html:36
 #: pdfeditor/templates/pdfeditor/compress_result.html:54
@@ -631,11 +628,11 @@ msgstr "Comută navigarea"
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: pdfeditor/templates/pdfeditor/base.html:79
+#: pdfeditor/templates/pdfeditor/base.html:76
 msgid "Sign Out"
 msgstr "Deconectare"
 
-#: pdfeditor/templates/pdfeditor/base.html:82
+#: pdfeditor/templates/pdfeditor/base.html:79
 #: pdfeditor/templates/registration/login.html:4
 #: pdfeditor/templates/registration/login.html:8
 #: pdfeditor/templates/registration/login.html:36
@@ -643,20 +640,19 @@ msgstr "Deconectare"
 msgid "Sign In"
 msgstr "Autentificare"
 
-#: pdfeditor/templates/pdfeditor/base.html:83
+#: pdfeditor/templates/pdfeditor/base.html:80
 msgid "Register"
 msgstr "Înregistrare"
 
-#: pdfeditor/templates/pdfeditor/base.html:104
+#: pdfeditor/templates/pdfeditor/base.html:101
 msgid "Privacy Policy"
 msgstr "Politica de confidențialitate"
 
-#: pdfeditor/templates/pdfeditor/base.html:105
+#: pdfeditor/templates/pdfeditor/base.html:102
 msgid "Terms of Service"
 msgstr "Termenii serviciului"
 
-#: pdfeditor/templates/pdfeditor/base.html:106
-#| msgid "source(s)"
+#: pdfeditor/templates/pdfeditor/base.html:103
 msgid "Open source"
 msgstr "Open source"
 
@@ -1144,7 +1140,6 @@ msgid "Professional PDF Tools - All in One Place"
 msgstr "Unelte PDF profesionale - toate într-un singur loc"
 
 #: pdfeditor/templates/pdfeditor/dashboard.html:15
-#| msgid "Upload Your PDF"
 msgid "Upload Your PDFs"
 msgstr "Încarcă PDF-urile tale"
 
@@ -1157,7 +1152,6 @@ msgstr ""
 " (ține Ctrl/Shift în fereastra de selecție pentru mai multe fișiere)"
 
 #: pdfeditor/templates/pdfeditor/dashboard.html:21
-#| msgid "Choose File"
 msgid "Choose Files"
 msgstr "Alege fișierele"
 
@@ -1548,7 +1542,7 @@ msgstr "Unele fișiere au fost omise — sunt acceptate doar PDF-uri."
 
 #: pdfeditor/templates/pdfeditor/delete_account.html:4
 #: pdfeditor/templates/pdfeditor/delete_account.html:8
-#: pdfeditor/templates/pdfeditor/profile.html:140
+#: pdfeditor/templates/pdfeditor/profile.html:146
 msgid "Delete account"
 msgstr "Șterge contul"
 
@@ -1854,6 +1848,7 @@ msgstr "Rulez %(kind)s în fundal. Pagina se actualizează live."
 #: pdfeditor/templates/pdfeditor/job_detail.html:20
 #: pdfeditor/templates/pdfeditor/jobs_list.html:21
 #: pdfeditor/templates/pdfeditor/profile.html:104
+#: pdfeditor/templates/pdfeditor/webhooks.html:40
 msgid "Status"
 msgstr "Stare"
 
@@ -1874,7 +1869,6 @@ msgid "Cancel this job?"
 msgstr "Anulezi acest job?"
 
 #: pdfeditor/templates/pdfeditor/job_detail.html:57
-#| msgid "Cancel"
 msgid "Cancel job"
 msgstr "Anulează jobul"
 
@@ -1883,12 +1877,10 @@ msgid "Job finished"
 msgstr "Job finalizat"
 
 #: pdfeditor/templates/pdfeditor/job_detail.html:107
-#| msgid "Failed"
 msgid "Job failed"
 msgstr "Job eșuat"
 
 #: pdfeditor/templates/pdfeditor/job_detail.html:110
-#| msgid "Ready to download"
 msgid "Your file is ready to download."
 msgstr "Fișierul tău este gata de descărcare."
 
@@ -2276,7 +2268,6 @@ msgstr "PDF/A gata!"
 
 #: pdfeditor/templates/pdfeditor/pdfa_result.html:12
 #, python-format
-#| msgid "Your document has been converted to PDF/A-{{ version }}."
 msgid "Your document has been converted to PDF/A-%(version)s."
 msgstr "Documentul a fost convertit în PDF/A-%(version)s."
 
@@ -2377,7 +2368,6 @@ msgid "Regenerate backup codes"
 msgstr "Regenerează codurile de rezervă"
 
 #: pdfeditor/templates/pdfeditor/profile.html:66
-#| msgid "Current PDF password"
 msgid "Current password"
 msgstr "Parola curentă"
 
@@ -2439,6 +2429,7 @@ msgid "Last used"
 msgstr "Ultima utilizare"
 
 #: pdfeditor/templates/pdfeditor/profile.html:116
+#: pdfeditor/templates/pdfeditor/webhooks.html:54
 msgid "active"
 msgstr "activă"
 
@@ -2454,11 +2445,23 @@ msgstr "Revocă această cheie?"
 msgid "No API keys yet."
 msgstr "Nicio cheie API încă."
 
-#: pdfeditor/templates/pdfeditor/profile.html:137
+#: pdfeditor/templates/pdfeditor/profile.html:138
+msgid "Prefer push over polling?"
+msgstr "Preferi push în loc de polling?"
+
+#: pdfeditor/templates/pdfeditor/profile.html:139
+msgid "Manage webhooks"
+msgstr "Gestionează webhook-urile"
+
+#: pdfeditor/templates/pdfeditor/profile.html:140
+msgid "get a signed POST when a job finishes."
+msgstr "primești un POST semnat când se termină un job."
+
+#: pdfeditor/templates/pdfeditor/profile.html:143
 msgid "Your data"
 msgstr "Datele tale"
 
-#: pdfeditor/templates/pdfeditor/profile.html:139
+#: pdfeditor/templates/pdfeditor/profile.html:145
 msgid "Export my data (JSON)"
 msgstr "Exportă datele mele (JSON)"
 
@@ -2929,8 +2932,6 @@ msgstr "PDF căutabil!"
 
 #: pdfeditor/templates/pdfeditor/searchable_result.html:13
 #, python-format
-#| msgid "OCR text layer added on {{ count }} page."
-#| msgid_plural "OCR text layer added on {{ count }} pages."
 msgid "OCR text layer added on %(count)s page."
 msgid_plural "OCR text layer added on %(count)s pages."
 msgstr[0] "Strat de text OCR adăugat pe %(count)s pagină."
@@ -2961,12 +2962,10 @@ msgid "IP"
 msgstr "IP"
 
 #: pdfeditor/templates/pdfeditor/security_sessions.html:24
-#| msgid "Sign in"
 msgid "Signed in"
 msgstr "Autentificat"
 
 #: pdfeditor/templates/pdfeditor/security_sessions.html:25
-#| msgid "active"
 msgid "Last active"
 msgstr "Ultima activitate"
 
@@ -2976,7 +2975,6 @@ msgid "ago"
 msgstr "în urmă"
 
 #: pdfeditor/templates/pdfeditor/security_sessions.html:31
-#| msgid "Revoked"
 msgid "Revoke"
 msgstr "Revocă"
 
@@ -3014,7 +3012,6 @@ msgid "Remove this passkey? You will no longer be able to sign in with it."
 msgstr "Ștergi acest passkey? Nu te vei mai putea autentifica cu el."
 
 #: pdfeditor/templates/pdfeditor/security_sessions.html:72
-#| msgid "No API keys yet."
 msgid "No passkeys yet."
 msgstr "Niciun passkey încă."
 
@@ -3027,7 +3024,7 @@ msgid "Add a passkey"
 msgstr "Adaugă un passkey"
 
 #: pdfeditor/templates/pdfeditor/security_sessions.html:91
-#| msgid "Back to List"
+#: pdfeditor/templates/pdfeditor/webhooks.html:85
 msgid "Back to profile"
 msgstr "Înapoi la profil"
 
@@ -3509,6 +3506,93 @@ msgstr "Previzualizează PDF-ul cu filigran"
 msgid "Download Watermarked PDF"
 msgstr "Descarcă PDF-ul cu filigran"
 
+#: pdfeditor/templates/pdfeditor/webhooks.html:4
+#: pdfeditor/templates/pdfeditor/webhooks.html:8
+msgid "Webhooks"
+msgstr "Webhook-uri"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:10
+msgid ""
+"When one of your async jobs (OCR, PDF/A, compare, convert…) finishes, we "
+"POST a signed JSON event to each active endpoint below — no polling needed."
+msgstr ""
+"Când unul dintre job-urile tale asincrone (OCR, PDF/A, comparare, "
+"conversie…) se termină, trimitem prin POST un eveniment JSON semnat către "
+"fiecare endpoint activ de mai jos — fără polling."
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:11
+#| msgid "API access"
+msgid "API docs"
+msgstr "Documentație API"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:16
+msgid "Signing secret — copy it now, it's shown only once:"
+msgstr "Secret de semnare — copiază-l acum, se afișează o singură dată:"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:19
+msgid ""
+"Verify each delivery by computing HMAC-SHA256 of the raw request body with "
+"this secret and comparing it (constant-time) to the"
+msgstr ""
+"Verifică fiecare livrare calculând HMAC-SHA256 al corpului brut al cererii "
+"cu acest secret și comparându-l (în timp constant) cu antetul"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:20
+#| msgid "header."
+msgid "header"
+msgstr "antet"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:28
+#| msgid "Location (optional)"
+msgid "Description (optional)"
+msgstr "Descriere (opțional)"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:29
+msgid "Add webhook"
+msgstr "Adaugă webhook"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:32
+msgid ""
+"HTTPS only. The URL must resolve to a public address — internal hosts are "
+"rejected."
+msgstr ""
+"Doar HTTPS. URL-ul trebuie să rezolve la o adresă publică — host-urile "
+"interne sunt respinse."
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:39
+msgid "Endpoint"
+msgstr "Endpoint"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:41
+#| msgid "Last active"
+msgid "Last delivery"
+msgstr "Ultima livrare"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:56
+#| msgid "Enabled"
+msgid "disabled"
+msgstr "dezactivat"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:70
+#| msgid "Disable 2FA"
+msgid "Disable"
+msgstr "Dezactivează"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:70
+#| msgid "Enabled"
+msgid "Enable"
+msgstr "Activează"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:72
+#| msgid "Delete this PDF?"
+msgid "Delete this webhook?"
+msgstr "Ștergi acest webhook?"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:82
+#| msgid "No share links yet."
+msgid "No webhooks yet."
+msgstr "Niciun webhook încă."
+
 #: pdfeditor/templates/registration/confirm_email_invalid.html:4
 msgid "Invalid Confirmation Link"
 msgstr "Link de confirmare invalid"
@@ -3625,7 +3709,6 @@ msgstr ""
 "dacă rămâi fără aplicația de autentificare — nu vor mai fi afișate din nou."
 
 #: pdfeditor/templates/registration/mfa_backup_codes.html:22
-#| msgid "Done!"
 msgid "Done"
 msgstr "Gata"
 
@@ -3682,7 +3765,6 @@ msgid "6-digit or backup code"
 msgstr "Cod de 6 cifre sau cod de rezervă"
 
 #: pdfeditor/templates/registration/mfa_verify.html:17
-#| msgid "Back to signing"
 msgid "Back to login"
 msgstr "Înapoi la autentificare"
 
@@ -3848,8 +3930,6 @@ msgid "Send Confirmation Email"
 msgstr "Trimite emailul de confirmare"
 
 #: pdfeditor/views/auth.py:89
-#| msgid ""
-#| "Account created! Check your email to confirm your address before signing in."
 msgid ""
 "Almost there — check your email to confirm your address and finish signing "
 "up."
@@ -4098,7 +4178,6 @@ msgid "Converted file not found."
 msgstr "Fișierul convertit nu a fost găsit."
 
 #: pdfeditor/views/basic_ops.py:1231
-#| msgid "PDF/A conversion queued."
 msgid "PDF → images queued."
 msgstr "Conversia PDF → imagini a fost pusă în coadă."
 
@@ -4150,7 +4229,6 @@ msgstr "S-a omis „%(name)s” — depășește limita de %(mb)d MB."
 
 #: pdfeditor/views/basic_ops.py:1462 pdfeditor/views/upload.py:130
 #, python-format
-#| msgid "Skipped \"%(name)s\" - could not be parsed as a PDF."
 msgid "Skipped \"%(name)s\" - failed the malware scan."
 msgstr "S-a omis „%(name)s” — nu a trecut scanarea antivirus."
 
@@ -4274,12 +4352,10 @@ msgid "Enable two-factor authentication first."
 msgstr "Activează mai întâi autentificarea în doi pași."
 
 #: pdfeditor/views/passkeys.py:202
-#| msgid "Pages removed"
 msgid "Passkey removed."
 msgstr "Passkey-ul a fost șters."
 
 #: pdfeditor/views/passkeys.py:204
-#| msgid "Page not found"
 msgid "Passkey not found."
 msgstr "Passkey-ul nu a fost găsit."
 
@@ -4292,17 +4368,14 @@ msgid "API key revoked."
 msgstr "Cheie API revocată."
 
 #: pdfeditor/views/sessions.py:46
-#| msgid "Unknown error"
 msgid "Unknown browser"
 msgstr "Browser necunoscut"
 
 #: pdfeditor/views/sessions.py:58
-#| msgid "Unknown error"
 msgid "unknown OS"
 msgstr "sistem de operare necunoscut"
 
 #: pdfeditor/views/sessions.py:108
-#| msgid "Share link not found."
 msgid "Session not found."
 msgstr "Sesiunea nu a fost găsită."
 
@@ -4390,6 +4463,35 @@ msgstr "Niciun fișier PDF valid nu a fost încărcat."
 #: pdfeditor/views/upload.py:201
 msgid "PDF removed successfully."
 msgstr "PDF-ul a fost șters cu succes."
+
+#: pdfeditor/views/webhooks.py:58
+#, python-format
+msgid "You can have at most %(n)s webhooks."
+msgstr "Poți avea cel mult %(n)s webhook-uri."
+
+#: pdfeditor/views/webhooks.py:67
+#, python-format
+#| msgid "Invalid JSON: %(err)s"
+msgid "Invalid webhook URL: %(err)s"
+msgstr "URL de webhook invalid: %(err)s"
+
+#: pdfeditor/views/webhooks.py:73
+msgid "Webhook created. Save the signing secret now — it's shown only once."
+msgstr ""
+"Webhook creat. Salvează secretul de semnare acum — se afișează o singură "
+"dată."
+
+#: pdfeditor/views/webhooks.py:89
+msgid "Webhook enabled."
+msgstr "Webhook activat."
+
+#: pdfeditor/views/webhooks.py:89
+msgid "Webhook disabled."
+msgstr "Webhook dezactivat."
+
+#: pdfeditor/views/webhooks.py:99
+msgid "Webhook deleted."
+msgstr "Webhook șters."
 
 #~ msgid "Drag & drop your PDF here or click to browse"
 #~ msgstr "Trage și plasează PDF-ul aici sau apasă pentru a alege"
