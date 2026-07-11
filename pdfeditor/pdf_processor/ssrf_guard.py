@@ -43,12 +43,28 @@ def _ip_is_public(ip: str) -> bool:
     )
 
 
+# Real CA OCSP/CRL/AIA endpoints always live on standard web ports. Pinning
+# to these means that even if the public-IP check is ever bypassed, a fetch
+# can't reach internal services on their own ports (Redis 6379, Postgres 5432,
+# Prometheus 9090, the internal LB, …) — it shrinks the SSRF target set to
+# whatever answers on :80/:443.
+_ALLOWED_PORTS = frozenset({80, 443})
+
+
 def validate_outbound_url(url: str) -> None:
-    """Raise :class:`BlockedOutboundURL` unless ``url`` is http(s) to a public IP.
+    """Raise :class:`BlockedOutboundURL` unless ``url`` is http(s) on a standard
+    web port to a public IP.
 
     Resolves the hostname and rejects the request if *any* resolved address is
     non-public — blocking internal-network and cloud-metadata SSRF reached via
-    crafted certificate URLs.
+    crafted certificate URLs — and restricts the port to 80/443.
+
+    Known residual: this resolves-then-checks while pyHanko re-resolves when it
+    actually connects, so an attacker controlling a low-TTL domain could DNS-
+    rebind between the two calls (public at check time, internal at connect
+    time). That path is authenticated, rate-limited, needs a crafted ``.p12``,
+    and the port allowlist confines any rebind to :80/:443; the robust complete
+    fix is a network egress policy on the worker container.
     """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
@@ -57,6 +73,8 @@ def validate_outbound_url(url: str) -> None:
     if not host:
         raise BlockedOutboundURL(f"blocked URL without host: {url!r}")
     port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    if port not in _ALLOWED_PORTS:
+        raise BlockedOutboundURL(f"blocked non-web port {port} in {url!r}")
     try:
         infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
     except OSError as exc:

@@ -647,6 +647,19 @@ class SsrfGuardTests(SimpleTestCase):
         validate_outbound_url("http://8.8.8.8/crl.pem")
         validate_outbound_url("https://1.1.1.1/ocsp")
 
+    def test_non_web_ports_are_blocked(self):
+        # A public IP on an internal-service port must still be refused, so a
+        # DNS rebind can't reach Redis/Postgres/Prometheus on their own ports.
+        from .pdf_processor.ssrf_guard import BlockedOutboundURL, validate_outbound_url
+
+        for url in (
+            "http://8.8.8.8:6379/",  # redis
+            "http://8.8.8.8:5432/",  # postgres
+            "https://1.1.1.1:9090/",  # prometheus
+        ):
+            with self.assertRaises(BlockedOutboundURL):
+                validate_outbound_url(url)
+
     def test_backend_builds_guarded_fetchers(self):
         from .pdf_processor.ssrf_guard import guarded_fetcher_backend
 
