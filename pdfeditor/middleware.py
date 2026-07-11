@@ -92,8 +92,17 @@ _DEFAULT_CSP = (
     "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
     # Browsers POST violation reports here (views/csp.py) — log + Prometheus
     # counter, so a policy regression is an alert, not silent breakage.
-    "report-uri /csp-report/"
+    # report-uri is the legacy directive (Firefox, older Chrome); report-to
+    # names the Reporting API endpoint declared in the Reporting-Endpoints
+    # response header (modern Chrome, which is deprecating report-uri). Both
+    # target the same view, which already parses both wire formats.
+    "report-uri /csp-report/; report-to csp-endpoint"
 )
+
+# Value of the Reporting-Endpoints response header referenced by the CSP
+# `report-to csp-endpoint` directive. Same-origin relative URL so it resolves
+# correctly on prod and on the plain-HTTP dev server alike.
+_REPORTING_ENDPOINTS = 'csp-endpoint="/csp-report/"'
 # Appended only when serving over HTTPS (SECURE_SSL). On the plain-HTTP dev
 # server / e2e it would force subresources to https://localhost and break them.
 _CSP_HTTPS_SUFFIX = "; upgrade-insecure-requests"
@@ -130,6 +139,7 @@ class SecurityHeadersMiddleware:
             response.setdefault("Permissions-Policy", self.permissions_policy)
         if self.csp_template and not request.path.startswith(self.csp_skip_prefixes):
             response.setdefault("Content-Security-Policy", self.csp_template.replace("{nonce}", nonce))
+            response.setdefault("Reporting-Endpoints", _REPORTING_ENDPOINTS)
         return response
 
 

@@ -498,6 +498,17 @@ class CspReportEndpointTests(TestCase):
         ]
         self.assertIn("report-uri /csp-report/", csp)
 
+    def test_policy_advertises_reporting_api(self):
+        """Modern browsers use report-to + the Reporting-Endpoints header."""
+        resp = SecurityHeadersMiddleware(lambda req: HttpResponse("ok"))(RequestFactory().get("/"))
+        self.assertIn("report-to csp-endpoint", resp["Content-Security-Policy"])
+        self.assertEqual(resp["Reporting-Endpoints"], 'csp-endpoint="/csp-report/"')
+
+    def test_reporting_header_absent_on_skipped_paths(self):
+        """Admin/API paths get no strict CSP, so no Reporting-Endpoints either."""
+        resp = SecurityHeadersMiddleware(lambda req: HttpResponse("ok"))(RequestFactory().get("/admin/"))
+        self.assertNotIn("Reporting-Endpoints", resp)
+
     def test_policy_has_no_wildcard_or_eval_script_origins(self):
         """*.cloudflare.com covers cdnjs — a public CDN, i.e. a CSP bypass."""
         csp = SecurityHeadersMiddleware(lambda req: HttpResponse("ok"))(RequestFactory().get("/"))[
