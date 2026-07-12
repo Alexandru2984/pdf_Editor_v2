@@ -72,7 +72,9 @@ class PdfEditorClient:
     def _get(self, path: str, params: dict | None = None) -> Any:
         return self._check(self._s.get(self._url(path), params=params, timeout=self.timeout))
 
-    def _post(self, path: str, json: dict | None = None, files: dict | None = None, data: dict | None = None) -> Any:
+    def _post(
+        self, path: str, json: dict | None = None, files: dict | None = None, data: dict | None = None
+    ) -> Any:
         return self._check(
             self._s.post(self._url(path), json=json, files=files, data=data, timeout=self.timeout)
         )
@@ -137,9 +139,7 @@ class PdfEditorClient:
     # ----- Async ops (return a Job) ------------------------------------------
 
     def ocr(self, pdf_id: str, *, language: str = "eng+ron", dpi: int = 200) -> dict:
-        return self._post(
-            "/ops/searchable/", json={"pdf_id": pdf_id, "language": language, "dpi": dpi}
-        )
+        return self._post("/ops/searchable/", json={"pdf_id": pdf_id, "language": language, "dpi": dpi})
 
     def to_pdfa(self, pdf_id: str, version: str = "2b") -> dict:
         return self._post("/ops/pdfa/", json={"pdf_id": pdf_id, "version": version})
@@ -168,6 +168,46 @@ class PdfEditorClient:
 
     def cancel_job(self, job_id: str) -> dict:
         return self._post(f"/jobs/{job_id}/cancel/")
+
+    # ----- Webhooks ----------------------------------------------------------
+
+    def list_webhooks(self) -> dict:
+        """Paginated list of the caller's webhook endpoints."""
+        return self._get("/webhooks/")
+
+    def create_webhook(self, url: str, *, description: str = "") -> dict:
+        """Register an HTTPS endpoint (public host only). The returned webhook
+        includes its ``secret`` — save it; you need it to verify deliveries."""
+        return self._post("/webhooks/", json={"url": url, "description": description})
+
+    def get_webhook(self, webhook_id: str) -> dict:
+        return self._get(f"/webhooks/{webhook_id}/")
+
+    def set_webhook_active(self, webhook_id: str, active: bool) -> dict:
+        """Enable or disable an endpoint without deleting it."""
+        return self._check(
+            self._s.patch(
+                self._url(f"/webhooks/{webhook_id}/"), json={"is_active": active}, timeout=self.timeout
+            )
+        )
+
+    def delete_webhook(self, webhook_id: str) -> None:
+        self._check(self._s.delete(self._url(f"/webhooks/{webhook_id}/"), timeout=self.timeout))
+
+    def test_webhook(self, webhook_id: str) -> dict:
+        """Send a signed ``ping`` to the endpoint; returns ``{ok, status}``."""
+        return self._post(f"/webhooks/{webhook_id}/test/")
+
+    @staticmethod
+    def verify_signature(secret: str, body: bytes, signature_header: str) -> bool:
+        """Verify an incoming delivery. ``body`` is the raw request bytes,
+        ``signature_header`` the ``X-PDF-Signature`` value (``sha256=…``).
+        Constant-time; use this on your receiver to authenticate webhooks."""
+        import hashlib
+        import hmac
+
+        expected = "sha256=" + hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected, signature_header or "")
 
     def wait_for(self, job_or_response: dict, *, poll_interval: float = 1.0, timeout: float = 300.0) -> dict:
         """Poll a job until it hits a terminal state. Accepts either a Job

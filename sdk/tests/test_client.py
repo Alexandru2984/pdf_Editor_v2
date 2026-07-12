@@ -95,5 +95,54 @@ class ClientTests(unittest.TestCase):
             c.wait_for({"unrelated": "x"})
 
 
+class WebhookClientTests(unittest.TestCase):
+    def test_create_webhook_posts_url_and_description(self):
+        c, session = _make_client()
+        session.post.return_value = _resp(201, {"id": "w1", "secret": "sk_abc"})
+        out = c.create_webhook("https://example.com/hook", description="prod")
+        self.assertEqual(out["secret"], "sk_abc")
+        called = session.post.call_args
+        self.assertIn("/api/v1/webhooks/", called[0][0])
+        self.assertEqual(called.kwargs["json"], {"url": "https://example.com/hook", "description": "prod"})
+
+    def test_list_webhooks_gets(self):
+        c, session = _make_client()
+        session.get.return_value = _resp(200, {"results": []})
+        c.list_webhooks()
+        self.assertIn("/api/v1/webhooks/", session.get.call_args[0][0])
+
+    def test_set_webhook_active_patches(self):
+        c, session = _make_client()
+        session.patch.return_value = _resp(200, {"id": "w1", "is_active": False})
+        c.set_webhook_active("w1", False)
+        called = session.patch.call_args
+        self.assertIn("/api/v1/webhooks/w1/", called[0][0])
+        self.assertEqual(called.kwargs["json"], {"is_active": False})
+
+    def test_delete_webhook_deletes(self):
+        c, session = _make_client()
+        session.delete.return_value = _resp(204)
+        c.delete_webhook("w1")
+        self.assertIn("/api/v1/webhooks/w1/", session.delete.call_args[0][0])
+
+    def test_test_webhook_posts_to_test_endpoint(self):
+        c, session = _make_client()
+        session.post.return_value = _resp(200, {"ok": True, "status": "200"})
+        out = c.test_webhook("w1")
+        self.assertTrue(out["ok"])
+        self.assertIn("/api/v1/webhooks/w1/test/", session.post.call_args[0][0])
+
+    def test_verify_signature_roundtrip(self):
+        import hashlib
+        import hmac
+
+        secret, body = "sk_top", b'{"event":"ping"}'
+        good = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+        self.assertTrue(PdfEditorClient.verify_signature(secret, body, good))
+        self.assertFalse(PdfEditorClient.verify_signature(secret, body, "sha256=deadbeef"))
+        self.assertFalse(PdfEditorClient.verify_signature("wrong", body, good))
+        self.assertFalse(PdfEditorClient.verify_signature(secret, body, ""))
+
+
 if __name__ == "__main__":
     unittest.main()
