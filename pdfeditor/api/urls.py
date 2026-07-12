@@ -20,6 +20,7 @@ router = DefaultRouter()
 router.register(r"pdfs", views.UploadedPDFViewSet, basename="pdf")
 router.register(r"outputs", views.ProcessedPDFViewSet, basename="output")
 router.register(r"jobs", views.JobViewSet, basename="job")
+router.register(r"webhooks", views.WebhookViewSet, basename="webhook")
 
 op_patterns = [
     path("batch/", ops_views.BatchOpView.as_view(), name="op-batch"),

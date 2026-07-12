@@ -21,8 +21,13 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
-from ..models import Job, ProcessedPDF, UploadedPDF
-from .serializers import JobSerializer, ProcessedPDFSerializer, UploadedPDFSerializer
+from ..models import Job, ProcessedPDF, UploadedPDF, Webhook
+from .serializers import (
+    JobSerializer,
+    ProcessedPDFSerializer,
+    UploadedPDFSerializer,
+    WebhookSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -258,3 +263,69 @@ class JobViewSet(viewsets.ReadOnlyModelViewSet):
         # Refresh from DB to pick up the updated finished_at/status.
         job.refresh_from_db()
         return Response(self.get_serializer(job).data)
+
+
+@extend_schema(tags=["Webhooks"])
+class WebhookViewSet(viewsets.ModelViewSet):
+    """Manage webhook endpoints that receive an HMAC-signed POST when your
+    async jobs finish. Scoped to the authenticated user; the same anti-SSRF
+    rules as the web UI apply (public https only). `secret` is returned so
+    clients can verify signatures."""
+
+    queryset = Webhook.objects.all()
+    serializer_class = WebhookSerializer
+    lookup_field = "id"
+    # No PUT — url/description/is_active are PATCHable; the rest is read-only.
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    throttle_scope_category = "read"
+    _action_throttle_categories = {
+        "create": "op",
+        "partial_update": "op",
+        "destroy": "op",
+        "test": "op",
+    }
+
+    def get_throttles(self):
+        self.throttle_scope_category = self._action_throttle_categories.get(self.action, "read")
+        return super().get_throttles()
+
+    def get_queryset(self):
+        return Webhook.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        from .. import webhooks
+
+        if Webhook.objects.filter(user=self.request.user).count() >= webhooks.MAX_WEBHOOKS_PER_USER:
+            raise ValidationError(
+                {"detail": f"You can have at most {webhooks.MAX_WEBHOOKS_PER_USER} webhooks."}
+            )
+        serializer.save(user=self.request.user)
+
+    @extend_schema(
+        summary="Send a test event",
+        description=(
+            "Synchronously POST a signed `ping` event to this endpoint and "
+            "report the outcome, so you can verify reachability and your "
+            "signature check before relying on job deliveries."
+        ),
+        request=None,
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    @action(detail=True, methods=["post"], url_path="test")
+    def test(self, request, id=None):
+        from django.utils import timezone
+
+        from .. import webhooks
+
+        hook = self.get_object()
+        payload = {
+            "event": "ping",
+            "delivered_at": timezone.now().isoformat(),
+            "webhook_id": str(hook.id),
+        }
+        ok, status_str = webhooks.deliver_once(hook, "ping", payload)
+        updates: dict = {"last_status": status_str}
+        if ok:
+            updates["last_triggered_at"] = timezone.now()
+        Webhook.objects.filter(pk=hook.pk).update(**updates)
+        return Response({"ok": ok, "status": status_str})

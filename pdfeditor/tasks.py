@@ -11,7 +11,6 @@ import json
 import logging
 import os
 
-import requests
 from celery import shared_task
 from celery.exceptions import SoftTimeLimitExceeded
 from django.conf import settings
@@ -136,32 +135,12 @@ def deliver_webhook(self, webhook_id: str, event: str, payload: dict) -> None:
     if hook is None:
         return
 
-    # Re-validate at delivery time: the URL passed the SSRF check when it was
-    # saved, but DNS could have rebound to an internal address since.
-    try:
-        webhooks.validate_webhook_url(hook.url)
-    except webhooks.InvalidWebhookURL as exc:
-        Webhook.objects.filter(pk=hook.pk).update(is_active=False, last_status=f"blocked: {exc}"[:50])
+    # deliver_once re-validates the URL (DNS could have rebound to an internal
+    # address since save), signs, and POSTs once.
+    ok, status = webhooks.deliver_once(hook, event, payload)
+    if status.startswith("blocked:"):
+        Webhook.objects.filter(pk=hook.pk).update(is_active=False, last_status=status)
         return
-
-    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-    headers = {
-        "Content-Type": "application/json",
-        "User-Agent": "PDFEditor-Webhook/1",
-        webhooks.SIGNATURE_HEADER: f"sha256={webhooks.sign_payload(hook.secret, body)}",
-        webhooks.EVENT_HEADER: event,
-        webhooks.ID_HEADER: str(hook.id),
-    }
-    status = ""
-    ok = False
-    try:
-        # allow_redirects=False: a 3xx could bounce the signed payload to an
-        # internal address that would sidestep the SSRF check above.
-        resp = requests.post(hook.url, data=body, headers=headers, timeout=10, allow_redirects=False)
-        status = str(resp.status_code)
-        ok = 200 <= resp.status_code < 300
-    except requests.RequestException as exc:
-        status = f"error: {type(exc).__name__}"
 
     if ok:
         Webhook.objects.filter(pk=hook.pk).update(

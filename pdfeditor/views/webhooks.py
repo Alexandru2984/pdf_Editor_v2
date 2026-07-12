@@ -19,9 +19,9 @@ from .. import webhooks as webhook_utils
 from ..models import Webhook
 from ..ratelimiting import auth_aware_ratelimit
 
-# Cap per user: each terminal job POSTs to every active endpoint, so this
-# doubles as an amplification guard.
-MAX_WEBHOOKS_PER_USER = 10
+# Sourced from the shared module so the web UI and the REST API enforce the
+# same per-user cap.
+MAX_WEBHOOKS_PER_USER = webhook_utils.MAX_WEBHOOKS_PER_USER
 
 
 @login_required

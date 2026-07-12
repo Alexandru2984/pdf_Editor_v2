@@ -3,7 +3,7 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from ..models import ApiKey, Job, ProcessedPDF, ShareLink, UploadedPDF
+from ..models import ApiKey, Job, ProcessedPDF, ShareLink, UploadedPDF, Webhook
 
 _SENSITIVE_PARAM_TOKENS = ("password", "secret", "token", "key")
 _REDACTED = "[redacted]"
@@ -130,3 +130,44 @@ class ApiKeySerializer(serializers.ModelSerializer):
         model = ApiKey
         fields = ["id", "label", "prefix", "last_used_at", "revoked_at", "created_at"]
         read_only_fields = fields
+
+
+class WebhookSerializer(serializers.ModelSerializer):
+    """A user's webhook endpoint. ``secret`` is read-only but always returned —
+    it's the caller's own HMAC signing key (over authenticated TLS), and API
+    clients need it to verify deliveries; unlike API-key tokens it isn't a
+    credential that grants access, so idempotent retrieval is the friendlier
+    contract."""
+
+    class Meta:
+        model = Webhook
+        fields = [
+            "id",
+            "url",
+            "description",
+            "secret",
+            "is_active",
+            "created_at",
+            "last_triggered_at",
+            "last_status",
+            "failure_count",
+        ]
+        read_only_fields = [
+            "id",
+            "secret",
+            "created_at",
+            "last_triggered_at",
+            "last_status",
+            "failure_count",
+        ]
+
+    def validate_url(self, value: str) -> str:
+        # Same anti-SSRF gate as the web UI: public https only, checked on every
+        # write (create or PATCH), re-checked again at delivery time.
+        from .. import webhooks
+
+        try:
+            webhooks.validate_webhook_url(value)
+        except webhooks.InvalidWebhookURL as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+        return value

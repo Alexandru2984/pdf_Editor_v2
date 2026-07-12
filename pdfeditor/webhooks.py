@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 from urllib.parse import urlparse
+
+import requests
 
 from .pdf_processor import ssrf_guard
 
@@ -22,6 +25,13 @@ ID_HEADER = "X-PDF-Webhook-Id"
 # Consecutive fully-failed deliveries (after retries) before the endpoint is
 # auto-disabled, so a permanently-dead URL isn't hammered forever.
 MAX_CONSECUTIVE_FAILURES = 15
+
+# Per-user endpoint cap. Each terminal job POSTs to every active endpoint, so
+# this doubles as an amplification guard. Shared by the web UI and the API.
+MAX_WEBHOOKS_PER_USER = 10
+
+# Per-delivery HTTP timeout (seconds).
+DELIVERY_TIMEOUT = 10
 
 
 class InvalidWebhookURL(ValueError):
@@ -54,6 +64,38 @@ def sign_payload(secret: str, body: bytes) -> str:
     """HMAC-SHA256 of the raw request body, hex-encoded. The receiver recomputes
     this over the bytes it receives and compares (constant-time) to the header."""
     return hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+
+
+def deliver_once(hook, event: str, payload: dict) -> tuple[bool, str]:
+    """Make a single signed POST to ``hook``. Returns ``(ok, status)``.
+
+    Validates the URL (SSRF) first — a ``"blocked: …"`` status means the target
+    is no longer public and the caller should disable it. Never raises; ``ok``
+    is True only on a 2xx. No retry — the Celery task layers backoff on top,
+    while the synchronous ``test`` endpoint uses this directly for one attempt.
+    """
+    try:
+        validate_webhook_url(hook.url)
+    except InvalidWebhookURL as exc:
+        return False, f"blocked: {exc}"[:50]
+
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "PDFEditor-Webhook/1",
+        SIGNATURE_HEADER: f"sha256={sign_payload(hook.secret, body)}",
+        EVENT_HEADER: event,
+        ID_HEADER: str(hook.id),
+    }
+    try:
+        # allow_redirects=False: a 3xx could bounce the signed payload to an
+        # internal address that would sidestep the SSRF check above.
+        resp = requests.post(
+            hook.url, data=body, headers=headers, timeout=DELIVERY_TIMEOUT, allow_redirects=False
+        )
+        return (200 <= resp.status_code < 300), str(resp.status_code)
+    except requests.RequestException as exc:
+        return False, f"error: {type(exc).__name__}"
 
 
 def build_job_payload(job, event: str, delivered_at: str) -> dict:
