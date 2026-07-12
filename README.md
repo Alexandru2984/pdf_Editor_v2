@@ -305,8 +305,10 @@ a broker.
 ## Webhooks
 
 Instead of polling `/api/v1/jobs/`, a logged-in user can register HTTPS
-endpoints at `/accounts/profile/webhooks/`. When one of their async jobs
-reaches a terminal state, every active endpoint gets a signed POST:
+endpoints — from the web UI (`/accounts/profile/webhooks/`) or, since the
+audience is API clients, straight from the **REST API / SDK**. When one of
+their async jobs reaches a terminal state, every active endpoint gets a
+signed POST:
 
 ```http
 POST /your/endpoint HTTP/1.1
@@ -327,6 +329,23 @@ per-webhook signing secret (shown once on creation):
 import hashlib, hmac
 expected = "sha256=" + hmac.new(secret.encode(), request.body, hashlib.sha256).hexdigest()
 assert hmac.compare_digest(expected, request.headers["X-PDF-Signature"])
+```
+
+Manage them over the API (`/api/v1/webhooks/` — list/create/patch/delete) and
+verify an endpoint with a synchronous signed ping before relying on it:
+
+```bash
+# register + test
+curl -X POST -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{"url":"https://you.example/hooks/pdf","description":"prod"}' $BASE/webhooks/
+curl -X POST -H "X-API-Key: $API_KEY" $BASE/webhooks/<id>/test/   # {"ok":true,"status":"200"}
+```
+
+```python
+# SDK: register, then verify deliveries on your receiver
+wh = c.create_webhook("https://you.example/hooks/pdf")
+# … in your handler:
+ok = PdfEditorClient.verify_signature(wh["secret"], request.body, request.headers["X-PDF-Signature"])
 ```
 
 Security: delivery URLs must be **public https** — internal/RFC1918/loopback
