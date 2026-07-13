@@ -17,7 +17,7 @@ clamd>=1.0.2
 # Floor for GHSA-537c-gmf6-5ccf; pulled transitively by pyHanko/webauthn.
 cryptography>=48.0.1,<49
 django-prometheus>=2.4.1
-djangorestframework>=3.15.0
+djangorestframework>=3.17.1
 drf-spectacular>=0.27.0
 fastembed>=0.4.0
 pgvector>=0.3.6
