@@ -7,7 +7,7 @@ dj-database-url>=2.1.0
 # Floor bumped to 5.2.15: 5.2.14 carried PYSEC-2026-197..201. Stay on the
 # 5.2.* LTS line; Dependabot keeps patching within it.
 Django>=5.2.15,<5.3
-django-axes>=8.0.0
+django-axes>=8.3.1
 django-ratelimit>=4.1.0
 celery[redis]>=5.4.0
 # S3-compatible client for the Cloudflare R2 output mirror (pdfeditor/objectstore.py).
