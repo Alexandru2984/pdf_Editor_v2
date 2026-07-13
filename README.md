@@ -4,7 +4,7 @@
 [![deploy](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml/badge.svg)](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml)
 ![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
 ![django](https://img.shields.io/badge/django-5.2%20LTS-092e20)
-![tests](https://img.shields.io/badge/tests-834%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-877%20passing-brightgreen)
 ![security](https://img.shields.io/badge/security-bandit%20%2B%20pip--audit%20%2B%20trivy-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
@@ -29,7 +29,7 @@ and a CI gate that blocks deploys on critical CVEs.
 | **Sustained load** | **500 concurrent users**, 53,580 requests over 5 min, **0.15% failure rate** |
 | **Peak throughput** | **179 req/s** at 8 workers across 2 replicas (+48% vs single-replica baseline) |
 | **Endpoint speedup story** | `/api/v1/outputs/` **60s → 1.2s** after pagination + cache + DB tuning |
-| **Tests** | **834 passing** across Django + SDK · 3.10/3.11/3.12 matrix · pgvector required |
+| **Tests** | **877 passing** across Django + SDK · 3.10/3.11/3.12 matrix · pgvector required |
 | **Lines of Python** | ~21,500 (excluding migrations) |
 | **PDF ops** | 25+, all reachable both from web UI and REST API |
 | **Async jobs** | 6 kinds (OCR, PDF/A, Compare, Convert, RAG-index, ToImages) — sub-5-page sync, threshold-async |
@@ -76,7 +76,7 @@ Full benchmark write-up with per-endpoint p95 and the tuning story in [`scripts/
   (RO/EN), share links with TTL + download caps, SHA-256-hashed API keys,
   `django-axes` lockout, strict nonce-based CSP with `/csp-report/`
   violation endpoint, HSTS preload, realpath path-traversal guard, ClamAV
-  upload scanning, full audit log.
+  upload scanning, a **gVisor-sandboxed** PDF worker, full audit log.
 - **🌐 Horizontal scaling** — `web` service runs N replicas (default 2) behind
   an internal `nginx` load balancer that picks up scale changes via Docker's
   embedded DNS without a reload (`docker compose up --scale web=N`).
@@ -403,7 +403,14 @@ service needed.
   required); session manager with per-device revoke, "sign out everywhere
   else", and new-device login alert emails.
 - **Supply chain** — Trivy image gate, SPDX SBOM published per build,
-  cosign keyless image signatures.
+  cosign keyless image signatures; runtime deps hash-pinned in
+  `requirements.lock` and installed with `pip --require-hashes`.
+- **Container isolation** — every service runs non-root with `cap_drop: ALL`,
+  `no-new-privileges`, and a read-only root filesystem. The Celery **worker**
+  — where untrusted PDFs meet ghostscript / PyMuPDF / tesseract — additionally
+  runs under **gVisor** (`runsc`), so a parser RCE is contained by a user-space
+  kernel instead of reaching host syscalls. Per-service memory + CPU limits
+  cap the blast radius on the shared host.
 - **HSTS preload**, secure + HttpOnly + SameSite cookies, HTTPS-only.
 - **Path traversal** blocked via `realpath` + ownership check on every
   `/media/` access.
@@ -418,7 +425,7 @@ service needed.
 
 | Check | Status |
 |-------|--------|
-| Test count | **834 passing** (818 Django + 16 SDK; pgvector required for the Django suite) |
+| Test count | **877 passing** (854 Django + 23 SDK; pgvector required for the Django suite) |
 | Coverage | reports uploaded as CI artifact (`coverage.xml`) |
 | Linting | `ruff check` + `ruff format` |
 | Types | `mypy` strict on `pdf_processor/` |
@@ -459,7 +466,7 @@ python3.12 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 sudo apt-get install -y tesseract-ocr tesseract-ocr-ron ghostscript
 python manage.py migrate
-python manage.py test pdfeditor   # 684 tests, needs Postgres+pgvector
+python manage.py test pdfeditor   # 856 tests, needs Postgres+pgvector
 python manage.py runserver
 ```
 
@@ -474,7 +481,7 @@ celery -A pdf_project worker --loglevel=info
 Pushes to `main` trigger:
 
 1. **`tests` workflow** — Python 3.10/3.11/3.12 matrix, ruff + mypy + bandit
-   + pip-audit + 818 Django tests + Django deploy check.
+   + pip-audit + 854 Django tests + Django deploy check.
 2. **`build-and-deploy`** (workflow_run after tests success) — builds the
    image, pushes to `ghcr.io/alexandru2984/pdf_editor_v2:{latest,sha-XXXXX}`,
    scans with Trivy (fail on HIGH/CRITICAL), publishes an SPDX SBOM and
@@ -525,10 +532,12 @@ p95 in [`scripts/loadtest/benchmarks.md`](scripts/loadtest/benchmarks.md)).
 ```
 pdf_project/            Django project (settings, urls, asgi, celery)
 pdfeditor/
-├── models.py           UploadedPDF, ProcessedPDF, Job, Embedding,
-│                       ShareLink, ApiKey, AuditLog, TrustAnchor
+├── models.py           UploadedPDF, ProcessedPDF, Job, Embedding, ShareLink,
+│                       ApiKey, AuditLog, TrustAnchor, MFA/passkey/session
+│                       models, Webhook + WebhookDelivery
 ├── tasks.py            Celery tasks (OCR, PDF/A, Compare, Convert, RAG index,
-│                       ToImages, Batch, cancel_job)
+│                       ToImages, Batch, cancel_job, deliver_webhook)
+├── webhooks.py         Webhook signing (HMAC) + SSRF-guarded delivery helpers
 ├── ratelimiting.py     auth_aware_ratelimit decorator (UI side)
 ├── ai_service.py       Ollama + Groq providers (sync + async)
 ├── metrics.py          Prometheus counters/histograms/gauges
@@ -540,7 +549,7 @@ pdfeditor/
 │   ├── forms.py        AcroForm detect + fill
 │   ├── summarize.py    Single-shot LLM summary (uses Groq)
 │   └── rag.py          Chunking + embeddings
-├── api/                DRF endpoints (pdfs · outputs · ops · jobs · chat · batch · summarize)
+├── api/                DRF endpoints (pdfs · outputs · ops · jobs · webhooks · chat · batch · summarize)
 │   ├── auth.py         X-API-Key auth + OpenAPI extension
 │   ├── throttles.py    ScopedAuthAwareThrottle (9-cell rate matrix)
 │   ├── batch_ops.py    Sync-batchable op registry
@@ -552,6 +561,7 @@ pdfeditor/
 │   ├── jobs.py         Status + SSE + cancel
 │   ├── share.py        Public token download links
 │   ├── legal.py        Privacy policy + ToS (per-language templates)
+│   ├── webhooks.py     Webhook management (list/create/toggle/delete)
 │   └── …
 ├── management/commands/
 │   ├── cleanup_old_pdfs.py     Age-based retention sweep
