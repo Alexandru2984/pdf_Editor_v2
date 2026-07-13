@@ -75,6 +75,25 @@
                     </form>
                 </td>
             </tr>
+            {% if hook.recent_deliveries %}
+            <tr class="deliveries-row">
+                <td colspan="4">
+                    <details>
+                        <summary>{% trans "Recent deliveries" %} ({{ hook.recent_deliveries|length }})</summary>
+                        <table class="deliveries-mini">
+                            {% for d in hook.recent_deliveries %}
+                            <tr>
+                                <td>{% if d.ok %}<span class="ok">✓</span>{% else %}<span class="fail">✕</span>{% endif %}</td>
+                                <td><code>{{ d.event }}</code></td>
+                                <td>{{ d.status }}</td>
+                                <td class="muted">{{ d.created_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </details>
+                </td>
+            </tr>
+            {% endif %}
             {% endfor %}
         </tbody>
     </table>
@@ -103,6 +122,12 @@
     .webhook-actions { white-space: nowrap; }
     .btn-link { background: none; border: none; color: #2563eb; cursor: pointer; font-size: 0.85rem; padding: 0 0.35rem; }
     .btn-link-danger { background: none; border: none; color: #dc2626; cursor: pointer; font-size: 1rem; padding: 0 0.35rem; }
+    .deliveries-row > td { padding-top: 0; border-bottom: 1px solid #e5e7eb; }
+    .deliveries-row summary { cursor: pointer; color: #6b7280; font-size: 0.8rem; }
+    .deliveries-mini { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.4rem; }
+    .deliveries-mini td { padding: 0.2rem 0.5rem; border-bottom: 1px solid #f3f4f6; }
+    .deliveries-mini .ok { color: #059669; }
+    .deliveries-mini .fail { color: #dc2626; }
     .muted { color: #9ca3af; }
 </style>
 {% endblock %}

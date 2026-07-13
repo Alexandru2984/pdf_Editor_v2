@@ -34,10 +34,11 @@ entries are grouped by the period the work landed.
   polling. Manageable from the web UI (`/accounts/profile/webhooks/`) **and the
   REST API** (`/api/v1/webhooks/`) — with a synchronous `…/test/` ping to verify
   an endpoint — plus **SDK** methods (`create_webhook`, `test_webhook`, …) and a
-  `verify_signature` helper. Delivery is SSRF-guarded (public https only,
-  re-validated at send time), doesn't follow redirects, retries with
-  exponential backoff, and auto-disables an endpoint after 15 consecutive
-  failures.
+  `verify_signature` helper. Each endpoint keeps a **delivery history** (last
+  25 terminal outcomes, at `…/deliveries/` and in the UI) for debugging.
+  Delivery is SSRF-guarded (public https only, re-validated at send time),
+  doesn't follow redirects, retries with exponential backoff, and auto-disables
+  an endpoint after 15 consecutive failures.
 - **`/readyz` now checks Redis too** — readiness round-trips through the
   cache (the same Redis that backs the Celery broker and sessions) and
   returns 503 if either Postgres or Redis is unreachable, so the deploy

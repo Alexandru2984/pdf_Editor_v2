@@ -198,6 +198,10 @@ class PdfEditorClient:
         """Send a signed ``ping`` to the endpoint; returns ``{ok, status}``."""
         return self._post(f"/webhooks/{webhook_id}/test/")
 
+    def list_webhook_deliveries(self, webhook_id: str) -> list:
+        """Recent terminal delivery attempts for a webhook (newest first)."""
+        return self._get(f"/webhooks/{webhook_id}/deliveries/")
+
     @staticmethod
     def verify_signature(secret: str, body: bytes, signature_header: str) -> bool:
         """Verify an incoming delivery. ``body`` is the raw request bytes,

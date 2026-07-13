@@ -132,6 +132,13 @@ class WebhookClientTests(unittest.TestCase):
         self.assertTrue(out["ok"])
         self.assertIn("/api/v1/webhooks/w1/test/", session.post.call_args[0][0])
 
+    def test_list_webhook_deliveries_gets(self):
+        c, session = _make_client()
+        session.get.return_value = _resp(200, [{"event": "ping", "ok": True, "status": "200"}])
+        out = c.list_webhook_deliveries("w1")
+        self.assertEqual(out[0]["status"], "200")
+        self.assertIn("/api/v1/webhooks/w1/deliveries/", session.get.call_args[0][0])
+
     def test_verify_signature_roundtrip(self):
         import hashlib
         import hmac

@@ -339,6 +339,7 @@ verify an endpoint with a synchronous signed ping before relying on it:
 curl -X POST -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
   -d '{"url":"https://you.example/hooks/pdf","description":"prod"}' $BASE/webhooks/
 curl -X POST -H "X-API-Key: $API_KEY" $BASE/webhooks/<id>/test/   # {"ok":true,"status":"200"}
+curl -H "X-API-Key: $API_KEY" $BASE/webhooks/<id>/deliveries/     # recent delivery history
 ```
 
 ```python

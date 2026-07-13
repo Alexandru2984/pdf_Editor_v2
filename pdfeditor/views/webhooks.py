@@ -26,7 +26,11 @@ MAX_WEBHOOKS_PER_USER = webhook_utils.MAX_WEBHOOKS_PER_USER
 
 @login_required
 def webhooks_view(request: HttpRequest) -> HttpResponse:
-    hooks = Webhook.objects.filter(user=request.user)
+    hooks = list(Webhook.objects.filter(user=request.user))
+    # Attach each webhook's recent deliveries for the collapsible history panel.
+    # At most MAX_WEBHOOKS_PER_USER hooks × a few rows each — cheap.
+    for hook in hooks:
+        hook.recent_deliveries = list(hook.deliveries.all()[:6])
     # Full signing secret is flashed exactly once, right after creation.
     new_secret = request.session.pop("new_webhook_secret", None)
     new_id = request.session.pop("new_webhook_id", None)
