@@ -302,3 +302,71 @@ class WebhookApiTests(TestCase):
         self.assertEqual(r.json(), {"ok": True, "status": "200"})
         hook.refresh_from_db()
         self.assertEqual(hook.last_status, "200")
+
+
+class WebhookDeliveryHistoryTests(TestCase):
+    def setUp(self):
+        from .models import ApiKey
+
+        self.user = User.objects.create_user("hist", password="x")
+        self.hook = Webhook.objects.create(user=self.user, url="https://8.8.8.8/hook")
+        _, self.token = ApiKey.create_for_user(self.user)
+
+    def test_record_appends_and_prunes_to_cap(self):
+        from .models import WebhookDelivery
+
+        for _ in range(webhooks.MAX_DELIVERY_LOG + 5):
+            webhooks.record_delivery(self.hook, "job.completed", True, "200")
+        self.assertEqual(WebhookDelivery.objects.filter(webhook=self.hook).count(), webhooks.MAX_DELIVERY_LOG)
+
+    def test_task_logs_success_once(self):
+        from .models import WebhookDelivery
+
+        resp = MagicMock(status_code=200)
+        with patch("pdfeditor.webhooks.requests.post", return_value=resp):
+            tasks.deliver_webhook.apply(args=[str(self.hook.id), "job.completed", {}])
+        rows = WebhookDelivery.objects.filter(webhook=self.hook)
+        self.assertEqual(rows.count(), 1)
+        self.assertTrue(rows.first().ok)
+        self.assertEqual(rows.first().event, "job.completed")
+
+    def test_intermediate_retry_is_not_logged(self):
+        from celery.exceptions import Retry
+
+        from .models import WebhookDelivery
+
+        resp = MagicMock(status_code=500)
+        with patch("pdfeditor.webhooks.requests.post", return_value=resp), self.assertRaises(Retry):
+            tasks.deliver_webhook.apply(args=[str(self.hook.id), "job.completed", {}], throw=True)
+        self.assertEqual(WebhookDelivery.objects.filter(webhook=self.hook).count(), 0)
+
+    def test_final_failure_is_logged(self):
+        from .models import WebhookDelivery
+
+        resp = MagicMock(status_code=500)
+        with patch("pdfeditor.webhooks.requests.post", return_value=resp):
+            tasks.deliver_webhook.apply(
+                args=[str(self.hook.id), "job.completed", {}],
+                retries=tasks.deliver_webhook.max_retries,
+                throw=True,
+            )
+        row = WebhookDelivery.objects.filter(webhook=self.hook).first()
+        self.assertIsNotNone(row)
+        self.assertFalse(row.ok)
+        self.assertIn("failed", row.status)
+
+    def test_api_deliveries_endpoint_is_owner_scoped(self):
+        webhooks.record_delivery(self.hook, "job.completed", True, "200")
+        r = self.client.get(f"/api/v1/webhooks/{self.hook.id}/deliveries/", HTTP_X_API_KEY=self.token)
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["status"], "200")
+        self.assertTrue(data[0]["ok"])
+        # another user can't read this webhook's deliveries
+        other = User.objects.create_user("intruder2", password="x")
+        from .models import ApiKey
+
+        _, other_token = ApiKey.create_for_user(other)
+        r2 = self.client.get(f"/api/v1/webhooks/{self.hook.id}/deliveries/", HTTP_X_API_KEY=other_token)
+        self.assertEqual(r2.status_code, 404)

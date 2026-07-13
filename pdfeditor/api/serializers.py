@@ -3,7 +3,7 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from ..models import ApiKey, Job, ProcessedPDF, ShareLink, UploadedPDF, Webhook
+from ..models import ApiKey, Job, ProcessedPDF, ShareLink, UploadedPDF, Webhook, WebhookDelivery
 
 _SENSITIVE_PARAM_TOKENS = ("password", "secret", "token", "key")
 _REDACTED = "[redacted]"
@@ -171,3 +171,12 @@ class WebhookSerializer(serializers.ModelSerializer):
         except webhooks.InvalidWebhookURL as exc:
             raise serializers.ValidationError(str(exc)) from exc
         return value
+
+
+class WebhookDeliverySerializer(serializers.ModelSerializer):
+    """One terminal delivery attempt in a webhook's history."""
+
+    class Meta:
+        model = WebhookDelivery
+        fields = ["id", "event", "ok", "status", "created_at"]
+        read_only_fields = fields

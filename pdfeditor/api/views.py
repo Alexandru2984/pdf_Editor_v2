@@ -26,6 +26,7 @@ from .serializers import (
     JobSerializer,
     ProcessedPDFSerializer,
     UploadedPDFSerializer,
+    WebhookDeliverySerializer,
     WebhookSerializer,
 )
 
@@ -328,4 +329,19 @@ class WebhookViewSet(viewsets.ModelViewSet):
         if ok:
             updates["last_triggered_at"] = timezone.now()
         Webhook.objects.filter(pk=hook.pk).update(**updates)
+        webhooks.record_delivery(hook, "ping", ok, status_str)
         return Response({"ok": ok, "status": status_str})
+
+    @extend_schema(
+        summary="Recent delivery attempts",
+        description="The webhook's most recent terminal deliveries (success, "
+        "final failure, or blocked), newest first — for debugging.",
+        responses={200: WebhookDeliverySerializer(many=True)},
+    )
+    @action(detail=True, methods=["get"], url_path="deliveries")
+    def deliveries(self, request, id=None):
+        from .. import webhooks
+
+        hook = self.get_object()
+        rows = hook.deliveries.all()[: webhooks.MAX_DELIVERY_LOG]
+        return Response(WebhookDeliverySerializer(rows, many=True).data)

@@ -491,6 +491,32 @@ class Webhook(models.Model):
         return f"{self.description or self.url} · {self.user.username} ({state})"
 
 
+class WebhookDelivery(models.Model):
+    """One terminal delivery outcome for a webhook, kept for debugging.
+
+    Written once per event (not per retry): success, final failure after retries
+    are exhausted, or a blocked (non-public) target. Bounded per webhook —
+    ``pdfeditor.webhooks.record_delivery`` prunes the oldest beyond
+    ``MAX_DELIVERY_LOG`` on insert — so the table can't grow without limit.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    webhook = models.ForeignKey(Webhook, on_delete=models.CASCADE, related_name="deliveries")
+    event = models.CharField(max_length=32)
+    ok = models.BooleanField()
+    # Same short status string the webhook's last_status carries: "200",
+    # "error: ConnectTimeout", "failed: 500", "blocked: …".
+    status = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["webhook", "-created_at"])]
+
+    def __str__(self):
+        return f"{self.event} · {'ok' if self.ok else 'fail'} ({self.status})"
+
+
 class ShareLink(models.Model):
     """A public, token-protected download link for a ProcessedPDF.
 

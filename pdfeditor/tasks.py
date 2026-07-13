@@ -140,25 +140,30 @@ def deliver_webhook(self, webhook_id: str, event: str, payload: dict) -> None:
     ok, status = webhooks.deliver_once(hook, event, payload)
     if status.startswith("blocked:"):
         Webhook.objects.filter(pk=hook.pk).update(is_active=False, last_status=status)
+        webhooks.record_delivery(hook, event, False, status)
         return
 
     if ok:
         Webhook.objects.filter(pk=hook.pk).update(
             last_triggered_at=timezone.now(), last_status=status, failure_count=0
         )
+        webhooks.record_delivery(hook, event, True, status)
         return
 
     Webhook.objects.filter(pk=hook.pk).update(last_status=status[:50])
     if self.request.retries < self.max_retries:
+        # Not terminal yet — retry with backoff; history is logged once it settles.
         raise self.retry(countdown=min(600, 60 * (2**self.request.retries)))
 
     # Retries exhausted for this event: count it and disable the endpoint if it
     # has now failed too many events back to back.
     new_count = (hook.failure_count or 0) + 1
-    updates: dict = {"failure_count": new_count, "last_status": f"failed: {status}"[:50]}
+    final_status = f"failed: {status}"[:50]
+    updates: dict = {"failure_count": new_count, "last_status": final_status}
     if new_count >= webhooks.MAX_CONSECUTIVE_FAILURES:
         updates["is_active"] = False
     Webhook.objects.filter(pk=hook.pk).update(**updates)
+    webhooks.record_delivery(hook, event, False, final_status)
 
 
 def _start(job: Job) -> None:

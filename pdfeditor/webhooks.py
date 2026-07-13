@@ -33,6 +33,10 @@ MAX_WEBHOOKS_PER_USER = 10
 # Per-delivery HTTP timeout (seconds).
 DELIVERY_TIMEOUT = 10
 
+# Terminal deliveries retained per webhook (oldest pruned on insert) so the
+# delivery-history table stays bounded without a cron.
+MAX_DELIVERY_LOG = 25
+
 
 class InvalidWebhookURL(ValueError):
     """Raised when a webhook target is not a public https URL."""
@@ -96,6 +100,24 @@ def deliver_once(hook, event: str, payload: dict) -> tuple[bool, str]:
         return (200 <= resp.status_code < 300), str(resp.status_code)
     except requests.RequestException as exc:
         return False, f"error: {type(exc).__name__}"
+
+
+def record_delivery(hook, event: str, ok: bool, status: str) -> None:
+    """Append a terminal delivery outcome to the webhook's history, then prune
+    it back to ``MAX_DELIVERY_LOG`` newest rows. Best-effort — logging history
+    must never break the delivery itself."""
+    from .models import WebhookDelivery
+
+    try:
+        WebhookDelivery.objects.create(webhook=hook, event=event, ok=ok, status=status[:50])
+        keep = list(
+            WebhookDelivery.objects.filter(webhook=hook)
+            .order_by("-created_at")
+            .values_list("id", flat=True)[:MAX_DELIVERY_LOG]
+        )
+        WebhookDelivery.objects.filter(webhook=hook).exclude(id__in=keep).delete()
+    except Exception:  # noqa: BLE001 — history is a nicety, not load-bearing
+        pass
 
 
 def build_job_payload(job, event: str, delivered_at: str) -> dict:
