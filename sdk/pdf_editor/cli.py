@@ -63,9 +63,13 @@ def _cmd_upload(client: PdfEditorClient, args) -> int:
 
 
 def _cmd_list(client: PdfEditorClient, args) -> int:
-    result = (client.list_pdfs() if args.what == "pdfs"
-              else client.list_outputs() if args.what == "outputs"
-              else client.list_jobs(status=args.status or None, kind=args.kind))
+    result = (
+        client.list_pdfs()
+        if args.what == "pdfs"
+        else client.list_outputs()
+        if args.what == "outputs"
+        else client.list_jobs(status=args.status or None, kind=args.kind)
+    )
     _print_json(result)
     return 0
 
@@ -150,7 +154,7 @@ def build_parser() -> argparse.ArgumentParser:
     ba = sub.add_parser("batch", help="Apply one op to a list of PDFs.")
     ba.add_argument("op", help="op name (compress, rotate, watermark, …)")
     ba.add_argument("pdf_ids", nargs="+")
-    ba.add_argument("--params", help="JSON-encoded params, e.g. '{\"quality\":\"low\"}'")
+    ba.add_argument("--params", help='JSON-encoded params, e.g. \'{"quality":"low"}\'')
     ba.add_argument("--no-wait", action="store_true", help="return immediately with the job id")
     ba.set_defaults(fn=_cmd_batch)
 
