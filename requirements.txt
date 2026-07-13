@@ -23,7 +23,8 @@ fastembed>=0.4.0
 pgvector>=0.3.6
 httpx>=0.27.0
 packaging==25.0
-pillow==12.2.0
+# Floor bumped to 12.3.0 for PYSEC-2026-2253..2257 (five CVEs in 12.2.0).
+pillow>=12.3.0
 psycopg2-binary>=2.9.9
 pdf2docx>=0.5.13
 pyHanko[image-support]==0.35.0

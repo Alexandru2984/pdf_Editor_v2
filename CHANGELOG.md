@@ -8,6 +8,9 @@ entries are grouped by the period the work landed.
 ## [Unreleased] — production-finish sweep (2026-07)
 
 ### Security
+- **Pillow 12.2.0 → 12.3.0** — patches five CVEs (PYSEC-2026-2253..2257)
+  disclosed 2026-07-13; the CI `pip-audit` gate caught it. Lockfile regenerated
+  with only Pillow changed.
 - **gVisor sandbox for the worker** — the Celery worker (where untrusted PDFs
   meet ghostscript / PyMuPDF / tesseract / pdf2docx, a recurring C/C++ RCE
   surface) now runs under the `runsc` runtime, so a parser exploit is contained
