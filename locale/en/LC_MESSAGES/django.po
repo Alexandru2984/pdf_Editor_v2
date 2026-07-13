@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-11 17:49+0000\n"
+"POT-Creation-Date: 2026-07-13 14:05+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2862,7 +2862,7 @@ msgid "Add a passkey"
 msgstr ""
 
 #: pdfeditor/templates/pdfeditor/security_sessions.html:91
-#: pdfeditor/templates/pdfeditor/webhooks.html:85
+#: pdfeditor/templates/pdfeditor/webhooks.html:104
 msgid "Back to profile"
 msgstr ""
 
@@ -3388,6 +3388,10 @@ msgid "Delete this webhook?"
 msgstr ""
 
 #: pdfeditor/templates/pdfeditor/webhooks.html:82
+msgid "Recent deliveries"
+msgstr ""
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:101
 msgid "No webhooks yet."
 msgstr ""
 
@@ -4221,28 +4225,28 @@ msgstr ""
 msgid "PDF removed successfully."
 msgstr ""
 
-#: pdfeditor/views/webhooks.py:58
+#: pdfeditor/views/webhooks.py:62
 #, python-format
 msgid "You can have at most %(n)s webhooks."
 msgstr ""
 
-#: pdfeditor/views/webhooks.py:67
+#: pdfeditor/views/webhooks.py:71
 #, python-format
 msgid "Invalid webhook URL: %(err)s"
 msgstr ""
 
-#: pdfeditor/views/webhooks.py:73
+#: pdfeditor/views/webhooks.py:77
 msgid "Webhook created. Save the signing secret now — it's shown only once."
 msgstr ""
 
-#: pdfeditor/views/webhooks.py:89
+#: pdfeditor/views/webhooks.py:93
 msgid "Webhook enabled."
 msgstr ""
 
-#: pdfeditor/views/webhooks.py:89
+#: pdfeditor/views/webhooks.py:93
 msgid "Webhook disabled."
 msgstr ""
 
-#: pdfeditor/views/webhooks.py:99
+#: pdfeditor/views/webhooks.py:103
 msgid "Webhook deleted."
 msgstr ""

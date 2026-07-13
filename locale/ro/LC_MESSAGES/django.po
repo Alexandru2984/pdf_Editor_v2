@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-11 17:49+0000\n"
+"POT-Creation-Date: 2026-07-13 14:05+0000\n"
 "PO-Revision-Date: 2026-05-03 17:30+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3024,7 +3024,7 @@ msgid "Add a passkey"
 msgstr "Adaugă un passkey"
 
 #: pdfeditor/templates/pdfeditor/security_sessions.html:91
-#: pdfeditor/templates/pdfeditor/webhooks.html:85
+#: pdfeditor/templates/pdfeditor/webhooks.html:104
 msgid "Back to profile"
 msgstr "Înapoi la profil"
 
@@ -3521,7 +3521,6 @@ msgstr ""
 "fiecare endpoint activ de mai jos — fără polling."
 
 #: pdfeditor/templates/pdfeditor/webhooks.html:11
-#| msgid "API access"
 msgid "API docs"
 msgstr "Documentație API"
 
@@ -3538,12 +3537,10 @@ msgstr ""
 "cu acest secret și comparându-l (în timp constant) cu antetul"
 
 #: pdfeditor/templates/pdfeditor/webhooks.html:20
-#| msgid "header."
 msgid "header"
 msgstr "antet"
 
 #: pdfeditor/templates/pdfeditor/webhooks.html:28
-#| msgid "Location (optional)"
 msgid "Description (optional)"
 msgstr "Descriere (opțional)"
 
@@ -3564,32 +3561,31 @@ msgid "Endpoint"
 msgstr "Endpoint"
 
 #: pdfeditor/templates/pdfeditor/webhooks.html:41
-#| msgid "Last active"
 msgid "Last delivery"
 msgstr "Ultima livrare"
 
 #: pdfeditor/templates/pdfeditor/webhooks.html:56
-#| msgid "Enabled"
 msgid "disabled"
 msgstr "dezactivat"
 
 #: pdfeditor/templates/pdfeditor/webhooks.html:70
-#| msgid "Disable 2FA"
 msgid "Disable"
 msgstr "Dezactivează"
 
 #: pdfeditor/templates/pdfeditor/webhooks.html:70
-#| msgid "Enabled"
 msgid "Enable"
 msgstr "Activează"
 
 #: pdfeditor/templates/pdfeditor/webhooks.html:72
-#| msgid "Delete this PDF?"
 msgid "Delete this webhook?"
 msgstr "Ștergi acest webhook?"
 
 #: pdfeditor/templates/pdfeditor/webhooks.html:82
-#| msgid "No share links yet."
+#| msgid "Last delivery"
+msgid "Recent deliveries"
+msgstr "Livrări recente"
+
+#: pdfeditor/templates/pdfeditor/webhooks.html:101
 msgid "No webhooks yet."
 msgstr "Niciun webhook încă."
 
@@ -4464,32 +4460,31 @@ msgstr "Niciun fișier PDF valid nu a fost încărcat."
 msgid "PDF removed successfully."
 msgstr "PDF-ul a fost șters cu succes."
 
-#: pdfeditor/views/webhooks.py:58
+#: pdfeditor/views/webhooks.py:62
 #, python-format
 msgid "You can have at most %(n)s webhooks."
 msgstr "Poți avea cel mult %(n)s webhook-uri."
 
-#: pdfeditor/views/webhooks.py:67
+#: pdfeditor/views/webhooks.py:71
 #, python-format
-#| msgid "Invalid JSON: %(err)s"
 msgid "Invalid webhook URL: %(err)s"
 msgstr "URL de webhook invalid: %(err)s"
 
-#: pdfeditor/views/webhooks.py:73
+#: pdfeditor/views/webhooks.py:77
 msgid "Webhook created. Save the signing secret now — it's shown only once."
 msgstr ""
 "Webhook creat. Salvează secretul de semnare acum — se afișează o singură "
 "dată."
 
-#: pdfeditor/views/webhooks.py:89
+#: pdfeditor/views/webhooks.py:93
 msgid "Webhook enabled."
 msgstr "Webhook activat."
 
-#: pdfeditor/views/webhooks.py:89
+#: pdfeditor/views/webhooks.py:93
 msgid "Webhook disabled."
 msgstr "Webhook dezactivat."
 
-#: pdfeditor/views/webhooks.py:99
+#: pdfeditor/views/webhooks.py:103
 msgid "Webhook deleted."
 msgstr "Webhook șters."
 
