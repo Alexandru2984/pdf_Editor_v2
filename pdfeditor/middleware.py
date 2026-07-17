@@ -83,7 +83,7 @@ class TrustedMetricsHostMiddleware:
 
             from .views.metrics import _ip_allowed
 
-            allowlist = getattr(settings, "PROMETHEUS_METRICS_ALLOW", set())
+            allowlist: set[str] = getattr(settings, "PROMETHEUS_METRICS_ALLOW", set())
             remote_addr = request.META.get("REMOTE_ADDR", "")
             canonical_host = self._canonical_host()
             if allowlist and canonical_host and _ip_allowed(remote_addr, allowlist):
