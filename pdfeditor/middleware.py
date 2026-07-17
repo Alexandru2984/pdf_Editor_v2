@@ -55,6 +55,43 @@ class RequestIDMiddleware:
         return response
 
 
+class TrustedMetricsHostMiddleware:
+    """Canonicalize the Host header for direct, allowlisted metrics scrapes.
+
+    Docker DNS discovery gives Prometheus replica IPs as targets, so its Host
+    header is an ephemeral container IP that Django correctly rejects. Only a
+    direct /metrics request from the existing metrics allowlist is rewritten;
+    proxied and public requests keep normal ALLOWED_HOSTS enforcement.
+    """
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    @staticmethod
+    def _canonical_host() -> str | None:
+        from django.conf import settings
+
+        for host in getattr(settings, "ALLOWED_HOSTS", []):
+            host = str(host).strip()
+            if host and host != "*":
+                return host.removeprefix(".")
+        return None
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        if request.path_info == "/metrics" and not request.META.get("HTTP_X_FORWARDED_FOR"):
+            from django.conf import settings
+
+            from .views.metrics import _ip_allowed
+
+            allowlist = getattr(settings, "PROMETHEUS_METRICS_ALLOW", set())
+            remote_addr = request.META.get("REMOTE_ADDR", "")
+            canonical_host = self._canonical_host()
+            if allowlist and canonical_host and _ip_allowed(remote_addr, allowlist):
+                request.META["HTTP_HOST"] = canonical_host
+
+        return self.get_response(request)
+
+
 # Disable browser features the app never uses. Set at the Django layer (not
 # just the host nginx) so the header is present no matter what fronts the app
 # — including the docker-compose-only deploy, whose nginx sets no security

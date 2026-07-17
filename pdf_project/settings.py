@@ -188,6 +188,9 @@ MIDDLEWARE = [
     # After records latency + per-view counters. Keep them as outermost.
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "pdfeditor.middleware.RequestIDMiddleware",
+    # Prometheus discovers replica IPs through Docker DNS. Normalize their
+    # direct /metrics Host header before Django enforces ALLOWED_HOSTS.
+    "pdfeditor.middleware.TrustedMetricsHostMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "pdfeditor.middleware.SecurityHeadersMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

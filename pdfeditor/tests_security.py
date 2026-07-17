@@ -22,7 +22,12 @@ from django.test import RequestFactory, SimpleTestCase, TestCase, override_setti
 from django.utils import timezone
 
 from .mfa import consume_backup_code, generate_backup_codes, verify_totp
-from .middleware import _VALID_REQUEST_ID, RequestIDMiddleware, SecurityHeadersMiddleware
+from .middleware import (
+    _VALID_REQUEST_ID,
+    RequestIDMiddleware,
+    SecurityHeadersMiddleware,
+    TrustedMetricsHostMiddleware,
+)
 from .models import MfaDevice, ProcessedPDF, ShareLink, UploadedPDF
 from .netutils import client_ip
 from .ratelimiting import _compute_key_and_rate
@@ -136,6 +141,77 @@ class MetricsAllowlistTests(SimpleTestCase):
         ip = client_ip(r)
         self.assertEqual(ip, "203.0.113.9")  # not the spoofed loopback
         self.assertFalse(_ip_allowed(ip or "", self.ALLOW))
+
+
+@override_settings(
+    ALLOWED_HOSTS=["pdf.micutu.com"],
+    PROMETHEUS_METRICS_ALLOW={"127.0.0.1", "172.16.0.0/12"},
+)
+class MetricsHostMiddlewareTests(SimpleTestCase):
+    def setUp(self):
+        self.rf = RequestFactory()
+
+    @staticmethod
+    def _captured_host(request):
+        captured = {}
+
+        def view(inner_request):
+            captured["host"] = inner_request.META.get("HTTP_HOST")
+            captured["validated_host"] = inner_request.get_host()
+            return HttpResponse("ok")
+
+        response = TrustedMetricsHostMiddleware(view)(request)
+        return response, captured
+
+    def test_direct_allowlisted_scrape_uses_canonical_host(self):
+        request = self.rf.get(
+            "/metrics",
+            HTTP_HOST="172.19.0.10:8000",
+            REMOTE_ADDR="172.19.0.4",
+        )
+
+        response, captured = self._captured_host(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(captured["host"], "pdf.micutu.com")
+        self.assertEqual(captured["validated_host"], "pdf.micutu.com")
+
+    def test_forwarded_scrape_is_not_rewritten(self):
+        request = self.rf.get(
+            "/metrics",
+            HTTP_HOST="172.19.0.10:8000",
+            HTTP_X_FORWARDED_FOR="203.0.113.8",
+            REMOTE_ADDR="172.19.0.4",
+        )
+        middleware = TrustedMetricsHostMiddleware(lambda inner: HttpResponse("ok"))
+
+        middleware(request)
+
+        self.assertEqual(request.META["HTTP_HOST"], "172.19.0.10:8000")
+
+    def test_untrusted_source_is_not_rewritten(self):
+        request = self.rf.get(
+            "/metrics",
+            HTTP_HOST="198.51.100.8",
+            REMOTE_ADDR="198.51.100.8",
+        )
+        middleware = TrustedMetricsHostMiddleware(lambda inner: HttpResponse("ok"))
+
+        middleware(request)
+
+        self.assertEqual(request.META["HTTP_HOST"], "198.51.100.8")
+
+    def test_other_paths_are_not_rewritten(self):
+        request = self.rf.get(
+            "/healthz",
+            HTTP_HOST="172.19.0.10:8000",
+            REMOTE_ADDR="172.19.0.4",
+        )
+        middleware = TrustedMetricsHostMiddleware(lambda inner: HttpResponse("ok"))
+
+        middleware(request)
+
+        self.assertEqual(request.META["HTTP_HOST"], "172.19.0.10:8000")
 
 
 # --------------------------------------------------------------------------
