@@ -28,7 +28,7 @@ docker compose logs --tail=200   # recent log noise
 
 ### Confirm
 
-1. Open Grafana → **PDF Editor** dashboard → "5xx rate" panel. Is the
+1. Open Grafana → **PDF Editor Overview** dashboard → "5xx rate" panel. Is the
    rate sustained, or did it already drop?
 2. Check Sentry — most 5xx have an exception attached. If the top error
    has a clear traceback, jump straight to "Mitigate".
