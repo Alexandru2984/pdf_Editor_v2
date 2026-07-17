@@ -154,7 +154,7 @@ groups:
           severity: critical
           slo: api_availability
         annotations:
-          summary: "Availability SLO burning fast: {{ printf \"%.2f\" (mul $values.A.Value 100.0) }}% 5xx over 1h"
+          summary: "Availability SLO burning fast: {{ humanizePercentage $values.A.Value }} 5xx over 1h"
           description: "At this rate the 30-day error budget (43m) is gone in <2 days. See docs/RUNBOOK.md → 5xx-burst."
 
       - uid: slo_api_availability_slow_burn
@@ -191,7 +191,7 @@ groups:
           severity: warning
           slo: api_availability
         annotations:
-          summary: "Availability SLO drifting: {{ printf \"%.2f\" (mul $values.A.Value 100.0) }}% 5xx over 6h"
+          summary: "Availability SLO drifting: {{ humanizePercentage $values.A.Value }} 5xx over 6h"
           description: "Not paging-urgent yet, but the monthly budget will be exhausted in ≈ 10 days at this pace."
 
       # SLO 2: API latency — target 95% under 1.0s, error budget 5%
@@ -233,7 +233,7 @@ groups:
           severity: critical
           slo: api_latency
         annotations:
-          summary: "Latency SLO burning fast: {{ printf \"%.0f\" (mul $values.A.Value 100.0) }}% of requests > 1s over 1h"
+          summary: "Latency SLO burning fast: {{ humanizePercentage $values.A.Value }} of requests > 1s over 1h"
           description: "Likely gunicorn CPU-bound or a slow DB query. See docs/RUNBOOK.md → high-latency."
 
       - uid: slo_api_latency_slow_burn
@@ -272,7 +272,7 @@ groups:
           severity: warning
           slo: api_latency
         annotations:
-          summary: "Latency SLO drifting: {{ printf \"%.0f\" (mul $values.A.Value 100.0) }}% of requests > 1s over 6h"
+          summary: "Latency SLO drifting: {{ humanizePercentage $values.A.Value }} of requests > 1s over 6h"
           description: "Background latency creep — open the dashboard and check per-endpoint p95."
 
       # SLO 3: Job success rate — target 99%, error budget 1%
@@ -312,7 +312,7 @@ groups:
           severity: critical
           slo: job_success
         annotations:
-          summary: "Job-success SLO burning fast: {{ printf \"%.0f\" (mul $values.A.Value 100.0) }}% of jobs failing over 1h"
+          summary: "Job-success SLO burning fast: {{ humanizePercentage $values.A.Value }} of jobs failing over 1h"
           description: "Likely a regression in tasks.py or an upstream (OCR/Groq) down. See docs/RUNBOOK.md → workers-stuck."
 
       - uid: slo_job_success_slow_burn
@@ -349,7 +349,7 @@ groups:
           severity: warning
           slo: job_success
         annotations:
-          summary: "Job-success SLO drifting: {{ printf \"%.0f\" (mul $values.A.Value 100.0) }}% of jobs failing over 6h"
+          summary: "Job-success SLO drifting: {{ humanizePercentage $values.A.Value }} of jobs failing over 6h"
           description: "Look for a specific kind failing — `sum by (kind) (rate(pdfeditor_job_total{status=\"failed\"}[1h]))`."
 
       # SLO 4: Op success rate — target 99.5%, error budget 0.5%
@@ -389,7 +389,7 @@ groups:
           severity: critical
           slo: op_success
         annotations:
-          summary: "Op-success SLO burning fast: {{ printf \"%.1f\" (mul $values.A.Value 100.0) }}% op failures over 1h"
+          summary: "Op-success SLO burning fast: {{ humanizePercentage $values.A.Value }} op failures over 1h"
           description: "PDFs are coming back broken. Likely a regression in pdf_processor — bisect the offending kind."
 
       - uid: slo_op_success_slow_burn
@@ -426,7 +426,7 @@ groups:
           severity: warning
           slo: op_success
         annotations:
-          summary: "Op-success SLO drifting: {{ printf \"%.1f\" (mul $values.A.Value 100.0) }}% op failures over 6h"
+          summary: "Op-success SLO drifting: {{ humanizePercentage $values.A.Value }} op failures over 6h"
           description: "Low-rate breakage somewhere — check `sum by (kind) (rate(pdfeditor_op_total{outcome=\"failure\"}[6h]))`."
 
       # ---- Replicas down --------------------------------------------------
