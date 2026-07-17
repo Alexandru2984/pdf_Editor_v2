@@ -414,7 +414,7 @@ services:
       GF_SMTP_PASSWORD: "${SMTP_PASS:-}"
       GF_SMTP_FROM_ADDRESS: "${SMTP_FROM:-noreply@example.com}"
       GF_SMTP_FROM_NAME: PDF Editor Alerts
-      GF_SMTP_STARTTLS_POLICY: OpportunisticStartTLS
+      GF_SMTP_STARTTLS_POLICY: MandatoryStartTLS
       # Recipient for the provisioned default-email contact point —
       # referenced from docker/grafana/provisioning/alerting/contact-points.yml
       # via $__env{ALERT_EMAIL}. Set empty to silence email alerts.
