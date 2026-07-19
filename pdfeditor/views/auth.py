@@ -93,7 +93,9 @@ def register_view(request: HttpRequest) -> HttpResponse:
             if form.honeypot_triggered():
                 # Bot: mimic the normal success path (no oracle) but create
                 # nothing and — above all — send no email.
-                logger.warning("Honeypot triggered on register form (email=%r)", form.cleaned_data.get("email"))
+                logger.warning(
+                    "Honeypot triggered on register form (email=%r)", form.cleaned_data.get("email")
+                )
                 messages.success(
                     request,
                     _("Almost there — check your email to confirm your address and finish signing up."),
@@ -249,7 +251,10 @@ def resend_confirmation_view(request: HttpRequest) -> HttpResponse:
         form = ResendConfirmationForm(request.POST)
         if form.is_valid():
             if form.honeypot_triggered():
-                logger.warning("Honeypot triggered on resend-confirmation form (email=%r)", form.cleaned_data.get("email"))
+                logger.warning(
+                    "Honeypot triggered on resend-confirmation form (email=%r)",
+                    form.cleaned_data.get("email"),
+                )
                 return render(request, "registration/resend_confirmation_done.html")
             email = form.cleaned_data["email"].strip().lower()
             user = User.objects.filter(email__iexact=email, is_active=False).first()
