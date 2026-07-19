@@ -13,12 +13,20 @@
     <form method="post" class="edit-form" novalidate>
         {% csrf_token %}
         {% for field in form %}
+        {% if field.name != "website_url" %}
         <div class="form-field">
             <label class="form-field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
             {{ field }}
             {% if field.errors %}<div class="form-field-error">{{ field.errors }}</div>{% endif %}
         </div>
+        {% endif %}
         {% endfor %}
+
+        {# Honeypot — invisible to humans, bots fill it and get silently dropped. #}
+        <div style="position:absolute;left:-9999px;top:-9999px;height:0;width:0;overflow:hidden;" aria-hidden="true">
+            <label for="{{ form.website_url.id_for_label }}">{{ form.website_url.label }}</label>
+            {{ form.website_url }}
+        </div>
         <button type="submit" class="btn btn-primary btn-block">{% trans "Send Confirmation Email" %}</button>
         <p class="auth-footer">
             <a href="{% url 'login' %}">{% trans "Back to sign in" %}</a>

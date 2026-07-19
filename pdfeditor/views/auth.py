@@ -8,6 +8,7 @@ confirmation flow added in phase 4.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from django import forms
@@ -32,8 +33,29 @@ from ..ratelimiting import auth_aware_ratelimit
 
 User = get_user_model()
 
+logger = logging.getLogger(__name__)
 
-class RegisterForm(UserCreationForm):
+
+class HoneypotMixin(forms.Form):
+    """Bot trap: a field humans never see (hidden via CSS in the template).
+
+    Anything typed into it means an automated submitter filled every input.
+    Views must treat a triggered honeypot as success-without-side-effects so
+    bots can't tell they were caught — and, critically, no email is sent.
+    Named "website_url" because generic-sounding fields attract form fillers.
+    """
+
+    website_url = forms.CharField(
+        required=False,
+        label="Website",
+        widget=forms.TextInput(attrs={"tabindex": "-1", "autocomplete": "off"}),
+    )
+
+    def honeypot_triggered(self) -> bool:
+        return bool((self.cleaned_data or {}).get("website_url"))
+
+
+class RegisterForm(HoneypotMixin, UserCreationForm):
     email = forms.EmailField(
         required=True,
         label=_lazy("Email"),
@@ -68,6 +90,15 @@ def register_view(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = RegisterForm(request.POST)
         if form.is_valid():
+            if form.honeypot_triggered():
+                # Bot: mimic the normal success path (no oracle) but create
+                # nothing and — above all — send no email.
+                logger.warning("Honeypot triggered on register form (email=%r)", form.cleaned_data.get("email"))
+                messages.success(
+                    request,
+                    _("Almost there — check your email to confirm your address and finish signing up."),
+                )
+                return redirect("login")
             email = form.cleaned_data["email"]
             existing = User.objects.filter(email__iexact=email).first() if email else None
             if existing is not None:
@@ -114,7 +145,7 @@ def confirm_email_view(request: HttpRequest, uidb64: str, token: str) -> HttpRes
     return redirect("dashboard")
 
 
-class ResendConfirmationForm(forms.Form):
+class ResendConfirmationForm(HoneypotMixin, forms.Form):
     email = forms.EmailField(
         required=True,
         label=_lazy("Email address"),
@@ -217,6 +248,9 @@ def resend_confirmation_view(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = ResendConfirmationForm(request.POST)
         if form.is_valid():
+            if form.honeypot_triggered():
+                logger.warning("Honeypot triggered on resend-confirmation form (email=%r)", form.cleaned_data.get("email"))
+                return render(request, "registration/resend_confirmation_done.html")
             email = form.cleaned_data["email"].strip().lower()
             user = User.objects.filter(email__iexact=email, is_active=False).first()
             if user is not None:

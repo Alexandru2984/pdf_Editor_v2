@@ -221,6 +221,10 @@ services:
     # this replica, not the neighbours. nginx LB routes around it.
     mem_limit: 1g
     cpus: 3
+    # FQDN, not the random container id: Django derives Message-ID and the
+    # SMTP EHLO name from the container hostname, and Gmail scores a bare
+    # hex hostname as a spam signal (rspamd: MID_RHS_NOT_FQDN).
+    hostname: pdf.micutu.com
     image: pdfeditor:latest
     # Immutable root filesystem: the only writable paths are the explicit
     # volumes (media, staticfiles, embeddings cache) and the tmpfs mounts
@@ -285,6 +289,8 @@ services:
 
   worker:
     <<: [*hardening, *logging]
+    # Same rationale as web: FQDN so outbound mail doesn't leak a container id.
+    hostname: pdf.micutu.com
     # Generous — this is the only service running unbounded, user-controlled
     # heavy work (OCR, pdf2docx, ghostscript PDF/A, fastembed). A pathological
     # PDF gets its task OOM-killed at 4 GB instead of eating all host RAM.
@@ -415,6 +421,9 @@ services:
       GF_SMTP_FROM_ADDRESS: "${SMTP_FROM:-noreply@example.com}"
       GF_SMTP_FROM_NAME: PDF Editor Alerts
       GF_SMTP_STARTTLS_POLICY: MandatoryStartTLS
+      # Grafana would otherwise EHLO as "localhost.localdomain" — another
+      # spam-filter tripwire on alert mail.
+      GF_SMTP_EHLO_IDENTITY: pdf.micutu.com
       # Recipient for the provisioned default-email contact point —
       # referenced from docker/grafana/provisioning/alerting/contact-points.yml
       # via $__env{ALERT_EMAIL}. Set empty to silence email alerts.
