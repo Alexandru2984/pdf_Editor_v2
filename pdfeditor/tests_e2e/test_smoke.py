@@ -60,6 +60,19 @@ class SmokeFlowTests(PlaywrightTestCase):
         finally:
             Path(fixture_path).unlink(missing_ok=True)
 
+        # ---- Preview -----------------------------------------------------
+        # PDF.js is a comparatively large dependency. It must stay off the
+        # dashboard's critical path and load only when preview is requested.
+        assert not self.page.evaluate(
+            "performance.getEntriesByType('resource')"
+            ".some((entry) => entry.name.includes('vendor/pdfjs/pdf.min'))"
+        )
+        with self.page.expect_request(lambda request: "vendor/pdfjs/pdf.min" in request.url):
+            self.page.locator("[data-pdf-modal]").first.click()
+        self.page.wait_for_selector("#pdf-preview-modal.active")
+        self.page.wait_for_function("document.querySelector('#modal-pdf-canvas').width > 0")
+        self.page.locator(".pdf-modal-close").click()
+
         # ---- Compress ----------------------------------------------------
         # If the upload didn't land, compress_view redirects to /; asserting
         # we stayed on /compress/ proves the upload actually persisted.

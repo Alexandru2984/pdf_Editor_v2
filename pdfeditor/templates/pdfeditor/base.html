@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n static %}
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE }}">
 <head>
@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="PDF Editor">
-    <link rel="manifest" href="/static/manifest.webmanifest">
-    <link rel="apple-touch-icon" href="/static/images/logo.jpg">
-    <link rel="icon" type="image/jpeg" href="/static/images/logo.jpg">
+    <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/apple-touch-icon.png' %}">
+    <link rel="icon" type="image/webp" sizes="64x64" href="{% static 'images/logo-64.webp' %}">
     <title>{% block title %}{{ seo.title }}{% endblock %}</title>
     <meta name="description" content="{{ seo.description }}">
     <meta name="robots" content="{{ seo.robots }}">
@@ -45,18 +45,19 @@
         })();
     </script>
 
-    <!-- Main CSS (Inter is self-hosted via @font-face inside — no Google
-         Fonts requests: the strict CSP blocked them anyway, and skipping
-         the third-party fetch is the GDPR-friendly default) -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260809-2">
-    <link rel="stylesheet" href="/static/css/pdf-modal.css">
+    <!-- Main CSS uses the native system font stack: no render-blocking font
+         transfer and no third-party font request. -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/pdf-modal.css' %}">
     
     {% block extra_css %}{% endblock %}
 
     <!-- Defines window.gettext()/ngettext() for static JS files (e.g. pdf-modal.js). -->
-    <script src="{% url 'javascript-catalog' %}"></script>
+    <script defer src="{% url 'javascript-catalog' %}"></script>
 
+    {% if seo.analytics_enabled %}
     <script defer src="https://analytics.micutu.com/script.js" data-website-id="ef923397-0031-4f2c-878c-2eb764c23513"></script>
+    {% endif %}
 </head>
 <body>
     <a class="skip-link" href="#main-content">{% trans "Skip to main content" %}</a>
@@ -64,7 +65,14 @@
     <header class="site-header">
         <div class="site-header-inner">
             <a href="{% url 'dashboard' %}" class="site-logo">
-                <img src="/static/images/logo.jpg" alt="Micu's Stuff" class="site-logo-img">
+                <img
+                    src="{% static 'images/logo-64.webp' %}"
+                    width="52"
+                    height="52"
+                    alt="Micu's Stuff"
+                    class="site-logo-img"
+                    decoding="async"
+                >
                 <div class="site-logo-text">
                     <span class="site-logo-title">PDF Platform</span>
                     <p>by Micu's Stuff</p>
@@ -79,7 +87,7 @@
             <form action="{% url 'set_language' %}" method="post" class="lang-switcher-form">
                 {% csrf_token %}
                 <input name="next" type="hidden" value="{{ seo.language_switch_url }}">
-                <button type="submit" name="language" value="{% if LANGUAGE_CODE|slice:':2' == 'ro' %}en{% else %}ro{% endif %}" class="lang-switcher" aria-label="{% trans 'Switch language' %}" title="{% trans 'Switch language' %}">
+                <button type="submit" name="language" value="{% if LANGUAGE_CODE|slice:':2' == 'ro' %}en{% else %}ro{% endif %}" class="lang-switcher" aria-label="{% if LANGUAGE_CODE|slice:':2' == 'ro' %}Switch language to English (EN){% else %}Schimbă limba în română (RO){% endif %}" title="{% trans 'Switch language' %}">
                     {% if LANGUAGE_CODE|slice:":2" == "ro" %}EN{% else %}RO{% endif %}
                 </button>
             </form>
@@ -130,7 +138,12 @@
     </footer>
 
     <!-- PDF Modal JS -->
-    <script src="/static/js/pdf-modal.js"></script>
+    <script
+        defer
+        src="{% static 'js/pdf-modal.js' %}"
+        data-pdfjs-url="{% static 'vendor/pdfjs/pdf.min.js' %}"
+        data-pdfjs-worker-url="{% static 'vendor/pdfjs/pdf.worker.min.js' %}"
+    ></script>
     
     <script nonce="{{ request.csp_nonce }}">
         // Auto-hide messages after 5 seconds

@@ -264,7 +264,7 @@
                 </div>
                 {% endif %}
                 <div class="pdf-item-body">
-                    <h4 class="pdf-item-name" title="{{ pdf.name }}">{{ pdf.name }}</h4>
+                    <h3 class="pdf-item-name" title="{{ pdf.name }}">{{ pdf.name }}</h3>
                     <p class="pdf-item-meta-row">
                         <span><span aria-hidden="true">📦</span> {{ pdf.size|filesizeformat }}</span>
                         <span><span aria-hidden="true">📅</span> {{ pdf.uploaded_at|slice:":10" }}</span>
@@ -292,22 +292,22 @@
         <div class="features-grid">
             <div class="feature-item">
                 <div class="feature-icon">🔒</div>
-                <h4>{% trans "Secure" %}</h4>
+                <h3>{% trans "Secure" %}</h3>
                 <p>{% trans "Your files are automatically deleted after processing" %}</p>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">⚡</div>
-                <h4>{% trans "Fast" %}</h4>
+                <h3>{% trans "Fast" %}</h3>
                 <p>{% trans "Process PDFs in seconds with our optimized engine" %}</p>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">🎯</div>
-                <h4>{% trans "Accurate" %}</h4>
+                <h3>{% trans "Accurate" %}</h3>
                 <p>{% trans "Preserve formatting and layout with precision" %}</p>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">🌐</div>
-                <h4>{% trans "No Installation" %}</h4>
+                <h3>{% trans "No Installation" %}</h3>
                 <p>{% trans "Work directly in your browser, no downloads needed" %}</p>
             </div>
         </div>

@@ -29,6 +29,10 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 
 DEBUG = env_bool("DEBUG", False)
 
+# First-party Umami analytics. Keep production's existing default, but do not
+# generate noisy CORS failures or synthetic page views in local/test runs.
+ANALYTICS_ENABLED = env_bool("ANALYTICS_ENABLED", not DEBUG) and not TESTING
+
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
 # Comma-separated in the env; localhost origins belong in a dev .env, not here.
@@ -348,6 +352,16 @@ MEDIA_ROOT = BASE_DIR / "media"
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG or TESTING
+            else "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+        )
+    },
+}
 
 PDF_CLEANUP_HOURS = 24
 

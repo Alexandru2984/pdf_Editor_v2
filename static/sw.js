@@ -11,13 +11,8 @@
  */
 
 // Bump on every deploy so clients with a stale SW pick up new assets.
-const CACHE_NAME = "pdfeditor-shell-v2";
+const CACHE_NAME = "pdfeditor-shell-v3";
 const APP_SHELL = [
-    "/static/css/style.css",
-    "/static/css/pdf-modal.css",
-    "/static/css/chat.css",
-    "/static/js/pdf-modal.js",
-    "/static/images/logo.jpg",
     "/static/offline.html",
 ];
 

@@ -377,6 +377,7 @@ def seo_context(request: HttpRequest) -> dict[str, dict[str, object]]:
         "alternates": [],
         "tools_hub_url": reverse(f"tools_hub_{language}"),
         "language_switch_url": request.get_full_path(),
+        "analytics_enabled": bool(getattr(settings, "ANALYTICS_ENABLED", False)),
     }
     if indexable and page is not None:
         canonical = _url_for(page)
