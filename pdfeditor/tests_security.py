@@ -789,6 +789,28 @@ class CspRenderTests(TestCase):
                     self.assertIn(f'nonce="{nonce}"', tag)
 
 
+class AccessibilityShellTests(TestCase):
+    def test_page_shell_has_keyboard_landmarks_and_mobile_nav_control(self):
+        response = self.client.get("/accounts/login/")
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+
+        self.assertIn('class="skip-link" href="#main-content"', body)
+        self.assertIn('<main id="main-content" tabindex="-1">', body)
+        self.assertIn('id="nav-toggle"', body)
+        self.assertIn('aria-controls="site-nav"', body)
+        self.assertIn('id="site-nav"', body)
+        self.assertNotIn('class="nav-toggle-btn" aria-hidden="true"', body)
+
+    def test_styles_cover_focus_touch_targets_and_reduced_motion(self):
+        css = (settings.BASE_DIR / "static/css/style.css").read_text()
+
+        self.assertIn(":focus-visible", css)
+        self.assertIn(".nav-toggle:focus-visible ~ .nav-toggle-btn", css)
+        self.assertIn("@media (prefers-reduced-motion: reduce)", css)
+        self.assertIn("min-height: 44px", css)
+
+
 # --------------------------------------------------------------------------
 # RFC 9116: public vulnerability disclosure contact.
 # --------------------------------------------------------------------------
