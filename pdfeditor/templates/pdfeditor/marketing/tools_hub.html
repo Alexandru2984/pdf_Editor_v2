@@ -1,0 +1,94 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}{{ seo.title }}{% endblock %}
+
+{% block content %}
+<div class="marketing-shell">
+    <section class="marketing-hero marketing-hero--hub" aria-labelledby="tools-heading">
+        <p class="marketing-eyebrow">{{ ui.hub_eyebrow }}</p>
+        <h1 id="tools-heading">{{ ui.hub_title }}</h1>
+        <p class="marketing-lead">{{ ui.hub_subtitle }}</p>
+    </section>
+
+    <section class="tool-discovery" aria-label="{{ ui.search_label }}">
+        <div class="tool-search-field">
+            <label for="tool-search">{{ ui.search_label }}</label>
+            <input
+                type="search"
+                id="tool-search"
+                placeholder="{{ ui.search_placeholder }}"
+                autocomplete="off"
+                enterkeyhint="search"
+            >
+        </div>
+        <div class="tool-category-field">
+            <label for="tool-category">{{ ui.all_categories }}</label>
+            <select id="tool-category">
+                <option value="">{{ ui.all_categories }}</option>
+                {% for category in categories %}<option value="{{ category }}">{{ category }}</option>{% endfor %}
+            </select>
+        </div>
+        <p id="tool-count" class="tool-result-count" aria-live="polite">
+            <span>{{ cards|length }}</span> {{ ui.tools_found }}
+        </p>
+    </section>
+
+    <div id="public-tools-grid" class="public-tools-grid">
+        {% for card in cards %}
+        <article
+            class="public-tool-card"
+            data-tool-card
+            data-category="{{ card.category }}"
+            data-search="{{ card.name }} {{ card.short_description }} {{ card.category }}"
+        >
+            <div class="public-tool-card-topline">
+                <span class="public-tool-icon" aria-hidden="true">{{ card.icon }}</span>
+                <span class="public-tool-category">{{ card.category }}</span>
+            </div>
+            <h2><a href="{{ card.url }}">{{ card.name }}</a></h2>
+            <p>{{ card.short_description }}</p>
+            <a class="public-tool-link" href="{{ card.url }}">
+                {% if card.direct %}{{ ui.direct_badge }}{% else %}{{ ui.open_tool }}{% endif %}
+                <span aria-hidden="true">→</span>
+            </a>
+        </article>
+        {% endfor %}
+    </div>
+
+    <p id="tool-no-results" class="tool-no-results" hidden>{{ ui.no_results }}</p>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+(function () {
+    const search = document.getElementById('tool-search');
+    const category = document.getElementById('tool-category');
+    const cards = Array.from(document.querySelectorAll('[data-tool-card]'));
+    const count = document.querySelector('#tool-count span');
+    const empty = document.getElementById('tool-no-results');
+
+    const normalize = value => value
+        .toLocaleLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+
+    function applyFilters() {
+        const query = normalize(search.value);
+        const selectedCategory = category.value;
+        let visible = 0;
+        cards.forEach(card => {
+            const matchesText = !query || normalize(card.dataset.search).includes(query);
+            const matchesCategory = !selectedCategory || card.dataset.category === selectedCategory;
+            const show = matchesText && matchesCategory;
+            card.hidden = !show;
+            if (show) visible += 1;
+        });
+        count.textContent = String(visible);
+        empty.hidden = visible !== 0;
+    }
+
+    search.addEventListener('input', applyFilters);
+    category.addEventListener('change', applyFilters);
+})();
+</script>
+{% endblock %}

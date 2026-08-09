@@ -3,8 +3,19 @@ from django.urls import path, reverse_lazy
 
 from . import views
 from .ratelimiting import auth_aware_ratelimit
+from .tool_catalog import TOOL_LANDINGS
 
 urlpatterns = [
+    path("tools/", views.tools_hub_view, name="tools_hub"),
+    *[
+        path(
+            f"tools/{tool.slug}/",
+            views.tool_landing_view,
+            {"tool_slug": tool.slug},
+            name=tool.url_name,
+        )
+        for tool in TOOL_LANDINGS
+    ],
     path("", views.dashboard_view, name="dashboard"),
     path("upload/", views.upload_view, name="upload"),
     path("edit/", views.edit_view, name="edit"),

@@ -45,7 +45,7 @@
     <!-- Main CSS (Inter is self-hosted via @font-face inside — no Google
          Fonts requests: the strict CSP blocked them anyway, and skipping
          the third-party fetch is the GDPR-friendly default) -->
-    <link rel="stylesheet" href="/static/css/style.css?v=20260809">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260809-2">
     <link rel="stylesheet" href="/static/css/pdf-modal.css">
     
     {% block extra_css %}{% endblock %}
@@ -60,10 +60,10 @@
     <!-- Header with Logo -->
     <header class="site-header">
         <div class="site-header-inner">
-            <a href="https://micutu.com" target="_blank" class="site-logo" rel="noopener">
+            <a href="{% url 'dashboard' %}" class="site-logo">
                 <img src="/static/images/logo.jpg" alt="Micu's Stuff" class="site-logo-img">
                 <div class="site-logo-text">
-                    <h1>PDF Platform</h1>
+                    <span class="site-logo-title">PDF Platform</span>
                     <p>by Micu's Stuff</p>
                 </div>
             </a>
@@ -88,6 +88,7 @@
 
             <nav class="site-nav" id="site-nav" aria-label="{% trans 'Primary navigation' %}">
                 <a href="{% url 'dashboard' %}" class="nav-link">🏠 {% trans "Dashboard" %}</a>
+                <a href="{% url 'tools_hub' %}" class="nav-link">🧰 {% if LANGUAGE_CODE|slice:':2' == 'ro' %}Instrumente PDF{% else %}PDF Tools{% endif %}</a>
                 {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}" class="nav-link">👤 {{ user.username }}</a>
                 <form method="post" action="{% url 'logout' %}" class="nav-logout-form">
@@ -119,6 +120,7 @@
 
     <footer class="site-footer">
         <span>© 2026 PDF Platform</span>
+        <a href="{% url 'tools_hub' %}">{% if LANGUAGE_CODE|slice:':2' == 'ro' %}Instrumente PDF{% else %}PDF Tools{% endif %}</a>
         <a href="{% url 'privacy' %}">{% trans "Privacy Policy" %}</a>
         <a href="{% url 'terms' %}">{% trans "Terms of Service" %}</a>
         <a href="https://github.com/Alexandru2984/pdf_Editor_v2" target="_blank" rel="noopener">{% trans "Open source" %} (MIT)</a>

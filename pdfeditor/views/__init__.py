@@ -112,6 +112,7 @@ from .layout_ops import (
     watermark_view,
 )
 from .legal import privacy_view, terms_view
+from .marketing import tool_landing_view, tools_hub_view
 from .metrics import metrics_view
 from .mfa import (
     MfaLoginView,
@@ -170,6 +171,8 @@ __all__ = [
     "revoke_session_view",
     "security_sessions_view",
     "serve_media_view",
+    "tool_landing_view",
+    "tools_hub_view",
     "dashboard_view",
     "upload_view",
     "delete_pdf_view",

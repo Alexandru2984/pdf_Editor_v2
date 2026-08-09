@@ -184,7 +184,8 @@ body {
 }
 
 .site-logo-text { min-width: 0; }
-.site-logo-text h1 {
+.site-logo-title {
+    display: block;
     color: white;
     margin: 0;
     font-size: 1.25rem;
@@ -268,7 +269,7 @@ body {
 @media (max-width: 768px) {
     .site-header-inner { padding: 0.625rem 1rem; }
     .site-logo-img { height: 42px; width: 42px; }
-    .site-logo-text h1 { font-size: 1.05rem; }
+    .site-logo-title { font-size: 1.05rem; }
     .site-logo-text p { display: none; }
 
     .nav-toggle {
@@ -336,7 +337,7 @@ body {
 @media (max-width: 380px) {
     .site-header-inner { padding: 0.5rem 0.75rem; gap: 0.5rem; }
     .site-logo-img { height: 36px; width: 36px; }
-    .site-logo-text h1 { font-size: 0.95rem; }
+    .site-logo-title { font-size: 0.95rem; }
 }
 
 footer {
@@ -2698,4 +2699,545 @@ footer {
 .legal-consent {
     text-align: center;
     margin-top: var(--spacing-sm);
+}
+
+/* ============================================
+   Public PDF tool catalogue + SEO landing pages
+   ============================================ */
+
+.marketing-shell {
+    width: min(1180px, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 2rem 0 1rem;
+}
+
+.marketing-hero {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(2rem, 5vw, 4.5rem);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 1.5rem;
+    background:
+        radial-gradient(circle at 90% 10%, rgba(236, 72, 153, 0.32), transparent 35%),
+        linear-gradient(135deg, #312e81 0%, #4f46e5 52%, #7c3aed 100%);
+    box-shadow: var(--shadow-xl);
+    color: #ffffff;
+}
+
+.marketing-hero--hub { text-align: center; }
+
+.marketing-eyebrow {
+    margin-bottom: 0.65rem;
+    color: #ddd6fe;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.marketing-hero h1 {
+    max-width: 850px;
+    margin: 0;
+    color: #ffffff;
+    font-size: clamp(2rem, 6vw, 4rem);
+    line-height: 1.05;
+    letter-spacing: -0.045em;
+}
+
+.marketing-hero--hub h1,
+.marketing-hero--hub .marketing-lead {
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.marketing-lead {
+    max-width: 780px;
+    margin-top: 1.2rem;
+    color: #ede9fe;
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    line-height: 1.7;
+}
+
+.marketing-title-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.marketing-tool-icon {
+    display: grid;
+    width: clamp(3.5rem, 8vw, 5.5rem);
+    height: clamp(3.5rem, 8vw, 5.5rem);
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: clamp(1.75rem, 4vw, 3rem);
+    backdrop-filter: blur(8px);
+}
+
+.marketing-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0 0 1rem 0.25rem;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 0.9rem;
+}
+
+.marketing-breadcrumb a {
+    color: #ffffff;
+    text-underline-offset: 0.2em;
+}
+
+.tool-discovery {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(190px, 260px) auto;
+    gap: 1rem;
+    align-items: end;
+    margin: 1.5rem 0;
+    padding: 1.1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.tool-search-field,
+.tool-category-field {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.tool-search-field label,
+.tool-category-field label {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.tool-search-field input,
+.tool-category-field select {
+    min-height: 48px;
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--input-border);
+    border-radius: 0.7rem;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font: inherit;
+}
+
+.tool-result-count {
+    min-width: 9rem;
+    padding-bottom: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+.public-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+    gap: 1rem;
+}
+
+.public-tool-card {
+    display: flex;
+    min-height: 250px;
+    flex-direction: column;
+    padding: 1.35rem;
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-md);
+    transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.public-tool-card[hidden] { display: none; }
+
+.public-tool-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary-light);
+    box-shadow: var(--shadow-lg);
+}
+
+.public-tool-card-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.public-tool-icon { font-size: 2rem; }
+
+.public-tool-category {
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.public-tool-card h2 {
+    margin: 1.1rem 0 0.55rem;
+    font-size: 1.25rem;
+    line-height: 1.25;
+}
+
+.public-tool-card h2 a {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.public-tool-card > p {
+    margin-bottom: 1.2rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.public-tool-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: auto;
+    color: var(--primary-color);
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.tool-no-results {
+    margin: 2rem auto;
+    padding: 2rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 1rem;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.marketing-trust-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin: 1.25rem 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    list-style: none;
+}
+
+.marketing-trust-strip li {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 54px;
+    padding: 0.7rem 1rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.marketing-trust-strip li + li { border-left: 1px solid var(--border-color); }
+
+.marketing-trust-strip li span {
+    color: var(--success-color);
+    font-size: 1rem;
+}
+
+.marketing-upload-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.85fr);
+    gap: 1.5rem 2rem;
+    align-items: center;
+    padding: clamp(1.35rem, 4vw, 2.25rem);
+    border: 1px solid #c7d2fe;
+    border-radius: 1.25rem;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-lg);
+}
+
+.marketing-card-kicker {
+    margin-bottom: 0.4rem;
+    color: var(--primary-color);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.marketing-upload-card h2 {
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-size: clamp(1.35rem, 3vw, 2rem);
+}
+
+.marketing-upload-card p { color: var(--text-secondary); }
+
+.marketing-upload-form {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.marketing-file-label {
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+
+.marketing-upload-form input[type='file'] {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.55rem;
+    border: 1px dashed var(--primary-light);
+    border-radius: 0.7rem;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font: inherit;
+}
+
+.marketing-upload-form input[type='file']::file-selector-button {
+    min-height: 36px;
+    margin-right: 0.7rem;
+    padding: 0.45rem 0.8rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.marketing-existing-file {
+    grid-column: 1 / -1;
+    margin-top: -0.35rem;
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+.marketing-existing-file a {
+    color: var(--primary-color);
+    font-weight: 800;
+}
+
+.marketing-content-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+}
+
+.marketing-content-card {
+    padding: clamp(1.25rem, 3vw, 2rem);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.marketing-content-card h2,
+.marketing-note h2,
+.marketing-faq h2,
+.marketing-related h2 {
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+    font-size: clamp(1.2rem, 3vw, 1.55rem);
+}
+
+.marketing-check-list,
+.marketing-step-list {
+    display: grid;
+    gap: 0.9rem;
+    padding: 0;
+    list-style: none;
+}
+
+.marketing-check-list li {
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+    color: var(--text-secondary);
+}
+
+.marketing-check-list li > span:first-child {
+    display: grid;
+    width: 1.55rem;
+    height: 1.55rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.13);
+    color: var(--success-color);
+    font-weight: 900;
+}
+
+.marketing-step-list li {
+    display: grid;
+    grid-template-columns: 2rem 1fr;
+    gap: 0.7rem;
+    align-items: center;
+}
+
+.marketing-step-list li > span {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border-radius: 0.65rem;
+    background: var(--primary-color);
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 900;
+}
+
+.marketing-step-list p { color: var(--text-secondary); }
+
+.marketing-note {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-top: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid #fcd34d;
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--warning-color) 11%, var(--bg-primary));
+}
+
+.marketing-note h2 { margin-bottom: 0.35rem; }
+
+.marketing-note p {
+    color: var(--text-secondary);
+    line-height: 1.65;
+}
+
+.marketing-note-icon { font-size: 1.5rem; }
+
+.marketing-faq,
+.marketing-related {
+    margin-top: 1.25rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.marketing-faq-list {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.marketing-faq details {
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    background: var(--bg-secondary);
+}
+
+.marketing-faq summary {
+    padding: 1rem;
+    color: var(--text-primary);
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.marketing-faq details p {
+    padding: 0 1rem 1rem;
+    color: var(--text-secondary);
+    line-height: 1.65;
+}
+
+.marketing-related-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.marketing-related-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.15rem 0.65rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.marketing-related-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-light);
+}
+
+.marketing-related-card > span {
+    grid-row: 1 / 3;
+    font-size: 1.4rem;
+}
+
+.marketing-related-card small {
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+@media (max-width: 800px) {
+    .tool-discovery { grid-template-columns: 1fr 1fr; }
+    .tool-result-count {
+        grid-column: 1 / -1;
+        padding: 0;
+        text-align: left;
+    }
+    .marketing-upload-card,
+    .marketing-content-grid { grid-template-columns: 1fr; }
+    .marketing-existing-file { text-align: left; }
+    .marketing-related-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+    .marketing-shell {
+        width: min(100% - 1rem, 1180px);
+        padding-top: 0.75rem;
+    }
+    .marketing-hero {
+        padding: 1.5rem 1.1rem;
+        border-radius: 1rem;
+    }
+    .marketing-title-row {
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    .marketing-tool-icon {
+        width: 3.25rem;
+        height: 3.25rem;
+        border-radius: 0.8rem;
+        font-size: 1.6rem;
+    }
+    .marketing-breadcrumb {
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    .tool-discovery { grid-template-columns: 1fr; padding: 0.85rem; }
+    .marketing-trust-strip { grid-template-columns: 1fr; }
+    .marketing-trust-strip li {
+        justify-content: flex-start;
+        text-align: left;
+    }
+    .marketing-trust-strip li + li {
+        border-top: 1px solid var(--border-color);
+        border-left: 0;
+    }
+    .marketing-upload-card,
+    .marketing-content-card,
+    .marketing-faq,
+    .marketing-related { padding: 1rem; }
+    .marketing-upload-form .btn { width: 100%; }
 }

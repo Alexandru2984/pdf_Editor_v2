@@ -1,0 +1,113 @@
+{% extends 'pdfeditor/base.html' %}
+
+{% block title %}{{ seo.title }}{% endblock %}
+
+{% block content %}
+<div class="marketing-shell">
+    <nav class="marketing-breadcrumb" aria-label="Breadcrumb">
+        <a href="{% url 'dashboard' %}">{{ ui.breadcrumb_home }}</a>
+        <span aria-hidden="true">/</span>
+        <a href="{% url 'tools_hub' %}">{{ ui.breadcrumb_tools }}</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{{ tool.name }}</span>
+    </nav>
+
+    <section class="marketing-hero" aria-labelledby="tool-heading">
+        <p class="marketing-eyebrow">{{ tool.category }}</p>
+        <div class="marketing-title-row">
+            <span class="marketing-tool-icon" aria-hidden="true">{{ tool.icon }}</span>
+            <h1 id="tool-heading">{{ tool.name }}</h1>
+        </div>
+        <p class="marketing-lead">{{ tool.intro }}</p>
+    </section>
+
+    <ul class="marketing-trust-strip" aria-label="Service facts">
+        <li><span aria-hidden="true">✓</span> {{ ui.privacy_one }}</li>
+        <li><span aria-hidden="true">✓</span> {{ ui.privacy_two }}</li>
+        <li><span aria-hidden="true">✓</span> {{ ui.privacy_three }}</li>
+    </ul>
+
+    <section class="marketing-upload-card" aria-labelledby="upload-heading">
+        <div>
+            <p class="marketing-card-kicker">{{ tool.icon }} {{ tool.name }}</p>
+            <h2 id="upload-heading">
+                {% if tool.multiple_upload %}{{ ui.upload_multiple_title }}{% else %}{{ ui.upload_title }}{% endif %}
+            </h2>
+            <p>
+                {% if tool.multiple_upload %}{{ ui.upload_multiple_help }}{% else %}{{ ui.upload_help }}{% endif %}
+            </p>
+        </div>
+        <form method="post" action="{{ upload_action }}" enctype="multipart/form-data" class="marketing-upload-form">
+            {% csrf_token %}
+            <label for="marketing-pdf-input" class="marketing-file-label">
+                {% if tool.multiple_upload %}{{ ui.choose_pdfs }}{% else %}{{ ui.choose_pdf }}{% endif %}
+            </label>
+            <input
+                id="marketing-pdf-input"
+                type="file"
+                name="pdf_file"
+                accept=".pdf,application/pdf"
+                {% if tool.multiple_upload %}multiple{% endif %}
+                required
+            >
+            <button type="submit" class="btn btn-primary">{{ ui.continue_tool }} <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="marketing-existing-file">
+            {{ ui.already_uploaded }} <a href="{{ operation_url }}">{{ ui.open_operation }} →</a>
+        </p>
+    </section>
+
+    <div class="marketing-content-grid">
+        <section class="marketing-content-card" aria-labelledby="benefits-heading">
+            <h2 id="benefits-heading">{{ ui.why_title }}</h2>
+            <ul class="marketing-check-list">
+                {% for highlight in tool.highlights %}
+                <li><span aria-hidden="true">✓</span><span>{{ highlight }}</span></li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="marketing-content-card" aria-labelledby="steps-heading">
+            <h2 id="steps-heading">{{ ui.steps_title }}</h2>
+            <ol class="marketing-step-list">
+                {% for step in tool.steps %}
+                <li><span aria-hidden="true">{{ forloop.counter }}</span><p>{{ step }}</p></li>
+                {% endfor %}
+            </ol>
+        </section>
+    </div>
+
+    <aside class="marketing-note" aria-labelledby="note-heading">
+        <span class="marketing-note-icon" aria-hidden="true">💡</span>
+        <div>
+            <h2 id="note-heading">{{ ui.note_title }}</h2>
+            <p>{{ tool.note }}</p>
+        </div>
+    </aside>
+
+    <section class="marketing-faq" aria-labelledby="faq-heading">
+        <h2 id="faq-heading">{{ ui.faq_title }}</h2>
+        <div class="marketing-faq-list">
+            {% for item in tool.faqs %}
+            <details>
+                <summary>{{ item.question }}</summary>
+                <p>{{ item.answer }}</p>
+            </details>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="marketing-related" aria-labelledby="related-heading">
+        <h2 id="related-heading">{{ ui.related_title }}</h2>
+        <div class="marketing-related-grid">
+            {% for related in related_tools %}
+            <a href="{{ related.url }}" class="marketing-related-card">
+                <span aria-hidden="true">{{ related.icon }}</span>
+                <strong>{{ related.name }}</strong>
+                <small>{{ related.short_description }}</small>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

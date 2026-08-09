@@ -21,6 +21,8 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import get_language
 from django.views.decorators.http import require_safe
 
+from .tool_catalog import DIRECT_TOOL_LINKS, TOOL_LANDINGS, TOOL_LANDINGS_BY_URL_NAME
+
 
 @dataclass(frozen=True, slots=True)
 class SeoPage:
@@ -115,6 +117,33 @@ SEO_PAGES: dict[str, SeoPage] = {
     )
 }
 
+SEO_PAGES["tools_hub"] = SeoPage(
+    url_name="tools_hub",
+    title_en="Free Online PDF Tools | Convert, Edit & Secure",
+    title_ro="Instrumente PDF online | Conversie, editare și securitate",
+    description_en=(
+        "Explore focused online PDF tools for merging, splitting, compression, OCR, conversion, "
+        "redaction, passwords, signatures and page organization."
+    ),
+    description_ro=(
+        "Descoperă instrumente PDF online pentru unire, separare, compresie, OCR, conversie, "
+        "redactare, parole, semnături și organizarea paginilor."
+    ),
+    page_type="CollectionPage",
+)
+SEO_PAGES.update(
+    {
+        tool.url_name: SeoPage(
+            url_name=tool.url_name,
+            title_en=tool.seo_title.en,
+            title_ro=tool.seo_title.ro,
+            description_en=tool.seo_description.en,
+            description_ro=tool.seo_description.ro,
+        )
+        for tool in TOOL_LANDINGS
+    }
+)
+
 _DEFAULT_DESCRIPTION = {
     "en": "Private, practical tools for editing and processing PDF documents online.",
     "ro": "Instrumente practice pentru editarea și procesarea documentelor PDF online.",
@@ -206,6 +235,7 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
         "inLanguage": language,
         "isPartOf": {"@id": website["@id"]},
     }
+    graph: list[dict[str, object]] = [website, webpage]
     if page.url_name == "dashboard":
         webpage.update(
             {
@@ -226,7 +256,68 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
                 ],
             }
         )
-    return {"@context": "https://schema.org", "@graph": [website, webpage]}
+    elif page.url_name == "tools_hub":
+        hub_items = [(tool.name.get(language), f"{origin}{reverse(tool.url_name)}") for tool in TOOL_LANDINGS]
+        hub_items.extend(
+            (tool.name.get(language), f"{origin}{reverse(tool.url_name)}") for tool in DIRECT_TOOL_LINKS
+        )
+        webpage["mainEntity"] = {
+            "@type": "ItemList",
+            "numberOfItems": len(hub_items),
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": position,
+                    "name": name,
+                    "url": url,
+                }
+                for position, (name, url) in enumerate(hub_items, start=1)
+            ],
+        }
+    elif tool := TOOL_LANDINGS_BY_URL_NAME.get(page.url_name):
+        breadcrumb_id = f"{canonical}#breadcrumb"
+        webpage["breadcrumb"] = {"@id": breadcrumb_id}
+        webpage["mainEntity"] = {
+            "@type": "HowTo",
+            "name": tool.name.get(language),
+            "description": tool.intro.get(language),
+            "step": [
+                {
+                    "@type": "HowToStep",
+                    "position": position,
+                    "name": step.get(language),
+                    "text": step.get(language),
+                }
+                for position, step in enumerate(tool.steps, start=1)
+            ],
+        }
+        graph.append(
+            {
+                "@type": "BreadcrumbList",
+                "@id": breadcrumb_id,
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "PDF Platform",
+                        "item": f"{origin}/",
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "Instrumente PDF" if language == "ro" else "PDF tools",
+                        "item": f"{origin}{reverse('tools_hub')}",
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": tool.name.get(language),
+                        "item": canonical,
+                    },
+                ],
+            }
+        )
+    return {"@context": "https://schema.org", "@graph": graph}
 
 
 def seo_context(request: HttpRequest) -> dict[str, dict[str, object]]:

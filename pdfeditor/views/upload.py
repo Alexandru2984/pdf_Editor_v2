@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 from ..models import UploadedPDF
 from ..pdf_processor import check_pdf_has_text, inspect_pdf, sanitize_pdf
 from ..scanning import UploadBlocked, scan_fileobj
+from ..tool_catalog import is_upload_destination_allowed
 from ._common import _owner_kwargs, get_uploaded_pdfs, owner_filter, storage_quota, storage_usage
 
 logger = logging.getLogger(__name__)
@@ -185,13 +186,15 @@ def upload_view(request):
             request,
             _('PDF "%(name)s" uploaded successfully! Choose an operation below.') % {"name": created[0].name},
         )
-        return redirect("dashboard")
+        destination = request.GET.get("next", "")
+        return redirect(destination if is_upload_destination_allowed(destination) else "dashboard")
     if len(created) > 1:
         messages.success(
             request,
             _("%(count)d PDFs uploaded successfully! Choose an operation below.") % {"count": len(created)},
         )
-        return redirect("dashboard")
+        destination = request.GET.get("next", "")
+        return redirect(destination if is_upload_destination_allowed(destination) else "dashboard")
 
     messages.error(request, _("No valid PDF files were uploaded."))
     return render(request, "pdfeditor/upload.html")
