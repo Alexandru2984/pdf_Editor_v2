@@ -21,6 +21,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.http import FileResponse, Http404
 from django.urls import include, path, re_path
+from django.views.decorators.http import require_safe
 from django.views.generic import RedirectView
 from django.views.i18n import JavaScriptCatalog
 
@@ -42,7 +43,22 @@ def serve_service_worker(request):
     raise Http404("sw.js not found")
 
 
+@require_safe
+def serve_security_txt(request):
+    """Publish the RFC 9116 security contact at its canonical location."""
+    for candidate in (
+        os.path.join(settings.BASE_DIR, "staticfiles", "security.txt"),
+        os.path.join(settings.BASE_DIR, "static", "security.txt"),
+    ):
+        if os.path.exists(candidate):
+            response = FileResponse(open(candidate, "rb"), content_type="text/plain; charset=utf-8")  # noqa: SIM115 — FileResponse owns the handle
+            response["Cache-Control"] = "public, max-age=86400"
+            return response
+    raise Http404("security.txt not found")
+
+
 urlpatterns = [
+    path(".well-known/security.txt", serve_security_txt, name="security_txt"),
     path("admin/health/", admin_health_view, name="admin_health"),
     path("admin/", admin.site.urls),
     # Service worker must be served from the root path so its `scope` can

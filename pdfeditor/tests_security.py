@@ -790,6 +790,25 @@ class CspRenderTests(TestCase):
 
 
 # --------------------------------------------------------------------------
+# RFC 9116: public vulnerability disclosure contact.
+# --------------------------------------------------------------------------
+class SecurityTxtTests(SimpleTestCase):
+    def test_canonical_security_contact_is_published(self):
+        response = self.client.get("/.well-known/security.txt")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response["Content-Type"].startswith("text/plain"))
+        body = b"".join(response.streaming_content).decode()
+        self.assertIn("Contact: mailto:", body)
+        self.assertIn("Expires:", body)
+        self.assertIn("Canonical: https://pdf.micutu.com/.well-known/security.txt", body)
+
+    def test_security_contact_is_read_only(self):
+        response = self.client.post("/.well-known/security.txt")
+        self.assertEqual(response.status_code, 405)
+
+
+# --------------------------------------------------------------------------
 # 2026-06-23: SSRF guard on signature-revocation fetching (ssrf_guard.py)
 # --------------------------------------------------------------------------
 class SsrfGuardTests(SimpleTestCase):

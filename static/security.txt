@@ -1,0 +1,5 @@
+Contact: mailto:984.alexmihai@gmail.com
+Expires: 2027-08-09T23:59:59Z
+Preferred-Languages: ro, en
+Canonical: https://pdf.micutu.com/.well-known/security.txt
+Policy: https://github.com/alexandru2984/pdf_Editor_v2/security/policy
