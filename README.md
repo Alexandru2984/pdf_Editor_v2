@@ -406,11 +406,11 @@ service needed.
   cosign keyless image signatures; runtime deps hash-pinned in
   `requirements.lock` and installed with `pip --require-hashes`.
 - **Container isolation** — every service runs non-root with `cap_drop: ALL`,
-  `no-new-privileges`, and a read-only root filesystem. The Celery **worker**
-  — where untrusted PDFs meet ghostscript / PyMuPDF / tesseract — additionally
-  runs under **gVisor** (`runsc`), so a parser RCE is contained by a user-space
-  kernel instead of reaching host syscalls. Per-service memory + CPU limits
-  cap the blast radius on the shared host.
+  `no-new-privileges`, and a read-only root filesystem. Both the web replicas
+  and Celery worker run under **gVisor** because untrusted PDFs meet native
+  parsers in both paths. Per-service memory + CPU limits cap the blast radius
+  on the shared host; the runbook documents the remaining host-networking
+  trade-off instead of treating the sandbox as a complete security boundary.
 - **HSTS preload**, secure + HttpOnly + SameSite cookies, HTTPS-only.
 - **Path traversal** blocked via `realpath` + ownership check on every
   `/media/` access.

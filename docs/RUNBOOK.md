@@ -331,35 +331,45 @@ writes the verified client IP and docker nginx appends the second entry.
 
 ---
 
-## Host Docker runtime — gVisor for the worker
+## Host Docker runtime — gVisor for web and worker
 
-The `worker` service pins `runtime: runsc-net` in `docker-compose.yml`, so it
-runs under **gVisor** (untrusted PDFs meet C/C++ parsers there; gVisor's
-user-space kernel contains a parser RCE). That runtime is **host config, not
-in git** — it lives in `/etc/docker/daemon.json`:
+Both `web` and `worker` pin `runtime: runsc-net` in `docker-compose.yml`.
+Uploads are parsed in the request path for validation, sanitization and
+thumbnails, while larger operations run in Celery; both therefore need the
+gVisor boundary. The runtime is **host config, not in git** and lives in
+`/etc/docker/daemon.json`:
 
 ```json
 "runtimes": {
   "runsc":     { "path": "/usr/bin/runsc", "runtimeArgs": ["--network=none"] },
+  "runsc-sandbox": { "path": "/usr/bin/runsc", "runtimeArgs": ["--network=sandbox"] },
   "runsc-net": { "path": "/usr/bin/runsc", "runtimeArgs": ["--network=host"] }
 }
 ```
 
-`runsc-net` uses `--network=host` on purpose: gVisor's `--network=sandbox`
-netstack fails on this Docker bridge (`cannot run with network enabled in root
-network namespace`), and host-passthrough networking keeps Docker DNS + the
-Redis/DB network working while syscall interposition (the RCE containment) is
-unchanged. Add a runtime with `sudo systemctl reload docker` (SIGHUP — reloads
-`runtimes` **without** restarting any container).
+Install from gVisor's signed stable APT repository, not Ubuntu Universe, and
+keep at least the release enforced by `scripts/deploy.sh`. The official
+repository currently uses the following source:
+
+```text
+deb [arch=amd64 signed-by=/usr/share/keyrings/gvisor-archive-keyring.gpg] https://storage.googleapis.com/gvisor/releases release main
+```
+
+`runsc-net` uses `--network=host` because Docker's `127.0.0.11` embedded DNS
+is unreachable from gVisor netstack on this user-defined bridge. This is a
+known security trade-off: native socket calls expose more host-kernel surface
+than `--network=sandbox`. The long-term fix is a networkless ingest sandbox
+with a file/job handoff, not claiming that host networking has equal
+isolation. Reload Docker with SIGHUP after changing runtimes; it does not
+restart existing containers.
 
 **If the box is rebuilt** and this runtime is missing, `docker compose up -d`
-fails to start the worker (`unknown runtime runsc-net`). Recreate the
+fails to start web and worker (`unknown runtime runsc-net`). Recreate the
 daemon.json block above, reload docker, then redeploy. To roll gVisor *off*
 in a hurry (e.g. a suspected gVisor incompatibility after a dependency bump):
-drop `runtime: runsc-net` from the worker service and `docker compose up -d
-worker` — it falls back to `runc`. Confirm the sandbox is active with
-`docker exec pdf_editor_v2-worker-1 cat /proc/version` (gVisor reports the
-`Linux version 4.4.0 … 2016` signature, not the host kernel).
+drop `runtime: runsc-net` only as a documented incident workaround. Confirm
+each sandbox with `docker inspect --format '{{.HostConfig.Runtime}}'` for both
+web replicas and the worker; the result must be `runsc-net`.
 
 ## Scheduled jobs (root crontab)
 

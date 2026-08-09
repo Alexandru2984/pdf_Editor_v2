@@ -44,12 +44,39 @@ if [[ "$TAG" != "sha-${EXPECTED_COMMIT:0:7}" ]]; then
     exit 1
 fi
 
-for required_command in git docker cosign curl grep; do
+for required_command in git docker cosign curl date grep runsc; do
     if ! command -v "$required_command" >/dev/null 2>&1; then
         echo "✗ required command is missing: $required_command" >&2
         exit 1
     fi
 done
+
+# Native PDF parsers run in both web and worker. Refuse to roll production
+# onto an absent or stale sandbox runtime; Ubuntu's former 2024 package was
+# more than two years behind the supported release channel.
+RUNSC_MIN_RELEASE=20260803
+RUNSC_MAX_AGE_DAYS=45
+RUNSC_VERSION_OUTPUT="$(runsc --version)"
+if [[ ! "$RUNSC_VERSION_OUTPUT" =~ release-([0-9]{8}) ]]; then
+    echo "✗ runsc is not an official dated release; update gVisor first" >&2
+    exit 1
+fi
+RUNSC_RELEASE="${BASH_REMATCH[1]}"
+if (( 10#$RUNSC_RELEASE < 10#$RUNSC_MIN_RELEASE )); then
+    echo "✗ runsc release ${RUNSC_RELEASE} is older than required ${RUNSC_MIN_RELEASE}" >&2
+    exit 1
+fi
+RUNSC_RELEASE_ISO="${RUNSC_RELEASE:0:4}-${RUNSC_RELEASE:4:2}-${RUNSC_RELEASE:6:2}"
+RUNSC_RELEASE_EPOCH="$(date -u -d "$RUNSC_RELEASE_ISO" +%s)"
+RUNSC_AGE_DAYS=$(( ($(date -u +%s) - RUNSC_RELEASE_EPOCH) / 86400 ))
+if (( RUNSC_AGE_DAYS < 0 || RUNSC_AGE_DAYS > RUNSC_MAX_AGE_DAYS )); then
+    echo "✗ runsc release age is ${RUNSC_AGE_DAYS} days; maximum is ${RUNSC_MAX_AGE_DAYS}" >&2
+    exit 1
+fi
+if ! docker info --format '{{json .Runtimes}}' | grep -q '"runsc-net"'; then
+    echo "✗ Docker runtime runsc-net is not configured" >&2
+    exit 1
+fi
 
 cd "$(dirname "$0")/.."
 
