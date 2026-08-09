@@ -13,11 +13,23 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from PIL import Image
 
-from .seo import NOINDEX_ROBOTS, SEO_PAGES
+from .seo import NOINDEX_ROBOTS, SEO_PAGES, _json_for_script
 
 
 @override_settings(SITE_URL="https://pdf.example.test")
 class SeoTests(TestCase):
+    def test_json_ld_serialization_cannot_close_its_script_element(self):
+        hostile_value = '</script><script>alert("xss")</script>&\u2028\u2029'
+
+        serialized = _json_for_script({"value": hostile_value})
+
+        self.assertNotIn("<", serialized)
+        self.assertNotIn(">", serialized)
+        self.assertNotIn("&", serialized)
+        self.assertNotIn("\u2028", serialized)
+        self.assertNotIn("\u2029", serialized)
+        self.assertEqual(json.loads(serialized), {"value": hostile_value})
+
     def test_public_dashboard_has_canonical_social_metadata_and_valid_json_ld(self):
         response = self.client.get(f"{reverse('dashboard_en')}?utm_source=test")
 

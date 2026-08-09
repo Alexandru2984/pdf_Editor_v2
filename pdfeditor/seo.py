@@ -10,7 +10,10 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, replace
 from urllib.parse import urlsplit, urlunsplit
-from xml.etree import ElementTree
+
+# ElementTree is used only to serialize a sitemap assembled by this module;
+# this code never parses XML, trusted or otherwise.
+from xml.etree import ElementTree  # nosec B405
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -425,7 +428,10 @@ def seo_context(request: HttpRequest) -> dict[str, dict[str, object]]:
                     if page.alternate_group
                     else request.get_full_path()
                 ),
-                "json_ld": mark_safe(
+                # The serializer escapes every HTML-significant character before
+                # this value bypasses template auto-escaping. The regression test
+                # covers script-closing payloads and verifies JSON round-tripping.
+                "json_ld": mark_safe(  # nosec
                     _json_for_script(_structured_data(page, language=language, canonical=canonical))
                 ),
             }
