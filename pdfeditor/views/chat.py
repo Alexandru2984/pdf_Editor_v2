@@ -48,7 +48,9 @@ SYSTEM_PROMPT = (
 
 
 def _resolve_pdf(request, pdf_id) -> UploadedPDF | None:
-    return UploadedPDF.objects.filter(owner_filter(request), id=pdf_id).first()
+    return UploadedPDF.objects.filter(
+        owner_filter(request), id=pdf_id, ingest_status=UploadedPDF.INGEST_SANITIZED
+    ).first()
 
 
 # Curated list of Groq models — limited to text-LLMs that handle multilingual
@@ -91,7 +93,11 @@ def chat_view(request, pdf_id):
         return redirect("job_detail", job_id=job.id)
 
     # Build the list of additional PDFs the user has + which are indexed.
-    user_pdfs = list(UploadedPDF.objects.filter(owner_filter(request)).order_by("-uploaded_at"))
+    user_pdfs = list(
+        UploadedPDF.objects.filter(
+            owner_filter(request), ingest_status=UploadedPDF.INGEST_SANITIZED
+        ).order_by("-uploaded_at")
+    )
     indexed_ids = set(
         Embedding.objects.filter(uploaded_pdf__in=user_pdfs)
         .values_list("uploaded_pdf_id", flat=True)

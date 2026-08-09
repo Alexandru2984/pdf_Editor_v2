@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import difflib
 import io
 import logging
@@ -14,7 +15,7 @@ from collections.abc import Callable
 import fitz
 from PIL import Image as PILImage
 
-from ._common import parse_page_range, processed_dir, safe_basename, timestamp
+from ._common import parse_page_range, processed_dir, safe_basename, sanitize_pdf, timestamp
 
 # Resolve ghostscript binary up-front so PDF/A conversion fails fast with a
 # clear message in environments where it isn't installed.
@@ -500,6 +501,11 @@ def remove_pdf_password(pdf_path: str, password: str) -> str:
             deflate=True,
             clean=True,
         )
+
+    if not sanitize_pdf(out_path):
+        with contextlib.suppress(OSError):
+            os.remove(out_path)
+        raise ValueError("Decrypted PDF could not be sanitized safely")
 
     return out_path
 

@@ -44,10 +44,12 @@ from ..views._common import _client_ip
 from .serializers import ProcessedPDFSerializer
 
 
-def _user_pdf(user, pdf_id) -> UploadedPDF:
+def _user_pdf(user, pdf_id, *, allow_encrypted: bool = False) -> UploadedPDF:
     pdf = UploadedPDF.objects.filter(user=user, id=pdf_id).first()
     if pdf is None:
         raise NotFound("PDF not found.")
+    if not allow_encrypted and not pdf.is_processable:
+        raise ValidationError({"pdf_id": "Encrypted PDFs can only use the unprotect operation."})
     if not pdf.exists_on_disk():
         raise NotFound("PDF file is missing on disk.")
     return pdf
@@ -119,11 +121,16 @@ class _BaseOpView(APIView):
     kind: str
     op_callable: Callable
     request_serializer: type[serializers.Serializer]
+    allow_encrypted = False
 
     def post(self, request):
         in_ser = self.request_serializer(data=request.data)
         in_ser.is_valid(raise_exception=True)
-        pdf = _user_pdf(request.user, in_ser.validated_data["pdf_id"])
+        pdf = _user_pdf(
+            request.user,
+            in_ser.validated_data["pdf_id"],
+            allow_encrypted=self.allow_encrypted,
+        )
         try:
             out_path = self.run(pdf.path, in_ser.validated_data)
         except ValueError as exc:
@@ -396,6 +403,7 @@ class PdfaOpView(APIView):
 class UnprotectOpView(_BaseOpView):
     kind = ProcessedPDF.KIND_UNPROTECT
     request_serializer = _UnprotectSerializer
+    allow_encrypted = True
 
     def run(self, pdf_path, params):
         return remove_pdf_password(pdf_path, params["password"])
@@ -724,7 +732,11 @@ class BatchOpView(APIView):
         # Validate ownership for every requested PDF before we accept
         # the job — partial-batch rejection is friendlier than queueing
         # work that's going to fail per-row on the worker.
-        owned = UploadedPDF.objects.filter(user=request.user, id__in=pdf_ids)
+        owned = UploadedPDF.objects.filter(
+            user=request.user,
+            id__in=pdf_ids,
+            ingest_status=UploadedPDF.INGEST_SANITIZED,
+        )
         owned_ids = {str(pid) for pid in owned.values_list("id", flat=True)}
         missing = [str(p) for p in pdf_ids if str(p) not in owned_ids]
         if missing:

@@ -4,6 +4,7 @@ import io
 import os
 import shutil
 import tempfile
+from unittest.mock import patch
 
 import fitz
 from django.contrib.auth import get_user_model
@@ -27,6 +28,21 @@ def _make_pdf_bytes(num_pages: int = 1) -> bytes:
         page.insert_text((72, 100), f"Page {i + 1}", fontsize=12)
     buf = io.BytesIO()
     doc.save(buf)
+    doc.close()
+    return buf.getvalue()
+
+
+def _make_encrypted_pdf_bytes(password="secret123", num_pages=1):
+    doc = fitz.open()
+    for i in range(num_pages):
+        doc.new_page().insert_text((72, 100), f"Encrypted {i + 1}", fontsize=12)
+    buf = io.BytesIO()
+    doc.save(
+        buf,
+        encryption=fitz.PDF_ENCRYPT_AES_256,
+        user_pw=password,
+        owner_pw=password,
+    )
     doc.close()
     return buf.getvalue()
 
@@ -108,6 +124,49 @@ class PdfManagementApiTests(_ApiTestBase):
     def test_upload_missing_file_returns_400(self):
         resp = self.client.post(reverse("api:pdf-list"), {}, format="multipart")
         self.assertEqual(resp.status_code, 400)
+
+    def test_encrypted_upload_only_allows_unprotect(self):
+        uploaded = SimpleUploadedFile(
+            "encrypted.pdf",
+            _make_encrypted_pdf_bytes(password="known-password"),
+            content_type="application/pdf",
+        )
+        create = self.client.post(reverse("api:pdf-list"), {"pdf_file": uploaded}, format="multipart")
+        self.assertEqual(create.status_code, 201, create.content)
+        self.assertEqual(create.json()["ingest_status"], UploadedPDF.INGEST_ENCRYPTED)
+        pdf_id = create.json()["id"]
+
+        blocked = self.client.post(
+            reverse("api:op-compress"),
+            {"pdf_id": pdf_id, "quality": "medium"},
+            format="json",
+        )
+        self.assertEqual(blocked.status_code, 400)
+        self.assertIn("unprotect", str(blocked.json()).lower())
+
+        unprotected = self.client.post(
+            reverse("api:op-unprotect"),
+            {"pdf_id": pdf_id, "password": "known-password"},
+            format="json",
+        )
+        self.assertEqual(unprotected.status_code, 201, unprotected.content)
+
+    @patch("pdfeditor.pdf_processor.sanitize_pdf", return_value=False)
+    def test_upload_rejects_sanitizer_failure(self, _sanitize):
+        uploaded = SimpleUploadedFile(
+            "unsafe.pdf",
+            _make_pdf_bytes(1),
+            content_type="application/pdf",
+        )
+
+        response = self.client.post(
+            reverse("api:pdf-list"),
+            {"pdf_file": uploaded},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(UploadedPDF.objects.filter(user=self.user, name="unsafe.pdf").exists())
 
     def test_list_only_returns_own_pdfs(self):
         self._upload()

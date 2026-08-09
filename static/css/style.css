@@ -805,6 +805,21 @@ footer {
     transform: scale(1.04);
 }
 
+.pdf-item-thumb--encrypted {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.pdf-item-thumb--encrypted > span:first-child {
+    font-size: 3rem;
+}
+
 .pdf-item-body {
     padding: var(--spacing-sm) var(--spacing-sm) 0.75rem;
     flex: 1;

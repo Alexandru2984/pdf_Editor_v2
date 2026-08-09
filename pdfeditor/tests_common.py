@@ -249,6 +249,33 @@ class SanitizePdfTests(TestCase):
     def test_missing_file_returns_false(self):
         self.assertFalse(sanitize_pdf("/no/such/file.pdf"))
 
+    def test_scrub_failure_leaves_original_untouched(self):
+        from unittest.mock import patch
+
+        path = self._make_malicious_pdf()
+        with open(path, "rb") as source:
+            original = source.read()
+
+        with patch.object(fitz.Document, "scrub", side_effect=RuntimeError("parser failure")):
+            self.assertFalse(sanitize_pdf(path))
+
+        with open(path, "rb") as source:
+            self.assertEqual(source.read(), original)
+
+    def test_removes_embedded_files(self):
+        doc = fitz.open()
+        doc.new_page()
+        doc.embfile_add("payload.txt", b"embedded payload")
+        fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd)
+        doc.save(path)
+        doc.close()
+        self.tmp_files.append(path)
+
+        self.assertTrue(sanitize_pdf(path))
+        with fitz.open(path) as sanitized:
+            self.assertEqual(sanitized.embfile_count(), 0)
+
 
 class CheckPdfHasTextTests(TestCase):
     def setUp(self):

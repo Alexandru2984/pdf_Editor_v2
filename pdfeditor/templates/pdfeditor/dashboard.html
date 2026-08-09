@@ -252,10 +252,17 @@
         <div class="user-pdfs-grid">
             {% for pdf in uploaded_pdfs %}
             <div class="pdf-item-card">
+                {% if pdf.is_processable %}
                 <button type="button" data-pdf-modal="/media/uploads/{{ pdf.name }}" class="pdf-item-thumb" aria-label="{% blocktrans with name=pdf.name %}Preview {{ name }}{% endblocktrans %}">
                     <img src="{% url 'pdf_thumbnail' pdf.id %}" alt="" loading="lazy" data-remove-on-error>
                     <span class="pdf-item-thumb-overlay" aria-hidden="true">👁️ {% trans "Preview" %}</span>
                 </button>
+                {% else %}
+                <div class="pdf-item-thumb pdf-item-thumb--encrypted" aria-label="{% trans 'Encrypted PDF' %}">
+                    <span aria-hidden="true">🔐</span>
+                    <span>{% trans "Encrypted" %}</span>
+                </div>
+                {% endif %}
                 <div class="pdf-item-body">
                     <h4 class="pdf-item-name" title="{{ pdf.name }}">{{ pdf.name }}</h4>
                     <p class="pdf-item-meta-row">
@@ -264,7 +271,11 @@
                     </p>
                 </div>
                 <div class="pdf-item-actions">
+                    {% if pdf.is_processable %}
                     <button data-pdf-modal="/media/uploads/{{ pdf.name }}" class="btn btn-preview pdf-item-btn">👁️ {% trans "Preview" %}</button>
+                    {% else %}
+                    <a href="{% url 'unprotect' %}?pdf={{ pdf.id }}" class="btn btn-primary pdf-item-btn">🔓 {% trans "Remove Password" %}</a>
+                    {% endif %}
                     <form method="post" action="{% url 'delete_pdf' pdf.id %}" class="pdf-item-action-form" data-confirm="{% trans "Delete this PDF?" %}">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-delete pdf-item-btn">🗑️ {% trans "Delete" %}</button>

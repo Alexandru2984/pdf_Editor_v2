@@ -28,7 +28,7 @@ def redact_sensitive_params(value):
 class UploadedPDFSerializer(serializers.ModelSerializer):
     class Meta:
         model = UploadedPDF
-        fields = ["id", "name", "size", "uploaded_at"]
+        fields = ["id", "name", "size", "ingest_status", "uploaded_at"]
         read_only_fields = fields
 
 

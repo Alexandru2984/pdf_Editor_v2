@@ -13,7 +13,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from ..models import UploadedPDF
-from ..pdf_processor import check_pdf_has_text, sanitize_pdf
+from ..pdf_processor import check_pdf_has_text, inspect_pdf, sanitize_pdf
 from ..scanning import UploadBlocked, scan_fileobj
 from ._common import _owner_kwargs, get_uploaded_pdfs, owner_filter, storage_quota, storage_usage
 
@@ -21,16 +21,6 @@ logger = logging.getLogger(__name__)
 
 THUMB_SUBDIR = "thumbs"
 THUMB_TARGET_WIDTH = 480
-
-
-def _count_pages_safely(file_path):
-    """Return page count or None if the PDF cannot be opened."""
-    try:
-        with fitz.open(file_path) as doc:
-            return len(doc)
-    except Exception as exc:
-        logger.warning("Failed to inspect uploaded PDF %s: %s", file_path, exc)
-        return None
 
 
 def _thumbnail_path(pdf_id) -> str:
@@ -62,7 +52,7 @@ def dashboard_view(request):
         request,
         "pdfeditor/dashboard.html",
         {
-            "uploaded_pdfs": get_uploaded_pdfs(request),
+            "uploaded_pdfs": get_uploaded_pdfs(request, include_encrypted=True),
             "storage_used": used,
             "storage_quota": quota,
             "storage_percent": (used * 100 // quota) if quota else 0,
@@ -106,8 +96,6 @@ def upload_view(request):
                 % {"name": uploaded_file.name, "mb": quota // (1024 * 1024)},
             )
             continue
-        quota_used += uploaded_file.size
-
         header = uploaded_file.read(5)
         uploaded_file.seek(0)
         if header != b"%PDF-":
@@ -137,30 +125,39 @@ def upload_view(request):
         file_path = fs.path(filename)
 
         max_pages = getattr(settings, "PDF_MAX_PAGES", 500)
-        page_count = _count_pages_safely(file_path)
-        if page_count is None:
+        inspection = inspect_pdf(file_path)
+        if inspection is None or inspection.page_count < 1:
             os.remove(file_path)
             messages.warning(
                 request,
                 _('Skipped "%(name)s" - could not be parsed as a PDF.') % {"name": uploaded_file.name},
             )
             continue
-        if page_count > max_pages:
+        if inspection.page_count > max_pages:
             os.remove(file_path)
             messages.warning(
                 request,
                 _('Skipped "%(name)s" - %(pages)d pages exceeds the %(max)d-page limit.')
-                % {"name": uploaded_file.name, "pages": page_count, "max": max_pages},
+                % {"name": uploaded_file.name, "pages": inspection.page_count, "max": max_pages},
             )
             continue
 
-        # Strip active content (JS, auto-actions) and rewrite the structure
-        # before the file is ever stored or re-processed. Best-effort.
-        sanitize_pdf(file_path)
+        ingest_status = UploadedPDF.INGEST_ENCRYPTED
+        if not inspection.encrypted:
+            # A sanitizer error is security-significant: never persist or
+            # process the ambiguous original.
+            if not sanitize_pdf(file_path):
+                os.remove(file_path)
+                messages.warning(
+                    request,
+                    _('Skipped "%(name)s" - could not be sanitized safely.') % {"name": uploaded_file.name},
+                )
+                continue
+            ingest_status = UploadedPDF.INGEST_SANITIZED
 
-        has_text, message = check_pdf_has_text(file_path)
-        if not has_text:
-            messages.warning(request, f"{uploaded_file.name}: {message}")
+            has_text, message = check_pdf_has_text(file_path)
+            if not has_text:
+                messages.warning(request, f"{uploaded_file.name}: {message}")
 
         pdf_obj = UploadedPDF.objects.create(
             **_owner_kwargs(request),
@@ -168,10 +165,19 @@ def upload_view(request):
             path=file_path,
             # On-disk size after sanitization, not the original upload size.
             size=os.path.getsize(file_path),
+            ingest_status=ingest_status,
         )
-        # Best-effort: failure here only means the dashboard falls back to
-        # the lazy-regen path in thumbnail_view.
-        _generate_thumbnail(file_path, _thumbnail_path(pdf_obj.id))
+        quota_used += pdf_obj.size
+        if pdf_obj.is_processable:
+            # Best-effort: failure here only means the dashboard falls back to
+            # the lazy-regen path in thumbnail_view.
+            _generate_thumbnail(file_path, _thumbnail_path(pdf_obj.id))
+        else:
+            messages.info(
+                request,
+                _('"%(name)s" is encrypted and is available only in Remove Password.')
+                % {"name": uploaded_file.name},
+            )
         created.append(pdf_obj)
 
     if len(created) == 1:
@@ -206,7 +212,9 @@ def delete_pdf_view(request, pdf_id):
 
 def thumbnail_view(request, pdf_id):
     """Serve the first-page JPEG thumbnail. Owner-scoped, regenerated lazily."""
-    pdf = UploadedPDF.objects.filter(owner_filter(request), id=pdf_id).first()
+    pdf = UploadedPDF.objects.filter(
+        owner_filter(request), id=pdf_id, ingest_status=UploadedPDF.INGEST_SANITIZED
+    ).first()
     if pdf is None or not pdf.exists_on_disk():
         raise Http404
     thumb_path = _thumbnail_path(pdf.id)

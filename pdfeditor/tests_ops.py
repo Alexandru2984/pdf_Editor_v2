@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import unittest
 import zipfile
+from unittest.mock import patch
 
 import fitz
 from django.test import TestCase, override_settings
@@ -1275,6 +1276,20 @@ class RemovePdfPasswordTests(_MediaRootMixin, TestCase):
         out = remove_pdf_password(encrypted, password="pw")
         self.tmp_files.append(out)
         self.assertIn("unprotected", os.path.basename(out))
+
+    @patch("pdfeditor.pdf_processor.ops.sanitize_pdf", return_value=False)
+    def test_sanitizer_failure_removes_decrypted_output(self, _sanitize):
+        from django.conf import settings
+
+        encrypted = protect_pdf(self.plain, user_password="pw")
+        self.tmp_files.append(encrypted)
+        processed = os.path.join(settings.MEDIA_ROOT, "processed")
+        before = set(os.listdir(processed))
+
+        with self.assertRaisesRegex(ValueError, "sanitized safely"):
+            remove_pdf_password(encrypted, password="pw")
+
+        self.assertEqual(set(os.listdir(processed)), before)
 
 
 class CropPagesTests(_MediaRootMixin, TestCase):

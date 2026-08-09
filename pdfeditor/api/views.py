@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 import os
 
-import fitz
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.http import FileResponse, Http404, HttpResponseRedirect
@@ -31,15 +30,6 @@ from .serializers import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _count_pages_safely(path: str) -> int | None:
-    try:
-        with fitz.open(path) as doc:
-            return len(doc)
-    except Exception as exc:
-        logger.warning("API upload — could not parse PDF %s: %s", path, exc)
-        return None
 
 
 @extend_schema(tags=["PDFs"])
@@ -117,18 +107,24 @@ class UploadedPDFViewSet(viewsets.ReadOnlyModelViewSet):
         file_path = fs.path(filename)
 
         max_pages = getattr(settings, "PDF_MAX_PAGES", 500)
-        page_count = _count_pages_safely(file_path)
-        if page_count is None:
+        from ..pdf_processor import inspect_pdf, sanitize_pdf
+
+        inspection = inspect_pdf(file_path)
+        if inspection is None or inspection.page_count < 1:
             os.remove(file_path)
             raise ValidationError({"pdf_file": "PDF could not be parsed."})
-        if page_count > max_pages:
+        if inspection.page_count > max_pages:
             os.remove(file_path)
-            raise ValidationError({"pdf_file": f"Document has {page_count} pages (max {max_pages})."})
+            raise ValidationError(
+                {"pdf_file": f"Document has {inspection.page_count} pages (max {max_pages})."}
+            )
 
-        # Strip active content (JS, auto-actions) + rewrite structure. Best-effort.
-        from ..pdf_processor import sanitize_pdf
-
-        sanitize_pdf(file_path)
+        ingest_status = UploadedPDF.INGEST_ENCRYPTED
+        if not inspection.encrypted:
+            if not sanitize_pdf(file_path):
+                os.remove(file_path)
+                raise ValidationError({"pdf_file": "PDF could not be sanitized safely."})
+            ingest_status = UploadedPDF.INGEST_SANITIZED
 
         obj = UploadedPDF.objects.create(
             user=request.user,
@@ -136,6 +132,7 @@ class UploadedPDFViewSet(viewsets.ReadOnlyModelViewSet):
             name=uploaded.name,
             path=file_path,
             size=os.path.getsize(file_path),
+            ingest_status=ingest_status,
         )
         serializer = self.get_serializer(obj)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

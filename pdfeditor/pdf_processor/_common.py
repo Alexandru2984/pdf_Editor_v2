@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import contextlib
 import logging
 import os
+import re
 import tempfile
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
@@ -20,6 +21,28 @@ logger = logging.getLogger(__name__)
 # JavaScript or /Launch an external program with no user interaction —
 # the active-content vector we refuse to persist for arbitrary uploads.
 _AUTO_EXEC_CATALOG_KEYS = ("OpenAction", "AA")
+_FORBIDDEN_ACTIVE_OBJECT = re.compile(
+    r"/S\s*/(?:JavaScript|Launch)\b"
+    r"|/Subtype\s*/RichMedia\b"
+    r"|/Type\s*/EmbeddedFile\b"
+    r"|/AA\s+(?!null\b)"
+)
+
+
+@dataclass(frozen=True)
+class PDFInspection:
+    page_count: int
+    encrypted: bool
+
+
+def inspect_pdf(pdf_path: str) -> PDFInspection | None:
+    """Inspect structural limits without attempting to decrypt content."""
+    try:
+        with fitz.open(pdf_path) as doc:
+            return PDFInspection(page_count=len(doc), encrypted=bool(doc.needs_pass))
+    except Exception as exc:  # noqa: BLE001 — caller rejects an ambiguous file
+        logger.warning("Failed to inspect PDF %s: %s", pdf_path, exc)
+        return None
 
 
 def processed_dir() -> str:
@@ -43,11 +66,25 @@ def pdf_page_count(pdf_path: str) -> int | None:
     PDFs (single-digit ms even for 100-page docs since fitz.open just
     parses the trailer + xref).
     """
-    try:
-        with fitz.open(pdf_path) as doc:
-            return len(doc)
-    except Exception:  # noqa: BLE001 — caller decides on None
-        return None
+    inspection = inspect_pdf(pdf_path)
+    return inspection.page_count if inspection else None
+
+
+def _assert_no_active_content(pdf_path: str) -> None:
+    """Re-open a rewritten PDF and reject residual executable containers."""
+    with fitz.open(pdf_path) as doc:
+        if doc.needs_pass:
+            raise ValueError("sanitized output unexpectedly requires a password")
+        catalog = doc.pdf_catalog()
+        for key in (*_AUTO_EXEC_CATALOG_KEYS, "Names/JavaScript"):
+            value_type, _value = doc.xref_get_key(catalog, key)
+            if value_type not in ("null", "none"):
+                raise ValueError(f"active catalog key remained after sanitization: {key}")
+        for xref in range(1, doc.xref_length()):
+            obj = doc.xref_object(xref, compressed=False)
+            match = _FORBIDDEN_ACTIVE_OBJECT.search(obj)
+            if match:
+                raise ValueError(f"active PDF object remained after sanitization: {match.group(0)}")
 
 
 def sanitize_pdf(pdf_path: str) -> bool:
@@ -61,10 +98,9 @@ def sanitize_pdf(pdf_path: str) -> bool:
     preserved — this targets only the active-content vectors, not the
     document the user actually uploaded.
 
-    Returns ``True`` if the file was rewritten, ``False`` if it was skipped
-    (e.g. password-protected, so we can't safely rewrite it) or failed.
-    Best-effort: any failure leaves the original file untouched so a sanitize
-    hiccup never blocks an otherwise-valid upload.
+    Returns ``True`` only after the rewritten file passes a second structural
+    validation. Password-protected inputs and every ambiguous failure return
+    ``False``; ingest callers must quarantine or reject them.
     """
     tmp_path: str | None = None
     try:
@@ -76,31 +112,28 @@ def sanitize_pdf(pdf_path: str) -> bool:
             # 1. Drop all JavaScript (doc-level Names/JavaScript + annotation
             #    actions) while leaving content, links, metadata and filled
             #    form values intact.
-            try:
-                doc.scrub(
-                    javascript=True,
-                    attached_files=False,
-                    clean_pages=False,
-                    embedded_files=False,
-                    hidden_text=False,
-                    metadata=False,
-                    redactions=False,
-                    remove_links=False,
-                    reset_fields=False,
-                    reset_responses=False,
-                    thumbnails=False,
-                    xml_metadata=False,
-                )
-            except Exception as exc:  # noqa: BLE001 — scrub kwargs drift across versions
-                logger.warning("scrub(javascript) failed on %s: %s", pdf_path, exc)
+            doc.scrub(
+                javascript=True,
+                attached_files=True,
+                clean_pages=False,
+                embedded_files=True,
+                hidden_text=False,
+                metadata=False,
+                redactions=False,
+                remove_links=False,
+                reset_fields=False,
+                reset_responses=False,
+                thumbnails=False,
+                xml_metadata=False,
+            )
 
             # 2. Neutralise auto-execute hooks in the document catalog. Null'ing
             #    Names/JavaScript orphans the doc-level JS objects so the GC
             #    pass below drops them entirely rather than leaving empty shells.
             catalog = doc.pdf_catalog()
             for key in (*_AUTO_EXEC_CATALOG_KEYS, "Names/JavaScript"):
-                # Key may simply not be present — that's fine.
-                with contextlib.suppress(Exception):
+                value_type, _value = doc.xref_get_key(catalog, key)
+                if value_type not in ("null", "none"):
                     doc.xref_set_key(catalog, key, "null")
 
             # 3. Rewrite with full GC: rebuilds the xref and discards trailing
@@ -108,14 +141,16 @@ def sanitize_pdf(pdf_path: str) -> bool:
             fd, tmp_path = tempfile.mkstemp(suffix=".pdf", dir=os.path.dirname(pdf_path))
             os.close(fd)
             doc.save(tmp_path, garbage=4, deflate=True, clean=True)
-    except Exception as exc:  # noqa: BLE001 — never block upload on a sanitize failure
+        _assert_no_active_content(tmp_path)
+        os.replace(tmp_path, pdf_path)
+        tmp_path = None
+        return True
+    except Exception as exc:  # noqa: BLE001 — fail closed at the ingest boundary
         logger.warning("Sanitization failed for %s: %s", pdf_path, exc)
+        return False
+    finally:
         if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
-        return False
-
-    os.replace(tmp_path, pdf_path)
-    return True
 
 
 def parse_page_range(range_string: str, total_pages: int) -> list[int]:

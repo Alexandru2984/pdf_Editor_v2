@@ -80,14 +80,16 @@ def _queue_async_job(request, *, kind: str, source, second_source=None, params: 
     return job
 
 
-def _resolve_pdf_or_redirect(request):
-    uploaded_pdfs = get_uploaded_pdfs(request)
+def _resolve_pdf_or_redirect(request, *, include_encrypted=False):
+    uploaded_pdfs = get_uploaded_pdfs(request, include_encrypted=include_encrypted)
     if not uploaded_pdfs:
         messages.error(request, _("No PDF found. Please upload a PDF first."))
         return None, None, redirect("dashboard")
 
     pdf_id = request.GET.get("pdf")
-    selected_pdf = get_pdf_by_id(request, pdf_id) if pdf_id else uploaded_pdfs[0]
+    selected_pdf = (
+        get_pdf_by_id(request, pdf_id, include_encrypted=include_encrypted) if pdf_id else uploaded_pdfs[0]
+    )
     if not selected_pdf:
         messages.error(request, _("Selected PDF not found."))
         return None, None, redirect("dashboard")
@@ -448,7 +450,7 @@ def download_protected_view(request):
 
 @auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
 def unprotect_view(request):
-    selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
+    selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request, include_encrypted=True)
     if early:
         return early
 

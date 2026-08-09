@@ -45,6 +45,21 @@ def _make_uploaded(name, num_pages=2, text_prefix="Page"):
     )
 
 
+def _make_encrypted_uploaded(name="encrypted.pdf", password="secret123", num_pages=2):
+    doc = fitz.open()
+    for i in range(num_pages):
+        doc.new_page().insert_text((72, 100), f"Encrypted page {i + 1}", fontsize=12)
+    buf = io.BytesIO()
+    doc.save(
+        buf,
+        encryption=fitz.PDF_ENCRYPT_AES_256,
+        user_pw=password,
+        owner_pw=password,
+    )
+    doc.close()
+    return SimpleUploadedFile(name, buf.getvalue(), content_type="application/pdf")
+
+
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix="pdfedit_views_"))
 class _ViewTestBase(TestCase):
     """Each subclass gets a fresh client + an isolated MEDIA_ROOT (for the class)."""
@@ -155,6 +170,40 @@ class UploadViewExtraTests(_ViewTestBase):
         resp = self.client.post(reverse("upload"), {"pdf_file": bad})
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "could not be parsed")
+
+    @patch("pdfeditor.views.upload.sanitize_pdf", return_value=False)
+    def test_upload_rejects_pdf_when_sanitizer_fails(self, _sanitize):
+        from .models import UploadedPDF
+
+        resp = self.client.post(reverse("upload"), {"pdf_file": _make_uploaded("unsafe.pdf")})
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "could not be sanitized safely")
+        self.assertFalse(UploadedPDF.objects.filter(name="unsafe.pdf").exists())
+        self.assertFalse(os.path.exists(os.path.join(settings.MEDIA_ROOT, "uploads", "unsafe.pdf")))
+
+    def test_encrypted_upload_is_quarantined_to_unprotect(self):
+        from .models import UploadedPDF
+
+        resp = self.client.post(
+            reverse("upload"),
+            {"pdf_file": _make_encrypted_uploaded(password="known-password")},
+        )
+        self.assertEqual(resp.status_code, 302)
+        pdf = UploadedPDF.objects.get(name="encrypted.pdf")
+        self.assertEqual(pdf.ingest_status, UploadedPDF.INGEST_ENCRYPTED)
+
+        dashboard = self.client.get(reverse("dashboard"))
+        self.assertContains(dashboard, "Remove Password")
+        self.assertNotContains(dashboard, f'data-pdf-modal="/media/uploads/{pdf.name}"')
+        self.assertEqual(self.client.get(reverse("pdf_thumbnail", args=[pdf.id])).status_code, 404)
+        self.assertEqual(self.client.get(reverse("split") + f"?pdf={pdf.id}").status_code, 302)
+
+        unprotect = self.client.post(
+            reverse("unprotect") + f"?pdf={pdf.id}",
+            {"password": "known-password"},
+        )
+        self.assertEqual(unprotect.status_code, 302)
 
     def test_upload_multiple_files_redirects_to_dashboard(self):
         resp = self.client.post(
@@ -749,6 +798,7 @@ class UnprotectViewTests(_ViewTestBase):
             name=os.path.basename(path),
             path=path,
             size=os.path.getsize(path),
+            ingest_status=UploadedPDF.INGEST_ENCRYPTED,
         )
         # Ensure the test client carries the same session key the row references.
         session = self.client.session

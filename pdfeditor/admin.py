@@ -27,10 +27,10 @@ class MfaDeviceAdmin(admin.ModelAdmin):
 
 @admin.register(UploadedPDF)
 class UploadedPDFAdmin(admin.ModelAdmin):
-    list_display = ("name", "size", "session_key_short", "uploaded_at")
-    list_filter = ("uploaded_at",)
+    list_display = ("name", "ingest_status", "size", "session_key_short", "uploaded_at")
+    list_filter = ("ingest_status", "uploaded_at")
     search_fields = ("name", "session_key")
-    readonly_fields = ("id", "uploaded_at")
+    readonly_fields = ("id", "ingest_status", "uploaded_at")
 
     @admin.display(description="Session", ordering="session_key")
     def session_key_short(self, obj):

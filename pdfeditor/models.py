@@ -22,6 +22,13 @@ EMBEDDING_DIM = 384
 class UploadedPDF(models.Model):
     """A PDF a user has uploaded — owned by an authenticated user OR by an anonymous session."""
 
+    INGEST_SANITIZED = "sanitized"
+    INGEST_ENCRYPTED = "encrypted"
+    INGEST_STATUS_CHOICES = [
+        (INGEST_SANITIZED, "Sanitized"),
+        (INGEST_ENCRYPTED, "Encrypted — unprotect only"),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -34,6 +41,12 @@ class UploadedPDF(models.Model):
     name = models.CharField(max_length=255)
     path = models.CharField(max_length=500)
     size = models.BigIntegerField()
+    ingest_status = models.CharField(
+        max_length=16,
+        choices=INGEST_STATUS_CHOICES,
+        default=INGEST_SANITIZED,
+        db_index=True,
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -48,6 +61,10 @@ class UploadedPDF(models.Model):
 
     def exists_on_disk(self) -> bool:
         return bool(self.path) and os.path.exists(self.path)
+
+    @property
+    def is_processable(self) -> bool:
+        return self.ingest_status == self.INGEST_SANITIZED
 
 
 class ProcessedPDF(models.Model):

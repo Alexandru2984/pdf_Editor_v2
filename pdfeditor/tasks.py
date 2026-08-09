@@ -40,7 +40,7 @@ _MAX_CHAT_CHUNKS = 5000
 
 
 def _clamp_dpi(raw: object, default: int) -> int:
-    if isinstance(raw, (int, float, str)) and not isinstance(raw, bool):
+    if isinstance(raw, int | float | str) and not isinstance(raw, bool):
         try:
             dpi = int(raw)
         except (TypeError, ValueError):
@@ -484,7 +484,11 @@ def run_batch_task(job_id: str) -> str | None:
     successes = 0
     total = len(pdf_ids)
     for idx, pid in enumerate(pdf_ids):
-        pdf = UploadedPDF.objects.filter(user=job.user, id=pid).first()
+        pdf = UploadedPDF.objects.filter(
+            user=job.user,
+            id=pid,
+            ingest_status=UploadedPDF.INGEST_SANITIZED,
+        ).first()
         if pdf is None or not pdf.exists_on_disk():
             results.append({"pdf_id": str(pid), "error": "PDF not found"})
         else:

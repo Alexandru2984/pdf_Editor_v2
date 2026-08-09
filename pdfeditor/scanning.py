@@ -83,7 +83,7 @@ def scan_fileobj(fileobj: BinaryIO) -> None:
     # silently turn a fail-closed deployment into fail-open.
     try:
         stream_result = result["stream"]
-        if not isinstance(stream_result, (tuple, list)) or len(stream_result) != 2:
+        if not isinstance(stream_result, tuple | list) or len(stream_result) != 2:
             raise ValueError("malformed stream result")
         status, signature = stream_result
     except (KeyError, TypeError, ValueError) as exc:

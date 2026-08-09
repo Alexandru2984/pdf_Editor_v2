@@ -65,18 +65,25 @@ def _owner_kwargs(request: HttpRequest) -> dict:
     return {"user": None, "session_key": ensure_session_key(request)}
 
 
-def get_uploaded_pdfs(request: HttpRequest):
-    """Return UploadedPDFs owned by the requester without mutating state.
+def get_uploaded_pdfs(request: HttpRequest, *, include_encrypted: bool = False):
+    """Return owned uploads without mutating state.
 
     Missing files are reconciled by explicit retention/repair jobs.  Deleting
     rows during a GET would turn a transient media-volume outage into
-    permanent metadata loss.
+    permanent metadata loss. Encrypted uploads are quarantined from normal
+    tools unless a caller explicitly requests them for the unprotect flow.
     """
-    return list(UploadedPDF.objects.filter(owner_filter(request)))
+    queryset = UploadedPDF.objects.filter(owner_filter(request))
+    if not include_encrypted:
+        queryset = queryset.filter(ingest_status=UploadedPDF.INGEST_SANITIZED)
+    return list(queryset)
 
 
-def get_pdf_by_id(request: HttpRequest, pdf_id):
-    return UploadedPDF.objects.filter(owner_filter(request), id=pdf_id).first()
+def get_pdf_by_id(request: HttpRequest, pdf_id, *, include_encrypted: bool = False):
+    queryset = UploadedPDF.objects.filter(owner_filter(request), id=pdf_id)
+    if not include_encrypted:
+        queryset = queryset.filter(ingest_status=UploadedPDF.INGEST_SANITIZED)
+    return queryset.first()
 
 
 def record_output(request: HttpRequest, *, kind: str, path: str, source=None) -> ProcessedPDF:
@@ -124,7 +131,7 @@ def _allowed_media_paths(request: HttpRequest) -> set[str]:
     """Absolute paths the current requester is allowed to read from MEDIA_ROOT."""
     f = owner_filter(request)
     allowed: set[str] = set()
-    for obj in UploadedPDF.objects.filter(f):
+    for obj in UploadedPDF.objects.filter(f, ingest_status=UploadedPDF.INGEST_SANITIZED):
         allowed.add(os.path.realpath(obj.path))
     for obj in ProcessedPDF.objects.filter(f):
         allowed.add(os.path.realpath(obj.path))

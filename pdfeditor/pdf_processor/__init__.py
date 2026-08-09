@@ -4,7 +4,7 @@ Public API preserved for backward compatibility with the previous
 monolithic ``pdf_processor.py`` module.
 """
 
-from ._common import check_pdf_has_text, parse_page_range, pdf_page_count, sanitize_pdf
+from ._common import check_pdf_has_text, inspect_pdf, parse_page_range, pdf_page_count, sanitize_pdf
 from .edit import (
     find_and_replace_text,
     rephrase_text_in_pdf,
@@ -44,6 +44,7 @@ from .summarize import summarize_pdf
 
 __all__ = [
     "check_pdf_has_text",
+    "inspect_pdf",
     "parse_page_range",
     "pdf_page_count",
     "sanitize_pdf",

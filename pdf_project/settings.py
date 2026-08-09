@@ -96,11 +96,7 @@ REST_FRAMEWORK = {
     # endpoint. Keep it only for local development and the test suite.
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
-        *(
-            ["rest_framework.renderers.BrowsableAPIRenderer"]
-            if DEBUG or TESTING
-            else []
-        ),
+        *(["rest_framework.renderers.BrowsableAPIRenderer"] if DEBUG or TESTING else []),
     ],
     # Throttle classes — empty list when RATELIMIT_ENABLE=0 (load testing).
     # The scoped throttle picks a rate at request time from the
