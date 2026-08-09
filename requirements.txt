@@ -1,5 +1,5 @@
 asgiref==3.11.0
-dj-database-url>=2.1.0
+dj-database-url>=3.1.2
 # Pinned to the 5.2 LTS series (support window ends April 2028). 6.x is
 # non-LTS and drops Python 3.10/3.11 from the CI matrix — let Dependabot
 # keep patching 5.2.* but not jump to 6. See .github/dependabot.yml for
@@ -7,7 +7,7 @@ dj-database-url>=2.1.0
 # Floor bumped to 5.2.15: 5.2.14 carried PYSEC-2026-197..201. Stay on the
 # 5.2.* LTS line; Dependabot keeps patching within it.
 Django>=5.2.15,<5.3
-django-axes>=8.0.0
+django-axes>=8.3.1
 django-ratelimit>=4.1.0
 celery[redis]>=5.4.0
 # S3-compatible client for the Cloudflare R2 output mirror (pdfeditor/objectstore.py).
@@ -19,15 +19,15 @@ clamd>=1.0.2
 # in docs/SECURITY_WAIVERS.md can be removed.
 cryptography>=49.0.0,<50
 django-prometheus>=2.4.1
-djangorestframework>=3.15.0
+djangorestframework>=3.17.1
 drf-spectacular>=0.27.0
 # Self-host Swagger UI and Redoc assets. Pin the monthly asset bundle so a
 # rebuild cannot silently change executable documentation code.
 drf-spectacular-sidecar==2026.7.1
-fastembed>=0.4.0
+fastembed>=0.8.0
 pgvector>=0.3.6
 httpx>=0.27.0
-packaging==25.0
+packaging==26.2
 # Floor bumped to 12.3.0 for PYSEC-2026-2253..2257 (five CVEs in 12.2.0).
 pillow>=12.3.0
 psycopg2-binary>=2.9.9
