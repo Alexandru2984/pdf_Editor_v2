@@ -385,6 +385,11 @@ service needed.
 
 ## Security posture
 
+The dated [security/production audit](docs/SECURITY_AUDIT_2026-08-09.md)
+contains the evidence, residual risk register and release gates. The
+[production roadmap](docs/PRODUCTION_ROADMAP.md) turns those gates into the
+security, reliability, responsive-UX and product sequence.
+
 - **CI security gate** — every push runs `bandit` (SAST), `pip-audit`
   (dep CVEs), and on deploy `trivy` scans the image (fail on HIGH/CRITICAL
   with `ignore-unfixed:true`).
@@ -402,9 +407,10 @@ service needed.
   **passkeys** (WebAuthn, discoverable credentials, user verification
   required); session manager with per-device revoke, "sign out everywhere
   else", and new-device login alert emails.
-- **Supply chain** — Trivy image gate, SPDX SBOM published per build,
-  cosign keyless image signatures; runtime deps hash-pinned in
-  `requirements.lock` and installed with `pip --require-hashes`.
+- **Supply chain** — GitHub Actions pinned to full commit SHAs, Trivy image
+  gate, SPDX SBOM published per build, cosign keyless image signatures;
+  runtime deps hash-pinned in `requirements.lock` and installed with
+  `pip --require-hashes`.
 - **Container isolation** — every service runs non-root with `cap_drop: ALL`,
   `no-new-privileges`, and a read-only root filesystem. Both the web replicas
   and Celery worker run under **gVisor** because untrusted PDFs meet native
@@ -425,7 +431,7 @@ service needed.
 
 | Check | Status |
 |-------|--------|
-| Test count | **877 passing** (854 Django + 23 SDK; pgvector required for the Django suite) |
+| Test count | **884 Django non-E2E tests passing locally** on PostgreSQL; SDK and browser suites run separately |
 | Coverage | reports uploaded as CI artifact (`coverage.xml`) |
 | Linting | `ruff check` + `ruff format` |
 | Types | `mypy` strict on `pdf_processor/` |
