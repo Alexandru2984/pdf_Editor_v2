@@ -14,8 +14,10 @@ celery[redis]>=5.4.0
 boto3>=1.34.0
 # clamd client for optional ClamAV upload scanning (pdfeditor/scanning.py).
 clamd>=1.0.2
-# Floor for GHSA-537c-gmf6-5ccf; pulled transitively by pyHanko/webauthn.
-cryptography>=48.0.1,<49
+# 49.0.0 fixes CVE-2026-69248 and CVE-2026-69249.  Keep the upper bound
+# until cryptography 50 is stable and the temporary audit waiver documented
+# in docs/SECURITY_WAIVERS.md can be removed.
+cryptography>=49.0.0,<50
 django-prometheus>=2.4.1
 djangorestframework>=3.15.0
 drf-spectacular>=0.27.0
@@ -28,6 +30,9 @@ pillow>=12.3.0
 psycopg2-binary>=2.9.9
 pdf2docx>=0.5.13
 pyHanko[image-support]==0.35.0
+# pyHanko's TLS/certificate stack pulls this transitively. 26.3+ is required
+# for cryptography 49 compatibility (older releases cap cryptography below 49).
+pyOpenSSL>=26.3.0,<27
 PyMuPDF>=1.27.0,<2.0
 # WebAuthn/passkeys: server-side ceremony validation (pdfeditor/views/passkeys.py).
 webauthn>=2.0.0
