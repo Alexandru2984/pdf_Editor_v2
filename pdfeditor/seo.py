@@ -267,7 +267,7 @@ def _json_for_script(data: object) -> str:
 
 def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
     origin = public_origin()
-    website = {
+    website: dict[str, object] = {
         "@type": "WebSite",
         "@id": f"{origin}/#website",
         "url": f"{origin}/",
