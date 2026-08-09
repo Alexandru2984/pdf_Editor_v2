@@ -168,13 +168,17 @@ class ChatViewTests(_RagTestBase):
         self.user = User.objects.create_user(username="alice", password="pw")
         self.client.force_login(self.user)
 
-    def test_chat_redirects_to_index_job_when_no_embeddings(self):
+    @patch("pdfeditor.views.basic_ops.enqueue_job")
+    def test_chat_redirects_to_index_job_when_no_embeddings(self, enqueue_index):
         pdf = self._make_pdf()
         resp = self.client.get(reverse("chat", args=[pdf.id]))
         self.assertEqual(resp.status_code, 302)
         self.assertIn("/jobs/", resp.url)
-        self.assertTrue(
-            Job.objects.filter(user=self.user, kind=ProcessedPDF.KIND_CHAT_INDEX, source=pdf).exists()
+        job = Job.objects.get(user=self.user, kind=ProcessedPDF.KIND_CHAT_INDEX, source=pdf)
+        enqueue_index.assert_called_once_with(job)
+        self.assertFalse(
+            Embedding.objects.filter(uploaded_pdf=pdf).exists(),
+            "view tests must not load or download the real embedding model",
         )
 
     def test_chat_renders_when_indexed(self):
