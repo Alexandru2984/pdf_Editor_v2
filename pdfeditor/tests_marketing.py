@@ -48,6 +48,10 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
         self.assertEqual(len({tool.key for tool in TOOL_LANDINGS}), len(TOOL_LANDINGS))
         self.assertEqual(len({tool.slug for tool in TOOL_LANDINGS}), len(TOOL_LANDINGS))
         self.assertEqual(len({tool.url_name for tool in TOOL_LANDINGS}), len(TOOL_LANDINGS))
+        self.assertEqual(
+            len({tool.localized_url_name(language) for tool in TOOL_LANDINGS for language in ("en", "ro")}),
+            len(TOOL_LANDINGS) * 2,
+        )
         self.assertEqual(len({tool.seo_title.en for tool in TOOL_LANDINGS}), len(TOOL_LANDINGS))
         self.assertEqual(len({tool.seo_description.en for tool in TOOL_LANDINGS}), len(TOOL_LANDINGS))
         for tool in TOOL_LANDINGS:
@@ -63,7 +67,7 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
                 self.assertLessEqual(len(tool.seo_description.ro), 160)
 
     def test_hub_lists_guides_and_direct_tools(self):
-        response = self.client.get(reverse("tools_hub"))
+        response = self.client.get(reverse("tools_hub_en"))
 
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("X-Robots-Tag", response)
@@ -75,13 +79,13 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
         self.assertContains(response, reverse("images_to_pdf"))
         self.assertContains(response, reverse("verify_signature"))
         for tool in TOOL_LANDINGS:
-            self.assertContains(response, reverse(tool.url_name))
+            self.assertContains(response, reverse(tool.localized_url_name("en")))
 
     def test_each_landing_is_indexable_unique_content_with_one_h1(self):
         before_sessions = Session.objects.count()
         for tool in TOOL_LANDINGS:
             with self.subTest(tool=tool.key):
-                response = Client().get(reverse(tool.url_name))
+                response = Client().get(reverse(tool.localized_url_name("en")))
 
                 self.assertEqual(response.status_code, 200)
                 self.assertNotIn("X-Robots-Tag", response)
@@ -94,16 +98,20 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
 
     def test_romanian_landing_content_is_explicit(self):
         tool = TOOL_LANDINGS[0]
-        response = self.client.get(reverse(tool.url_name), HTTP_ACCEPT_LANGUAGE="ro")
+        response = self.client.get(
+            reverse(tool.localized_url_name("ro")),
+            HTTP_ACCEPT_LANGUAGE="en",
+        )
 
         self.assertContains(response, tool.name.ro)
         self.assertContains(response, tool.intro.ro)
         self.assertContains(response, "Încarcă și continuă")
         self.assertContains(response, 'property="og:locale" content="ro_RO"')
+        self.assertEqual(response["Content-Language"], "ro")
 
     def test_landing_json_ld_matches_visible_how_to_steps(self):
         tool = TOOL_LANDINGS[0]
-        response = self.client.get(reverse(tool.url_name))
+        response = self.client.get(reverse(tool.localized_url_name("en")))
         match = re.search(
             rb'<script nonce="[^"]+" type="application/ld\+json">(.*?)</script>',
             response.content,
@@ -119,7 +127,7 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
         self.assertTrue(any(item["@type"] == "BreadcrumbList" for item in structured_data["@graph"]))
 
     def test_hub_json_ld_lists_every_visible_tool(self):
-        response = self.client.get(reverse("tools_hub"))
+        response = self.client.get(reverse("tools_hub_en"))
         match = re.search(
             rb'<script nonce="[^"]+" type="application/ld\+json">(.*?)</script>',
             response.content,
@@ -132,9 +140,17 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
         item_list = page["mainEntity"]
         self.assertEqual(item_list["numberOfItems"], len(TOOL_LANDINGS) + len(DIRECT_TOOL_LINKS))
         self.assertEqual(len(item_list["itemListElement"]), item_list["numberOfItems"])
+        listed_urls = {item["url"] for item in item_list["itemListElement"]}
+        self.assertIn(
+            f"https://pdf.example.test{reverse(TOOL_LANDINGS[0].localized_url_name('en'))}",
+            listed_urls,
+        )
 
     def test_hub_and_landings_support_head_requests(self):
-        names = ["tools_hub", *(tool.url_name for tool in TOOL_LANDINGS)]
+        names = [
+            *(f"tools_hub_{language}" for language in ("en", "ro")),
+            *(tool.localized_url_name(language) for tool in TOOL_LANDINGS for language in ("en", "ro")),
+        ]
         for name in names:
             with self.subTest(name=name):
                 response = self.client.head(reverse(name))
@@ -143,7 +159,7 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
                 self.assertNotIn("X-Robots-Tag", response)
 
     def test_merge_landing_accepts_multiple_files(self):
-        response = self.client.get(reverse("tool_merge_pdf"))
+        response = self.client.get(reverse("tool_merge_pdf_en"))
 
         self.assertContains(response, "multiple", html=False)
         self.assertContains(response, "Select at least two PDFs")
@@ -177,9 +193,68 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
 
     def test_unknown_tool_and_post_are_noindexed(self):
         missing = self.client.get("/tools/not-a-real-tool/")
-        post = self.client.post(reverse(TOOL_LANDINGS[0].url_name))
+        localized_missing = self.client.get("/en/pdf-tools/not-a-real-tool/")
+        post = self.client.post(reverse(TOOL_LANDINGS[0].localized_url_name("en")))
 
         self.assertEqual(missing.status_code, 404)
+        self.assertEqual(localized_missing.status_code, 404)
         self.assertEqual(post.status_code, 405)
         self.assertEqual(missing["X-Robots-Tag"], NOINDEX_ROBOTS)
+        self.assertEqual(localized_missing["X-Robots-Tag"], NOINDEX_ROBOTS)
         self.assertEqual(post["X-Robots-Tag"], NOINDEX_ROBOTS)
+
+    def test_generic_urls_negotiate_language_and_remain_noindex(self):
+        tool = TOOL_LANDINGS[0]
+        cases = (
+            (reverse("tools_hub"), "en", reverse("tools_hub_en")),
+            (reverse("tools_hub"), "ro", reverse("tools_hub_ro")),
+            (
+                reverse(tool.url_name),
+                "en",
+                reverse(tool.localized_url_name("en")),
+            ),
+            (
+                reverse(tool.url_name),
+                "ro",
+                reverse(tool.localized_url_name("ro")),
+            ),
+        )
+        for source, language, destination in cases:
+            with self.subTest(source=source, language=language):
+                response = Client().get(source, HTTP_ACCEPT_LANGUAGE=language)
+
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.url, destination)
+                self.assertEqual(response["X-Robots-Tag"], NOINDEX_ROBOTS)
+                self.assertEqual(response["Cache-Control"], "private, no-store")
+                vary = {item.strip() for item in response["Vary"].split(",")}
+                self.assertTrue({"Accept-Language", "Cookie"}.issubset(vary))
+
+    def test_localized_pages_publish_reciprocal_hreflang_and_switch_target(self):
+        tool = TOOL_LANDINGS[0]
+        generic_url = f"https://pdf.example.test{reverse(tool.url_name)}"
+        for language, other_language in (("en", "ro"), ("ro", "en")):
+            with self.subTest(language=language):
+                url_name = tool.localized_url_name(language)
+                response = self.client.get(reverse(url_name))
+                canonical = f"https://pdf.example.test{reverse(url_name)}"
+
+                self.assertContains(response, f'<link rel="canonical" href="{canonical}">')
+                for alternate_language in ("en", "ro"):
+                    alternate = (
+                        f"https://pdf.example.test{reverse(tool.localized_url_name(alternate_language))}"
+                    )
+                    self.assertContains(
+                        response,
+                        f'<link rel="alternate" hreflang="{alternate_language}" href="{alternate}">',
+                    )
+                self.assertContains(
+                    response,
+                    f'<link rel="alternate" hreflang="x-default" href="{generic_url}">',
+                )
+                self.assertContains(
+                    response,
+                    f'name="next" type="hidden" value="{reverse(tool.localized_url_name(other_language))}"',
+                )
+                self.assertEqual(response["Content-Language"], language)
+                self.assertContains(response, f'<html lang="{language}">')

@@ -46,6 +46,13 @@ class ToolLanding:
     def url_name(self) -> str:
         return f"tool_{self.key}"
 
+    def localized_url_name(self, language: str) -> str:
+        """Return the canonical route name for one supported locale."""
+
+        if language not in {"en", "ro"}:
+            raise ValueError(f"Unsupported marketing language: {language}")
+        return f"{self.url_name}_{language}"
+
     def localized(self, language: str) -> dict[str, object]:
         return {
             "key": self.key,

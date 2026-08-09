@@ -16,6 +16,9 @@
     <meta name="robots" content="{{ seo.robots }}">
     {% if seo.canonical %}
     <link rel="canonical" href="{{ seo.canonical }}">
+    {% for alternate in seo.alternates %}
+    <link rel="alternate" hreflang="{{ alternate.language }}" href="{{ alternate.url }}">
+    {% endfor %}
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="PDF Platform">
     <meta property="og:title" content="{{ seo.title }}">
@@ -75,7 +78,7 @@
 
             <form action="{% url 'set_language' %}" method="post" class="lang-switcher-form">
                 {% csrf_token %}
-                <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                <input name="next" type="hidden" value="{{ seo.language_switch_url }}">
                 <button type="submit" name="language" value="{% if LANGUAGE_CODE|slice:':2' == 'ro' %}en{% else %}ro{% endif %}" class="lang-switcher" aria-label="{% trans 'Switch language' %}" title="{% trans 'Switch language' %}">
                     {% if LANGUAGE_CODE|slice:":2" == "ro" %}EN{% else %}RO{% endif %}
                 </button>
@@ -88,7 +91,7 @@
 
             <nav class="site-nav" id="site-nav" aria-label="{% trans 'Primary navigation' %}">
                 <a href="{% url 'dashboard' %}" class="nav-link">🏠 {% trans "Dashboard" %}</a>
-                <a href="{% url 'tools_hub' %}" class="nav-link">🧰 {% if LANGUAGE_CODE|slice:':2' == 'ro' %}Instrumente PDF{% else %}PDF Tools{% endif %}</a>
+                <a href="{{ seo.tools_hub_url }}" class="nav-link">🧰 {% if LANGUAGE_CODE|slice:':2' == 'ro' %}Instrumente PDF{% else %}PDF Tools{% endif %}</a>
                 {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}" class="nav-link">👤 {{ user.username }}</a>
                 <form method="post" action="{% url 'logout' %}" class="nav-logout-form">
@@ -120,7 +123,7 @@
 
     <footer class="site-footer">
         <span>© 2026 PDF Platform</span>
-        <a href="{% url 'tools_hub' %}">{% if LANGUAGE_CODE|slice:':2' == 'ro' %}Instrumente PDF{% else %}PDF Tools{% endif %}</a>
+        <a href="{{ seo.tools_hub_url }}">{% if LANGUAGE_CODE|slice:':2' == 'ro' %}Instrumente PDF{% else %}PDF Tools{% endif %}</a>
         <a href="{% url 'privacy' %}">{% trans "Privacy Policy" %}</a>
         <a href="{% url 'terms' %}">{% trans "Terms of Service" %}</a>
         <a href="https://github.com/Alexandru2984/pdf_Editor_v2" target="_blank" rel="noopener">{% trans "Open source" %} (MIT)</a>

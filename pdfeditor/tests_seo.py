@@ -99,12 +99,33 @@ class SeoTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         root = ElementTree.fromstring(response.content)
-        namespace = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+        namespace = {
+            "sm": "http://www.sitemaps.org/schemas/sitemap/0.9",
+            "xhtml": "http://www.w3.org/1999/xhtml",
+        }
         locations = [node.text for node in root.findall("sm:url/sm:loc", namespace)]
         expected = [f"https://pdf.example.test{reverse(page.url_name)}" for page in SEO_PAGES.values()]
         self.assertEqual(locations, expected)
         self.assertNotIn("https://pdf.example.test/accounts/login/", locations)
         self.assertNotIn("https://pdf.example.test/result/", locations)
+        self.assertNotIn("https://pdf.example.test/tools/", locations)
+
+        for page_node, page in zip(root.findall("sm:url", namespace), SEO_PAGES.values(), strict=True):
+            alternates = {
+                node.attrib["hreflang"]: node.attrib["href"]
+                for node in page_node.findall("xhtml:link", namespace)
+            }
+            if page.alternate_group:
+                self.assertEqual(
+                    alternates,
+                    {
+                        "en": (f"https://pdf.example.test{reverse(f'{page.alternate_group}_en')}"),
+                        "ro": (f"https://pdf.example.test{reverse(f'{page.alternate_group}_ro')}"),
+                        "x-default": (f"https://pdf.example.test{reverse(page.alternate_group)}"),
+                    },
+                )
+            else:
+                self.assertEqual(alternates, {})
 
     def test_every_sitemap_page_is_a_fresh_indexable_get(self):
         for page in SEO_PAGES.values():
@@ -115,6 +136,8 @@ class SeoTests(TestCase):
                 self.assertNotIn("X-Robots-Tag", response)
                 self.assertContains(response, '<link rel="canonical" href="https://pdf.example.test')
                 self.assertContains(response, 'type="application/ld+json"')
+                if page.fixed_language:
+                    self.assertEqual(response["Content-Language"], page.fixed_language)
 
     @override_settings(ALLOWED_HOSTS=["*"])
     def test_canonical_origin_never_uses_untrusted_host_header(self):

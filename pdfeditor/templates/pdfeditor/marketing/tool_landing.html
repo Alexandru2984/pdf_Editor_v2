@@ -7,7 +7,7 @@
     <nav class="marketing-breadcrumb" aria-label="Breadcrumb">
         <a href="{% url 'dashboard' %}">{{ ui.breadcrumb_home }}</a>
         <span aria-hidden="true">/</span>
-        <a href="{% url 'tools_hub' %}">{{ ui.breadcrumb_tools }}</a>
+        <a href="{{ tools_hub_url }}">{{ ui.breadcrumb_tools }}</a>
         <span aria-hidden="true">/</span>
         <span aria-current="page">{{ tool.name }}</span>
     </nav>

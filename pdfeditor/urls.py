@@ -16,6 +16,36 @@ urlpatterns = [
         )
         for tool in TOOL_LANDINGS
     ],
+    path(
+        "en/pdf-tools/",
+        views.tools_hub_view,
+        {"language": "en"},
+        name="tools_hub_en",
+    ),
+    path(
+        "ro/instrumente-pdf/",
+        views.tools_hub_view,
+        {"language": "ro"},
+        name="tools_hub_ro",
+    ),
+    *[
+        path(
+            f"en/pdf-tools/{tool.slug}/",
+            views.tool_landing_view,
+            {"tool_slug": tool.slug, "language": "en"},
+            name=tool.localized_url_name("en"),
+        )
+        for tool in TOOL_LANDINGS
+    ],
+    *[
+        path(
+            f"ro/instrumente-pdf/{tool.slug}/",
+            views.tool_landing_view,
+            {"tool_slug": tool.slug, "language": "ro"},
+            name=tool.localized_url_name("ro"),
+        )
+        for tool in TOOL_LANDINGS
+    ],
     path("", views.dashboard_view, name="dashboard"),
     path("upload/", views.upload_view, name="upload"),
     path("edit/", views.edit_view, name="edit"),

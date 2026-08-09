@@ -35,6 +35,8 @@ class SeoPage:
     description_ro: str
     anonymous_only: bool = False
     page_type: str = "WebPage"
+    fixed_language: str = ""
+    alternate_group: str = ""
 
     def title(self, language: str) -> str:
         return self.title_ro if language == "ro" else self.title_en
@@ -117,32 +119,39 @@ SEO_PAGES: dict[str, SeoPage] = {
     )
 }
 
-SEO_PAGES["tools_hub"] = SeoPage(
-    url_name="tools_hub",
-    title_en="Free Online PDF Tools | Convert, Edit & Secure",
-    title_ro="Instrumente PDF online | Conversie, editare și securitate",
-    description_en=(
-        "Explore focused online PDF tools for merging, splitting, compression, OCR, conversion, "
-        "redaction, passwords, signatures and page organization."
-    ),
-    description_ro=(
-        "Descoperă instrumente PDF online pentru unire, separare, compresie, OCR, conversie, "
-        "redactare, parole, semnături și organizarea paginilor."
-    ),
-    page_type="CollectionPage",
-)
-SEO_PAGES.update(
-    {
-        tool.url_name: SeoPage(
-            url_name=tool.url_name,
-            title_en=tool.seo_title.en,
-            title_ro=tool.seo_title.ro,
-            description_en=tool.seo_description.en,
-            description_ro=tool.seo_description.ro,
-        )
-        for tool in TOOL_LANDINGS
-    }
-)
+_MARKETING_LANGUAGES = ("en", "ro")
+for _marketing_language in _MARKETING_LANGUAGES:
+    _hub_url_name = f"tools_hub_{_marketing_language}"
+    SEO_PAGES[_hub_url_name] = SeoPage(
+        url_name=_hub_url_name,
+        title_en="Free Online PDF Tools | Convert, Edit & Secure",
+        title_ro="Instrumente PDF online | Conversie, editare și securitate",
+        description_en=(
+            "Explore focused online PDF tools for merging, splitting, compression, OCR, conversion, "
+            "redaction, passwords, signatures and page organization."
+        ),
+        description_ro=(
+            "Descoperă instrumente PDF online pentru unire, separare, compresie, OCR, conversie, "
+            "redactare, parole, semnături și organizarea paginilor."
+        ),
+        page_type="CollectionPage",
+        fixed_language=_marketing_language,
+        alternate_group="tools_hub",
+    )
+    SEO_PAGES.update(
+        {
+            tool.localized_url_name(_marketing_language): SeoPage(
+                url_name=tool.localized_url_name(_marketing_language),
+                title_en=tool.seo_title.en,
+                title_ro=tool.seo_title.ro,
+                description_en=tool.seo_description.en,
+                description_ro=tool.seo_description.ro,
+                fixed_language=_marketing_language,
+                alternate_group=tool.url_name,
+            )
+            for tool in TOOL_LANDINGS
+        }
+    )
 
 _DEFAULT_DESCRIPTION = {
     "en": "Private, practical tools for editing and processing PDF documents online.",
@@ -179,6 +188,28 @@ def public_origin() -> str:
 
 def _url_for(page: SeoPage) -> str:
     return f"{public_origin()}{reverse(page.url_name)}"
+
+
+def _alternate_links(page: SeoPage) -> list[dict[str, str]]:
+    """Return reciprocal language variants plus a negotiating x-default URL."""
+
+    if not page.alternate_group:
+        return []
+    origin = public_origin()
+    links = [
+        {
+            "language": language,
+            "url": f"{origin}{reverse(f'{page.alternate_group}_{language}')}",
+        }
+        for language in _MARKETING_LANGUAGES
+    ]
+    links.append(
+        {
+            "language": "x-default",
+            "url": f"{origin}{reverse(page.alternate_group)}",
+        }
+    )
+    return links
 
 
 def _resolver_name(request: HttpRequest) -> str:
@@ -256,8 +287,14 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
                 ],
             }
         )
-    elif page.url_name == "tools_hub":
-        hub_items = [(tool.name.get(language), f"{origin}{reverse(tool.url_name)}") for tool in TOOL_LANDINGS]
+    elif page.alternate_group == "tools_hub":
+        hub_items = [
+            (
+                tool.name.get(language),
+                f"{origin}{reverse(tool.localized_url_name(language))}",
+            )
+            for tool in TOOL_LANDINGS
+        ]
         hub_items.extend(
             (tool.name.get(language), f"{origin}{reverse(tool.url_name)}") for tool in DIRECT_TOOL_LINKS
         )
@@ -274,7 +311,7 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
                 for position, (name, url) in enumerate(hub_items, start=1)
             ],
         }
-    elif tool := TOOL_LANDINGS_BY_URL_NAME.get(page.url_name):
+    elif tool := TOOL_LANDINGS_BY_URL_NAME.get(page.alternate_group or page.url_name):
         breadcrumb_id = f"{canonical}#breadcrumb"
         webpage["breadcrumb"] = {"@id": breadcrumb_id}
         webpage["mainEntity"] = {
@@ -306,7 +343,7 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
                         "@type": "ListItem",
                         "position": 2,
                         "name": "Instrumente PDF" if language == "ro" else "PDF tools",
-                        "item": f"{origin}{reverse('tools_hub')}",
+                        "item": f"{origin}{reverse(f'tools_hub_{language}')}",
                     },
                     {
                         "@type": "ListItem",
@@ -323,8 +360,8 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
 def seo_context(request: HttpRequest) -> dict[str, dict[str, object]]:
     """Template context for metadata, canonical URLs and JSON-LD."""
 
-    language = _language()
     page = SEO_PAGES.get(_resolver_name(request))
+    language = page.fixed_language if page and page.fixed_language else _language()
     indexable = page is not None and is_indexable_request(request)
     title = page.title(language) if page else "PDF Platform"
     description = page.description(language) if page else _DEFAULT_DESCRIPTION[language]
@@ -337,13 +374,23 @@ def seo_context(request: HttpRequest) -> dict[str, dict[str, object]]:
         "image_alt": "PDF Platform",
         "locale": "ro_RO" if language == "ro" else "en_US",
         "json_ld": "",
+        "alternates": [],
+        "tools_hub_url": reverse(f"tools_hub_{language}"),
+        "language_switch_url": request.get_full_path(),
     }
     if indexable and page is not None:
         canonical = _url_for(page)
+        switch_language = "en" if language == "ro" else "ro"
         seo.update(
             {
                 "canonical": canonical,
                 "image": f"{public_origin()}/static/images/logo.jpg",
+                "alternates": _alternate_links(page),
+                "language_switch_url": (
+                    reverse(f"{page.alternate_group}_{switch_language}")
+                    if page.alternate_group
+                    else request.get_full_path()
+                ),
                 "json_ld": mark_safe(
                     _json_for_script(_structured_data(page, language=language, canonical=canonical))
                 ),
@@ -381,11 +428,24 @@ def robots_txt(request: HttpRequest) -> HttpResponse:
 def sitemap_xml(request: HttpRequest) -> HttpResponse:
     """Return only reviewed canonical URLs, built from the same SEO registry."""
 
-    namespace = "http://www.sitemaps.org/schemas/sitemap/0.9"
-    urlset = ElementTree.Element("urlset", xmlns=namespace)
+    sitemap_namespace = "http://www.sitemaps.org/schemas/sitemap/0.9"
+    xhtml_namespace = "http://www.w3.org/1999/xhtml"
+    ElementTree.register_namespace("", sitemap_namespace)
+    ElementTree.register_namespace("xhtml", xhtml_namespace)
+    urlset = ElementTree.Element(f"{{{sitemap_namespace}}}urlset")
     for page in SEO_PAGES.values():
-        url = ElementTree.SubElement(urlset, "url")
-        ElementTree.SubElement(url, "loc").text = _url_for(page)
+        url = ElementTree.SubElement(urlset, f"{{{sitemap_namespace}}}url")
+        ElementTree.SubElement(url, f"{{{sitemap_namespace}}}loc").text = _url_for(page)
+        for alternate in _alternate_links(page):
+            ElementTree.SubElement(
+                url,
+                f"{{{xhtml_namespace}}}link",
+                {
+                    "rel": "alternate",
+                    "hreflang": alternate["language"],
+                    "href": alternate["url"],
+                },
+            )
     payload = ElementTree.tostring(urlset, encoding="utf-8", xml_declaration=True)
     response = HttpResponse(payload, content_type="application/xml; charset=utf-8")
     response["Cache-Control"] = "public, max-age=3600"

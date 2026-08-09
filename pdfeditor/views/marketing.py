@@ -6,8 +6,10 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from django.http import Http404, HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import translation
+from django.utils.cache import patch_vary_headers
 from django.utils.translation import get_language
 from django.views.decorators.http import require_safe
 
@@ -105,7 +107,7 @@ def _hub_cards(language: str) -> list[dict[str, object]]:
     cards: list[dict[str, object]] = []
     for tool in TOOL_LANDINGS:
         card = tool.localized(language)
-        card["url"] = reverse(tool.url_name)
+        card["url"] = reverse(tool.localized_url_name(language))
         card["direct"] = False
         cards.append(card)
     for direct in DIRECT_TOOL_LINKS:
@@ -116,56 +118,82 @@ def _hub_cards(language: str) -> list[dict[str, object]]:
     return cards
 
 
-@require_safe
-def tools_hub_view(request: HttpRequest) -> HttpResponse:
-    language = marketing_language()
-    cards = _hub_cards(language)
-    categories = sorted({str(card["category"]) for card in cards})
-    return render(
-        request,
-        "pdfeditor/marketing/tools_hub.html",
-        {
-            "cards": cards,
-            "categories": categories,
-            "ui": _ui(language),
-        },
-    )
+def _language_redirect(url_name: str) -> HttpResponse:
+    """Redirect without letting a shared cache reuse another user's locale."""
+
+    response = redirect(url_name, permanent=False)
+    response["Cache-Control"] = "private, no-store"
+    patch_vary_headers(response, ("Accept-Language", "Cookie"))
+    return response
 
 
 @require_safe
-def tool_landing_view(request: HttpRequest, tool_slug: str) -> HttpResponse:
+def tools_hub_view(request: HttpRequest, language: str | None = None) -> HttpResponse:
+    if language not in {"en", "ro"}:
+        selected_language = marketing_language()
+        return _language_redirect(f"tools_hub_{selected_language}")
+
+    with translation.override(language):
+        cards = _hub_cards(language)
+        categories = sorted({str(card["category"]) for card in cards})
+        response = render(
+            request,
+            "pdfeditor/marketing/tools_hub.html",
+            {
+                "cards": cards,
+                "categories": categories,
+                "ui": _ui(language),
+            },
+        )
+    response["Content-Language"] = language
+    return response
+
+
+@require_safe
+def tool_landing_view(
+    request: HttpRequest,
+    tool_slug: str,
+    language: str | None = None,
+) -> HttpResponse:
     definition = TOOL_LANDINGS_BY_SLUG.get(tool_slug)
     if definition is None:
         raise Http404
 
-    language = marketing_language()
-    tool = definition.localized(language)
-    related_definitions = [
-        candidate
-        for candidate in TOOL_LANDINGS
-        if candidate.key != definition.key
-        and candidate.category.get(language) == definition.category.get(language)
-    ]
-    related_definitions.extend(
-        candidate
-        for candidate in TOOL_LANDINGS
-        if candidate.key != definition.key and candidate not in related_definitions
-    )
-    related = []
-    for candidate in related_definitions[:3]:
-        item = candidate.localized(language)
-        item["url"] = reverse(candidate.url_name)
-        related.append(item)
+    if language not in {"en", "ro"}:
+        selected_language = marketing_language()
+        return _language_redirect(definition.localized_url_name(selected_language))
 
-    upload_query = urlencode({"next": definition.operation_url_name})
-    return render(
-        request,
-        "pdfeditor/marketing/tool_landing.html",
-        {
-            "tool": tool,
-            "ui": _ui(language),
-            "related_tools": related,
-            "upload_action": f"{reverse('upload')}?{upload_query}",
-            "operation_url": reverse(definition.operation_url_name),
-        },
-    )
+    with translation.override(language):
+        tool = definition.localized(language)
+        related_definitions = [
+            candidate
+            for candidate in TOOL_LANDINGS
+            if candidate.key != definition.key
+            and candidate.category.get(language) == definition.category.get(language)
+        ]
+        related_definitions.extend(
+            candidate
+            for candidate in TOOL_LANDINGS
+            if candidate.key != definition.key and candidate not in related_definitions
+        )
+        related = []
+        for candidate in related_definitions[:3]:
+            item = candidate.localized(language)
+            item["url"] = reverse(candidate.localized_url_name(language))
+            related.append(item)
+
+        upload_query = urlencode({"next": definition.operation_url_name})
+        response = render(
+            request,
+            "pdfeditor/marketing/tool_landing.html",
+            {
+                "tool": tool,
+                "ui": _ui(language),
+                "related_tools": related,
+                "tools_hub_url": reverse(f"tools_hub_{language}"),
+                "upload_action": f"{reverse('upload')}?{upload_query}",
+                "operation_url": reverse(definition.operation_url_name),
+            },
+        )
+    response["Content-Language"] = language
+    return response
