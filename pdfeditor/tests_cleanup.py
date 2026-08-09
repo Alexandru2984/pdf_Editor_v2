@@ -7,11 +7,13 @@ from datetime import timedelta
 from io import StringIO
 
 import fitz
+from django.contrib.auth import get_user_model
+from django.contrib.sessions.models import Session
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from .models import ProcessedPDF, UploadedPDF
+from .models import ProcessedPDF, UploadedPDF, UserSession
 
 
 def _media_tmp():
@@ -152,6 +154,31 @@ class CleanupCommandTests(TestCase):
         with self._override_media(), override_settings(PDF_CLEANUP_HOURS=24):
             output = self._run()  # no --hours argument
         self.assertIn("Deleted", output)
+
+    def test_deletes_expired_sessions_and_stale_tracking_rows(self):
+        user = get_user_model().objects.create_user(username="session-owner")
+        expired = Session.objects.create(
+            session_key="expired-session",
+            session_data="",
+            expire_date=timezone.now() - timedelta(minutes=1),
+        )
+        live = Session.objects.create(
+            session_key="live-session",
+            session_data="",
+            expire_date=timezone.now() + timedelta(hours=1),
+        )
+        UserSession.objects.create(user=user, session_key=expired.session_key)
+        UserSession.objects.create(user=user, session_key=live.session_key)
+
+        with self._override_media():
+            output = self._run(hours=24)
+
+        self.assertFalse(Session.objects.filter(pk=expired.pk).exists())
+        self.assertFalse(UserSession.objects.filter(session_key=expired.session_key).exists())
+        self.assertTrue(Session.objects.filter(pk=live.pk).exists())
+        self.assertTrue(UserSession.objects.filter(session_key=live.session_key).exists())
+        self.assertIn("1 expired sessions", output)
+        self.assertIn("1 stale session metadata rows", output)
 
 
 class SweepOrphanFilesCommandTests(TestCase):

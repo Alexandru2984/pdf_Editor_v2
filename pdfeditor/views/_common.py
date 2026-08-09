@@ -48,7 +48,14 @@ def owner_filter(request: HttpRequest) -> Q:
     """Q expression matching PDFs owned by the current requester (user or anon session)."""
     if getattr(request, "user", None) is not None and request.user.is_authenticated:
         return Q(user=request.user)
-    return Q(user__isnull=True, session_key=ensure_session_key(request))
+
+    # Read-only requests from a new anonymous visitor must not create a
+    # database-backed session.  Write paths call ``_owner_kwargs`` below,
+    # which deliberately creates a session before persisting owned data.
+    session_key = request.session.session_key
+    if not session_key:
+        return Q(pk__isnull=True)
+    return Q(user__isnull=True, session_key=session_key)
 
 
 def _owner_kwargs(request: HttpRequest) -> dict:
@@ -59,15 +66,13 @@ def _owner_kwargs(request: HttpRequest) -> dict:
 
 
 def get_uploaded_pdfs(request: HttpRequest):
-    """Return UploadedPDFs owned by the requester. Prunes rows whose file vanished."""
-    rows = list(UploadedPDF.objects.filter(owner_filter(request)))
+    """Return UploadedPDFs owned by the requester without mutating state.
 
-    stale_ids = [pdf.id for pdf in rows if not pdf.exists_on_disk()]
-    if stale_ids:
-        UploadedPDF.objects.filter(id__in=stale_ids).delete()
-        rows = [pdf for pdf in rows if pdf.id not in stale_ids]
-
-    return rows
+    Missing files are reconciled by explicit retention/repair jobs.  Deleting
+    rows during a GET would turn a transient media-volume outage into
+    permanent metadata loss.
+    """
+    return list(UploadedPDF.objects.filter(owner_filter(request)))
 
 
 def get_pdf_by_id(request: HttpRequest, pdf_id):

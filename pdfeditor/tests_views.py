@@ -9,6 +9,8 @@ from datetime import timedelta
 from unittest.mock import AsyncMock, patch
 
 import fitz
+from django.conf import settings
+from django.contrib.sessions.models import Session
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
@@ -88,6 +90,33 @@ class UploadViewExtraTests(_ViewTestBase):
     def test_dashboard_renders_empty(self):
         resp = self.client.get(reverse("dashboard"))
         self.assertEqual(resp.status_code, 200)
+
+    def test_anonymous_dashboard_does_not_create_session(self):
+        before = Session.objects.count()
+
+        resp = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(Session.objects.count(), before)
+        self.assertNotIn(settings.SESSION_COOKIE_NAME, resp.cookies)
+
+    def test_dashboard_does_not_delete_row_when_media_is_temporarily_missing(self):
+        from .models import UploadedPDF
+
+        session = self.client.session
+        session["owner"] = "test"
+        session.save()
+        pdf = UploadedPDF.objects.create(
+            session_key=session.session_key,
+            name="temporarily-unavailable.pdf",
+            path=os.path.join(settings.MEDIA_ROOT, "missing.pdf"),
+            size=123,
+        )
+
+        resp = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(UploadedPDF.objects.filter(pk=pdf.pk).exists())
 
     def test_upload_no_files_shows_error(self):
         resp = self.client.post(reverse("upload"))

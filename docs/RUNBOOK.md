@@ -351,7 +351,7 @@ for what *should* be running.
 
 | When | Job | Log |
 |------|-----|-----|
-| hourly at :15 | `cleanup_old_pdfs` — enforces the 24h retention the UI promises | `/var/log/pdfeditor-cleanup.log` |
+| hourly at :15 | `cleanup_old_pdfs` — enforces PDF retention and removes expired sessions | `/var/log/pdfeditor-cleanup.log` |
 | daily 03:00 UTC | `scripts/backup_db.sh` — pg_dump, 14-day rotation | `/var/log/pdfeditor-backup.log` |
 | daily 03:30 UTC | `scripts/backup_media.sh` — media tarball, 14-day rotation | `/var/log/pdfeditor-backup.log` |
 

@@ -4,14 +4,15 @@ import os
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.sessions.models import Session
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from pdfeditor.models import ProcessedPDF, UploadedPDF
+from pdfeditor.models import ProcessedPDF, UploadedPDF, UserSession
 
 
 class Command(BaseCommand):
-    help = "Delete PDF files (and matching DB rows) older than PDF_CLEANUP_HOURS."
+    help = "Delete expired PDF data, Django sessions, and stale session metadata."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -43,12 +44,23 @@ class Command(BaseCommand):
         thumbs_deleted = self._delete_orphan_thumbnails()
         if thumbs_deleted:
             orphans_deleted += thumbs_deleted
+        sessions_deleted, session_metadata_deleted = self._delete_expired_sessions()
 
         summary = (
             f"Deleted {rows_deleted} DB rows, "
-            f"{orphans_deleted} orphaned files ({orphans_bytes / 1024 / 1024:.2f} MB)."
+            f"{orphans_deleted} orphaned files ({orphans_bytes / 1024 / 1024:.2f} MB), "
+            f"{sessions_deleted} expired sessions, and "
+            f"{session_metadata_deleted} stale session metadata rows."
         )
         self.stdout.write(self.style.SUCCESS(summary))
+
+    @staticmethod
+    def _delete_expired_sessions() -> tuple[int, int]:
+        """Bound session-table growth and keep the device list consistent."""
+        sessions_deleted, _ = Session.objects.filter(expire_date__lt=timezone.now()).delete()
+        live_session_keys = Session.objects.values("session_key")
+        metadata_deleted, _ = UserSession.objects.exclude(session_key__in=live_session_keys).delete()
+        return sessions_deleted, metadata_deleted
 
     def _delete_rows(self, queryset, label: str) -> int:
         count = 0
