@@ -3,6 +3,9 @@ x-app-env: &app-env
   DEBUG: ${DEBUG:-False}
   ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
   SECURE_SSL: ${SECURE_SSL:-0}
+  # Host nginx replaces XFF with the verified client address; docker nginx
+  # appends the host-side peer. Django therefore expects exactly two entries.
+  TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-2}
   GROQ_API_KEY: ${GROQ_API_KEY:-}
   OLLAMA_HOST: ${OLLAMA_HOST:-http://ollama:11434}
   # Goes through pgbouncer (transaction pooling). Direct DB at db:5432 is

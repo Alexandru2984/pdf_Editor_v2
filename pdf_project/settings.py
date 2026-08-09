@@ -212,12 +212,12 @@ AUTHENTICATION_BACKENDS = [
     "pdfeditor.auth_backends.CaseInsensitiveModelBackend",
 ]
 
-# Number of trusted reverse proxies in front of the app. Prod is
-# Cloudflare → host nginx → docker nginx = 3. Used by netutils.client_ip to
-# pick the real client IP from the *right* of X-Forwarded-For (spoof-safe).
-# Set to 2 for a bare-uvicorn-behind-host-nginx deploy, 1 for docker-only,
-# 0 to always use REMOTE_ADDR (no proxy).
-TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", 3))
+# Number of controlled X-Forwarded-For entries in front of the app. Host nginx
+# replaces the inbound chain with Cloudflare's verified client address, then
+# docker nginx appends its host-side peer: two entries in production. Used by
+# netutils.client_ip to select from the right without trusting a client prefix.
+# Set to 1 for a single normalising proxy, 0 to always use REMOTE_ADDR.
+TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", 2))
 
 # django-axes: lock account for 1h after 5 failed admin logins
 AXES_ENABLED = not TESTING  # tests use Client.login() which can't pass a request to axes

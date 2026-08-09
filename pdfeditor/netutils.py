@@ -3,12 +3,12 @@
 A single source of truth shared by the rate limiter, login lockout (axes) and
 the ``/metrics`` allowlist, so the three can never key on different addresses.
 
-We trust exactly ``settings.TRUSTED_PROXY_COUNT`` reverse proxies in front of
-the app (prod: Cloudflare → host nginx → docker nginx = 3). Each one appends a
-single entry to ``X-Forwarded-For``, so the real client is the Nth entry
-counted *from the right*; anything further left is supplied by the client and
-must not be trusted. When the header is absent or shorter than the trusted
-depth we refuse to guess and fall back to ``REMOTE_ADDR``.
+We trust exactly ``settings.TRUSTED_PROXY_COUNT`` controlled entries in front
+of the app. In production, host nginx discards the inbound chain and writes
+Cloudflare's verified client address, then docker nginx appends its host-side
+peer (two entries). The real client is therefore the Nth entry counted *from
+the right*; anything further left is untrusted. When the header is absent or
+shorter than the trusted depth we refuse to guess and use ``REMOTE_ADDR``.
 """
 
 from __future__ import annotations

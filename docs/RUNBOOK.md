@@ -309,6 +309,25 @@ the cron alerts use.
 deploy and exits non-zero if the stack doesn't come back — a failed
 deploy shows up red in GitHub Actions, not as silent downtime.
 
+### Host nginx trust boundary
+
+The canonical PDF vhost is `infra/nginx/pdf_editor.conf`. It depends on the
+host-wide Cloudflare real-IP and origin-guard files in `/etc/nginx/conf.d/`.
+The vhost rejects any non-Cloudflare/non-loopback TCP peer and replaces the
+incoming `X-Forwarded-For` value instead of appending to it. After a change:
+
+```bash
+sudo install -m 0644 infra/nginx/pdf_editor.conf /etc/nginx/sites-available/pdf_editor
+sudo ln -sfn /etc/nginx/sites-available/pdf_editor /etc/nginx/sites-enabled/pdf_editor
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Verify both paths: the public Cloudflare URL must return 200, while a direct
+origin request from outside Cloudflare must return 403. Loopback is allowed so
+on-host smoke tests remain possible. Keep `TRUSTED_PROXY_COUNT=2`: host nginx
+writes the verified client IP and docker nginx appends the second entry.
+
 ---
 
 ## Host Docker runtime — gVisor for the worker

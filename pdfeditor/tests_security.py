@@ -41,11 +41,31 @@ class _Anon:
 
 
 # --------------------------------------------------------------------------
+# Host-proxy trust boundary remains aligned with Django's proxy depth.
+# --------------------------------------------------------------------------
+class HostProxyConfigTests(SimpleTestCase):
+    def test_host_vhost_guards_origin_and_replaces_xff(self):
+        source = (settings.BASE_DIR / "infra/nginx/pdf_editor.conf").read_text()
+
+        self.assertGreaterEqual(source.count("if ($from_cloudflare_origin = 0)"), 2)
+        self.assertIn("proxy_set_header X-Forwarded-For $remote_addr;", source)
+        self.assertNotIn("$proxy_add_x_forwarded_for", source)
+        self.assertIn("client_max_body_size 20m;", source)
+
+    def test_internal_proxy_does_not_leak_backend_address(self):
+        source = (settings.BASE_DIR / "docker/nginx.conf").read_text()
+        self.assertNotIn("X-Upstream", source)
+
+    def test_default_proxy_depth_matches_two_normalising_layers(self):
+        self.assertEqual(settings.TRUSTED_PROXY_COUNT, 2)
+
+
+# --------------------------------------------------------------------------
 # Stage 3/4: spoof-safe client IP derivation (netutils.client_ip)
 # --------------------------------------------------------------------------
-@override_settings(TRUSTED_PROXY_COUNT=3)
+@override_settings(TRUSTED_PROXY_COUNT=2)
 class ClientIpTests(SimpleTestCase):
-    """Prod chain is Cloudflare → host nginx → docker nginx = 3 hops."""
+    """Host nginx normalises XFF; docker nginx appends the second entry."""
 
     def setUp(self):
         self.rf = RequestFactory()
@@ -57,11 +77,11 @@ class ClientIpTests(SimpleTestCase):
         return self.rf.get("/", **extra)
 
     def test_full_chain_returns_real_client(self):
-        self.assertEqual(client_ip(self._req("203.0.113.9, 198.51.100.2, 127.0.0.1")), "203.0.113.9")
+        self.assertEqual(client_ip(self._req("203.0.113.9, 127.0.0.1")), "203.0.113.9")
 
     def test_spoofed_left_prefix_is_ignored(self):
         # Attacker prepends a fake entry; the real client still resolves.
-        r = self._req("1.2.3.4, 203.0.113.9, 198.51.100.2, 127.0.0.1")
+        r = self._req("1.2.3.4, 203.0.113.9, 127.0.0.1")
         self.assertEqual(client_ip(r), "203.0.113.9")
 
     def test_no_xff_falls_back_to_remote_addr(self):
@@ -90,7 +110,7 @@ class ClientIpTests(SimpleTestCase):
 # --------------------------------------------------------------------------
 # Stage 3: rate-limit anon keying no longer collapses behind a proxy
 # --------------------------------------------------------------------------
-@override_settings(TRUSTED_PROXY_COUNT=3)
+@override_settings(TRUSTED_PROXY_COUNT=2)
 class RateLimitKeyingTests(SimpleTestCase):
     def setUp(self):
         self.rf = RequestFactory()
@@ -106,21 +126,21 @@ class RateLimitKeyingTests(SimpleTestCase):
 
     def test_distinct_clients_get_distinct_keys(self):
         # The regression: behind nginx these used to share one REMOTE_ADDR bucket.
-        k1 = self._key("203.0.113.9, 198.51.100.2, 127.0.0.1")
-        k2 = self._key("203.0.113.77, 198.51.100.2, 127.0.0.1")
+        k1 = self._key("203.0.113.9, 127.0.0.1")
+        k2 = self._key("203.0.113.77, 127.0.0.1")
         self.assertEqual(k1, "ip:203.0.113.9")
         self.assertNotEqual(k1, k2)
 
     def test_spoofed_prefix_cannot_change_bucket(self):
-        base = self._key("203.0.113.9, 198.51.100.2, 127.0.0.1")
-        spoofed = self._key("9.9.9.9, 203.0.113.9, 198.51.100.2, 127.0.0.1")
+        base = self._key("203.0.113.9, 127.0.0.1")
+        spoofed = self._key("9.9.9.9, 203.0.113.9, 127.0.0.1")
         self.assertEqual(base, spoofed)
 
 
 # --------------------------------------------------------------------------
 # Stage 4: /metrics allowlist uses the spoof-safe IP
 # --------------------------------------------------------------------------
-@override_settings(TRUSTED_PROXY_COUNT=3)
+@override_settings(TRUSTED_PROXY_COUNT=2)
 class MetricsAllowlistTests(SimpleTestCase):
     ALLOW = {"127.0.0.1", "172.16.0.0/12"}
 
@@ -136,7 +156,7 @@ class MetricsAllowlistTests(SimpleTestCase):
         r = self.rf.get(
             "/metrics",
             REMOTE_ADDR="172.18.0.5",
-            HTTP_X_FORWARDED_FOR="127.0.0.1, 203.0.113.9, 198.51.100.2, 127.0.0.1",
+            HTTP_X_FORWARDED_FOR="127.0.0.1, 203.0.113.9, 127.0.0.1",
         )
         ip = client_ip(r)
         self.assertEqual(ip, "203.0.113.9")  # not the spoofed loopback
@@ -559,17 +579,17 @@ class TotpReplayTests(TestCase):
 # --------------------------------------------------------------------------
 # 2026-06-10 audit: AuditLog keys on the spoof-safe client IP
 # --------------------------------------------------------------------------
-@override_settings(TRUSTED_PROXY_COUNT=3)
+@override_settings(TRUSTED_PROXY_COUNT=2)
 class AuditLogIpTests(SimpleTestCase):
     def test_record_output_ip_ignores_spoofed_left_prefix(self):
         from .views._common import _client_ip
 
         req = RequestFactory().get(
             "/",
-            HTTP_X_FORWARDED_FOR="6.6.6.6, 198.51.100.7, 10.0.0.2, 172.18.0.3",
+            HTTP_X_FORWARDED_FOR="6.6.6.6, 198.51.100.7, 172.18.0.3",
             REMOTE_ADDR="172.18.0.3",
         )
-        # 3 trusted proxies → real client is the 3rd from the right, not the
+        # 2 trusted entries → real client is the 2nd from the right, not the
         # attacker-chosen leftmost entry.
         self.assertEqual(_client_ip(req), "198.51.100.7")
 
