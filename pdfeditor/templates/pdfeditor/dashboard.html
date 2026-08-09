@@ -265,7 +265,10 @@
                 </div>
                 <div class="pdf-item-actions">
                     <button data-pdf-modal="/media/uploads/{{ pdf.name }}" class="btn btn-preview pdf-item-btn">👁️ {% trans "Preview" %}</button>
-                    <a href="{% url 'delete_pdf' pdf.id %}" data-confirm="{% trans "Delete this PDF?" %}" class="btn btn-delete pdf-item-btn">🗑️ {% trans "Delete" %}</a>
+                    <form method="post" action="{% url 'delete_pdf' pdf.id %}" class="pdf-item-action-form" data-confirm="{% trans "Delete this PDF?" %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-delete pdf-item-btn">🗑️ {% trans "Delete" %}</button>
+                    </form>
                 </div>
             </div>
             {% endfor %}

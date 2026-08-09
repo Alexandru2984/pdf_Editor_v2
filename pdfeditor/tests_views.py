@@ -171,14 +171,31 @@ class UploadViewExtraTests(_ViewTestBase):
 
         self.upload(name="del.pdf")
         pdf = UploadedPDF.objects.first()
-        resp = self.client.get(reverse("delete_pdf", args=[pdf.id]))
+        get_resp = self.client.get(reverse("delete_pdf", args=[pdf.id]))
+        self.assertEqual(get_resp.status_code, 405)
+        self.assertTrue(UploadedPDF.objects.filter(id=pdf.id).exists())
+
+        resp = self.client.post(reverse("delete_pdf", args=[pdf.id]))
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(UploadedPDF.objects.count(), 0)
 
     def test_delete_pdf_unknown_id_redirects(self):
         # UUID that doesn't exist — should redirect with error message, not 500.
-        resp = self.client.get(reverse("delete_pdf", args=["00000000-0000-0000-0000-000000000000"]))
+        resp = self.client.post(reverse("delete_pdf", args=["00000000-0000-0000-0000-000000000000"]))
         self.assertEqual(resp.status_code, 302)
+
+    def test_delete_pdf_rejects_post_without_csrf_token(self):
+        from .models import UploadedPDF
+
+        self.upload(name="csrf.pdf")
+        pdf = UploadedPDF.objects.get(name="csrf.pdf")
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.cookies[settings.SESSION_COOKIE_NAME] = self.client.cookies[settings.SESSION_COOKIE_NAME]
+
+        response = csrf_client.post(reverse("delete_pdf", args=[pdf.id]))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(UploadedPDF.objects.filter(id=pdf.id).exists())
 
 
 # ---- Edit (find/replace) ----------------------------------------------------
@@ -1997,14 +2014,17 @@ class HistoryViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 200)
         self.assertNotContains(resp, "other.pdf")
 
-    def test_history_prunes_rows_with_missing_files(self):
+    def test_history_preserves_rows_with_temporarily_missing_files(self):
         # Create a row pointing to a non-existent file under our session.
         from django.conf import settings as dj_settings
 
         from .models import ProcessedPDF
 
-        # Make sure session_key is initialized.
-        self.client.get(reverse("dashboard"))
+        # Make sure session_key is initialized without relying on a read-only
+        # page to create persistent anonymous state.
+        session = self.client.session
+        session["owner"] = "history-test"
+        session.save()
         session_key = self.client.session.session_key
 
         ProcessedPDF.objects.create(
@@ -2018,7 +2038,9 @@ class HistoryViewTests(_ViewTestBase):
 
         resp = self.client.get(reverse("history"))
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(ProcessedPDF.objects.count(), 0)
+        self.assertContains(resp, "ghost.pdf")
+        self.assertContains(resp, "Unavailable")
+        self.assertEqual(ProcessedPDF.objects.count(), 1)
 
     def test_history_download_returns_file(self):
         self.upload()
@@ -2053,7 +2075,11 @@ class HistoryViewTests(_ViewTestBase):
         out = ProcessedPDF.objects.first()
         self.assertIsNotNone(out)
 
-        resp = self.client.get(reverse("history_delete", args=[out.id]))
+        get_resp = self.client.get(reverse("history_delete", args=[out.id]))
+        self.assertEqual(get_resp.status_code, 405)
+        self.assertTrue(ProcessedPDF.objects.filter(id=out.id).exists())
+
+        resp = self.client.post(reverse("history_delete", args=[out.id]))
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(ProcessedPDF.objects.filter(id=out.id).count(), 0)
 
@@ -2067,7 +2093,7 @@ class HistoryViewTests(_ViewTestBase):
             path="/tmp/nope.pdf",
             size=0,
         )
-        self.client.get(reverse("history_delete", args=[other.id]))
+        self.client.post(reverse("history_delete", args=[other.id]))
         # The row still exists — we only deleted within our session scope.
         self.assertTrue(ProcessedPDF.objects.filter(id=other.id).exists())
 

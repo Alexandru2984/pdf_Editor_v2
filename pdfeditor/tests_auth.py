@@ -278,7 +278,7 @@ class OwnershipScopingTests(_AuthTestBase):
 
         bob_client = Client()
         bob_client.login(username="bob", password="pw12345!Long")
-        bob_client.get(reverse("delete_pdf", args=[pdf.id]))
+        bob_client.post(reverse("delete_pdf", args=[pdf.id]))
 
         self.assertTrue(UploadedPDF.objects.filter(id=pdf.id).exists())
 

@@ -38,16 +38,28 @@
                     <td data-label="{% trans 'Size' %}" class="cell-muted">{{ item.size|filesizeformat }}</td>
                     <td data-label="{% trans 'Created' %}" class="cell-muted">{{ item.created_at|date:"Y-m-d H:i" }}</td>
                     <td class="cell-actions">
-                        <button data-pdf-modal="/media/{{ item.path_relative }}" class="btn btn-preview">
+                        {% if item.local_available %}
+                        <button data-pdf-modal="/media/{{ item.path_relative }}" class="btn btn-preview"
+                                aria-label="{% blocktrans with name=item.name %}Preview {{ name }}{% endblocktrans %}">
                             👁️
                         </button>
-                        <a href="{% url 'history_download' item.id %}" class="btn btn-primary">
+                        {% endif %}
+                        {% if item.download_available %}
+                        <a href="{% url 'history_download' item.id %}" class="btn btn-primary"
+                           aria-label="{% blocktrans with name=item.name %}Download {{ name }}{% endblocktrans %}">
                             📥
                         </a>
-                        <a href="{% url 'history_delete' item.id %}" class="btn btn-secondary"
-                           data-confirm="{% trans "Remove this output from history?" %}">
-                            🗑️
-                        </a>
+                        {% else %}
+                        <span class="history-unavailable">{% trans "Unavailable" %}</span>
+                        {% endif %}
+                        <form method="post" action="{% url 'history_delete' item.id %}" class="inline-action-form"
+                              data-confirm="{% trans "Remove this output from history?" %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary"
+                                    aria-label="{% blocktrans with name=item.name %}Remove {{ name }} from history{% endblocktrans %}">
+                                🗑️
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}

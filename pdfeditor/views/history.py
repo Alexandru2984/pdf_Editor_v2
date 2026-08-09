@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 
 from .. import objectstore
 from ..models import ProcessedPDF
@@ -16,30 +17,25 @@ def history_view(request):
     """Show every ProcessedPDF the current requester has produced, newest first."""
     rows = list(ProcessedPDF.objects.filter(owner_filter(request)).select_related("source"))
 
-    # Drop rows whose underlying file vanished (cleanup, manual deletion).
-    valid_rows = []
-    stale_ids = []
+    history_items = []
     for row in rows:
-        if row.exists_on_disk():
-            valid_rows.append(row)
-        else:
-            stale_ids.append(row.id)
-    if stale_ids:
-        ProcessedPDF.objects.filter(id__in=stale_ids).delete()
-
-    history_items = [
-        {
-            "id": row.id,
-            "kind": row.kind,
-            "kind_display": row.get_kind_display(),
-            "name": row.name,
-            "size": row.size,
-            "created_at": row.created_at,
-            "source_name": row.source.name if row.source else None,
-            "path_relative": os.path.relpath(row.path, settings.MEDIA_ROOT),
-        }
-        for row in valid_rows
-    ]
+        local_available = row.exists_on_disk()
+        history_items.append(
+            {
+                "id": row.id,
+                "kind": row.kind,
+                "kind_display": row.get_kind_display(),
+                "name": row.name,
+                "size": row.size,
+                "created_at": row.created_at,
+                "source_name": row.source.name if row.source else None,
+                "path_relative": os.path.relpath(row.path, settings.MEDIA_ROOT) if local_available else "",
+                "local_available": local_available,
+                # A stored object key is enough to offer the download action;
+                # the download view performs the authoritative check.
+                "download_available": local_available or bool(row.r2_key),
+            }
+        )
 
     return render(
         request,
@@ -67,6 +63,7 @@ def history_download_view(request, output_id):
         return redirect("history")
 
 
+@require_POST
 def history_delete_view(request, output_id):
     """Remove a past output (DB row + file) owned by the current requester."""
     deleted_count, _ = ProcessedPDF.objects.filter(owner_filter(request), id=output_id).delete()

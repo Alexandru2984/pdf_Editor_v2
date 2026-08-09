@@ -10,6 +10,7 @@ from django.core.files.storage import FileSystemStorage
 from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
+from django.views.decorators.http import require_POST
 
 from ..models import UploadedPDF
 from ..pdf_processor import check_pdf_has_text, sanitize_pdf
@@ -190,6 +191,7 @@ def upload_view(request):
     return render(request, "pdfeditor/upload.html")
 
 
+@require_POST
 def delete_pdf_view(request, pdf_id):
     pdf = UploadedPDF.objects.filter(owner_filter(request), id=pdf_id).first()
     if pdf is None:
