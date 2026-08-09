@@ -25,6 +25,7 @@ from django.views.decorators.http import require_safe
 from django.views.generic import RedirectView
 from django.views.i18n import JavaScriptCatalog
 
+from pdfeditor.seo import robots_txt, sitemap_xml
 from pdfeditor.views import admin_health_view, serve_media_view
 
 
@@ -58,6 +59,8 @@ def serve_security_txt(request):
 
 
 urlpatterns = [
+    path("robots.txt", robots_txt, name="robots_txt"),
+    path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
     path(".well-known/security.txt", serve_security_txt, name="security_txt"),
     path("admin/health/", admin_health_view, name="admin_health"),
     path("admin/", admin.site.urls),

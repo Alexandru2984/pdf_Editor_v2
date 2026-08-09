@@ -11,7 +11,25 @@
     <link rel="manifest" href="/static/manifest.webmanifest">
     <link rel="apple-touch-icon" href="/static/images/logo.jpg">
     <link rel="icon" type="image/jpeg" href="/static/images/logo.jpg">
-    <title>{% block title %}{% trans "PDF Platform" %}{% endblock %}</title>
+    <title>{% block title %}{{ seo.title }}{% endblock %}</title>
+    <meta name="description" content="{{ seo.description }}">
+    <meta name="robots" content="{{ seo.robots }}">
+    {% if seo.canonical %}
+    <link rel="canonical" href="{{ seo.canonical }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PDF Platform">
+    <meta property="og:title" content="{{ seo.title }}">
+    <meta property="og:description" content="{{ seo.description }}">
+    <meta property="og:url" content="{{ seo.canonical }}">
+    <meta property="og:locale" content="{{ seo.locale }}">
+    <meta property="og:image" content="{{ seo.image }}">
+    <meta property="og:image:alt" content="{{ seo.image_alt }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ seo.title }}">
+    <meta name="twitter:description" content="{{ seo.description }}">
+    <meta name="twitter:image" content="{{ seo.image }}">
+    <script nonce="{{ request.csp_nonce }}" type="application/ld+json">{{ seo.json_ld }}</script>
+    {% endif %}
 
     <script nonce="{{ request.csp_nonce }}">
         // Apply saved theme before stylesheet loads — prevents flash of wrong theme.

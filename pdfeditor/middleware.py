@@ -220,6 +220,29 @@ class SecurityHeadersMiddleware:
         return response
 
 
+class SearchIndexingMiddleware:
+    """Add a fail-closed indexing policy to every non-public response.
+
+    HTML receives the equivalent meta directive from ``seo_context``.  The
+    header protects redirects, errors, JSON, downloads and media as well.
+    """
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        from .seo import NOINDEX_ROBOTS, is_indexable_request
+
+        response = self.get_response(request)
+        content_type = response.get("Content-Type", "").partition(";")[0].strip().lower()
+        is_public_html = (
+            response.status_code == 200 and content_type == "text/html" and is_indexable_request(request)
+        )
+        if not is_public_html:
+            response.setdefault("X-Robots-Tag", NOINDEX_ROBOTS)
+        return response
+
+
 class SessionLastSeenMiddleware:
     """Keep ``UserSession.last_seen`` fresh, at most one DB write per session
     per 5 minutes (throttled through the cache so request latency is flat).

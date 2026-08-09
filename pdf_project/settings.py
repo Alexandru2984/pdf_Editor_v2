@@ -209,6 +209,10 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # Fail closed for search engines: only explicitly reviewed public GETs
+    # omit X-Robots-Tag: noindex. This also covers JSON/files where a meta tag
+    # cannot be used.
+    "pdfeditor.middleware.SearchIndexingMiddleware",
     # Needs request.user → after AuthenticationMiddleware. Cache-throttled
     # last_seen bookkeeping for the profile "Sessions & security" page.
     "pdfeditor.middleware.SessionLastSeenMiddleware",
@@ -284,6 +288,7 @@ TEMPLATES = [
                 "django.template.context_processors.i18n",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "pdfeditor.seo.seo_context",
             ],
         },
     },
