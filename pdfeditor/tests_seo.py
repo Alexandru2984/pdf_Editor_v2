@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 from xml.etree import ElementTree
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from PIL import Image
 
 from .seo import NOINDEX_ROBOTS, SEO_PAGES
 
@@ -27,7 +30,15 @@ class SeoTests(TestCase):
         )
         self.assertContains(response, '<meta name="robots" content="index, follow,', html=False)
         self.assertContains(response, 'property="og:url" content="https://pdf.example.test/"')
-        self.assertContains(response, 'name="twitter:card" content="summary"')
+        self.assertContains(response, 'name="twitter:card" content="summary_large_image"')
+        self.assertContains(
+            response,
+            'property="og:image" content="https://pdf.example.test/static/images/social-preview.jpg"',
+        )
+        self.assertContains(response, 'property="og:image:width" content="1200"')
+        self.assertContains(response, 'property="og:image:height" content="630"')
+        self.assertContains(response, 'property="og:image:type" content="image/jpeg"')
+        self.assertContains(response, 'name="twitter:image:alt"')
 
         match = re.search(
             rb'<script nonce="[^"]+" type="application/ld\+json">(.*?)</script>',
@@ -39,6 +50,17 @@ class SeoTests(TestCase):
         self.assertEqual(structured_data["@context"], "https://schema.org")
         types = {item["@type"] for item in structured_data["@graph"]}
         self.assertEqual(types, {"WebSite", "WebApplication"})
+        application = next(item for item in structured_data["@graph"] if item["@type"] == "WebApplication")
+        self.assertEqual(application["primaryImageOfPage"]["width"], 1200)
+        self.assertEqual(application["primaryImageOfPage"]["height"], 630)
+
+    def test_social_preview_has_recommended_dimensions_and_transfer_size(self):
+        path = Path(settings.BASE_DIR) / "static/images/social-preview.jpg"
+
+        with Image.open(path) as image:
+            self.assertEqual(image.format, "JPEG")
+            self.assertEqual(image.size, (1200, 630))
+        self.assertLessEqual(path.stat().st_size, 200_000)
 
     def test_romanian_request_gets_localized_metadata(self):
         response = self.client.get(reverse("dashboard"), HTTP_ACCEPT_LANGUAGE="ro")

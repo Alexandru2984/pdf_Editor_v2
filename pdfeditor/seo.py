@@ -16,6 +16,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpRequest, HttpResponse
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import get_language
@@ -157,6 +158,10 @@ _DEFAULT_DESCRIPTION = {
     "en": "Private, practical tools for editing and processing PDF documents online.",
     "ro": "Instrumente practice pentru editarea și procesarea documentelor PDF online.",
 }
+_SOCIAL_IMAGE_ALT = {
+    "en": "PDF Platform — edit, convert, protect and sign PDF documents",
+    "ro": "PDF Platform — editează, convertește, protejează și semnează documente PDF",
+}
 _INDEX_ROBOTS = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
 NOINDEX_ROBOTS = "noindex, nofollow, nosnippet"
 
@@ -184,6 +189,10 @@ def public_origin() -> str:
             "SITE_URL must be an http(s) origin without credentials, path, query or fragment"
         )
     return urlunsplit((parsed.scheme.lower(), parsed.netloc, "", "", "")).rstrip("/")
+
+
+def _social_image_url() -> str:
+    return f"{public_origin()}{static('images/social-preview.jpg')}"
 
 
 def _url_for(page: SeoPage) -> str:
@@ -265,6 +274,12 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
         "description": page.description(language),
         "inLanguage": language,
         "isPartOf": {"@id": website["@id"]},
+        "primaryImageOfPage": {
+            "@type": "ImageObject",
+            "url": _social_image_url(),
+            "width": 1200,
+            "height": 630,
+        },
     }
     graph: list[dict[str, object]] = [website, webpage]
     if page.url_name == "dashboard":
@@ -371,7 +386,7 @@ def seo_context(request: HttpRequest) -> dict[str, dict[str, object]]:
         "robots": _INDEX_ROBOTS if indexable else NOINDEX_ROBOTS,
         "canonical": "",
         "image": "",
-        "image_alt": "PDF Platform",
+        "image_alt": _SOCIAL_IMAGE_ALT[language],
         "locale": "ro_RO" if language == "ro" else "en_US",
         "json_ld": "",
         "alternates": [],
@@ -385,7 +400,7 @@ def seo_context(request: HttpRequest) -> dict[str, dict[str, object]]:
         seo.update(
             {
                 "canonical": canonical,
-                "image": f"{public_origin()}/static/images/logo.jpg",
+                "image": _social_image_url(),
                 "alternates": _alternate_links(page),
                 "language_switch_url": (
                     reverse(f"{page.alternate_group}_{switch_language}")
