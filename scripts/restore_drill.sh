@@ -33,7 +33,13 @@ DRILL_NAME="pdfeditor-restore-drill-$$"
 if [[ $# -ge 1 ]]; then
     DUMP="$1"
 else
-    DUMP="$(ls -1t "$BACKUP_DIR"/*.sql.gz 2>/dev/null | head -n1 || true)"
+    DUMP=""
+    for candidate in "$BACKUP_DIR"/*.sql.gz; do
+        [[ -f "$candidate" ]] || continue
+        if [[ -z "$DUMP" || "$candidate" -nt "$DUMP" ]]; then
+            DUMP="$candidate"
+        fi
+    done
 fi
 
 if [[ -z "${DUMP:-}" || ! -f "$DUMP" ]]; then
