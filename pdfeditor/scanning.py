@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 
 class UploadBlocked(Exception):
     """Raised when an upload must be refused. ``reason`` is a stable code
-    (``"infected"`` or ``"scanner-unavailable"``); ``detail`` is the clamd
-    signature or error string for logs/UI."""
+    (``"infected"``, ``"scanner-unavailable"``, or ``"scanner-error"``);
+    ``detail`` is the clamd signature or error string for logs/UI."""
 
     def __init__(self, reason: str, detail: str = ""):
         self.reason = reason
@@ -78,10 +78,34 @@ def scan_fileobj(fileobj: BinaryIO) -> None:
     _safe_seek0(fileobj)
 
     # clamd INSTREAM result: {"stream": ("OK"|"FOUND", signature_or_None)}.
-    status, signature = (result or {}).get("stream", ("OK", None))
+    # Only an explicit OK is clean. Treat ERROR, an unknown status, and any
+    # malformed/empty response like scanner failure; accepting those would
+    # silently turn a fail-closed deployment into fail-open.
+    try:
+        stream_result = result["stream"]
+        if not isinstance(stream_result, (tuple, list)) or len(stream_result) != 2:
+            raise ValueError("malformed stream result")
+        status, signature = stream_result
+    except (KeyError, TypeError, ValueError) as exc:
+        _handle_scanner_error("malformed ClamAV response", exc)
+        return
+
+    if status == "OK":
+        return
     if status == "FOUND":
         logger.warning("ClamAV blocked an upload: %s", signature)
         raise UploadBlocked("infected", signature or "unknown")
+
+    _handle_scanner_error(f"ClamAV returned status {status!r}", signature)
+
+
+def _handle_scanner_error(message: str, detail: object = "") -> None:
+    full_detail = f"{message}: {detail}" if detail else message
+    if getattr(settings, "CLAMAV_FAIL_OPEN", False):
+        logger.warning("%s; allowing upload because fail-open is enabled", full_detail)
+        return
+    logger.error("%s; rejecting upload (fail-closed)", full_detail)
+    raise UploadBlocked("scanner-error", full_detail)
 
 
 def _safe_seek0(fileobj: BinaryIO) -> None:

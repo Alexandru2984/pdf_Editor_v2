@@ -374,6 +374,48 @@ class ClamAvScanTests(SimpleTestCase):
         self.assertEqual(ctx.exception.detail, "Eicar-Test-Signature")
 
     @override_settings(CLAMAV_ENABLED=True, CLAMAV_FAIL_OPEN=False)
+    def test_scanner_error_status_is_blocked(self):
+        client = MagicMock()
+        client.instream.return_value = {"stream": ("ERROR", "stream read failed")}
+        with (
+            patch("pdfeditor.scanning._build_client", return_value=client),
+            self.assertRaises(UploadBlocked) as ctx,
+        ):
+            scan_fileobj(BytesIO(b"%PDF-"))
+        self.assertEqual(ctx.exception.reason, "scanner-error")
+
+    @override_settings(CLAMAV_ENABLED=True, CLAMAV_FAIL_OPEN=False)
+    def test_empty_result_is_blocked(self):
+        client = MagicMock()
+        client.instream.return_value = None
+        with (
+            patch("pdfeditor.scanning._build_client", return_value=client),
+            self.assertRaises(UploadBlocked) as ctx,
+        ):
+            scan_fileobj(BytesIO(b"%PDF-"))
+        self.assertEqual(ctx.exception.reason, "scanner-error")
+
+    @override_settings(CLAMAV_ENABLED=True, CLAMAV_FAIL_OPEN=False)
+    def test_malformed_result_is_blocked_and_stream_is_reset(self):
+        client = MagicMock()
+        client.instream.return_value = {"stream": ("OK",)}
+        buf = BytesIO(b"%PDF-")
+        with (
+            patch("pdfeditor.scanning._build_client", return_value=client),
+            self.assertRaises(UploadBlocked) as ctx,
+        ):
+            scan_fileobj(buf)
+        self.assertEqual(ctx.exception.reason, "scanner-error")
+        self.assertEqual(buf.tell(), 0)
+
+    @override_settings(CLAMAV_ENABLED=True, CLAMAV_FAIL_OPEN=True)
+    def test_unknown_status_obeys_explicit_fail_open(self):
+        client = MagicMock()
+        client.instream.return_value = {"stream": ("UNKNOWN", "temporary failure")}
+        with patch("pdfeditor.scanning._build_client", return_value=client):
+            scan_fileobj(BytesIO(b"%PDF-"))
+
+    @override_settings(CLAMAV_ENABLED=True, CLAMAV_FAIL_OPEN=False)
     def test_scanner_unreachable_fail_closed_rejects(self):
         with (
             patch("pdfeditor.scanning._build_client", side_effect=OSError("connection refused")),
