@@ -18,6 +18,7 @@
 #   * restore fails
 #   * any sanity check returns 0 rows where we expect ≥ 1
 set -euo pipefail
+umask 077
 
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/pdfeditor}"
 DRILL_PORT="${DRILL_PORT:-55433}"
@@ -42,6 +43,16 @@ fi
 
 DUMP_SIZE_HUMAN="$(du -h "$DUMP" | cut -f1)"
 echo "→ Drill against: $DUMP ($DUMP_SIZE_HUMAN)"
+
+if [[ -f "${DUMP}.sha256" ]]; then
+    echo "→ Verifying SHA-256 checksum…"
+    (
+        cd "$(dirname "$DUMP")"
+        sha256sum --check "$(basename "${DUMP}.sha256")"
+    )
+else
+    echo "⚠ no SHA-256 sidecar found (legacy backup); continuing with restore validation." >&2
+fi
 
 # ---- Bring up an ephemeral Postgres ---------------------------------------
 

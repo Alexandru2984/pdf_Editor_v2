@@ -40,6 +40,11 @@ tarball is the system of record for the *bytes behind those rows*.
 You need both — restoring one without the other leaves rows pointing
 at files that don't exist, or files no row references.
 
+Both backup scripts enforce `0700` on the backup directory and `0600`
+on backup artifacts, repair permissions left by older releases, and publish
+new archives atomically. Every new archive also has a `.sha256` sidecar;
+the database restore drill verifies it before attempting a restore.
+
 ## The drill
 
 A backup you haven't restored isn't a backup — it's a wish.
@@ -61,14 +66,15 @@ scripts/restore_drill.sh /var/backups/pdfeditor/pdfeditor-2026-05-19T00-50-01Z.s
 
 What it checks:
 
-1. Container comes up and Postgres accepts connections.
-2. `pg_restore --jobs=2` completes without error.
-3. `pgvector` extension is present in the restored DB.
-4. Core tables exist with at least the floor row counts in `FLOORS`
+1. The SHA-256 sidecar matches (when present; legacy backups emit a warning).
+2. Container comes up and Postgres accepts connections.
+3. `pg_restore --jobs=2` completes without error.
+4. `pgvector` extension is present in the restored DB.
+5. Core tables exist with at least the floor row counts in `FLOORS`
    (missing tables = partial restore = fail).
-5. No orphan `pdfeditor_job` rows referencing deleted users (proves
+6. No orphan `pdfeditor_job` rows referencing deleted users (proves
    FKs survived intact, not just that rows count up).
-6. Reports the time breakdown so RTO claims stay honest.
+7. Reports the time breakdown so RTO claims stay honest.
 
 Last measured drill (4.5MB dump, 700 jobs, 6303 uploads, 8913 processed):
 
