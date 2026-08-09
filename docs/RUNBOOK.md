@@ -55,7 +55,8 @@ docker compose logs --since=10m web | grep -iE "error|exception|traceback"
 - **One bad replica:** restart it. `docker compose restart web` cycles
   all of them; safer is to find the bad replica by IP from the per-
   replica panel and `docker restart <container-id>`.
-- **All replicas bad, recent deploy:** roll back.
+- **All replicas bad, recent deploy:** `deploy.sh` attempts this automatically.
+  If the automatic rollback also failed, promote the preserved image manually.
   ```bash
   # deploy.sh tags the prior image as pdfeditor:rollback before pulling
   # the new one. Promote it back to :latest and restart the web stack.

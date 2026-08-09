@@ -8,27 +8,27 @@ on:
     workflows: ["tests"]
     types: [completed]
     branches: [main]
-  workflow_dispatch: {}
-
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: deploy-production
   cancel-in-progress: false
 
 permissions:
   contents: read
-  packages: write
-  # OIDC token for cosign keyless image signing (sigstore).
-  id-token: write
 
 jobs:
   # 1. Build a docker image and push it to GitHub Container Registry.
   build:
-    # Only deploy if tests passed. workflow_dispatch (manual trigger) has no
-    # workflow_run context so the conclusion is empty — allow it through.
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # OIDC token for cosign keyless image signing (sigstore).
+      id-token: write
     outputs:
       image_tag: ${{ steps.meta.outputs.short_sha }}
+      image_digest: ${{ steps.build.outputs.digest }}
+      commit_sha: ${{ steps.meta.outputs.commit_sha }}
     steps:
       # workflow_run events default to the latest commit on the default branch.
       # We want the exact SHA that the tests workflow validated, so check out
@@ -52,12 +52,14 @@ jobs:
         env:
           # Use head_sha from the workflow_run payload so the image tag
           # matches the commit that actually passed tests.
-          COMMIT_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           short_sha="sha-$(echo "$COMMIT_SHA" | cut -c1-7)"
           echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           # Image name is forced lowercase per OCI rules.
-          repo_lower="$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')"
+          repo_lower="$(echo "$REPOSITORY" | tr '[:upper:]' '[:lower:]')"
           echo "image=ghcr.io/${repo_lower}" >> "$GITHUB_OUTPUT"
           # Daily cache-bust token for the apt layer (see Dockerfile).
           echo "apt_refresh_date=$(date -u +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
@@ -115,10 +117,12 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: cosign sign --yes "${IMAGE}@${DIGEST}"
 
-  # 3. SSH into the VPS and run the deploy script with the new tag.
+  # 2. SSH into the VPS and deploy the exact signed digest that passed tests.
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -132,4 +136,7 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
             # Authenticate to GHCR with a personal access token that has read:packages.
             echo "${{ secrets.GHCR_PULL_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_PULL_USER }} --password-stdin
-            ./scripts/deploy.sh ${{ needs.build.outputs.image_tag }}
+            ./scripts/deploy.sh \
+              '${{ needs.build.outputs.image_tag }}' \
+              '${{ needs.build.outputs.image_digest }}' \
+              '${{ needs.build.outputs.commit_sha }}'

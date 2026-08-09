@@ -486,16 +486,16 @@ Pushes to `main` trigger:
    image, pushes to `ghcr.io/alexandru2984/pdf_editor_v2:{latest,sha-XXXXX}`,
    scans with Trivy (fail on HIGH/CRITICAL), publishes an SPDX SBOM and
    signs the image with cosign (keyless), then SSHes into the VPS and
-   runs `scripts/deploy.sh` which pulls the new image, retags the previous
-   as `pdfeditor:rollback`, `docker compose up -d --no-build`, then
-   smoke-tests the public `/readyz` endpoint — if the stack doesn't come
-   back healthy the deploy job fails instead of lying green.
+   runs `scripts/deploy.sh` with the exact digest and tested commit. The VPS
+   verifies the Sigstore identity before pulling, preserves the previous image,
+   checks every app container's image ID, and smoke-tests public `/readyz`.
+   A failure automatically restores `pdfeditor:rollback` and still fails CI.
 
 Migrations run as a one-shot `migrate` init container that web/worker
 `depends_on` with `service_completed_successfully` — N replicas can't race
 through the migration advisory locks at startup.
 
-Rollback is a one-liner:
+Emergency manual rollback remains available:
 ```bash
 docker tag pdfeditor:rollback pdfeditor:latest && docker compose up -d --no-build
 ```

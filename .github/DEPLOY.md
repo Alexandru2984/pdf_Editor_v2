@@ -6,10 +6,10 @@ The `build-and-deploy` workflow runs on every push to `main`:
 2. **Builds** a Docker image from the repo and pushes it to
    `ghcr.io/<your-github-user>/pdf_editor_v2` tagged with both `latest` and
    `sha-<short-sha>` (so you can pin to a specific build).
-3. **SSHes** into the VPS and runs `scripts/deploy.sh <tag>`, which pulls
-   the image, retags it locally as `pdfeditor:latest`, saves the previous
-   image as `pdfeditor:rollback`, and restarts the `web` container via
-   `docker compose`.
+3. **SSHes** into the VPS and runs `scripts/deploy.sh <tag> <digest> <commit>`.
+   The script verifies the exact Sigstore identity and immutable digest, saves
+   `pdfeditor:rollback`, recreates the app services, verifies their image IDs,
+   and automatically rolls back if the public readiness check fails.
 
 ## One-time setup
 
@@ -44,25 +44,30 @@ In **Settings → Secrets and variables → Actions → New repository secret**,
    `GHCR_PULL_TOKEN`, but ensure the package is **public** OR the token's
    user has access to it.
 
+4. Install cosign from the signed Ubuntu repository and keep it patched:
+   ```bash
+   sudo apt-get install cosign
+   cosign version
+   ```
+
 ## Rollback
 
 Each deploy tags the previous image as `pdfeditor:rollback`. To revert:
 
 ```bash
 docker tag pdfeditor:rollback pdfeditor:latest
-docker compose up -d --no-build web
+docker compose up -d --no-build --force-recreate migrate web worker nginx
 ```
 
-Or, more explicit — re-deploy a specific SHA:
+Or re-deploy an already-tested image using the tag, immutable digest, and full
+Git commit shown in the successful Actions run:
 
 ```bash
-./scripts/deploy.sh sha-abc1234
+./scripts/deploy.sh sha-abc1234 sha256:<64-hex-digest> <40-hex-commit>
 ```
 
 (Images are kept in GHCR for as long as you configure retention in
 **Packages → settings**.)
 
-## Manual trigger
-
-The workflow also responds to **Actions → build-and-deploy → Run workflow**
-so you can re-run a deploy without pushing a new commit.
+There is intentionally no workflow-dispatch bypass: production images are
+built and deployed only after the `tests` workflow succeeds.
