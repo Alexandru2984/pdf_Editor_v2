@@ -17,6 +17,7 @@ from ..pdf_processor import check_pdf_has_text, inspect_pdf, sanitize_pdf
 from ..scanning import UploadBlocked, scan_fileobj
 from ..tool_catalog import is_upload_destination_allowed
 from ._common import _owner_kwargs, get_uploaded_pdfs, owner_filter, storage_quota, storage_usage
+from ._localization import localized_public_view
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ def _generate_thumbnail(pdf_path: str, thumb_path: str) -> bool:
         return False
 
 
+@localized_public_view
 def dashboard_view(request):
     quota = storage_quota(request)
     used = storage_usage(request)

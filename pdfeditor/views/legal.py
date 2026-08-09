@@ -9,6 +9,9 @@ falls back to English for anything that isn't Romanian.
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils.translation import get_language
+from django.views.decorators.http import require_safe
+
+from ._localization import localized_public_view
 
 _SUPPORTED = ("ro", "en")
 
@@ -18,9 +21,13 @@ def _lang_suffix() -> str:
     return lang if lang in _SUPPORTED else "en"
 
 
+@localized_public_view
+@require_safe
 def privacy_view(request: HttpRequest) -> HttpResponse:
     return render(request, f"pdfeditor/legal/privacy_{_lang_suffix()}.html")
 
 
+@localized_public_view
+@require_safe
 def terms_view(request: HttpRequest) -> HttpResponse:
     return render(request, f"pdfeditor/legal/terms_{_lang_suffix()}.html")

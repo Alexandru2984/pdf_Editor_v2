@@ -5,7 +5,7 @@
 {% block content %}
 <div class="marketing-shell">
     <nav class="marketing-breadcrumb" aria-label="Breadcrumb">
-        <a href="{% url 'dashboard' %}">{{ ui.breadcrumb_home }}</a>
+        <a href="{{ seo.home_url }}">{{ ui.breadcrumb_home }}</a>
         <span aria-hidden="true">/</span>
         <a href="{{ tools_hub_url }}">{{ ui.breadcrumb_tools }}</a>
         <span aria-hidden="true">/</span>

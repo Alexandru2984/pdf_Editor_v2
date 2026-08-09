@@ -58,6 +58,7 @@ from ._common import (
     owner_filter,
     record_output,
 )
+from ._localization import localized_public_view
 
 
 def _queue_async_job(request, *, kind: str, source, second_source=None, params: dict | None = None):
@@ -1424,6 +1425,7 @@ _IMAGES_TO_PDF_MAX_BYTES_PER_FILE = 15 * 1024 * 1024  # 15 MB
 _IMAGES_TO_PDF_ALLOWED_EXT = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".webp", ".gif"}
 
 
+@localized_public_view
 @auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
 def images_to_pdf_view(request):
     if request.method == "POST":
@@ -1575,6 +1577,7 @@ def download_images_to_pdf_view(request):
 # ---------- Verify signatures ----------
 
 
+@localized_public_view
 @auth_aware_ratelimit(anon_rate="20/h", user_rate="100/h", method="POST")
 def verify_signature_view(request):
     """Upload a signed PDF and report on its embedded signatures."""

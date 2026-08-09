@@ -2663,6 +2663,12 @@ footer {
     padding: var(--spacing-lg);
 }
 
+.legal-page h1 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-primary);
+    font-size: clamp(1.75rem, 5vw, 2.25rem);
+}
+
 .legal-page h3 {
     margin: var(--spacing-lg) 0 var(--spacing-sm);
     color: var(--text-primary);

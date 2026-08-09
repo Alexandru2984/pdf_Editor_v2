@@ -52,6 +52,12 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
             len({tool.localized_url_name(language) for tool in TOOL_LANDINGS for language in ("en", "ro")}),
             len(TOOL_LANDINGS) * 2,
         )
+        self.assertEqual(
+            len(
+                {tool.localized_url_name(language) for tool in DIRECT_TOOL_LINKS for language in ("en", "ro")}
+            ),
+            len(DIRECT_TOOL_LINKS) * 2,
+        )
         self.assertEqual(len({tool.seo_title.en for tool in TOOL_LANDINGS}), len(TOOL_LANDINGS))
         self.assertEqual(len({tool.seo_description.en for tool in TOOL_LANDINGS}), len(TOOL_LANDINGS))
         for tool in TOOL_LANDINGS:
@@ -76,8 +82,8 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
             'class="public-tool-card"',
             count=len(TOOL_LANDINGS) + len(DIRECT_TOOL_LINKS),
         )
-        self.assertContains(response, reverse("images_to_pdf"))
-        self.assertContains(response, reverse("verify_signature"))
+        self.assertContains(response, reverse("images_to_pdf_en"))
+        self.assertContains(response, reverse("verify_signature_en"))
         for tool in TOOL_LANDINGS:
             self.assertContains(response, reverse(tool.localized_url_name("en")))
 
@@ -145,6 +151,11 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
             f"https://pdf.example.test{reverse(TOOL_LANDINGS[0].localized_url_name('en'))}",
             listed_urls,
         )
+        for direct in DIRECT_TOOL_LINKS:
+            self.assertIn(
+                f"https://pdf.example.test{reverse(direct.localized_url_name('en'))}",
+                listed_urls,
+            )
 
     def test_hub_and_landings_support_head_requests(self):
         names = [

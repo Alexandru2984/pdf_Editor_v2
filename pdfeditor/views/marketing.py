@@ -112,7 +112,7 @@ def _hub_cards(language: str) -> list[dict[str, object]]:
         cards.append(card)
     for direct in DIRECT_TOOL_LINKS:
         card = direct.localized(language)
-        card["url"] = reverse(direct.url_name)
+        card["url"] = reverse(direct.localized_url_name(language))
         card["direct"] = True
         cards.append(card)
     return cards

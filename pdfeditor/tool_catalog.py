@@ -90,6 +90,11 @@ class DirectToolLink:
     category: LocalizedText
     short_description: LocalizedText
 
+    def localized_url_name(self, language: str) -> str:
+        if language not in {"en", "ro"}:
+            raise ValueError(f"Unsupported marketing language: {language}")
+        return f"{self.url_name}_{language}"
+
     def localized(self, language: str) -> dict[str, object]:
         return {
             "url_name": self.url_name,

@@ -26,10 +26,10 @@
         </div>
 
         <div class="result-actions">
-            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+            <a href="{{ seo.home_url }}" class="btn btn-secondary">
                 ← {% trans "Dashboard" %}
             </a>
-            <a href="{% url 'verify_signature' %}" class="btn btn-secondary">
+            <a href="{{ seo.verify_signature_url }}" class="btn btn-secondary">
                 🔍 {% trans "Verify signature" %}
             </a>
             <a href="{% url 'download_signed' %}" class="btn btn-primary">

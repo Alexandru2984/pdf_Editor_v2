@@ -19,17 +19,17 @@ from .seo import NOINDEX_ROBOTS, SEO_PAGES
 @override_settings(SITE_URL="https://pdf.example.test")
 class SeoTests(TestCase):
     def test_public_dashboard_has_canonical_social_metadata_and_valid_json_ld(self):
-        response = self.client.get(f"{reverse('dashboard')}?utm_source=test")
+        response = self.client.get(f"{reverse('dashboard_en')}?utm_source=test")
 
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("X-Robots-Tag", response)
         self.assertContains(
             response,
-            '<link rel="canonical" href="https://pdf.example.test/">',
+            '<link rel="canonical" href="https://pdf.example.test/en/">',
             html=True,
         )
         self.assertContains(response, '<meta name="robots" content="index, follow,', html=False)
-        self.assertContains(response, 'property="og:url" content="https://pdf.example.test/"')
+        self.assertContains(response, 'property="og:url" content="https://pdf.example.test/en/"')
         self.assertContains(response, 'name="twitter:card" content="summary_large_image"')
         self.assertContains(
             response,
@@ -63,7 +63,7 @@ class SeoTests(TestCase):
         self.assertLessEqual(path.stat().st_size, 200_000)
 
     def test_romanian_request_gets_localized_metadata(self):
-        response = self.client.get(reverse("dashboard"), HTTP_ACCEPT_LANGUAGE="ro")
+        response = self.client.get(reverse("dashboard_ro"), HTTP_ACCEPT_LANGUAGE="en")
 
         self.assertContains(response, "Instrumente PDF online gratuite")
         self.assertContains(response, 'property="og:locale" content="ro_RO"')
@@ -82,7 +82,7 @@ class SeoTests(TestCase):
         user = get_user_model().objects.create_user(username="seo-user", password="test-password")
         self.client.force_login(user)
 
-        response = self.client.get(reverse("dashboard"))
+        response = self.client.get(reverse("dashboard_en"))
 
         self.assertEqual(response["X-Robots-Tag"], NOINDEX_ROBOTS)
         self.assertContains(response, f'<meta name="robots" content="{NOINDEX_ROBOTS}">', html=True)
@@ -93,17 +93,60 @@ class SeoTests(TestCase):
         session["owner_state"] = "present"
         session.save()
 
-        response = self.client.get(reverse("dashboard"))
+        response = self.client.get(reverse("dashboard_en"))
 
         self.assertEqual(response["X-Robots-Tag"], NOINDEX_ROBOTS)
         self.assertNotContains(response, 'rel="canonical"')
 
     def test_post_to_public_tool_is_not_indexable(self):
-        response = self.client.post(reverse("images_to_pdf"), {})
+        response = self.client.post(reverse("images_to_pdf_en"), {})
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["X-Robots-Tag"], NOINDEX_ROBOTS)
         self.assertContains(response, f'<meta name="robots" content="{NOINDEX_ROBOTS}">', html=True)
+
+    def test_generic_public_routes_are_noindex_x_default_fallbacks(self):
+        for url_name in ("dashboard", "privacy", "terms", "images_to_pdf", "verify_signature"):
+            with self.subTest(url_name=url_name):
+                response = Client().get(reverse(url_name))
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response["X-Robots-Tag"], NOINDEX_ROBOTS)
+                self.assertNotContains(response, 'rel="canonical"')
+
+    def test_core_localized_pages_publish_reciprocal_hreflang(self):
+        for group in ("dashboard", "privacy", "terms", "images_to_pdf", "verify_signature"):
+            for language, other_language in (("en", "ro"), ("ro", "en")):
+                with self.subTest(group=group, language=language):
+                    url_name = f"{group}_{language}"
+                    response = Client().get(
+                        reverse(url_name),
+                        HTTP_ACCEPT_LANGUAGE=other_language,
+                    )
+                    canonical = f"https://pdf.example.test{reverse(url_name)}"
+
+                    self.assertEqual(response.status_code, 200)
+                    self.assertNotIn("X-Robots-Tag", response)
+                    self.assertContains(response, f'<link rel="canonical" href="{canonical}">')
+                    self.assertContains(
+                        response,
+                        f'<link rel="alternate" hreflang="en" href="https://pdf.example.test{reverse(f"{group}_en")}">',
+                    )
+                    self.assertContains(
+                        response,
+                        f'<link rel="alternate" hreflang="ro" href="https://pdf.example.test{reverse(f"{group}_ro")}">',
+                    )
+                    self.assertContains(
+                        response,
+                        f'<link rel="alternate" hreflang="x-default" href="https://pdf.example.test{reverse(group)}">',
+                    )
+                    self.assertContains(
+                        response,
+                        f'name="next" type="hidden" value="{reverse(f"{group}_{other_language}")}"',
+                    )
+                    self.assertEqual(response["Content-Language"], language)
+                    self.assertContains(response, f'<html lang="{language}">')
+                    self.assertEqual(len(re.findall(rb"<h1\b", response.content)), 1)
 
     def test_robots_points_to_canonical_sitemap_and_limits_technical_routes(self):
         response = self.client.get(reverse("robots_txt"))
@@ -163,9 +206,9 @@ class SeoTests(TestCase):
 
     @override_settings(ALLOWED_HOSTS=["*"])
     def test_canonical_origin_never_uses_untrusted_host_header(self):
-        response = self.client.get(reverse("dashboard"), HTTP_HOST="attacker.example")
+        response = self.client.get(reverse("dashboard_en"), HTTP_HOST="attacker.example")
 
-        self.assertContains(response, 'href="https://pdf.example.test/"')
+        self.assertContains(response, 'href="https://pdf.example.test/en/"')
         self.assertNotContains(response, "attacker.example")
 
     def test_head_is_supported_for_discovery_endpoints(self):

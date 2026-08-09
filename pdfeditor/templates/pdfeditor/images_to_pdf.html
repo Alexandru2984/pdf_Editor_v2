@@ -8,7 +8,7 @@
 <div class="preview-container" style="--tool-max-width: 1100px;">
     <div class="preview-header">
         <div class="text-center">
-            <h2 class="tool-page-title">🧩 {% trans "Images to PDF" %}</h2>
+            <h1 class="tool-page-title">🧩 {% trans "Images to PDF" %}</h1>
             <p class="tool-page-subtitle">
                 {% trans "Combine PNG, JPG, BMP, TIFF, WEBP, or GIF images into a single PDF. Drag thumbnails to reorder." %}
             </p>
@@ -62,7 +62,7 @@
             </div>
 
             <div class="tool-form-actions">
-                <a href="{% url 'dashboard' %}" class="btn btn-secondary">← {% trans "Back" %}</a>
+                <a href="{{ seo.home_url }}" class="btn btn-secondary">← {% trans "Back" %}</a>
                 <button type="submit" class="btn btn-primary" id="btn-build" disabled>
                     🧩 {% trans "Build PDF" %}
                 </button>

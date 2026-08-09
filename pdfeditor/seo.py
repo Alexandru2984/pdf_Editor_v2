@@ -8,7 +8,7 @@ view is private to crawlers until it is reviewed and added here.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from urllib.parse import urlsplit, urlunsplit
 from xml.etree import ElementTree
 
@@ -49,78 +49,86 @@ class SeoPage:
 # Only include URLs that return useful, non-sensitive content to a fresh GET.
 # Operation/result/account pages intentionally remain noindex until they have a
 # dedicated public landing page that does not depend on an uploaded document.
-SEO_PAGES: dict[str, SeoPage] = {
-    page.url_name: page
-    for page in (
-        SeoPage(
-            url_name="dashboard",
-            title_en="Free Online PDF Tools | PDF Platform",
-            title_ro="Instrumente PDF online gratuite | PDF Platform",
-            description_en=(
-                "Edit, merge, split, compress, convert, protect, sign, OCR and organize PDF files "
-                "online with one privacy-conscious toolkit."
-            ),
-            description_ro=(
-                "Editează, unește, separă, comprimă, convertește, protejează, semnează și organizează "
-                "fișiere PDF online, într-o singură platformă."
-            ),
-            anonymous_only=True,
-            page_type="WebApplication",
+_CORE_SEO_PAGES: tuple[SeoPage, ...] = (
+    SeoPage(
+        url_name="dashboard",
+        title_en="Free Online PDF Tools | PDF Platform",
+        title_ro="Instrumente PDF online gratuite | PDF Platform",
+        description_en=(
+            "Edit, merge, split, compress, convert, protect, sign, OCR and organize PDF files "
+            "online with one privacy-conscious toolkit."
         ),
-        SeoPage(
-            url_name="images_to_pdf",
-            title_en="Convert Images to PDF Online | PDF Platform",
-            title_ro="Convertește imagini în PDF online | PDF Platform",
-            description_en=(
-                "Combine JPG, PNG, TIFF, WebP, BMP or GIF images into one PDF. Reorder pages and choose "
-                "print-ready page sizing directly in your browser."
-            ),
-            description_ro=(
-                "Combină imagini JPG, PNG, TIFF, WebP, BMP sau GIF într-un singur PDF. Reordonează paginile "
-                "și alege dimensiunea potrivită pentru tipărire."
-            ),
+        description_ro=(
+            "Editează, unește, separă, comprimă, convertește, protejează, semnează și organizează "
+            "fișiere PDF online, într-o singură platformă."
         ),
-        SeoPage(
-            url_name="verify_signature",
-            title_en="Verify PDF Digital Signatures Online | PDF Platform",
-            title_ro="Verifică semnături digitale PDF online | PDF Platform",
-            description_en=(
-                "Inspect PDF digital signatures for document integrity, signer identity, certificate trust, "
-                "revocation status and trusted timestamps."
-            ),
-            description_ro=(
-                "Verifică semnăturile digitale PDF: integritatea documentului, identitatea semnatarului, "
-                "încrederea certificatului, revocarea și marca temporală."
-            ),
+        anonymous_only=True,
+        page_type="WebApplication",
+    ),
+    SeoPage(
+        url_name="images_to_pdf",
+        title_en="Convert Images to PDF Online | PDF Platform",
+        title_ro="Convertește imagini în PDF online | PDF Platform",
+        description_en=(
+            "Combine JPG, PNG, TIFF, WebP, BMP or GIF images into one PDF. Reorder pages and choose "
+            "print-ready page sizing directly in your browser."
         ),
-        SeoPage(
-            url_name="privacy",
-            title_en="Privacy Policy | PDF Platform",
-            title_ro="Politica de confidențialitate | PDF Platform",
-            description_en=(
-                "Learn what PDF Platform processes, where document data goes, how long it is retained and "
-                "which privacy rights you can exercise."
-            ),
-            description_ro=(
-                "Află ce date prelucrează PDF Platform, unde ajung documentele, cât timp sunt păstrate și "
-                "cum îți poți exercita drepturile."
-            ),
+        description_ro=(
+            "Combină imagini JPG, PNG, TIFF, WebP, BMP sau GIF într-un singur PDF. Reordonează paginile "
+            "și alege dimensiunea potrivită pentru tipărire."
         ),
-        SeoPage(
-            url_name="terms",
-            title_en="Terms of Service | PDF Platform",
-            title_ro="Termenii serviciului | PDF Platform",
-            description_en=(
-                "Read the rules, responsibilities and service conditions that apply when using PDF Platform."
-            ),
-            description_ro=(
-                "Consultă regulile, responsabilitățile și condițiile aplicabile utilizării PDF Platform."
-            ),
+    ),
+    SeoPage(
+        url_name="verify_signature",
+        title_en="Verify PDF Digital Signatures Online | PDF Platform",
+        title_ro="Verifică semnături digitale PDF online | PDF Platform",
+        description_en=(
+            "Inspect PDF digital signatures for document integrity, signer identity, certificate trust, "
+            "revocation status and trusted timestamps."
         ),
-    )
-}
+        description_ro=(
+            "Verifică semnăturile digitale PDF: integritatea documentului, identitatea semnatarului, "
+            "încrederea certificatului, revocarea și marca temporală."
+        ),
+    ),
+    SeoPage(
+        url_name="privacy",
+        title_en="Privacy Policy | PDF Platform",
+        title_ro="Politica de confidențialitate | PDF Platform",
+        description_en=(
+            "Learn what PDF Platform processes, where document data goes, how long it is retained and "
+            "which privacy rights you can exercise."
+        ),
+        description_ro=(
+            "Află ce date prelucrează PDF Platform, unde ajung documentele, cât timp sunt păstrate și "
+            "cum îți poți exercita drepturile."
+        ),
+    ),
+    SeoPage(
+        url_name="terms",
+        title_en="Terms of Service | PDF Platform",
+        title_ro="Termenii serviciului | PDF Platform",
+        description_en=(
+            "Read the rules, responsibilities and service conditions that apply when using PDF Platform."
+        ),
+        description_ro=(
+            "Consultă regulile, responsabilitățile și condițiile aplicabile utilizării PDF Platform."
+        ),
+    ),
+)
 
 _MARKETING_LANGUAGES = ("en", "ro")
+SEO_PAGES: dict[str, SeoPage] = {}
+for _core_page in _CORE_SEO_PAGES:
+    for _core_language in _MARKETING_LANGUAGES:
+        _localized_url_name = f"{_core_page.url_name}_{_core_language}"
+        SEO_PAGES[_localized_url_name] = replace(
+            _core_page,
+            url_name=_localized_url_name,
+            fixed_language=_core_language,
+            alternate_group=_core_page.url_name,
+        )
+
 for _marketing_language in _MARKETING_LANGUAGES:
     _hub_url_name = f"tools_hub_{_marketing_language}"
     SEO_PAGES[_hub_url_name] = SeoPage(
@@ -282,7 +290,7 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
         },
     }
     graph: list[dict[str, object]] = [website, webpage]
-    if page.url_name == "dashboard":
+    if page.alternate_group == "dashboard":
         webpage.update(
             {
                 "applicationCategory": "UtilitiesApplication",
@@ -311,7 +319,11 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
             for tool in TOOL_LANDINGS
         ]
         hub_items.extend(
-            (tool.name.get(language), f"{origin}{reverse(tool.url_name)}") for tool in DIRECT_TOOL_LINKS
+            (
+                tool.name.get(language),
+                f"{origin}{reverse(tool.localized_url_name(language))}",
+            )
+            for tool in DIRECT_TOOL_LINKS
         )
         webpage["mainEntity"] = {
             "@type": "ItemList",
@@ -352,7 +364,7 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
                         "@type": "ListItem",
                         "position": 1,
                         "name": "PDF Platform",
-                        "item": f"{origin}/",
+                        "item": f"{origin}{reverse(f'dashboard_{language}')}",
                     },
                     {
                         "@type": "ListItem",
@@ -391,6 +403,11 @@ def seo_context(request: HttpRequest) -> dict[str, dict[str, object]]:
         "json_ld": "",
         "alternates": [],
         "tools_hub_url": reverse(f"tools_hub_{language}"),
+        "home_url": reverse(f"dashboard_{language}"),
+        "privacy_url": reverse(f"privacy_{language}"),
+        "terms_url": reverse(f"terms_{language}"),
+        "images_to_pdf_url": reverse(f"images_to_pdf_{language}"),
+        "verify_signature_url": reverse(f"verify_signature_{language}"),
         "language_switch_url": request.get_full_path(),
         "analytics_enabled": bool(getattr(settings, "ANALYTICS_ENABLED", False)),
     }

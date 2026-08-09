@@ -46,6 +46,8 @@ urlpatterns = [
         )
         for tool in TOOL_LANDINGS
     ],
+    path("en/", views.dashboard_view, {"language": "en"}, name="dashboard_en"),
+    path("ro/", views.dashboard_view, {"language": "ro"}, name="dashboard_ro"),
     path("", views.dashboard_view, name="dashboard"),
     path("upload/", views.upload_view, name="upload"),
     path("edit/", views.edit_view, name="edit"),
@@ -68,6 +70,18 @@ urlpatterns = [
     path("to-images/result/", views.to_images_result_view, name="to_images_result"),
     path("download_images/", views.download_images_view, name="download_images"),
     path("images-to-pdf/", views.images_to_pdf_view, name="images_to_pdf"),
+    path(
+        "en/images-to-pdf/",
+        views.images_to_pdf_view,
+        {"language": "en"},
+        name="images_to_pdf_en",
+    ),
+    path(
+        "ro/imagini-in-pdf/",
+        views.images_to_pdf_view,
+        {"language": "ro"},
+        name="images_to_pdf_ro",
+    ),
     path("images-to-pdf/result/", views.images_to_pdf_result_view, name="images_to_pdf_result"),
     path("download_images_to_pdf/", views.download_images_to_pdf_view, name="download_images_to_pdf"),
     path("metadata/", views.metadata_view, name="metadata"),
@@ -116,6 +130,18 @@ urlpatterns = [
     path("sign/result/", views.sign_result_view, name="sign_result"),
     path("sign/generate-cert/", views.generate_cert_view, name="generate_cert"),
     path("sign/verify/", views.verify_signature_view, name="verify_signature"),
+    path(
+        "en/verify-pdf-signatures/",
+        views.verify_signature_view,
+        {"language": "en"},
+        name="verify_signature_en",
+    ),
+    path(
+        "ro/verifica-semnaturi-pdf/",
+        views.verify_signature_view,
+        {"language": "ro"},
+        name="verify_signature_ro",
+    ),
     path("download_signed/", views.download_signed_view, name="download_signed"),
     path("watermark/", views.watermark_view, name="watermark"),
     path("watermark/result/", views.watermark_result_view, name="watermark_result"),
@@ -163,6 +189,30 @@ urlpatterns = [
     # Legal
     path("privacy/", views.privacy_view, name="privacy"),
     path("terms/", views.terms_view, name="terms"),
+    path(
+        "en/privacy/",
+        views.privacy_view,
+        {"language": "en"},
+        name="privacy_en",
+    ),
+    path(
+        "ro/politica-de-confidentialitate/",
+        views.privacy_view,
+        {"language": "ro"},
+        name="privacy_ro",
+    ),
+    path(
+        "en/terms/",
+        views.terms_view,
+        {"language": "en"},
+        name="terms_en",
+    ),
+    path(
+        "ro/termeni/",
+        views.terms_view,
+        {"language": "ro"},
+        name="terms_ro",
+    ),
     # Auth — login/logout/register; password change/reset added in phase 4
     # Login is a thin LoginView subclass that inserts a TOTP step for users
     # who enabled MFA (pdfeditor/views/mfa.py).

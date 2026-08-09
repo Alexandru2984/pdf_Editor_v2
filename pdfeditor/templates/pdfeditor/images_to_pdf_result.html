@@ -21,7 +21,7 @@
         </div>
 
         <div class="result-actions">
-            <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+            <a href="{{ seo.home_url }}" class="btn btn-secondary">
                 ← {% trans "Dashboard" %}
             </a>
             <a href="{% url 'download_images_to_pdf' %}" class="btn btn-primary">

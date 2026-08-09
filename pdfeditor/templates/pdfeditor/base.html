@@ -69,7 +69,7 @@
     <!-- Header with Logo -->
     <header class="site-header">
         <div class="site-header-inner">
-            <a href="{% url 'dashboard' %}" class="site-logo">
+            <a href="{{ seo.home_url }}" class="site-logo">
                 <img
                     src="{% static 'images/logo-64.webp' %}"
                     width="52"
@@ -103,7 +103,7 @@
             </label>
 
             <nav class="site-nav" id="site-nav" aria-label="{% trans 'Primary navigation' %}">
-                <a href="{% url 'dashboard' %}" class="nav-link">🏠 {% trans "Dashboard" %}</a>
+                <a href="{{ seo.home_url }}" class="nav-link">🏠 {% trans "Dashboard" %}</a>
                 <a href="{{ seo.tools_hub_url }}" class="nav-link">🧰 {% if LANGUAGE_CODE|slice:':2' == 'ro' %}Instrumente PDF{% else %}PDF Tools{% endif %}</a>
                 {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}" class="nav-link">👤 {{ user.username }}</a>
@@ -137,8 +137,8 @@
     <footer class="site-footer">
         <span>© 2026 PDF Platform</span>
         <a href="{{ seo.tools_hub_url }}">{% if LANGUAGE_CODE|slice:':2' == 'ro' %}Instrumente PDF{% else %}PDF Tools{% endif %}</a>
-        <a href="{% url 'privacy' %}">{% trans "Privacy Policy" %}</a>
-        <a href="{% url 'terms' %}">{% trans "Terms of Service" %}</a>
+        <a href="{{ seo.privacy_url }}">{% trans "Privacy Policy" %}</a>
+        <a href="{{ seo.terms_url }}">{% trans "Terms of Service" %}</a>
         <a href="https://github.com/Alexandru2984/pdf_Editor_v2" target="_blank" rel="noopener">{% trans "Open source" %} (MIT)</a>
     </footer>
 
