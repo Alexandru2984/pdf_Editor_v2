@@ -394,10 +394,10 @@ service needed.
   api_key/user/anon × read/op/upload. Each viewset/action picks its bucket;
   uploads cap at 60/h on API keys, anon ops at 10/h.
 - **CSRF** on every state-changing endpoint, including JSON POSTs.
-- **Strict CSP** — nonce-based script policy set per-request by middleware
-  (no `unsafe-inline`/`unsafe-eval` for scripts); violations POST to
-  `/csp-report/` (logged + Prometheus counter). Host nginx keeps a baseline
-  policy for the admin/API paths.
+- **Route-aware CSP** — nonce-based scripts on app pages and the self-hosted
+  Swagger/Redoc UIs, an inert-document policy on JSON API routes, and a
+  same-origin baseline for Django Admin. Violations POST to `/csp-report/`
+  (logged + Prometheus counter); API documentation loads no CDN code.
 - **MFA** — TOTP with replay protection and single-use backup codes;
   **passkeys** (WebAuthn, discoverable credentials, user verification
   required); session manager with per-device revoke, "sign out everywhere

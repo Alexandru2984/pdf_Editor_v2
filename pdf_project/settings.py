@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     "axes",
     "rest_framework",
     "drf_spectacular",
+    "drf_spectacular_sidecar",
     "django_prometheus",
     "pdfeditor",
 ]
@@ -89,6 +90,17 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
+    ],
+    # Production exposes the explicit Swagger/Redoc pages below; the DRF
+    # browsable renderer adds another HTML/JavaScript surface to every API
+    # endpoint. Keep it only for local development and the test suite.
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+        *(
+            ["rest_framework.renderers.BrowsableAPIRenderer"]
+            if DEBUG or TESTING
+            else []
+        ),
     ],
     # Throttle classes — empty list when RATELIMIT_ENABLE=0 (load testing).
     # The scoped throttle picks a rate at request time from the
@@ -176,6 +188,9 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SCHEMA_PATH_PREFIX": "/api/v1",
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
     "TAGS": [
         {"name": "PDFs", "description": "Upload and manage source PDFs"},
         {"name": "Operations", "description": "Run a PDF processing operation"},

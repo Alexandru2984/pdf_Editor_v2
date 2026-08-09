@@ -642,10 +642,9 @@ class CspReportEndpointTests(TestCase):
         self.assertIn("report-to csp-endpoint", resp["Content-Security-Policy"])
         self.assertEqual(resp["Reporting-Endpoints"], 'csp-endpoint="/csp-report/"')
 
-    def test_reporting_header_absent_on_skipped_paths(self):
-        """Admin/API paths get no strict CSP, so no Reporting-Endpoints either."""
+    def test_reporting_header_present_on_admin(self):
         resp = SecurityHeadersMiddleware(lambda req: HttpResponse("ok"))(RequestFactory().get("/admin/"))
-        self.assertNotIn("Reporting-Endpoints", resp)
+        self.assertEqual(resp["Reporting-Endpoints"], 'csp-endpoint="/csp-report/"')
 
     def test_policy_has_no_wildcard_or_eval_script_origins(self):
         """*.cloudflare.com covers cdnjs — a public CDN, i.e. a CSP bypass."""
@@ -717,10 +716,27 @@ class CspMiddlewareTests(SimpleTestCase):
         self.assertNotIn("unpkg.com", csp)  # no third-party CDN scripts (supply chain)
         self.assertIn("style-src 'self' 'unsafe-inline'", csp)  # styles intentionally keep it
 
-    def test_admin_and_api_are_skipped(self):
-        for path in ("/admin/", "/admin/health/", "/api/v1/docs/"):
-            resp, _ = self._csp(path)
-            self.assertFalse(resp.has_header("Content-Security-Policy"), path)
+    def test_admin_gets_same_origin_baseline_policy(self):
+        csp = self._csp("/admin/")[0]["Content-Security-Policy"]
+        self.assertIn("default-src 'self'", csp)
+        self.assertIn("object-src 'none'", csp)
+        self.assertIn("frame-ancestors 'none'", csp)
+        self.assertNotIn("https:", csp)
+
+    def test_api_gets_inert_document_policy(self):
+        csp = self._csp("/api/v1/schema/")[0]["Content-Security-Policy"]
+        self.assertIn("default-src 'none'", csp)
+        self.assertIn("sandbox", csp)
+
+    def test_api_docs_get_nonce_policy(self):
+        resp, req = self._csp("/api/v1/docs/")
+        csp = resp["Content-Security-Policy"]
+        self.assertIn(f"script-src 'self' 'nonce-{req.csp_nonce}'", csp)
+        self.assertNotIn("jsdelivr", csp)
+
+    def test_custom_admin_health_page_keeps_app_policy(self):
+        csp = self._csp("/admin/health/")[0]["Content-Security-Policy"]
+        self.assertIn("analytics.micutu.com", csp)
 
     def test_nonce_is_unique_per_request(self):
         _, r1 = self._csp("/")
@@ -754,6 +770,23 @@ class CspRenderTests(TestCase):
             if 'type="application/json"' in tag:
                 continue  # data island, not executed — no nonce needed
             self.assertIn(f'nonce="{nonce}"', tag)
+
+    def test_api_documentation_is_self_hosted_and_inline_scripts_are_nonces(self):
+        for path in ("/api/v1/docs/", "/api/v1/redoc/"):
+            with self.subTest(path=path):
+                resp = self.client.get(path)
+                self.assertEqual(resp.status_code, 200)
+
+                match = re.search(r"nonce-([A-Za-z0-9_-]+)", resp["Content-Security-Policy"])
+                self.assertIsNotNone(match)
+                nonce = match.group(1)
+                body = resp.content.decode()
+
+                self.assertIn("/static/drf_spectacular_sidecar/", body)
+                self.assertNotIn("cdn.jsdelivr.net", body)
+                self.assertNotIn("fonts.googleapis.com", body)
+                for tag in re.findall(r"<script(?![^>]*\bsrc=)[^>]*>", body):
+                    self.assertIn(f'nonce="{nonce}"', tag)
 
 
 # --------------------------------------------------------------------------

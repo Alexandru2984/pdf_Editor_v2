@@ -144,11 +144,34 @@ _REPORTING_ENDPOINTS = 'csp-endpoint="/csp-report/"'
 # server / e2e it would force subresources to https://localhost and break them.
 _CSP_HTTPS_SUFFIX = "; upgrade-insecure-requests"
 
-# Paths skipped by the strict CSP: Django admin and the DRF/Swagger API UIs
-# render third-party inline scripts we don't control. They keep relying on the
-# host nginx CSP (which still carries 'unsafe-inline'); applying the nonce
-# policy here would break them.
-_CSP_SKIP_PREFIXES = ("/admin/", "/api/")
+# Django Admin uses a handful of framework-owned inline data/script blocks
+# without a nonce. Restrict them to same-origin resources; this is still a
+# material boundary compared with leaving the route without any CSP.
+_ADMIN_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data:; font-src 'self' data:; connect-src 'self'; "
+    "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
+    "report-uri /csp-report/; report-to csp-endpoint"
+)
+
+# API responses are JSON/files in production. The browsable renderer is
+# disabled there, so no active content is required at API endpoints.
+_API_CSP = (
+    "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; "
+    "sandbox; report-uri /csp-report/; report-to csp-endpoint"
+)
+
+# Swagger and Redoc use self-hosted sidecar assets. Their small bootstrap
+# scripts are overridden in project templates to carry this request nonce.
+_API_DOCS_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'nonce-{nonce}'; script-src-elem 'self' 'nonce-{nonce}'; "
+    "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
+    "font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; "
+    "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
+    "report-uri /csp-report/; report-to csp-endpoint"
+)
 
 
 class SecurityHeadersMiddleware:
@@ -164,9 +187,22 @@ class SecurityHeadersMiddleware:
 
         self.permissions_policy = getattr(settings, "PERMISSIONS_POLICY", _DEFAULT_PERMISSIONS_POLICY)
         self.csp_template = getattr(settings, "CSP_POLICY", _DEFAULT_CSP)
-        if getattr(settings, "SECURE_SSL", False):
-            self.csp_template += _CSP_HTTPS_SUFFIX
-        self.csp_skip_prefixes = tuple(getattr(settings, "CSP_SKIP_PREFIXES", _CSP_SKIP_PREFIXES))
+        self.admin_csp_template = getattr(settings, "CSP_ADMIN_POLICY", _ADMIN_CSP)
+        self.api_csp_template = getattr(settings, "CSP_API_POLICY", _API_CSP)
+        self.api_docs_csp_template = getattr(settings, "CSP_API_DOCS_POLICY", _API_DOCS_CSP)
+        self.secure_ssl = getattr(settings, "SECURE_SSL", False)
+        # Explicit emergency escape hatch only. No route is skipped by
+        # default, including Admin and the API.
+        self.csp_skip_prefixes = tuple(getattr(settings, "CSP_SKIP_PREFIXES", ()))
+
+    def _policy_for_path(self, path: str) -> str:
+        if path in ("/api/v1/docs/", "/api/v1/redoc/"):
+            return self.api_docs_csp_template
+        if path.startswith("/api/"):
+            return self.api_csp_template
+        if path.startswith("/admin/") and path != "/admin/health/":
+            return self.admin_csp_template
+        return self.csp_template
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         nonce = secrets.token_urlsafe(16)
@@ -174,8 +210,12 @@ class SecurityHeadersMiddleware:
         response = self.get_response(request)
         if self.permissions_policy:
             response.setdefault("Permissions-Policy", self.permissions_policy)
-        if self.csp_template and not request.path.startswith(self.csp_skip_prefixes):
-            response.setdefault("Content-Security-Policy", self.csp_template.replace("{nonce}", nonce))
+        skipped = self.csp_skip_prefixes and request.path.startswith(self.csp_skip_prefixes)
+        policy = self._policy_for_path(request.path)
+        if policy and not skipped:
+            if self.secure_ssl:
+                policy += _CSP_HTTPS_SUFFIX
+            response.setdefault("Content-Security-Policy", policy.replace("{nonce}", nonce))
             response.setdefault("Reporting-Endpoints", _REPORTING_ENDPOINTS)
         return response
 
