@@ -82,7 +82,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       # Vulnerability scan on the freshly-built image. Fails the job on
-      # CRITICAL OS-package CVEs so we don't ship a known-vulnerable
+      # HIGH/CRITICAL OS or library CVEs so we don't ship a known-vulnerable
       # container to prod. Pinned to the image we just pushed by short_sha.
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0

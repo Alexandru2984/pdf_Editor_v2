@@ -74,12 +74,7 @@ jobs:
 
       - name: Run pip-audit (dep CVEs)
         if: matrix.python-version == '3.12'
-        # Temporary, narrowly-scoped waiver: cryptography 50.0.0 (the fixed
-        # release) is not stable yet and this app never calls the affected
-        # PKCS#7 decryption API. See docs/SECURITY_WAIVERS.md.
-        run: >-
-          pip-audit --requirement requirements.lock --strict
-          --ignore-vuln PYSEC-2026-3552
+        run: pip-audit --requirement requirements.lock --strict
 
       - name: Run tests with coverage
         env:

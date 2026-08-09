@@ -5,9 +5,14 @@ All notable changes to PDF Editor are documented here. The format follows
 continuously to <https://pdf.micutu.com> rather than tagging releases, so
 entries are grouped by the period the work landed.
 
-## [Unreleased] — production-finish sweep (2026-07)
+## [Unreleased] — production-finish sweep (2026-07–08)
 
 ### Security
+- **Container vulnerability gate restored** — upgraded `cryptography` to
+  50.0.0 for CVE-2026-69247, removed the matching temporary `pip-audit`
+  waiver, and removed build-only `pip` (including its vendored
+  msgpack/setuptools code) from the runtime image. The CI-parity Trivy scan is
+  clean at HIGH/CRITICAL severity.
 - **Pillow 12.2.0 → 12.3.0** — patches five CVEs (PYSEC-2026-2253..2257)
   disclosed 2026-07-13; the CI `pip-audit` gate caught it. Lockfile regenerated
   with only Pillow changed.

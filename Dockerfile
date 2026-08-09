@@ -41,8 +41,11 @@ COPY requirements.txt requirements.lock ./
 # typosquatted PyPI mirror can't slip an altered wheel into the image, and
 # every build is byte-for-byte reproducible. requirements.lock is generated
 # from requirements.txt (see that file's header); gunicorn is included there.
+# pip and its vendored build dependencies are not needed by the application at
+# runtime, so remove them after installation to reduce the image attack surface.
 RUN python -m pip install --upgrade pip \
-    && pip install --require-hashes -r requirements.lock
+    && pip install --require-hashes -r requirements.lock \
+    && python -m pip uninstall --yes pip setuptools wheel
 
 COPY . .
 

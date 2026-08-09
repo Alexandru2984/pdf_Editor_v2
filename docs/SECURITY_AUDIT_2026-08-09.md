@@ -260,14 +260,15 @@ trusted solely because a familiar tag exists.
 - Ruff lint and formatting for the same paths as CI: passed (96 Python files);
 - `makemigrations --check --dry-run`: no missing model changes;
 - Bandit SAST: no reportable finding;
-- `pip-audit --strict`: no known vulnerability, one documented temporary waiver;
+- `pip-audit --strict`: no known vulnerability and no active waiver after the
+  `cryptography` 50.0.0 follow-up;
 - Gitleaks 8.30.1: 19 commits / about 7.75 MB scanned, no leak found;
 - Trivy 0.72 binary checksum and Sigstore bundle: verified;
 - Trivy Dockerfile configuration: 0 HIGH/CRITICAL;
 - Trivy built-image OS packages: 0 HIGH/CRITICAL;
-- Trivy language finding: the documented `cryptography` waiver. Two additional
-  packages reported from a third-party base SBOM were proven absent from the
-  actual root filesystem and treated as scanner false positives;
+- CI-parity Trivy 0.70 image scan after upgrading `cryptography` and removing
+  build-only `pip` from the runtime filesystem: 0 HIGH/CRITICAL OS or library
+  findings;
 - live origin request from outside the trusted path: denied;
 - live public readiness after infrastructure changes: healthy;
 - live web replicas and worker: running under current gVisor with zero restarts
