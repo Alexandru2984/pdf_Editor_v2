@@ -62,6 +62,20 @@ class SeoTests(TestCase):
             self.assertEqual(image.size, (1200, 630))
         self.assertLessEqual(path.stat().st_size, 200_000)
 
+    def test_search_console_verification_meta_is_opt_in_and_escaped(self):
+        response = self.client.get(reverse("dashboard_en"))
+        self.assertNotContains(response, 'name="google-site-verification"')
+
+        with self.settings(GOOGLE_SITE_VERIFICATION='token_1234567890" unsafe="value'):
+            response = self.client.get(reverse("dashboard_en"))
+
+        self.assertContains(response, 'name="google-site-verification"')
+        self.assertContains(
+            response,
+            'content="token_1234567890&quot; unsafe=&quot;value"',
+        )
+        self.assertNotContains(response, 'content="token_1234567890" unsafe="value"')
+
     def test_romanian_request_gets_localized_metadata(self):
         response = self.client.get(reverse("dashboard_ro"), HTTP_ACCEPT_LANGUAGE="en")
 

@@ -410,6 +410,7 @@ def seo_context(request: HttpRequest) -> dict[str, dict[str, object]]:
         "verify_signature_url": reverse(f"verify_signature_{language}"),
         "language_switch_url": request.get_full_path(),
         "analytics_enabled": bool(getattr(settings, "ANALYTICS_ENABLED", False)),
+        "google_site_verification": str(getattr(settings, "GOOGLE_SITE_VERIFICATION", "")).strip(),
     }
     if indexable and page is not None:
         canonical = _url_for(page)

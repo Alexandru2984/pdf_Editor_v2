@@ -14,6 +14,9 @@
     <title>{% block title %}{{ seo.title }}{% endblock %}</title>
     <meta name="description" content="{{ seo.description }}">
     <meta name="robots" content="{{ seo.robots }}">
+    {% if seo.google_site_verification %}
+    <meta name="google-site-verification" content="{{ seo.google_site_verification }}">
+    {% endif %}
     {% if seo.canonical %}
     <link rel="canonical" href="{{ seo.canonical }}">
     {% for alternate in seo.alternates %}

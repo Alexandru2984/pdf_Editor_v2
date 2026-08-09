@@ -33,6 +33,10 @@ DEBUG = env_bool("DEBUG", False)
 # generate noisy CORS failures or synthetic page views in local/test runs.
 ANALYTICS_ENABLED = env_bool("ANALYTICS_ENABLED", not DEBUG) and not TESTING
 
+# Optional URL-prefix ownership token from Google Search Console. Domain
+# properties use DNS verification instead and leave this empty.
+GOOGLE_SITE_VERIFICATION = os.environ.get("GOOGLE_SITE_VERIFICATION", "").strip()
+
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
 # Comma-separated in the env; localhost origins belong in a dev .env, not here.
