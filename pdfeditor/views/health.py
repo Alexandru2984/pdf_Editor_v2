@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 
 from django.contrib.admin.views.decorators import staff_member_required
@@ -15,10 +16,18 @@ from django.utils import timezone
 
 from ..models import ProcessedPDF, UploadedPDF
 
+logger = logging.getLogger(__name__)
+
+
+def _json_health(payload: dict, *, status: int = 200) -> JsonResponse:
+    response = JsonResponse(payload, status=status)
+    response["Cache-Control"] = "no-store"
+    return response
+
 
 def healthz(request: HttpRequest) -> JsonResponse:
     """Lightweight liveness check — always 200 if the process is alive."""
-    return JsonResponse({"status": "ok"})
+    return _json_health({"status": "ok"})
 
 
 def readyz(request: HttpRequest) -> JsonResponse:
@@ -41,8 +50,9 @@ def readyz(request: HttpRequest) -> JsonResponse:
             cur.execute("SELECT 1")
             cur.fetchone()
         checks["database"] = "ok"
-    except Exception as exc:  # noqa: BLE001 — readiness must never itself 500
-        checks["database"] = f"error: {exc}"
+    except Exception:  # noqa: BLE001 — readiness must never itself 500
+        logger.warning("Readiness database check failed", exc_info=True)
+        checks["database"] = "error"
         overall_ok = False
 
     # Redis reachability through Django's cache — the same Redis server also
@@ -57,13 +67,14 @@ def readyz(request: HttpRequest) -> JsonResponse:
             raise RuntimeError("cache round-trip returned unexpected value")
         cache.delete(canary)
         checks["redis"] = "ok"
-    except Exception as exc:  # noqa: BLE001
-        checks["redis"] = f"error: {exc}"
+    except Exception:  # noqa: BLE001
+        logger.warning("Readiness cache check failed", exc_info=True)
+        checks["redis"] = "error"
         overall_ok = False
 
     if not overall_ok:
-        return JsonResponse({"status": "degraded", "checks": checks}, status=503)
-    return JsonResponse({"status": "ok", "checks": checks})
+        return _json_health({"status": "degraded", "checks": checks}, status=503)
+    return _json_health({"status": "ok", "checks": checks})
 
 
 @staff_member_required

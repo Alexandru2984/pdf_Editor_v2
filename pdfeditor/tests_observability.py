@@ -77,6 +77,7 @@ class HealthEndpointTests(TestCase):
         resp = self.client.get(reverse("healthz"))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["status"], "ok")
+        self.assertEqual(resp["Cache-Control"], "no-store")
 
     def test_healthz_emits_request_id_header(self):
         resp = self.client.get(reverse("healthz"))
@@ -101,7 +102,9 @@ class HealthEndpointTests(TestCase):
         self.assertEqual(resp.status_code, 503)
         body = resp.json()
         self.assertEqual(body["status"], "degraded")
-        self.assertIn("connection refused", body["checks"]["database"])
+        self.assertEqual(body["checks"]["database"], "error")
+        self.assertNotContains(resp, "connection refused", status_code=503)
+        self.assertEqual(resp["Cache-Control"], "no-store")
 
     def test_readyz_returns_503_when_redis_fails(self):
         with patch("pdfeditor.views.health.cache") as mock_cache:
@@ -112,7 +115,8 @@ class HealthEndpointTests(TestCase):
         body = resp.json()
         self.assertEqual(body["status"], "degraded")
         self.assertEqual(body["checks"]["database"], "ok")
-        self.assertIn("redis down", body["checks"]["redis"])
+        self.assertEqual(body["checks"]["redis"], "error")
+        self.assertNotContains(resp, "redis down", status_code=503)
 
 
 class AdminHealthDashboardTests(TestCase):
