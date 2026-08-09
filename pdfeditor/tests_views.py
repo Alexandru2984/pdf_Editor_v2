@@ -1910,6 +1910,31 @@ class ServeMediaViewTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 404)
 
 
+class UploadedPdfPreviewTests(_ViewTestBase):
+    def test_preview_is_owner_scoped_and_not_cached(self):
+        pdf = self.upload_and_get_pdf()
+        url = reverse("pdf_preview", args=[pdf.id])
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertEqual(response["Cache-Control"], "private, no-store")
+        self.assertIn("inline", response["Content-Disposition"])
+        self.assertEqual(Client().get(url).status_code, 404)
+
+    def test_encrypted_upload_cannot_be_previewed(self):
+        from .models import UploadedPDF
+
+        self.client.post(
+            reverse("upload"),
+            {"pdf_file": _make_encrypted_uploaded()},
+        )
+        pdf = UploadedPDF.objects.get(name="encrypted.pdf")
+
+        response = self.client.get(reverse("pdf_preview", args=[pdf.id]))
+        self.assertEqual(response.status_code, 404)
+
+
 # ---- Form fill --------------------------------------------------------------
 
 

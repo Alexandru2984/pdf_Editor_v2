@@ -223,3 +223,22 @@ def thumbnail_view(request, pdf_id):
     response = FileResponse(open(thumb_path, "rb"), content_type="image/jpeg")  # noqa: SIM115
     response["Cache-Control"] = "private, max-age=3600"
     return response
+
+
+def uploaded_pdf_preview_view(request, pdf_id):
+    """Stream a sanitized source PDF through an opaque, owner-scoped URL."""
+    pdf = UploadedPDF.objects.filter(
+        owner_filter(request),
+        id=pdf_id,
+        ingest_status=UploadedPDF.INGEST_SANITIZED,
+    ).first()
+    if pdf is None or not pdf.exists_on_disk():
+        raise Http404
+
+    response = FileResponse(
+        open(pdf.path, "rb"),  # noqa: SIM115 — FileResponse owns the handle
+        content_type="application/pdf",
+        filename=pdf.name,
+    )
+    response["Cache-Control"] = "private, no-store"
+    return response

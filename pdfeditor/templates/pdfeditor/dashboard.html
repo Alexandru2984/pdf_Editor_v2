@@ -253,7 +253,7 @@
             {% for pdf in uploaded_pdfs %}
             <div class="pdf-item-card">
                 {% if pdf.is_processable %}
-                <button type="button" data-pdf-modal="/media/uploads/{{ pdf.name }}" class="pdf-item-thumb" aria-label="{% blocktrans with name=pdf.name %}Preview {{ name }}{% endblocktrans %}">
+                <button type="button" data-pdf-modal="{% url 'pdf_preview' pdf.id %}" class="pdf-item-thumb" aria-label="{% blocktrans with name=pdf.name %}Preview {{ name }}{% endblocktrans %}">
                     <img src="{% url 'pdf_thumbnail' pdf.id %}" alt="" loading="lazy" data-remove-on-error>
                     <span class="pdf-item-thumb-overlay" aria-hidden="true">👁️ {% trans "Preview" %}</span>
                 </button>
@@ -272,7 +272,7 @@
                 </div>
                 <div class="pdf-item-actions">
                     {% if pdf.is_processable %}
-                    <button data-pdf-modal="/media/uploads/{{ pdf.name }}" class="btn btn-preview pdf-item-btn">👁️ {% trans "Preview" %}</button>
+                    <button data-pdf-modal="{% url 'pdf_preview' pdf.id %}" class="btn btn-preview pdf-item-btn">👁️ {% trans "Preview" %}</button>
                     {% else %}
                     <a href="{% url 'unprotect' %}?pdf={{ pdf.id }}" class="btn btn-primary pdf-item-btn">🔓 {% trans "Remove Password" %}</a>
                     {% endif %}

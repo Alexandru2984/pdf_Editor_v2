@@ -151,7 +151,7 @@ from .share import (
     revoke_share_link_view,
     share_links_view,
 )
-from .upload import dashboard_view, delete_pdf_view, thumbnail_view, upload_view
+from .upload import dashboard_view, delete_pdf_view, thumbnail_view, upload_view, uploaded_pdf_preview_view
 from .webhooks import (
     create_webhook_view,
     delete_webhook_view,
@@ -174,6 +174,7 @@ __all__ = [
     "upload_view",
     "delete_pdf_view",
     "thumbnail_view",
+    "uploaded_pdf_preview_view",
     "edit_view",
     "result_view",
     "download_view",
