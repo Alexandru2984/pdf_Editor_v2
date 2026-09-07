@@ -21,13 +21,13 @@ def _lang_suffix() -> str:
     return lang if lang in _SUPPORTED else "en"
 
 
-@localized_public_view
+@localized_public_view("privacy")
 @require_safe
 def privacy_view(request: HttpRequest) -> HttpResponse:
     return render(request, f"pdfeditor/legal/privacy_{_lang_suffix()}.html")
 
 
-@localized_public_view
+@localized_public_view("terms")
 @require_safe
 def terms_view(request: HttpRequest) -> HttpResponse:
     return render(request, f"pdfeditor/legal/terms_{_lang_suffix()}.html")

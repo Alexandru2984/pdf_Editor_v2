@@ -103,15 +103,19 @@ class UploadViewExtraTests(_ViewTestBase):
     """Beyond what tests.py covers — page-count limit, magic-byte rejection, multi-file."""
 
     def test_dashboard_renders_empty(self):
-        resp = self.client.get(reverse("dashboard"))
+        resp = self.client.get(reverse("dashboard"), follow=True)
         self.assertEqual(resp.status_code, 200)
 
     def test_anonymous_dashboard_does_not_create_session(self):
+        # A fresh anonymous visit to the bare route permanently redirects to
+        # the negotiated language (see `_localization.language_redirect`) —
+        # check the redirect itself doesn't create a session, since that
+        # would flip every later visit to render directly instead.
         before = Session.objects.count()
 
         resp = self.client.get(reverse("dashboard"))
 
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 301)
         self.assertEqual(Session.objects.count(), before)
         self.assertNotIn(settings.SESSION_COOKIE_NAME, resp.cookies)
 
@@ -513,7 +517,7 @@ def _img_upload(name, size=(40, 30), color=(200, 50, 50, 255), fmt="PNG", mode="
 
 class ImagesToPdfViewTests(_ViewTestBase):
     def test_get_renders(self):
-        resp = self.client.get(reverse("images_to_pdf"))
+        resp = self.client.get(reverse("images_to_pdf"), follow=True)
         self.assertEqual(resp.status_code, 200)
 
     def test_full_workflow_single_png_auto(self):
@@ -2178,7 +2182,7 @@ class VerifySignatureViewTests(_ViewTestBase):
         self.client = Client()
 
     def test_get_renders_form(self):
-        resp = self.client.get(reverse("verify_signature"))
+        resp = self.client.get(reverse("verify_signature"), follow=True)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Verify signature")
 

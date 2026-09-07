@@ -234,7 +234,7 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
             with self.subTest(source=source, language=language):
                 response = Client().get(source, HTTP_ACCEPT_LANGUAGE=language)
 
-                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.status_code, 301)
                 self.assertEqual(response.url, destination)
                 self.assertEqual(response["X-Robots-Tag"], NOINDEX_ROBOTS)
                 self.assertEqual(response["Cache-Control"], "private, no-store")

@@ -209,7 +209,7 @@ class OwnershipScopingTests(_AuthTestBase):
         _upload(self.client, name="alice_only.pdf")
         self.client.logout()
 
-        resp = self.client.get(reverse("dashboard"))
+        resp = self.client.get(reverse("dashboard"), follow=True)
         self.assertEqual(resp.status_code, 200)
         self.assertNotContains(resp, "alice_only.pdf")
 

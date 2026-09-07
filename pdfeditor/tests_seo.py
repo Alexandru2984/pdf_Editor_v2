@@ -131,14 +131,33 @@ class SeoTests(TestCase):
         self.assertEqual(response["X-Robots-Tag"], NOINDEX_ROBOTS)
         self.assertContains(response, f'<meta name="robots" content="{NOINDEX_ROBOTS}">', html=True)
 
-    def test_generic_public_routes_are_noindex_x_default_fallbacks(self):
+    def test_generic_public_routes_permanently_redirect_to_negotiated_language(self):
         for url_name in ("dashboard", "privacy", "terms", "images_to_pdf", "verify_signature"):
             with self.subTest(url_name=url_name):
-                response = Client().get(reverse(url_name))
+                response = Client().get(reverse(url_name), HTTP_ACCEPT_LANGUAGE="en")
 
-                self.assertEqual(response.status_code, 200)
-                self.assertEqual(response["X-Robots-Tag"], NOINDEX_ROBOTS)
-                self.assertNotContains(response, 'rel="canonical"')
+                self.assertEqual(response.status_code, 301)
+                self.assertEqual(response.url, reverse(f"{url_name}_en"))
+                self.assertEqual(response["Cache-Control"], "private, no-store")
+
+    def test_authenticated_or_session_scoped_dashboard_bypasses_the_redirect(self):
+        # The bare "dashboard" route also serves in-app "back to dashboard"
+        # links for real users; only a fresh anonymous visit — the case that
+        # actually reaches search engines — should be redirected.
+        user = get_user_model().objects.create_user(username="seo-user-2", password="test-password")
+        authenticated_client = Client()
+        authenticated_client.force_login(user)
+        response = authenticated_client.get(reverse("dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["X-Robots-Tag"], NOINDEX_ROBOTS)
+
+        session_client = Client()
+        session = session_client.session
+        session["owner_state"] = "present"
+        session.save()
+        response = session_client.get(reverse("dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["X-Robots-Tag"], NOINDEX_ROBOTS)
 
     def test_core_localized_pages_publish_reciprocal_hreflang(self):
         for group in ("dashboard", "privacy", "terms", "images_to_pdf", "verify_signature"):

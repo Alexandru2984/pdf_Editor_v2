@@ -47,7 +47,7 @@ def _generate_thumbnail(pdf_path: str, thumb_path: str) -> bool:
         return False
 
 
-@localized_public_view
+@localized_public_view("dashboard", redirect_only_fresh_visits=True)
 def dashboard_view(request):
     quota = storage_quota(request)
     used = storage_usage(request)

@@ -6,14 +6,14 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from django.http import Http404, HttpRequest, HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from django.urls import reverse
 from django.utils import translation
-from django.utils.cache import patch_vary_headers
 from django.utils.translation import get_language
 from django.views.decorators.http import require_safe
 
 from ..tool_catalog import DIRECT_TOOL_LINKS, TOOL_LANDINGS, TOOL_LANDINGS_BY_SLUG
+from ._localization import language_redirect
 
 _UI = {
     "en": {
@@ -118,20 +118,11 @@ def _hub_cards(language: str) -> list[dict[str, object]]:
     return cards
 
 
-def _language_redirect(url_name: str) -> HttpResponse:
-    """Redirect without letting a shared cache reuse another user's locale."""
-
-    response = redirect(url_name, permanent=False)
-    response["Cache-Control"] = "private, no-store"
-    patch_vary_headers(response, ("Accept-Language", "Cookie"))
-    return response
-
-
 @require_safe
 def tools_hub_view(request: HttpRequest, language: str | None = None) -> HttpResponse:
     if language not in {"en", "ro"}:
         selected_language = marketing_language()
-        return _language_redirect(f"tools_hub_{selected_language}")
+        return language_redirect(f"tools_hub_{selected_language}")
 
     with translation.override(language):
         cards = _hub_cards(language)
@@ -161,7 +152,7 @@ def tool_landing_view(
 
     if language not in {"en", "ro"}:
         selected_language = marketing_language()
-        return _language_redirect(definition.localized_url_name(selected_language))
+        return language_redirect(definition.localized_url_name(selected_language))
 
     with translation.override(language):
         tool = definition.localized(language)

@@ -34,7 +34,7 @@ class LegalPagesTests(TestCase):
         self.assertContains(response, "Termenii serviciului")
 
     def test_unknown_language_falls_back_to_english(self):
-        response = self.client.get(reverse("privacy"), HTTP_ACCEPT_LANGUAGE="de")
+        response = self.client.get(reverse("privacy"), HTTP_ACCEPT_LANGUAGE="de", follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Privacy Policy")
 
