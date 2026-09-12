@@ -64,6 +64,10 @@ jobs:
           ruff check pdfeditor/ pdf_project/
           ruff format --check pdfeditor/ pdf_project/
 
+      - name: Verify Docker excludes secrets and user media
+        if: matrix.python-version == '3.12'
+        run: python scripts/check_build_context.py
+
       - name: Run mypy
         if: matrix.python-version == '3.12'
         run: mypy pdfeditor/

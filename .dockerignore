@@ -1,5 +1,7 @@
 .git
 .github
+.claude
+.codex
 .venv
 venv/
 env/
@@ -10,6 +12,8 @@ __pycache__/
 *.pyo
 *.pyd
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .coverage
 coverage.xml
 htmlcov/
@@ -18,16 +22,23 @@ db.sqlite3
 db.sqlite3-journal
 *.log
 
-media/uploads/*
-!media/uploads/.gitkeep
-media/processed/*
-!media/processed/.gitkeep
-media/temp/*
-!media/temp/.gitkeep
+# User documents, previews and future media subdirectories never enter images.
+media/
 staticfiles/
 
-.env
-.env.local
+# Backups and environment variants contain the same secrets as .env itself.
+.env*
+**/.env*
+*.bak*
+**/*.bak*
+*.pem
+**/*.pem
+*.key
+**/*.key
+*.p12
+**/*.p12
+*.pfx
+**/*.pfx
 
 .vscode/
 .idea/

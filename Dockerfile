@@ -47,7 +47,14 @@ RUN python -m pip install --upgrade pip \
     && pip install --require-hashes -r requirements.lock \
     && python -m pip uninstall --yes pip setuptools wheel
 
-COPY . .
+# Copy only application inputs. Local VPS backups, user documents, editor
+# metadata and deployment credentials must never become image layers, even
+# when an operator builds from a populated production checkout.
+COPY manage.py ./
+COPY pdf_project/ ./pdf_project/
+COPY pdfeditor/ ./pdfeditor/
+COPY static/ ./static/
+COPY locale/ ./locale/
 
 RUN useradd --create-home --shell /bin/bash app \
     && mkdir -p /app/media/uploads /app/media/processed /app/staticfiles /app/data /app/data/fastembed \

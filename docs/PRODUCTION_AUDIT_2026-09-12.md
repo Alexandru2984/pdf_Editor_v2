@@ -64,6 +64,17 @@ Each row records problem/evidence, failure scenario, treatment, regression risk,
 verification and approximate scope/dependencies. Priority can change when a
 reproducer establishes impact. Tests use synthetic objects and offline peers.
 
+**New immediate finding A17 / P0 containment:** the running application image
+contains `/app/.env.bak-mailcow-20260816T221809Z` (mode 0600). Its values were not
+printed. The previous `.dockerignore` omitted backup environment files and media
+thumbnails, while `COPY . .` included everything left in the build context.
+Exclude all local environments/backups/media and allowlist runtime COPY inputs.
+Regression risk is missing runtime assets; verify an isolated exported build
+context and application image before rollout. Scope: small build fix, then image
+provenance/exposure review. Do not assume registry exposure or rotate shared
+credentials without evidence. Existing layers and rollback images remain
+sensitive even after a new Dockerfile is committed.
+
 | ID / priority | Problem, evidence and scenario | Fix and affected components | Risk, tests, scope and dependencies |
 | --- | --- | --- | --- |
 | A01 / P0 candidate → P1 confirmed source flaw | `email_utils.py` uses Django's password-reset generator for confirmation; `confirm_email_view` logs in directly, including active users. A password-reset token may be redeemable at the confirmation route to bypass MFA or reactivate a disabled account. Existing comments/tests incorrectly claim the default generator binds `is_active`. | Separate activation token purpose and account state; refuse active-user activation; retain MFA at activation; serialize consumption. | Medium: pending activation links need resend; password reset must continue unchanged. Reproduce cross-purpose use, replay, inactive/active accounts and concurrent consumption. Small, first code stage. |
@@ -145,6 +156,23 @@ reproducer establishes impact. Tests use synthetic objects and offline peers.
   sqlparse, including duplicate sqlparse entries: 8 unique advisory IDs. Patched
   floors reported are Django 5.2.17, DRF 3.17.2 and sqlparse 0.6.0. Reachability
   must be assessed separately; a scanner match is not proof of exploitability.
+
+### A17 — build-context containment
+
+- Excluded environment variants/backups, private key files, editor metadata,
+  caches and the entire media tree. Dockerfile now copies only explicit runtime
+  inputs, preserving application code/templates/migrations/static/locale.
+- Added `scripts/check_build_context.py` to CI. It actually runs Docker against
+  synthetic secret/media fixtures and checks both ignore rules and runtime COPY
+  exports, without transferring real production data. Both checks passed.
+- The isolated test container inherited the old image's backup file; dotenv
+  loading was disabled and its internal network never reached live services.
+  On discovery, only that temporary container was replaced and the backup path
+  was masked with a read-only `/dev/null` mount before further testing.
+- Running production containers and old image layers still contain the backup.
+  Removing a file in a later layer does not remove it from earlier image layers;
+  build the release from the clean Python base, then review distribution and
+  retention of old images. No actual secret value was printed or committed.
 
 ## Reference material
 
