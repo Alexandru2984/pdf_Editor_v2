@@ -6,7 +6,7 @@ import os
 
 import fitz
 
-from ._common import BASE14_FONTS, parse_page_range, processed_dir, safe_basename, timestamp
+from ._common import BASE14_FONTS, new_output_path, parse_page_range, safe_basename, timestamp
 from ._layout import (
     detect_container_for_selection,
     erase_rect,
@@ -126,8 +126,7 @@ def rephrase_with_coordinates(
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
 
-    out_dir = processed_dir()
-    out_path = os.path.join(out_dir, f"{safe_basename(pdf_path)}_rephrased_{mode}_{timestamp()}.pdf")
+    out_path = new_output_path(f"{safe_basename(pdf_path)}_rephrased_{mode}_{timestamp()}.pdf")
     warnings: list[str] = []
 
     with fitz.open(pdf_path) as doc:
@@ -162,8 +161,7 @@ def find_and_replace_text(
     warnings: list[str] = []
     replacements = 0
 
-    out_dir = processed_dir()
-    out_path = os.path.join(out_dir, f"{safe_basename(pdf_path)}_findreplace_{mode}_{timestamp()}.pdf")
+    out_path = new_output_path(f"{safe_basename(pdf_path)}_findreplace_{mode}_{timestamp()}.pdf")
 
     with fitz.open(pdf_path) as doc:
         pages = parse_page_range(page_range, len(doc)) if page_range else list(range(len(doc)))

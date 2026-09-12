@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import fitz
 
-from ._common import processed_dir, safe_basename, timestamp
+from ._common import new_output_path, safe_basename, timestamp
 
 # Map fitz widget type constants → human-readable + UI hint.
 _FIELD_TYPE_NAMES: dict[int, str] = {
@@ -103,11 +103,7 @@ def fill_form_fields(
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
 
-    out_dir = processed_dir()
-    out_path = os.path.join(
-        out_dir,
-        f"{safe_basename(pdf_path)}_filled_{timestamp()}.pdf",
-    )
+    out_path = new_output_path(f"{safe_basename(pdf_path)}_filled_{timestamp()}.pdf")
     warnings: list[str] = []
     num_filled = 0
 

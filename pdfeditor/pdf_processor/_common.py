@@ -51,6 +51,31 @@ def processed_dir() -> str:
     return out_dir
 
 
+def new_output_path(filename: str) -> str:
+    """Reserve a distinct, private file before any processor writes output.
+
+    Owner-scoped database rows are insufficient if separate operations can
+    overwrite the same path. mkstemp uses exclusive creation even when names
+    and timestamps coincide; user-provided names remain display suffixes only.
+    """
+    if (
+        not filename
+        or filename in (".", "..")
+        or "/" in filename
+        or "\\" in filename
+        or any(ord(char) < 32 or ord(char) == 127 for char in filename)
+    ):
+        raise ValueError("Output name must be a filename without path separators.")
+    stem, extension = os.path.splitext(filename)
+    # Filesystem limits apply to encoded bytes, not Unicode character count.
+    stem = stem.encode("utf-8")[:180].decode("utf-8", errors="ignore")
+    if len(extension.encode("utf-8")) > 16:
+        raise ValueError("Invalid output file extension.")
+    fd, path = tempfile.mkstemp(prefix="output_", suffix=f"_{stem}{extension}", dir=processed_dir())
+    os.close(fd)
+    return path
+
+
 def timestamp() -> str:
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 

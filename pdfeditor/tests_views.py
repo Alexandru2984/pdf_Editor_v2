@@ -368,6 +368,42 @@ class SplitViewTests(_ViewTestBase):
 
 
 class MergeViewTests(_ViewTestBase):
+    def test_two_owners_using_the_same_name_keep_separate_files(self):
+        from pathlib import Path
+
+        from .models import ProcessedPDF, UploadedPDF
+
+        clients = (self.client, Client())
+        outputs = []
+        first_content = None
+        for number, client in enumerate(clients):
+            for part in range(2):
+                response = client.post(
+                    reverse("upload"),
+                    {
+                        "pdf_file": _make_uploaded(
+                            f"owner-{number}-{part}.pdf", text_prefix=f"Owner {number} private document"
+                        )
+                    },
+                )
+                self.assertEqual(response.status_code, 302)
+            ids = UploadedPDF.objects.filter(session_key=client.session.session_key).values_list(
+                "id", flat=True
+            )
+            response = client.post(
+                reverse("merge"),
+                {"selected_pdfs": ",".join(str(pk) for pk in ids), "output_name": "same-name"},
+            )
+            self.assertEqual(response.status_code, 302)
+            output = ProcessedPDF.objects.get(pk=client.session["merged_pdf_id"])
+            outputs.append(output)
+            if number == 0:
+                first_content = Path(output.path).read_bytes()
+        self.assertNotEqual(outputs[0].path, outputs[1].path)
+        self.assertEqual(Path(outputs[0].path).read_bytes(), first_content)
+        media_url = reverse("serve_media", args=[os.path.relpath(outputs[0].path, settings.MEDIA_ROOT)])
+        self.assertEqual(clients[1].get(media_url).status_code, 404)
+
     def test_with_one_pdf_redirects(self):
         self.upload()
         resp = self.client.get(reverse("merge"))

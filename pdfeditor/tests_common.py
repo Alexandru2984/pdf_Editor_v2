@@ -132,6 +132,21 @@ class ProcessedDirTests(TestCase):
         self.assertTrue(path.endswith("processed"))
 
 
+class OutputReservationTests(TestCase):
+    def test_long_unicode_names_fit_the_filesystem_and_remain_private(self):
+        import stat
+        import tempfile
+
+        from django.test import override_settings
+
+        from .pdf_processor._common import new_output_path
+
+        with tempfile.TemporaryDirectory() as directory, override_settings(MEDIA_ROOT=directory):
+            path = new_output_path("ă" * 255 + ".pdf")
+            self.assertLessEqual(len(os.path.basename(path).encode("utf-8")), 255)
+            self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
+
+
 class ParsePageRangeEdgeCases(TestCase):
     """Existing tests.py covers the happy paths; this targets edge cases."""
 

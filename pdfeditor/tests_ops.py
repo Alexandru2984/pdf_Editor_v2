@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import unittest
 import zipfile
+from pathlib import Path
 from unittest.mock import patch
 
 import fitz
@@ -244,6 +245,21 @@ class MergePdfsTests(_MediaRootMixin, TestCase):
         finally:
             if os.path.exists(out):
                 os.remove(out)
+
+    def test_same_output_name_cannot_overwrite_an_existing_document(self):
+        first = merge_pdfs([self.a, self.a], output_name="same-name")
+        before = Path(first).read_bytes()
+        second = merge_pdfs([self.b, self.b], output_name="same-name")
+        self.assertNotEqual(first, second)
+        self.assertEqual(Path(first).read_bytes(), before)
+        with fitz.open(first) as original, fitz.open(second) as other:
+            self.assertEqual(len(original), 4)
+            self.assertEqual(len(other), 6)
+
+    def test_processor_rejects_output_path_traversal(self):
+        for name in ("../escape", "/tmp/escape", "..\\escape", "nested/escape"):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                merge_pdfs([self.a, self.b], output_name=name)
 
     def test_merge_too_few_files_raises(self):
         with self.assertRaises(ValueError):

@@ -15,7 +15,7 @@ from collections.abc import Callable
 import fitz
 from PIL import Image as PILImage
 
-from ._common import parse_page_range, processed_dir, safe_basename, sanitize_pdf, timestamp
+from ._common import new_output_path, parse_page_range, safe_basename, sanitize_pdf, timestamp
 
 # Resolve ghostscript binary up-front so PDF/A conversion fails fast with a
 # clear message in environments where it isn't installed.
@@ -56,7 +56,6 @@ def split_pdf(pdf_path: str, ranges: list[tuple[int, int]]) -> list[str]:
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
 
     with fitz.open(pdf_path) as doc:
@@ -71,7 +70,7 @@ def split_pdf(pdf_path: str, ranges: list[tuple[int, int]]) -> list[str]:
             new_doc.insert_pdf(doc, from_page=start - 1, to_page=end - 1)
 
             suffix = f"pages_{start}-{end}" if len(ranges) == 1 else f"part{idx}_pages_{start}-{end}"
-            out_path = os.path.join(out_dir, f"{base}_{suffix}_{timestamp()}.pdf")
+            out_path = new_output_path(f"{base}_{suffix}_{timestamp()}.pdf")
 
             new_doc.save(out_path, garbage=4, deflate=True, clean=True)
             new_doc.close()
@@ -87,9 +86,8 @@ def merge_pdfs(pdf_paths: list[str], output_name: str | None = None) -> str:
         if not os.path.exists(p):
             raise ValueError(f"PDF file not found: {p}")
 
-    out_dir = processed_dir()
     name = output_name or f"merged_{timestamp()}"
-    out_path = os.path.join(out_dir, f"{name}.pdf")
+    out_path = new_output_path(f"{name}.pdf")
 
     out = fitz.open()
     try:
@@ -114,9 +112,8 @@ def compress_pdf(
     qmap = {"low": 50, "medium": 75, "high": 90}
     jpg_quality = int(qmap.get(quality, 75))
 
-    out_dir = processed_dir()
     name = output_name or f"compressed_{safe_basename(pdf_path)}_{timestamp()}"
-    out_path = os.path.join(out_dir, f"{name}.pdf")
+    out_path = new_output_path(f"{name}.pdf")
 
     original_size = os.path.getsize(pdf_path)
 
@@ -233,8 +230,7 @@ def sign_pdf(
         int(round(box[3])),
     )
 
-    out_dir = processed_dir()
-    out_path = os.path.join(out_dir, f"signed_{safe_basename(pdf_path)}_{timestamp()}.pdf")
+    out_path = new_output_path(f"signed_{safe_basename(pdf_path)}_{timestamp()}.pdf")
 
     with open(pdf_path, "rb") as inf:
         writer = IncrementalPdfFileWriter(inf)
@@ -300,7 +296,7 @@ def sign_pdf(
             raise ValueError("Document timestamp requires a TSA URL")
         # Re-open the just-signed PDF for an incremental update that appends
         # a DocTimeStamp signature (PAdES B-LTA).
-        ts_out_path = os.path.join(out_dir, f"signed_lta_{safe_basename(pdf_path)}_{timestamp()}.pdf")
+        ts_out_path = new_output_path(f"signed_lta_{safe_basename(pdf_path)}_{timestamp()}.pdf")
         try:
             with open(out_path, "rb") as inf:
                 ts_writer = IncrementalPdfFileWriter(inf)
@@ -450,9 +446,8 @@ def protect_pdf(
     if not user_password:
         raise ValueError("user_password is required")
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    out_path = os.path.join(out_dir, f"{base}_protected_{timestamp()}.pdf")
+    out_path = new_output_path(f"{base}_protected_{timestamp()}.pdf")
 
     perm = fitz.PDF_PERM_ACCESSIBILITY | fitz.PDF_PERM_PRINT | fitz.PDF_PERM_COPY | fitz.PDF_PERM_ANNOTATE
 
@@ -485,9 +480,8 @@ def remove_pdf_password(pdf_path: str, password: str) -> str:
     if password is None:
         raise ValueError("Password is required")
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    out_path = os.path.join(out_dir, f"{base}_unprotected_{timestamp()}.pdf")
+    out_path = new_output_path(f"{base}_unprotected_{timestamp()}.pdf")
 
     with fitz.open(pdf_path) as doc:
         if not doc.is_encrypted:
@@ -529,9 +523,8 @@ def convert_pdf_to_docx(pdf_path: str) -> tuple[str, bool]:
                 has_text = True
                 break
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    out_path = os.path.join(out_dir, f"{base}_{timestamp()}.docx")
+    out_path = new_output_path(f"{base}_{timestamp()}.docx")
 
     # pdf2docx writes progress lines via `logging.info(...)` on the root
     # logger, which floods callers' logs. Bump the root threshold while
@@ -568,9 +561,8 @@ def reorder_pages(pdf_path: str, page_order: list[int]) -> str:
     if len(set(page_order)) != len(page_order):
         raise ValueError("Page order cannot contain duplicates")
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    out_path = os.path.join(out_dir, f"{base}_reordered_{timestamp()}.pdf")
+    out_path = new_output_path(f"{base}_reordered_{timestamp()}.pdf")
 
     with fitz.open(pdf_path) as doc:
         total = len(doc)
@@ -617,9 +609,8 @@ def crop_pages(
     if all(m == 0 for m in margins):
         raise ValueError("At least one margin must be greater than zero")
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    out_path = os.path.join(out_dir, f"{base}_cropped_{timestamp()}.pdf")
+    out_path = new_output_path(f"{base}_cropped_{timestamp()}.pdf")
 
     with fitz.open(pdf_path) as doc:
         if doc.is_encrypted:
@@ -661,9 +652,8 @@ def flatten_pdf(
     if not flatten_annotations and not flatten_forms:
         raise ValueError("Select at least one of annotations or form fields to flatten")
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    out_path = os.path.join(out_dir, f"{base}_flattened_{timestamp()}.pdf")
+    out_path = new_output_path(f"{base}_flattened_{timestamp()}.pdf")
 
     with fitz.open(pdf_path) as doc:
         if doc.is_encrypted:
@@ -691,9 +681,8 @@ def redact_text(
     if not cleaned_terms:
         raise ValueError("Provide at least one search term")
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    out_path = os.path.join(out_dir, f"{base}_redacted_{timestamp()}.pdf")
+    out_path = new_output_path(f"{base}_redacted_{timestamp()}.pdf")
 
     total_matches = 0
     with fitz.open(pdf_path) as doc:
@@ -748,9 +737,8 @@ def convert_to_pdfa(pdf_path: str, version: str = "2b") -> tuple[str, str]:
         raise ValueError("ghostscript binary not found — install ghostscript on the host")
 
     level = _PDFA_VERSION_TO_GS_LEVEL[version]
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    out_path = os.path.join(out_dir, f"{base}_pdfa{version}_{timestamp()}.pdf")
+    out_path = new_output_path(f"{base}_pdfa{version}_{timestamp()}.pdf")
 
     cmd = [
         GHOSTSCRIPT_CMD,
@@ -809,9 +797,8 @@ def set_pdf_outline(pdf_path: str, entries: list[dict[str, int | str]]) -> str:
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    out_path = os.path.join(out_dir, f"{base}_outline_{timestamp()}.pdf")
+    out_path = new_output_path(f"{base}_outline_{timestamp()}.pdf")
 
     with fitz.open(pdf_path) as doc:
         if doc.is_encrypted:
@@ -959,10 +946,9 @@ def compare_pdfs(pdf_a_path: str, pdf_b_path: str) -> tuple[str, dict[str, int]]
     if os.path.abspath(pdf_a_path) == os.path.abspath(pdf_b_path):
         raise ValueError("Cannot compare a PDF against itself — choose two different files")
 
-    out_dir = processed_dir()
     base_a = safe_basename(pdf_a_path)
     base_b = safe_basename(pdf_b_path)
-    out_path = os.path.join(out_dir, f"{base_a}_vs_{base_b}_diff_{timestamp()}.pdf")
+    out_path = new_output_path(f"{base_a}_vs_{base_b}_diff_{timestamp()}.pdf")
 
     with fitz.open(pdf_a_path) as doc_a, fitz.open(pdf_b_path) as doc_b:
         if doc_a.is_encrypted or doc_b.is_encrypted:
@@ -1080,9 +1066,8 @@ def convert_images_to_pdf(
         if not os.path.exists(p):
             raise ValueError(f"Image not found: {p}")
 
-    out_dir = processed_dir()
     name = output_name or f"images_to_pdf_{timestamp()}"
-    out_path = os.path.join(out_dir, f"{name}.pdf")
+    out_path = new_output_path(f"{name}.pdf")
 
     out = fitz.open()
     try:
@@ -1163,9 +1148,8 @@ def convert_pdf_to_images(
     if dpi < 36 or dpi > 600:
         raise ValueError("dpi must be between 36 and 600")
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    zip_path = os.path.join(out_dir, f"{base}_images_{fmt}_{dpi}dpi_{timestamp()}.zip")
+    zip_path = new_output_path(f"{base}_images_{fmt}_{dpi}dpi_{timestamp()}.zip")
     zoom = dpi / 72.0
     matrix = fitz.Matrix(zoom, zoom)
 
@@ -1262,9 +1246,8 @@ def edit_pdf_metadata(pdf_path: str, metadata: dict[str, str], clear_dates: bool
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    out_path = os.path.join(out_dir, f"{base}_metadata_{timestamp()}.pdf")
+    out_path = new_output_path(f"{base}_metadata_{timestamp()}.pdf")
 
     with fitz.open(pdf_path) as doc:
         if doc.is_encrypted:
@@ -1335,8 +1318,7 @@ def add_watermark(
     rotation = int(options.get("rotation", 45))
     font_size = int(options.get("font_size", 48))
 
-    out_dir = processed_dir()
-    out_path = os.path.join(out_dir, f"watermarked_{safe_basename(pdf_path)}_{timestamp()}.pdf")
+    out_path = new_output_path(f"watermarked_{safe_basename(pdf_path)}_{timestamp()}.pdf")
 
     temp_img_path: str | None = None
     wm_w = wm_h = 0
@@ -1405,8 +1387,7 @@ def rotate_pages(pdf_path: str, rotation_angle: int, page_range: str | None = No
     if rotation_angle not in (90, 180, 270):
         raise ValueError("Rotation angle must be 90, 180, or 270 degrees")
 
-    out_dir = processed_dir()
-    out_path = os.path.join(out_dir, f"rotated_{safe_basename(pdf_path)}_{timestamp()}.pdf")
+    out_path = new_output_path(f"rotated_{safe_basename(pdf_path)}_{timestamp()}.pdf")
 
     with fitz.open(pdf_path) as doc:
         pages = parse_page_range(page_range, len(doc)) if page_range else list(range(len(doc)))
@@ -1427,8 +1408,7 @@ def add_page_numbers(pdf_path: str, options: dict | None = None) -> str:
     font_size = int(options.get("font_size", 12))
     start_page = int(options.get("start_page", 1))
 
-    out_dir = processed_dir()
-    out_path = os.path.join(out_dir, f"numbered_{safe_basename(pdf_path)}_{timestamp()}.pdf")
+    out_path = new_output_path(f"numbered_{safe_basename(pdf_path)}_{timestamp()}.pdf")
 
     with fitz.open(pdf_path) as doc:
         total = len(doc)

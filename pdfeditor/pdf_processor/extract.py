@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import fitz
 
-from ._common import processed_dir, safe_basename, timestamp
+from ._common import new_output_path, safe_basename, timestamp
 from .ops import _guard_pixmap_memory
 
 logger = logging.getLogger(__name__)
@@ -139,9 +139,8 @@ def make_pdf_searchable(pdf_path: str, language: str = "eng+ron", dpi: int = 200
 
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
 
-    out_dir = processed_dir()
     base = safe_basename(pdf_path)
-    out_path = os.path.join(out_dir, f"{base}_searchable_{timestamp()}.pdf")
+    out_path = new_output_path(f"{base}_searchable_{timestamp()}.pdf")
 
     new_doc = fitz.open()
     pages_ocrd = 0

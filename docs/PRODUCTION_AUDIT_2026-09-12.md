@@ -174,6 +174,23 @@ sensitive even after a new Dockerfile is committed.
   build the release from the clean Python base, then review distribution and
   retention of old images. No actual secret value was printed or committed.
 
+### A08 — physical output isolation
+
+- Reproduced overwrite of a prior document by a second merge using the same
+  custom output name. Processor-level traversal inputs also escaped the output
+  directory; web form sanitization had concealed this inconsistent boundary.
+- All PDF processor output allocations now share exclusive `mkstemp` creation,
+  private 0600 permissions, filename-only validation and bounded UTF-8 names.
+  This covers default timestamp collisions, custom names, signatures, OCR,
+  images, ZIP/DOCX output, editing and form filling without a schema migration.
+- Verification: 252 processor tests and 38 web/cleanup/object-store tests passed,
+  including two independent anonymous owners choosing the same merge name and
+  denial of the other owner's media URL. Focused typing/lint checks passed.
+- A read-only, timeout-bounded live aggregate found no reused paths among
+  currently retained output records. No customer data was modified. Existing
+  files/IDs remain readable; new filenames gain an opaque prefix. Failure-path
+  cleanup and full atomic storage accounting remain separate A05/A06 work.
+
 ## Reference material
 
 - Python documents that shared CGNAT addresses have both `is_private=False` and
