@@ -1,7 +1,7 @@
 """Tests for outbound webhooks: SSRF validation, signing, delivery, dispatch, UI.
 
 Network-free: URL validation is exercised with literal public/private IPs (no
-DNS), and the delivery task's ``requests.post`` is always mocked.
+DNS), and public HTTP connections are always mocked.
 """
 
 from __future__ import annotations
@@ -30,6 +30,11 @@ class WebhookValidationTests(SimpleTestCase):
             "http://8.8.8.8/hook",  # not https
             "ftp://8.8.8.8/hook",  # not https
             "https:///nohost",
+            "https://8.8.8.8:8443/hook",
+            "https://8.8.8.8:not-a-port/hook",
+            "https://user:password@8.8.8.8/hook",
+            "https://[::ffff:127.0.0.1]/hook",
+            "https://100.64.0.1/hook",
         ):
             with self.assertRaises(webhooks.InvalidWebhookURL):
                 webhooks.validate_webhook_url(url)
@@ -58,7 +63,7 @@ class WebhookDeliveryTests(TestCase):
     def test_2xx_marks_success_and_resets_failures(self):
         hook = self._hook(failure_count=3)
         resp = MagicMock(status_code=200)
-        with patch("pdfeditor.webhooks.requests.post", return_value=resp) as post:
+        with patch("pdfeditor.webhooks.public_request", return_value=resp) as post:
             tasks.deliver_webhook.apply(args=[str(hook.id), "job.completed", {"event": "job.completed"}])
         hook.refresh_from_db()
         self.assertEqual(hook.last_status, "200")
@@ -69,18 +74,19 @@ class WebhookDeliveryTests(TestCase):
         sent_body = kwargs["data"]
         expected = "sha256=" + webhooks.sign_payload(hook.secret, sent_body)
         self.assertEqual(kwargs["headers"][webhooks.SIGNATURE_HEADER], expected)
-        self.assertFalse(kwargs["allow_redirects"])
+        self.assertEqual(kwargs["max_bytes"], 0)
+        self.assertTrue(kwargs["https_only"])
 
     def test_inactive_webhook_is_not_delivered(self):
         hook = self._hook(is_active=False)
-        with patch("pdfeditor.webhooks.requests.post") as post:
+        with patch("pdfeditor.webhooks.public_request") as post:
             tasks.deliver_webhook.apply(args=[str(hook.id), "job.completed", {}])
         post.assert_not_called()
 
     def test_url_that_became_internal_is_blocked_and_disabled(self):
-        # Simulates DNS rebinding: the row holds an internal target at delivery.
+        # The row holds an internal target at delivery. Do not mock validation.
         hook = self._hook(url="https://127.0.0.1/hook")
-        with patch("pdfeditor.webhooks.requests.post") as post:
+        with patch("pdfeditor.outbound.urllib3.HTTPSConnectionPool") as post:
             tasks.deliver_webhook.apply(args=[str(hook.id), "job.completed", {}])
         post.assert_not_called()
         hook.refresh_from_db()
@@ -93,7 +99,7 @@ class WebhookDeliveryTests(TestCase):
         hook = self._hook()
         resp = MagicMock(status_code=500)
         # retries not yet exhausted → the task schedules a retry (raises Retry).
-        with patch("pdfeditor.webhooks.requests.post", return_value=resp), self.assertRaises(Retry):
+        with patch("pdfeditor.webhooks.public_request", return_value=resp), self.assertRaises(Retry):
             tasks.deliver_webhook.apply(args=[str(hook.id), "job.completed", {}], throw=True)
         hook.refresh_from_db()
         self.assertEqual(hook.last_status, "500")
@@ -101,7 +107,7 @@ class WebhookDeliveryTests(TestCase):
     def test_disable_after_retries_exhausted_and_max_failures(self):
         hook = self._hook(failure_count=webhooks.MAX_CONSECUTIVE_FAILURES - 1)
         resp = MagicMock(status_code=500)
-        with patch("pdfeditor.webhooks.requests.post", return_value=resp):
+        with patch("pdfeditor.webhooks.public_request", return_value=resp):
             # retries == max_retries → skip retry, take the final-failure branch.
             tasks.deliver_webhook.apply(
                 args=[str(hook.id), "job.completed", {}],
@@ -296,7 +302,7 @@ class WebhookApiTests(TestCase):
     def test_test_action_reports_delivery_outcome(self):
         hook = Webhook.objects.create(user=self.user, url="https://8.8.8.8/hook")
         resp = MagicMock(status_code=200)
-        with patch("pdfeditor.webhooks.requests.post", return_value=resp):
+        with patch("pdfeditor.webhooks.public_request", return_value=resp):
             r = self.client.post(f"{self.BASE}{hook.id}/test/", **self._auth())
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json(), {"ok": True, "status": "200"})
@@ -323,7 +329,7 @@ class WebhookDeliveryHistoryTests(TestCase):
         from .models import WebhookDelivery
 
         resp = MagicMock(status_code=200)
-        with patch("pdfeditor.webhooks.requests.post", return_value=resp):
+        with patch("pdfeditor.webhooks.public_request", return_value=resp):
             tasks.deliver_webhook.apply(args=[str(self.hook.id), "job.completed", {}])
         rows = WebhookDelivery.objects.filter(webhook=self.hook)
         self.assertEqual(rows.count(), 1)
@@ -336,7 +342,7 @@ class WebhookDeliveryHistoryTests(TestCase):
         from .models import WebhookDelivery
 
         resp = MagicMock(status_code=500)
-        with patch("pdfeditor.webhooks.requests.post", return_value=resp), self.assertRaises(Retry):
+        with patch("pdfeditor.webhooks.public_request", return_value=resp), self.assertRaises(Retry):
             tasks.deliver_webhook.apply(args=[str(self.hook.id), "job.completed", {}], throw=True)
         self.assertEqual(WebhookDelivery.objects.filter(webhook=self.hook).count(), 0)
 
@@ -344,7 +350,7 @@ class WebhookDeliveryHistoryTests(TestCase):
         from .models import WebhookDelivery
 
         resp = MagicMock(status_code=500)
-        with patch("pdfeditor.webhooks.requests.post", return_value=resp):
+        with patch("pdfeditor.webhooks.public_request", return_value=resp):
             tasks.deliver_webhook.apply(
                 args=[str(self.hook.id), "job.completed", {}],
                 retries=tasks.deliver_webhook.max_retries,

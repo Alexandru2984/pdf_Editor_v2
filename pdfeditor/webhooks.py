@@ -10,11 +10,10 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-from urllib.parse import urlparse
 
 import requests
 
-from .pdf_processor import ssrf_guard
+from .outbound import BlockedOutboundURL, public_request, validate_outbound_url
 
 # Headers every delivery carries. Receivers verify SIGNATURE_HEADER with the
 # webhook's secret; the id/event headers let them route without parsing the body.
@@ -46,22 +45,17 @@ def validate_webhook_url(url: str) -> None:
     """Raise :class:`InvalidWebhookURL` unless ``url`` is https to a public IP.
 
     Webhook targets are user-controlled, so this is the anti-SSRF gate: it
-    reuses the certificate-fetch guard's public-IP resolver so a user can't
+    reuses the certificate-fetch transport's public-IP resolver so a user can't
     point a webhook at ``127.0.0.1``, an RFC1918 host, the cloud-metadata
     endpoint, or an internal service. https is required — deliveries are signed
     but the payload still shouldn't cross the wire in the clear. Called on save
-    *and* again at delivery time (the resolve-time check alone is DNS-rebind
-    -able).
+    at save time. Delivery independently resolves and pins the connection to
+    that validated IP; a second DNS answer cannot change the destination.
     """
-    parsed = urlparse(url)
-    if parsed.scheme != "https":
-        raise InvalidWebhookURL("Webhook URL must use https.")
-    host = parsed.hostname
-    if not host:
-        raise InvalidWebhookURL("Webhook URL has no host.")
-    port = parsed.port or 443
-    if not ssrf_guard.hostname_resolves_public(host, port):
-        raise InvalidWebhookURL("Webhook URL must resolve to a public address.")
+    try:
+        validate_outbound_url(url, https_only=True)
+    except BlockedOutboundURL as exc:
+        raise InvalidWebhookURL(str(exc)) from exc
 
 
 def sign_payload(secret: str, body: bytes) -> str:
@@ -78,11 +72,6 @@ def deliver_once(hook, event: str, payload: dict) -> tuple[bool, str]:
     is True only on a 2xx. No retry — the Celery task layers backoff on top,
     while the synchronous ``test`` endpoint uses this directly for one attempt.
     """
-    try:
-        validate_webhook_url(hook.url)
-    except InvalidWebhookURL as exc:
-        return False, f"blocked: {exc}"[:50]
-
     body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
@@ -92,12 +81,19 @@ def deliver_once(hook, event: str, payload: dict) -> tuple[bool, str]:
         ID_HEADER: str(hook.id),
     }
     try:
-        # allow_redirects=False: a 3xx could bounce the signed payload to an
-        # internal address that would sidestep the SSRF check above.
-        resp = requests.post(
-            hook.url, data=body, headers=headers, timeout=DELIVERY_TIMEOUT, allow_redirects=False
+        # Only status is needed: never buffer a destination-controlled body.
+        resp = public_request(
+            "POST",
+            hook.url,
+            data=body,
+            headers=headers,
+            timeout=DELIVERY_TIMEOUT,
+            max_bytes=0,
+            https_only=True,
         )
         return (200 <= resp.status_code < 300), str(resp.status_code)
+    except BlockedOutboundURL as exc:
+        return False, f"blocked: {exc}"[:50]
     except requests.RequestException as exc:
         return False, f"error: {type(exc).__name__}"
 

@@ -118,6 +118,34 @@ reproducer establishes impact. Tests use synthetic objects and offline peers.
   timestamp remains preferable to `last_login` as a future account-state model.
 - Changes are local until the signed deployment workflow publishes a new image.
 
+### A02/A03 — public outbound transport
+
+- Certificate GET/OCSP POST and webhook delivery now share a transport that
+  resolves once, rejects every non-public DNS answer, connects to a literal IP,
+  and retains the original TLS hostname and Host header. Redirects, userinfo,
+  nonstandard ports, CGNAT and IPv6 transition-to-private paths are rejected.
+- Webhooks read status/headers only; certificate bodies are capped at 8 MiB.
+  Encoded responses are refused before decompression; response and pool cleanup
+  runs on success and failure. No environment proxy or netrc credentials are used.
+- Verification: 56 outbound/webhook/SSRF tests passed, plus two real TLS tests
+  over isolated socket pairs proving correct hostname acceptance and mismatch
+  rejection. New transport/activation modules pass focused mypy, Bandit and Ruff.
+- Compatibility: CA redirects, compressed or >8 MiB CRLs and webhook ports other
+  than 443 are now rejected. Review affected integrations before deployment.
+  DNS resolver timeouts remain governed by libc/resolver configuration, and
+  individual socket reads have bounded inactivity timeouts; a network-level
+  egress policy remains defense in depth for native parsers and other clients.
+
+### Additional discovery queued for remediation
+
+- `merge_pdfs(..., output_name=...)` writes directly to a shared name;
+  default output names also use second-resolution timestamps. This can alias
+  independently owner-scoped records to the same underlying file (A08).
+- The current lockfile advisory scan returned 12 entries across Django, DRF and
+  sqlparse, including duplicate sqlparse entries: 8 unique advisory IDs. Patched
+  floors reported are Django 5.2.17, DRF 3.17.2 and sqlparse 0.6.0. Reachability
+  must be assessed separately; a scanner match is not proof of exploitability.
+
 ## Reference material
 
 - Python documents that shared CGNAT addresses have both `is_private=False` and
