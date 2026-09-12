@@ -5,13 +5,18 @@ import os
 import re
 import shutil
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+from unittest.mock import patch
+from urllib.parse import urlsplit
 
 import fitz
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase, override_settings
+from django.db import close_old_connections
+from django.test import Client, TestCase, TransactionTestCase, override_settings, skipUnlessDBFeature
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
@@ -314,7 +319,9 @@ class EmailConfirmationTests(_AuthTestBase):
         )
         user = User.objects.get(username=username)
         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
+        # Use the token actually delivered by registration, not a second
+        # generator invocation that could conceal a cross-purpose bug.
+        token = re.search(r"/accounts/confirm/[^/]+/([^/\s]+)/", mail.outbox[-1].body).group(1)
         return user, uidb64, token
 
     def test_inactive_user_cannot_login(self):
@@ -354,8 +361,7 @@ class EmailConfirmationTests(_AuthTestBase):
         self.assertEqual(resp.status_code, 400)
 
     def test_token_invalidates_after_first_use(self):
-        # default_token_generator hashes is_active into the seed, so once the
-        # account is active the same token rejects.
+        # Activation tokens bind is_active; ordinary reset tokens do not.
         _user, uidb64, token = self._register_and_get_token()
         first = self.client.get(reverse("confirm_email", args=[uidb64, token]))
         self.assertEqual(first.status_code, 302)
@@ -363,6 +369,104 @@ class EmailConfirmationTests(_AuthTestBase):
         replay = self.client.get(reverse("confirm_email", args=[uidb64, token]))
         # User is already active, so the same token is now invalid.
         self.assertEqual(replay.status_code, 400)
+
+
+class ActivationBoundaryTests(_AuthTestBase):
+    """Tokens for one security operation cannot authorize another one."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            "activation-boundary", email="activation@example.com", password="test", is_active=False
+        )
+
+    def _confirmation_url(self):
+        from .email_utils import _build_confirmation_link
+
+        return urlsplit(_build_confirmation_link(self.user)).path
+
+    def test_password_reset_token_cannot_activate_account(self):
+        token = default_token_generator.make_token(self.user)
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        response = self.client.get(reverse("confirm_email", args=[uid, token]))
+        self.assertEqual(response.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_password_reset_token_cannot_bypass_mfa(self):
+        from .models import MfaDevice
+
+        self.user.is_active = True
+        self.user.save(update_fields=["is_active"])
+        MfaDevice.objects.create(user=self.user, confirmed=True)
+        token = default_token_generator.make_token(self.user)
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        response = self.client.get(reverse("confirm_email", args=[uid, token]))
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_confirmation_token_cannot_reset_password(self):
+        token = self._confirmation_url().rstrip("/").rsplit("/", 1)[-1]
+        self.assertFalse(default_token_generator.check_token(self.user, token))
+
+    def test_activation_alone_invalidates_token_without_login(self):
+        from .email_utils import is_token_valid
+
+        token = self._confirmation_url().rstrip("/").rsplit("/", 1)[-1]
+        self.user.is_active = True
+        self.user.save(update_fields=["is_active"])
+        self.assertFalse(is_token_valid(self.user, token))
+
+    def test_confirmation_does_not_log_in_an_account_with_mfa(self):
+        from .models import MfaDevice
+
+        MfaDevice.objects.create(user=self.user, confirmed=True)
+        response = self.client.get(self._confirmation_url())
+        self.assertEqual(response.status_code, 302)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_resend_cannot_reactivate_a_previously_used_disabled_account(self):
+        from django.core.cache import cache
+        from django.utils import timezone
+
+        cache.clear()
+        self.user.last_login = timezone.now()
+        self.user.save(update_fields=["last_login"])
+        response = self.client.post(reverse("resend_confirmation"), {"email": self.user.email})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 0)
+
+
+@skipUnlessDBFeature("has_select_for_update")
+class ActivationConcurrencyTests(TransactionTestCase):
+    def test_two_requests_cannot_consume_one_activation(self):
+        from .email_utils import _build_confirmation_link, decode_uid
+
+        user = User.objects.create_user("activation-race", password="test", is_active=False)
+        url = urlsplit(_build_confirmation_link(user)).path
+        barrier = Barrier(2)
+
+        def read_before_lock(uid):
+            account = decode_uid(uid)
+            barrier.wait(timeout=10)
+            return account
+
+        def consume():
+            close_old_connections()
+            try:
+                client = Client()
+                response = client.get(url)
+                return response.status_code, "_auth_user_id" in client.session
+            finally:
+                close_old_connections()
+
+        with (
+            patch("pdfeditor.views.auth.decode_uid", side_effect=read_before_lock),
+            ThreadPoolExecutor(max_workers=2) as pool,
+        ):
+            futures = [pool.submit(consume) for _ in range(2)]
+            results = [future.result(timeout=20) for future in futures]
+        self.assertEqual(sorted(results), [(302, True), (400, False)])
 
 
 class ResendConfirmationTests(_AuthTestBase):

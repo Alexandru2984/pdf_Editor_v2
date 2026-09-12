@@ -102,8 +102,21 @@ reproducer establishes impact. Tests use synthetic objects and offline peers.
 
 ## Verification and implementation log
 
-To be filled with actual test results, commit identifiers and remaining gaps as
-each stage completes.
+### A01 — activation/reset separation
+
+- Six new isolated regressions failed before the fix, proving cross-purpose
+  reset/activation tokens, activation bypass of MFA, invalid single-use
+  assumptions and resend reactivation of previously used disabled accounts.
+- Dedicated activation salt/state binding, inactive-and-never-logged-in gate,
+  row locking during consumption and MFA-aware activation now close those paths.
+- Verification: all 71 authentication tests passed, followed by a real
+  two-connection PostgreSQL activation race test (one login, one rejection).
+  Ruff lint/format and diff checks are required before commit.
+- Release impact: old pending activation links are intentionally rejected;
+  users must use resend. Password-reset token behavior is unchanged. No schema
+  migration or production data update is needed. A dedicated account-verification
+  timestamp remains preferable to `last_login` as a future account-state model.
+- Changes are local until the signed deployment workflow publishes a new image.
 
 ## Reference material
 

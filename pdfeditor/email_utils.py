@@ -1,9 +1,7 @@
 """Email helpers for account confirmation and email-change.
 
-The activation flow wraps Django's ``default_token_generator`` so the same
-logic generates *and* validates the token. The token implicitly invalidates
-once the user becomes active (token_generator hashes ``user.is_active`` into
-the seed), so a single-use guarantee comes for free.
+Activation uses a purpose-specific generator bound to inactive account state.
+Password-reset tokens must never authorize activation or a login without MFA.
 
 The email-change flow uses ``django.core.signing`` with a payload that
 includes the user's *current* email — meaning any subsequent change (or
@@ -18,7 +16,7 @@ from typing import Any
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser
-from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core.mail import EmailMultiAlternatives
 from django.core.signing import BadSignature, SignatureExpired, dumps, loads
 from django.template.loader import render_to_string
@@ -33,9 +31,19 @@ EMAIL_CHANGE_SALT = "pdfeditor.email_change.v1"
 EMAIL_CHANGE_MAX_AGE_SECONDS = 24 * 3600
 
 
+class ActivationTokenGenerator(PasswordResetTokenGenerator):
+    key_salt = "pdfeditor.account_activation.v1"
+
+    def _make_hash_value(self, user, timestamp):
+        return f"{super()._make_hash_value(user, timestamp)}{user.is_active}"
+
+
+activation_token_generator = ActivationTokenGenerator()
+
+
 def _build_confirmation_link(user: AbstractBaseUser) -> str:
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    token = default_token_generator.make_token(user)
+    token = activation_token_generator.make_token(user)
     path = reverse("confirm_email", kwargs={"uidb64": uid, "token": token})
     return f"{settings.SITE_URL.rstrip('/')}{path}"
 
@@ -120,7 +128,11 @@ def decode_uid(uidb64: str) -> AbstractBaseUser | None:
 
 
 def is_token_valid(user: AbstractBaseUser, token: str) -> bool:
-    return default_token_generator.check_token(user, token)
+    # A disabled existing account is an administrative decision, not an
+    # incomplete signup. It must not be reactivated by the resend flow.
+    return bool(
+        not user.is_active and user.last_login is None and activation_token_generator.check_token(user, token)
+    )
 
 
 def make_email_change_token(user: AbstractBaseUser, new_email: str) -> str:

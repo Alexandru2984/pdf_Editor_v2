@@ -16,6 +16,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
+from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
@@ -131,12 +132,23 @@ def register_view(request: HttpRequest) -> HttpResponse:
 def confirm_email_view(request: HttpRequest, uidb64: str, token: str) -> HttpResponse:
     """Activate a user account from the link sent in the confirmation email."""
     user = decode_uid(uidb64)
-    if user is None or not is_token_valid(user, token):
+    if user is None:
         return render(request, "registration/confirm_email_invalid.html", status=400)
 
-    if not user.is_active:
+    # Serialize validation and activation so two requests holding the same
+    # token cannot both create sessions before last_login is updated.
+    with transaction.atomic():
+        user = User.objects.select_for_update().filter(pk=user.pk).first()
+        if user is None or not is_token_valid(user, token):
+            return render(request, "registration/confirm_email_invalid.html", status=400)
         user.is_active = True
         user.save(update_fields=["is_active"])
+
+    from ..mfa import user_has_mfa
+
+    if user_has_mfa(user):
+        messages.success(request, _("Email confirmed. Please sign in to continue."))
+        return redirect("login")
 
     # Auto-login on confirmation — same UX as most SaaS apps. Must name a
     # backend that's actually in AUTHENTICATION_BACKENDS, otherwise Django's
@@ -257,7 +269,7 @@ def resend_confirmation_view(request: HttpRequest) -> HttpResponse:
                 )
                 return render(request, "registration/resend_confirmation_done.html")
             email = form.cleaned_data["email"].strip().lower()
-            user = User.objects.filter(email__iexact=email, is_active=False).first()
+            user = User.objects.filter(email__iexact=email, is_active=False, last_login__isnull=True).first()
             if user is not None:
                 send_confirmation_email(user)
             return render(request, "registration/resend_confirmation_done.html")
