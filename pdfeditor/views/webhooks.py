@@ -80,6 +80,7 @@ def create_webhook_view(request: HttpRequest) -> HttpResponse:
 
 @login_required
 @require_http_methods(["POST"])
+@auth_aware_ratelimit(anon_rate="30/h", user_rate="120/h", method="POST")
 def toggle_webhook_view(request: HttpRequest, webhook_id: str) -> HttpResponse:
     hook = get_object_or_404(Webhook, user=request.user, id=webhook_id)
     hook.is_active = not hook.is_active
@@ -97,6 +98,34 @@ def toggle_webhook_view(request: HttpRequest, webhook_id: str) -> HttpResponse:
 
 @login_required
 @require_http_methods(["POST"])
+@auth_aware_ratelimit(anon_rate="30/h", user_rate="30/h", method="POST")
+def test_webhook_view(request: HttpRequest, webhook_id: str) -> HttpResponse:
+    from django.utils import timezone
+
+    hook = get_object_or_404(Webhook, user=request.user, id=webhook_id)
+    now = timezone.now()
+    payload = {
+        "event": "webhook.test",
+        "delivered_at": now.isoformat(),
+        "webhook_id": str(hook.id),
+    }
+    ok, status_str = webhook_utils.deliver_once(hook, "webhook.test", payload)
+    hook.last_triggered_at = now
+    hook.last_status = status_str[:50]
+    hook.save(update_fields=["last_triggered_at", "last_status"])
+    webhook_utils.record_delivery(hook, "webhook.test", ok, status_str)
+    if ok:
+        messages.success(
+            request, _("Test webhook delivered successfully (HTTP %(status)s).") % {"status": status_str}
+        )
+    else:
+        messages.warning(request, _("Test webhook delivery failed (%(status)s).") % {"status": status_str})
+    return redirect("webhooks")
+
+
+@login_required
+@require_http_methods(["POST"])
+@auth_aware_ratelimit(anon_rate="30/h", user_rate="120/h", method="POST")
 def delete_webhook_view(request: HttpRequest, webhook_id: str) -> HttpResponse:
     hook = get_object_or_404(Webhook, user=request.user, id=webhook_id)
     hook.delete()

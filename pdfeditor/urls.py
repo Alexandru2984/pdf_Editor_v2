@@ -264,6 +264,11 @@ urlpatterns = [
     path("accounts/profile/webhooks/", views.webhooks_view, name="webhooks"),
     path("accounts/profile/webhooks/create/", views.create_webhook_view, name="create_webhook"),
     path(
+        "accounts/profile/webhooks/<uuid:webhook_id>/test/",
+        views.test_webhook_view,
+        name="test_webhook",
+    ),
+    path(
         "accounts/profile/webhooks/<uuid:webhook_id>/toggle/",
         views.toggle_webhook_view,
         name="toggle_webhook",

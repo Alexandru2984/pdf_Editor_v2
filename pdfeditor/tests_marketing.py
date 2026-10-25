@@ -131,6 +131,9 @@ class MarketingPagesTests(_TemporaryMediaMixin, TestCase):
         self.assertEqual(how_to["@type"], "HowTo")
         self.assertEqual([step["text"] for step in how_to["step"]], [step.en for step in tool.steps])
         self.assertTrue(any(item["@type"] == "BreadcrumbList" for item in structured_data["@graph"]))
+        faq_page = next((item for item in structured_data["@graph"] if item["@type"] == "FAQPage"), None)
+        self.assertIsNotNone(faq_page)
+        self.assertEqual(len(faq_page["mainEntity"]), len(tool.faqs))
 
     def test_hub_json_ld_lists_every_visible_tool(self):
         response = self.client.get(reverse("tools_hub_en"))

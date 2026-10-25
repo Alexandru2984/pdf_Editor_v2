@@ -80,6 +80,9 @@ class _ViewTestBase(TestCase):
         super().tearDownClass()
 
     def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
         self.client = Client()
 
     def upload(self, name="x.pdf", num_pages=2, text_prefix="Page"):
@@ -2369,3 +2372,47 @@ class GenerateCertViewTests(TestCase):
         )
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "do not match")
+
+
+class SplitZipAndSummarizeViewTests(_ViewTestBase):
+    def test_download_split_zip_bundles_all_split_parts(self):
+        import zipfile
+
+        pdf = self.upload_and_get_pdf(num_pages=4)
+        resp = self.client.post(
+            f"{reverse('split')}?pdf={pdf.id}",
+            {"ranges": "1-2,3-4"},
+        )
+        self.assertEqual(resp.status_code, 302)
+        zip_resp = self.client.get(reverse("download_split_zip"))
+        self.assertEqual(zip_resp.status_code, 200)
+        self.assertEqual(zip_resp["Content-Type"], "application/zip")
+        with zipfile.ZipFile(io.BytesIO(zip_resp.content)) as zf:
+            self.assertEqual(len(zf.namelist()), 2)
+
+    def test_summarize_view_and_ajax_endpoint(self):
+        pdf = self.upload_and_get_pdf(num_pages=2)
+        get_resp = self.client.get(f"{reverse('summarize')}?pdf={pdf.id}")
+        self.assertEqual(get_resp.status_code, 200)
+        self.assertContains(get_resp, "AI PDF Summarizer")
+
+        with patch(
+            "pdfeditor.views.extract.summarize_pdf",
+            return_value={
+                "summary": "• Key point 1\n• Key point 2",
+                "truncated": False,
+                "chars_used": 120,
+            },
+        ):
+            ajax_resp = self.client.post(
+                reverse("summarize_text", args=[str(pdf.id)]),
+                data='{"language": "Romanian"}',
+                content_type="application/json",
+            )
+        self.assertEqual(ajax_resp.status_code, 200)
+        payload = ajax_resp.json()
+        self.assertTrue(payload["success"])
+        self.assertIn("Key point 1", payload["text"])
+        dl_resp = self.client.get(reverse("download_text"))
+        self.assertEqual(dl_resp.status_code, 200)
+        self.assertIn(b"Key point 1", dl_resp.content)

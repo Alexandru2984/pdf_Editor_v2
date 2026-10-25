@@ -380,3 +380,17 @@ class WebhookDeliveryHistoryTests(TestCase):
         _, other_token = ApiKey.create_for_user(other)
         r2 = self.client.get(f"/api/v1/webhooks/{self.hook.id}/deliveries/", HTTP_X_API_KEY=other_token)
         self.assertEqual(r2.status_code, 404)
+
+    def test_web_ui_test_webhook_view_records_delivery(self):
+        from .models import WebhookDelivery
+
+        self.client.force_login(self.user)
+        resp = MagicMock(status_code=200)
+        with patch("pdfeditor.webhooks.public_request", return_value=resp):
+            r = self.client.post(reverse("test_webhook", args=[self.hook.id]))
+        self.assertEqual(r.status_code, 302)
+        self.hook.refresh_from_db()
+        self.assertEqual(self.hook.last_status, "200")
+        row = WebhookDelivery.objects.filter(webhook=self.hook, event="webhook.test").first()
+        self.assertIsNotNone(row)
+        self.assertTrue(row.ok)

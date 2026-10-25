@@ -159,6 +159,7 @@ from .upload import dashboard_view, delete_pdf_view, thumbnail_view, upload_view
 from .webhooks import (
     create_webhook_view,
     delete_webhook_view,
+    test_webhook_view,
     toggle_webhook_view,
     webhooks_view,
 )
@@ -276,6 +277,7 @@ __all__ = [
     "terms_view",
     "webhooks_view",
     "create_webhook_view",
+    "test_webhook_view",
     "toggle_webhook_view",
     "delete_webhook_view",
     "register_view",

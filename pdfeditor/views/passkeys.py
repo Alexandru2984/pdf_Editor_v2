@@ -48,6 +48,7 @@ _REG_CHALLENGE_KEY = "webauthn_reg_challenge"
 _AUTH_CHALLENGE_KEY = "webauthn_auth_challenge"
 _MAX_BODY = 16 * 1024
 _MAX_PASSKEYS_PER_USER = 10
+_ALLOWED_TRANSPORTS = frozenset({"usb", "nfc", "ble", "smart-card", "hybrid", "internal"})
 
 
 def _rp_id() -> str:
@@ -108,7 +109,7 @@ def passkey_register_view(request: HttpRequest) -> HttpResponse:
 
     body = _json_body(request)
     credential = body.get("credential")
-    if not credential:
+    if not isinstance(credential, dict):
         return JsonResponse({"error": "missing credential"}, status=400)
 
     try:
@@ -123,13 +124,23 @@ def passkey_register_view(request: HttpRequest) -> HttpResponse:
         logger.warning("Passkey registration rejected for user %s: %s", request.user.pk, exc)
         return JsonResponse({"error": "registration could not be verified"}, status=400)
 
+    cred_id_b64 = bytes_to_base64url(verified.credential_id)
+    if WebAuthnCredential.objects.filter(credential_id=cred_id_b64).exists():
+        return JsonResponse({"error": "registration could not be verified"}, status=400)
+
+    raw_transports = credential.get("response", {}).get("transports", [])
+    safe_transports = (
+        [t for t in raw_transports if isinstance(t, str) and t in _ALLOWED_TRANSPORTS]
+        if isinstance(raw_transports, list)
+        else []
+    )
     WebAuthnCredential.objects.create(
         user=request.user,
-        credential_id=bytes_to_base64url(verified.credential_id),
+        credential_id=cred_id_b64,
         public_key=bytes_to_base64url(verified.credential_public_key),
         sign_count=verified.sign_count,
-        transports=",".join(credential.get("response", {}).get("transports", []) or [])[:255],
-        label=str(body.get("label") or "")[:80],
+        transports=",".join(safe_transports)[:255],
+        label=str(body.get("label") or "").strip()[:80],
     )
     return JsonResponse({"ok": True})
 

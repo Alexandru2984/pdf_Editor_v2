@@ -65,6 +65,10 @@
                     {% else %}—{% endif %}
                 </td>
                 <td class="webhook-actions">
+                    <form method="post" action="{% url 'test_webhook' hook.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-link" title="{% trans 'Send a signed test payload' %}">{% trans "Test" %}</button>
+                    </form>
                     <form method="post" action="{% url 'toggle_webhook' hook.id %}" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn-link">{% if hook.is_active %}{% trans "Disable" %}{% else %}{% trans "Enable" %}{% endif %}</button>
@@ -111,6 +115,8 @@
     .api-key-fresh { background: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 1rem; }
     .api-key-token { display: block; margin-top: 0.5rem; padding: 0.5rem; background: #fff; border: 1px solid #d1fae5; border-radius: 0.375rem; cursor: pointer; word-break: break-all; font-size: 0.85rem; }
     .api-key-token.copied { background: #d1fae5; }
+    [data-theme="dark"] .api-key-fresh { background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.35); color: #a7f3d0; }
+    [data-theme="dark"] .api-key-token { background: #0f172a; border-color: #334155; color: #f8fafc; }
     .webhook-create-form { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
     .webhook-create-form input { flex: 1; min-width: 180px; padding: 0.5rem 0.625rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-family: inherit; }
     .api-keys-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-bottom: 1rem; }

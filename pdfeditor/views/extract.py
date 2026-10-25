@@ -161,6 +161,6 @@ def download_text_view(request):
         messages.error(request, _("No text found to download."))
         return redirect("dashboard")
 
-    response = HttpResponse(text, content_type="text/plain; charset=utf-8")
+    response = HttpResponse(text, content_type="text/plain")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response

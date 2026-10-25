@@ -310,6 +310,11 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
                     "Protect and digitally sign PDFs",
                     "Redact sensitive text",
                     "Reorder, rotate and crop pages",
+                    "Summarize PDFs with AI",
+                    "Fill interactive AcroForm PDFs",
+                    "Convert PDFs to archival PDF/A",
+                    "Compare two PDF versions",
+                    "Edit PDF bookmarks and outlines",
                 ],
             }
         )
@@ -384,6 +389,26 @@ def _structured_data(page: SeoPage, *, language: str, canonical: str) -> dict:
                 ],
             }
         )
+        if tool.faqs:
+            graph.append(
+                {
+                    "@type": "FAQPage",
+                    "@id": f"{canonical}#faq",
+                    "inLanguage": language,
+                    "isPartOf": {"@id": webpage["@id"]},
+                    "mainEntity": [
+                        {
+                            "@type": "Question",
+                            "name": faq_item.question.get(language),
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": faq_item.answer.get(language),
+                            },
+                        }
+                        for faq_item in tool.faqs
+                    ],
+                }
+            )
     return {"@context": "https://schema.org", "@graph": graph}
 
 
@@ -450,6 +475,9 @@ def robots_txt(request: HttpRequest) -> HttpResponse:
             "Allow: /",
             "Disallow: /api/",
             "Disallow: /media/",
+            "Disallow: /s/",
+            "Disallow: /jobs/",
+            "Disallow: /chat/",
             "Disallow: /metrics",
             "Disallow: /healthz",
             "Disallow: /readyz",
