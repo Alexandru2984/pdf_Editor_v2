@@ -37,9 +37,30 @@
 
     <h2 class="section-title">{% trans "PDF Operations" %}</h2>
 
-    <div class="operations-grid">
+    <div class="dashboard-filter-bar">
+        <div class="dashboard-search-wrap">
+            <span class="dashboard-search-icon" aria-hidden="true">🔍</span>
+            <input
+                type="search"
+                id="tools-search-input"
+                class="form-control dashboard-search-input"
+                placeholder="{% trans 'Search PDF tools (e.g. compress, sign, OCR, summarize, merge)...' %}"
+                aria-label="{% trans 'Search PDF tools' %}"
+                autocomplete="off"
+            >
+        </div>
+        <div class="dashboard-category-pills" role="tablist" aria-label="{% trans 'Filter tools by category' %}">
+            <button type="button" class="category-pill active" data-cat-filter="all">{% trans "All Tools" %}</button>
+            <button type="button" class="category-pill" data-cat-filter="organize">📐 {% trans "Organize & Pages" %}</button>
+            <button type="button" class="category-pill" data-cat-filter="edit">✏️ {% trans "Edit & Convert" %}</button>
+            <button type="button" class="category-pill" data-cat-filter="security">🔒 {% trans "Security & Sign" %}</button>
+            <button type="button" class="category-pill" data-cat-filter="ai">🤖 {% trans "AI & OCR" %}</button>
+        </div>
+    </div>
 
-        <div class="operation-card" data-feature="edit">
+    <div class="operations-grid" id="operations-grid">
+
+        <div class="operation-card" data-feature="edit" data-category="edit ai">
             <div class="card-icon">✏️</div>
             <h3>{% trans "Edit & Rephrase" %}</h3>
             <p>{% trans "Find/replace text or use AI to rephrase content" %}</p>
@@ -49,147 +70,147 @@
             </div>
         </div>
 
-        <div class="operation-card" data-feature="split">
+        <div class="operation-card" data-feature="split" data-category="organize">
             <div class="card-icon">✂️</div>
             <h3>{% trans "Split PDF" %}</h3>
             <p>{% trans "Split your PDF into multiple files by pages" %}</p>
             <a href="{% url 'split' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="merge">
+        <div class="operation-card" data-feature="merge" data-category="organize">
             <div class="card-icon">🔗</div>
             <h3>{% trans "Merge PDFs" %}</h3>
             <p>{% trans "Combine multiple PDFs into a single document" %}</p>
             <a href="{% url 'merge' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="compress">
+        <div class="operation-card" data-feature="compress" data-category="edit">
             <div class="card-icon">📦</div>
             <h3>{% trans "Compress" %}</h3>
             <p>{% trans "Reduce PDF file size without losing quality" %}</p>
             <a href="{% url 'compress' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="convert">
+        <div class="operation-card" data-feature="convert" data-category="edit">
             <div class="card-icon">📝</div>
             <h3>{% trans "Convert to Word" %}</h3>
             <p>{% trans "Export your PDF as an editable .docx file" %}</p>
             <a href="{% url 'convert' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="to_images">
+        <div class="operation-card" data-feature="to_images" data-category="edit">
             <div class="card-icon">🖼️</div>
             <h3>{% trans "PDF to Images" %}</h3>
             <p>{% trans "Export each page as PNG or JPG, packaged in a ZIP" %}</p>
             <a href="{% url 'to_images' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="images_to_pdf">
+        <div class="operation-card" data-feature="images_to_pdf" data-category="edit">
             <div class="card-icon">🧩</div>
             <h3>{% trans "Images to PDF" %}</h3>
             <p>{% trans "Combine PNG, JPG, or TIFF images into a single PDF" %}</p>
             <a href="{{ seo.images_to_pdf_url }}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="metadata">
+        <div class="operation-card" data-feature="metadata" data-category="edit">
             <div class="card-icon">🏷️</div>
             <h3>{% trans "Edit Metadata" %}</h3>
             <p>{% trans "Update title, author, subject, keywords, and other PDF properties" %}</p>
             <a href="{% url 'metadata' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="protect">
+        <div class="operation-card" data-feature="protect" data-category="security">
             <div class="card-icon">🔒</div>
             <h3>{% trans "Password Protect" %}</h3>
             <p>{% trans "Encrypt your PDF with a password (AES-256)" %}</p>
             <a href="{% url 'protect' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="unprotect">
+        <div class="operation-card" data-feature="unprotect" data-category="security">
             <div class="card-icon">🔓</div>
             <h3>{% trans "Remove Password" %}</h3>
             <p>{% trans "Strip the password from a PDF you can already open" %}</p>
             <a href="{% url 'unprotect' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="sign">
+        <div class="operation-card" data-feature="sign" data-category="security">
             <div class="card-icon">✍️</div>
             <h3>{% trans "Digital Signature" %}</h3>
             <p>{% trans "Sign your PDF cryptographically (PKCS#7) with your own certificate" %}</p>
             <a href="{% url 'sign' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="watermark">
+        <div class="operation-card" data-feature="watermark" data-category="edit security">
             <div class="card-icon">💧</div>
             <h3>{% trans "Add Watermark" %}</h3>
             <p>{% trans "Add text or image watermark to your PDF" %}</p>
             <a href="{% url 'watermark' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="rotate">
+        <div class="operation-card" data-feature="rotate" data-category="organize">
             <div class="card-icon">🔄</div>
             <h3>{% trans "Rotate Pages" %}</h3>
             <p>{% trans "Rotate PDF pages by 90, 180, or 270 degrees" %}</p>
             <a href="{% url 'rotate' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="reorder">
+        <div class="operation-card" data-feature="reorder" data-category="organize">
             <div class="card-icon">📑</div>
             <h3>{% trans "Reorder & Delete Pages" %}</h3>
             <p>{% trans "Drag pages to reorder, or remove the ones you don't need" %}</p>
             <a href="{% url 'reorder' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="crop">
+        <div class="operation-card" data-feature="crop" data-category="organize">
             <div class="card-icon">✂️</div>
             <h3>{% trans "Crop Pages" %}</h3>
             <p>{% trans "Trim margins from PDF pages by percent or specific page range" %}</p>
             <a href="{% url 'crop' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="flatten">
+        <div class="operation-card" data-feature="flatten" data-category="edit security">
             <div class="card-icon">📋</div>
             <h3>{% trans "Flatten" %}</h3>
             <p>{% trans "Bake annotations and form fields into permanent, non-editable content" %}</p>
             <a href="{% url 'flatten' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="redact">
+        <div class="operation-card" data-feature="redact" data-category="security">
             <div class="card-icon">⬛</div>
             <h3>{% trans "Redact Text" %}</h3>
             <p>{% trans "Permanently remove sensitive text — content is stripped, not just covered" %}</p>
             <a href="{% url 'redact' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="searchable">
+        <div class="operation-card" data-feature="searchable" data-category="ai edit">
             <div class="card-icon">🔍</div>
             <h3>{% trans "Make Searchable" %}</h3>
             <p>{% trans "Run OCR on scanned pages and embed an invisible text layer so the PDF becomes searchable" %}</p>
             <a href="{% url 'searchable' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="pdfa">
+        <div class="operation-card" data-feature="pdfa" data-category="edit">
             <div class="card-icon">📦</div>
             <h3>{% trans "Convert to PDF/A" %}</h3>
             <p>{% trans "Convert to PDF/A-1b or PDF/A-2b for long-term, ISO-compliant archival" %}</p>
             <a href="{% url 'pdfa' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="compare">
+        <div class="operation-card" data-feature="compare" data-category="edit">
             <div class="card-icon">🔄</div>
             <h3>{% trans "Compare PDFs" %}</h3>
             <p>{% trans "Diff two PDFs page-by-page — get a report showing added, removed and changed lines" %}</p>
             <a href="{% url 'compare' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="outline">
+        <div class="operation-card" data-feature="outline" data-category="organize">
             <div class="card-icon">📑</div>
             <h3>{% trans "Edit Bookmarks" %}</h3>
             <p>{% trans "Add, rename or remove the PDF's table of contents — point each bookmark to a specific page" %}</p>
             <a href="{% url 'outline' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="share">
+        <div class="operation-card" data-feature="share" data-category="security">
             <div class="card-icon">🔗</div>
             <h3>{% trans "Share Links" %}</h3>
             <p>{% trans "Create token-based public links for your processed PDFs with TTL and download caps" %}</p>
@@ -197,7 +218,7 @@
         </div>
 
         {% if uploaded_pdfs %}
-        <div class="operation-card" data-feature="chat">
+        <div class="operation-card" data-feature="chat" data-category="ai">
             <div class="card-icon">💬</div>
             <h3>{% trans "Chat with PDF" %}</h3>
             <p>{% trans "Ask questions about your PDF and get answers with citations — powered by local embeddings + Groq" %}</p>
@@ -205,41 +226,44 @@
         </div>
         {% endif %}
 
-        <div class="operation-card" data-feature="summarize">
+        <div class="operation-card" data-feature="summarize" data-category="ai">
             <div class="card-icon">🧠</div>
             <h3>{% trans "AI Summarize" %}</h3>
             <p>{% trans "Generate an instant executive summary of your PDF in English, Romanian, or 4 other languages" %}</p>
             <a href="{% url 'summarize' %}" class="btn btn-ai">✨ {% trans "Summarize" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="page-numbers">
+        <div class="operation-card" data-feature="page-numbers" data-category="organize">
             <div class="card-icon">🔢</div>
             <h3>{% trans "Add Page Numbers" %}</h3>
             <p>{% trans "Add customizable page numbers to your PDF" %}</p>
             <a href="{% url 'page_numbers' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="form_fill">
+        <div class="operation-card" data-feature="form_fill" data-category="edit">
             <div class="card-icon">📝</div>
             <h3>{% trans "Fill Form" %}</h3>
             <p>{% trans "Detect and fill AcroForm fields (text inputs, checkboxes, dropdowns)" %}</p>
             <a href="{% url 'form_fill' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="history">
+        <div class="operation-card" data-feature="history" data-category="organize">
             <div class="card-icon">📜</div>
             <h3>{% trans "History" %}</h3>
             <p>{% trans "See and re-download every output produced in this session" %}</p>
             <a href="{% url 'history' %}" class="btn btn-secondary">{% trans "View History" %}</a>
         </div>
 
-        <div class="operation-card" data-feature="more">
+        <div class="operation-card" data-feature="more" data-category="ai">
             <div class="card-icon">🛠️</div>
             <h3>{% trans "More Tools" %}</h3>
             <p>{% trans "Advanced PDF tools: Extract Text, OCR, and more" %}</p>
             <a href="{% url 'more_tools' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
     </div>
+    <p id="tools-no-results" class="dashboard-no-results" hidden>
+        {% trans "No PDF tools match your search. Try another keyword or switch to 'All Tools'." %}
+    </p>
 
     {% if uploaded_pdfs %}
     <h2 class="section-title section-title-spaced">
@@ -268,10 +292,34 @@
                         <span><span aria-hidden="true">📦</span> {{ pdf.size|filesizeformat }}</span>
                         <span><span aria-hidden="true">📅</span> {{ pdf.uploaded_at|slice:":10" }}</span>
                     </p>
+                    {% if pdf.is_processable %}
+                    <div class="pdf-item-quick-launch">
+                        <label for="quick-tool-{{ pdf.id }}" class="sr-only">{% trans "Open in tool" %}</label>
+                        <select id="quick-tool-{{ pdf.id }}" class="form-control pdf-item-tool-select" data-pdf-tool-jump="{{ pdf.id }}">
+                            <option value="">⚡ {% trans "Open in tool..." %}</option>
+                            <option value="{% url 'edit' %}">✏️ {% trans "Find & Replace" %}</option>
+                            <option value="{% url 'rephrase' %}">🤖 {% trans "AI Rephrase" %}</option>
+                            <option value="{% url 'summarize' %}">✨ {% trans "AI Summarize" %}</option>
+                            <option value="{% url 'compress' %}">📦 {% trans "Compress" %}</option>
+                            <option value="{% url 'split' %}">✂️ {% trans "Split PDF" %}</option>
+                            <option value="{% url 'merge' %}">🔗 {% trans "Merge PDFs" %}</option>
+                            <option value="{% url 'sign' %}">✍️ {% trans "Digital Sign" %}</option>
+                            <option value="{% url 'protect' %}">🔒 {% trans "Password Protect" %}</option>
+                            <option value="{% url 'watermark' %}">💧 {% trans "Watermark" %}</option>
+                            <option value="{% url 'rotate' %}">🔄 {% trans "Rotate Pages" %}</option>
+                            <option value="{% url 'reorder' %}">📑 {% trans "Reorder Pages" %}</option>
+                            <option value="{% url 'page_numbers' %}">🔢 {% trans "Page Numbers" %}</option>
+                            <option value="{% url 'redact' %}">⬛ {% trans "Redact Text" %}</option>
+                            <option value="{% url 'searchable' %}">🔍 {% trans "Make Searchable (OCR)" %}</option>
+                            <option value="{% url 'convert' %}">📝 {% trans "Convert to Word" %}</option>
+                        </select>
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="pdf-item-actions">
                     {% if pdf.is_processable %}
                     <button data-pdf-modal="{% url 'pdf_preview' pdf.id %}" class="btn btn-preview pdf-item-btn">👁️ {% trans "Preview" %}</button>
+                    <a href="{% url 'chat' pdf.id %}" class="btn btn-secondary pdf-item-btn" title="{% trans 'Chat with PDF' %}">💬 {% trans "Chat" %}</a>
                     {% else %}
                     <a href="{% url 'unprotect' %}?pdf={{ pdf.id }}" class="btn btn-primary pdf-item-btn">🔓 {% trans "Remove Password" %}</a>
                     {% endif %}
@@ -375,6 +423,57 @@ fileInput.addEventListener('change', () => {
     if (fileInput.files.length > 0) {
         showUploadingState(fileInput.files.length);
         uploadForm.submit();
+    }
+});
+
+// Instant tool search + category filter
+const searchInput = document.getElementById('tools-search-input');
+const categoryPills = document.querySelectorAll('[data-cat-filter]');
+const toolCards = document.querySelectorAll('#operations-grid .operation-card');
+const noResultsMsg = document.getElementById('tools-no-results');
+let activeCategory = 'all';
+
+function filterDashboardTools() {
+    const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+    let visibleCount = 0;
+
+    toolCards.forEach(card => {
+        const cats = (card.getAttribute('data-category') || '').split(/\s+/);
+        const text = (card.textContent || '').toLowerCase();
+        const feature = (card.getAttribute('data-feature') || '').toLowerCase();
+        const catMatch = activeCategory === 'all' || cats.includes(activeCategory);
+        const queryMatch = !query || text.includes(query) || feature.includes(query);
+
+        if (catMatch && queryMatch) {
+            card.style.display = '';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    if (noResultsMsg) {
+        noResultsMsg.hidden = visibleCount > 0;
+    }
+}
+
+searchInput?.addEventListener('input', filterDashboardTools);
+
+categoryPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+        categoryPills.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        activeCategory = pill.getAttribute('data-cat-filter') || 'all';
+        filterDashboardTools();
+    });
+});
+
+// Quick-launch select on uploaded PDF cards
+document.addEventListener('change', (e) => {
+    const sel = e.target.closest('[data-pdf-tool-jump]');
+    if (sel && sel.value) {
+        const pdfId = sel.getAttribute('data-pdf-tool-jump');
+        window.location.href = sel.value + '?pdf=' + encodeURIComponent(pdfId);
     }
 });
 </script>

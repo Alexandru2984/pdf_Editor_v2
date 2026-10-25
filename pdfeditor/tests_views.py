@@ -2416,3 +2416,22 @@ class SplitZipAndSummarizeViewTests(_ViewTestBase):
         dl_resp = self.client.get(reverse("download_text"))
         self.assertEqual(dl_resp.status_code, 200)
         self.assertIn(b"Key point 1", dl_resp.content)
+
+    def test_pipeline_chain_promotes_processed_pdf_to_next_tool(self):
+        from .models import UploadedPDF
+
+        pdf = self.upload_and_get_pdf(num_pages=2)
+        comp_resp = self.client.post(
+            f"{reverse('compress')}?pdf={pdf.id}",
+            {"quality": "medium"},
+        )
+        self.assertEqual(comp_resp.status_code, 302)
+        initial_count = UploadedPDF.objects.count()
+
+        chain_resp = self.client.post(
+            reverse("history_use_latest"),
+            {"tool": "sign"},
+        )
+        self.assertEqual(chain_resp.status_code, 302)
+        self.assertTrue(chain_resp["Location"].startswith(f"{reverse('sign')}?pdf="))
+        self.assertEqual(UploadedPDF.objects.count(), initial_count + 1)

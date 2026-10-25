@@ -1,0 +1,71 @@
+{% load i18n %}
+<div class="pipeline-chain-box">
+    <div class="pipeline-chain-header">
+        <span class="pipeline-chain-badge">🔗 {% trans "Pipeline Chaining" %}</span>
+        <h4>{% trans "Continue with this PDF in another tool" %}</h4>
+        <p>{% trans "No need to download and re-upload — send this processed PDF straight into the next operation:" %}</p>
+    </div>
+
+    <form method="post" action="{% url 'history_use_latest' %}" class="pipeline-chain-quick-grid">
+        {% csrf_token %}
+        <button type="submit" name="tool" value="compress" class="btn btn-secondary pipeline-chip">
+            📦 {% trans "Compress" %}
+        </button>
+        <button type="submit" name="tool" value="sign" class="btn btn-secondary pipeline-chip">
+            ✍️ {% trans "Digital Sign" %}
+        </button>
+        <button type="submit" name="tool" value="watermark" class="btn btn-secondary pipeline-chip">
+            💧 {% trans "Watermark" %}
+        </button>
+        <button type="submit" name="tool" value="page_numbers" class="btn btn-secondary pipeline-chip">
+            🔢 {% trans "Page Numbers" %}
+        </button>
+        <button type="submit" name="tool" value="protect" class="btn btn-secondary pipeline-chip">
+            🔒 {% trans "Password Protect" %}
+        </button>
+        <button type="submit" name="tool" value="summarize" class="btn btn-ai pipeline-chip">
+            ✨ {% trans "AI Summarize" %}
+        </button>
+        <button type="submit" name="tool" value="chat" class="btn btn-secondary pipeline-chip">
+            💬 {% trans "Chat with PDF" %}
+        </button>
+        <button type="submit" name="tool" value="share_links" class="btn btn-secondary pipeline-chip">
+            🔗 {% trans "Create Share Link" %}
+        </button>
+    </form>
+
+    <form method="post" action="{% url 'history_use_latest' %}" class="pipeline-chain-select-row">
+        {% csrf_token %}
+        <label for="pipeline-next-tool" class="sr-only">{% trans "Choose another PDF tool" %}</label>
+        <select id="pipeline-next-tool" name="tool" class="form-control pipeline-chain-select">
+            <option value="edit">✏️ {% trans "Find & Replace Text" %}</option>
+            <option value="rephrase">🤖 {% trans "AI Rephrase" %}</option>
+            <option value="summarize">🧠 {% trans "AI Summarize" %}</option>
+            <option value="chat">💬 {% trans "Chat with PDF" %}</option>
+            <option value="split">✂️ {% trans "Split PDF" %}</option>
+            <option value="merge">🔗 {% trans "Merge PDFs" %}</option>
+            <option value="compress">📦 {% trans "Compress PDF" %}</option>
+            <option value="rotate">🔄 {% trans "Rotate Pages" %}</option>
+            <option value="reorder">📑 {% trans "Reorder & Delete Pages" %}</option>
+            <option value="crop">✂️ {% trans "Crop Pages" %}</option>
+            <option value="page_numbers">🔢 {% trans "Add Page Numbers" %}</option>
+            <option value="watermark">💧 {% trans "Add Watermark" %}</option>
+            <option value="qr_code">📱 {% trans "Add QR Code Stamp" %}</option>
+            <option value="sign">✍️ {% trans "Digital Signature" %}</option>
+            <option value="protect">🔒 {% trans "Password Protect" %}</option>
+            <option value="redact">⬛ {% trans "Redact Sensitive Text" %}</option>
+            <option value="flatten">📋 {% trans "Flatten Forms & Annotations" %}</option>
+            <option value="form_fill">📝 {% trans "Fill Form Fields" %}</option>
+            <option value="searchable">🔍 {% trans "Make Searchable (OCR)" %}</option>
+            <option value="pdfa">📦 {% trans "Convert to PDF/A" %}</option>
+            <option value="outline">📑 {% trans "Edit Bookmarks / Outline" %}</option>
+            <option value="metadata">🏷️ {% trans "Edit Metadata" %}</option>
+            <option value="convert">📝 {% trans "Convert to Word (.docx)" %}</option>
+            <option value="to_images">🖼️ {% trans "Export Pages as Images" %}</option>
+            <option value="share_links">🔗 {% trans "Create Public Share Link" %}</option>
+        </select>
+        <button type="submit" class="btn btn-primary pipeline-chain-go">
+            {% trans "Open in Tool" %} →
+        </button>
+    </form>
+</div>

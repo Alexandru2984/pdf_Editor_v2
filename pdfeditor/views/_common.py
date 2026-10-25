@@ -6,6 +6,7 @@ Ownership rule: when the request is authenticated, the PDF must be linked to
 rows never alias each other.
 """
 
+import contextlib
 import mimetypes
 import os
 
@@ -131,6 +132,9 @@ def record_output(request: HttpRequest, *, kind: str, path: str, source=None) ->
         pass
 
     objectstore.schedule_mirror(output)
+    if output.name.lower().endswith(".pdf") and kind != ProcessedPDF.KIND_PROTECT:
+        with contextlib.suppress(Exception):
+            request.session["last_processed_pdf_id"] = str(output.id)
     return output
 
 

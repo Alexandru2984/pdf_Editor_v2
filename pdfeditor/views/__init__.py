@@ -87,7 +87,7 @@ from .form_fill import (
     form_fill_view,
 )
 from .health import admin_health_view, healthz, readyz
-from .history import history_delete_view, history_download_view, history_view
+from .history import history_delete_view, history_download_view, history_use_view, history_view
 from .jobs import (
     job_cancel_view,
     job_detail_view,
@@ -269,6 +269,7 @@ __all__ = [
     "history_view",
     "history_download_view",
     "history_delete_view",
+    "history_use_view",
     "healthz",
     "readyz",
     "admin_health_view",

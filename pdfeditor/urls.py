@@ -184,6 +184,8 @@ urlpatterns = [
     path("download_filled/", views.download_filled_view, name="download_filled"),
     # History
     path("history/", views.history_view, name="history"),
+    path("history/use-latest/", views.history_use_view, name="history_use_latest"),
+    path("history/use/<str:output_id>/", views.history_use_view, name="history_use"),
     path("history/download/<str:output_id>/", views.history_download_view, name="history_download"),
     path("history/delete/<str:output_id>/", views.history_delete_view, name="history_delete"),
     # Health checks (skipped from rate-limit + axes; safe for LBs)
