@@ -108,6 +108,8 @@
             <nav class="site-nav" id="site-nav" aria-label="{% trans 'Primary navigation' %}">
                 <a href="{{ seo.home_url }}" class="nav-link">🏠 {% trans "Dashboard" %}</a>
                 <a href="{{ seo.tools_hub_url }}" class="nav-link">🧰 {% if LANGUAGE_CODE|slice:':2' == 'ro' %}Instrumente PDF{% else %}PDF Tools{% endif %}</a>
+                <a href="{% url 'history' %}" class="nav-link">📜 {% trans "History" %}</a>
+                <a href="{% url 'jobs_list' %}" class="nav-link">⚙️ {% trans "Jobs" %}</a>
                 {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}" class="nav-link">👤 {{ user.username }}</a>
                 <form method="post" action="{% url 'logout' %}" class="nav-logout-form">
@@ -127,7 +129,8 @@
         <div class="messages" aria-live="polite">
             {% for message in messages %}
             <div class="message {{ message.tags }}">
-                {{ message }}
+                <span>{{ message }}</span>
+                <button type="button" class="message-close" aria-label="{% trans 'Dismiss' %}" data-dismiss-message>&times;</button>
             </div>
             {% endfor %}
         </div>
@@ -154,14 +157,21 @@
     ></script>
     
     <script nonce="{{ request.csp_nonce }}">
-        // Auto-hide messages after 5 seconds
+        // Auto-hide non-error messages after 6 seconds; keep errors/warnings until dismissed
         setTimeout(() => {
-            const messages = document.querySelectorAll('.message');
+            const messages = document.querySelectorAll('.message:not(.error):not(.warning)');
             messages.forEach(msg => {
                 msg.style.animation = 'fadeOut 0.3s ease-out forwards';
                 setTimeout(() => msg.remove(), 300);
             });
-        }, 5000);
+        }, 6000);
+
+        document.addEventListener('click', (e) => {
+            const dismissBtn = e.target.closest('[data-dismiss-message]');
+            if (dismissBtn) {
+                dismissBtn.closest('.message')?.remove();
+            }
+        });
 
         // Theme toggle
         document.getElementById('theme-toggle')?.addEventListener('click', () => {

@@ -60,6 +60,7 @@
             this.modal = document.getElementById("pdf-preview-modal");
             this.canvas = document.getElementById("modal-pdf-canvas");
             this.ctx = this.canvas.getContext("2d");
+            this.lastFocusedElement = null;
             this.setupEventListeners();
         }
 
@@ -70,23 +71,23 @@
             this.modal.querySelector(".pdf-modal-close").addEventListener("click", () => this.close());
 
             document.getElementById("modal-prev-page").addEventListener("click", () => {
-                if (this.pageNum <= 1) return;
+                if (!this.pdfDoc || this.pageNum <= 1) return;
                 this.pageNum -= 1;
                 this.queueRenderPage(this.pageNum);
             });
             document.getElementById("modal-next-page").addEventListener("click", () => {
-                if (this.pageNum >= this.pdfDoc.numPages) return;
+                if (!this.pdfDoc || this.pageNum >= this.pdfDoc.numPages) return;
                 this.pageNum += 1;
                 this.queueRenderPage(this.pageNum);
             });
             document.getElementById("modal-zoom-in").addEventListener("click", () => {
-                this.scale += 0.25;
+                this.scale = Math.min(this.scale + 0.25, 3.0);
                 document.getElementById("modal-zoom-level").textContent = Math.round(this.scale * 100);
                 this.queueRenderPage(this.pageNum);
             });
             document.getElementById("modal-zoom-out").addEventListener("click", () => {
                 if (this.scale <= 0.5) return;
-                this.scale -= 0.25;
+                this.scale = Math.max(this.scale - 0.25, 0.5);
                 document.getElementById("modal-zoom-level").textContent = Math.round(this.scale * 100);
                 this.queueRenderPage(this.pageNum);
             });
@@ -96,6 +97,29 @@
                 if (event.key === "ArrowLeft") document.getElementById("modal-prev-page").click();
                 if (event.key === "ArrowRight") document.getElementById("modal-next-page").click();
             });
+
+            // Touch swipe left/right on mobile to change pages when not zoomed in
+            const wrapper = this.modal.querySelector(".pdf-canvas-wrapper");
+            let touchStartX = 0;
+            let touchStartY = 0;
+            wrapper.addEventListener("touchstart", (e) => {
+                if (e.touches.length === 1) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+            wrapper.addEventListener("touchend", (e) => {
+                if (e.changedTouches.length !== 1 || !this.pdfDoc) return;
+                const dx = e.changedTouches[0].clientX - touchStartX;
+                const dy = e.changedTouches[0].clientY - touchStartY;
+                if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    if (dx < 0 && this.pageNum < this.pdfDoc.numPages) {
+                        document.getElementById("modal-next-page").click();
+                    } else if (dx > 0 && this.pageNum > 1) {
+                        document.getElementById("modal-prev-page").click();
+                    }
+                }
+            }, { passive: true });
         }
 
         async ensurePdfJs() {
@@ -119,6 +143,7 @@
 
         async open(pdfUrl) {
             try {
+                this.lastFocusedElement = document.activeElement;
                 await this.ensurePdfJs();
                 const normalizedUrl =
                     pdfUrl.startsWith("/") && !pdfUrl.startsWith("//")
@@ -132,11 +157,12 @@
 
                 this.pdfDoc = await loadingTask.promise;
                 this.pageNum = 1;
-                this.scale = 1.5;
+                this.scale = window.innerWidth < 600 ? 1.0 : 1.5;
                 document.getElementById("modal-page-count").textContent = this.pdfDoc.numPages;
                 document.getElementById("modal-zoom-level").textContent = Math.round(this.scale * 100);
                 this.modal.classList.add("active");
                 document.body.style.overflow = "hidden";
+                this.modal.querySelector(".pdf-modal-close")?.focus();
                 await this.renderPage(this.pageNum);
             } catch (error) {
                 console.error("Error loading PDF preview:", error);
@@ -151,15 +177,23 @@
                 this.pdfDoc.destroy();
                 this.pdfDoc = null;
             }
+            if (this.lastFocusedElement && typeof this.lastFocusedElement.focus === "function") {
+                this.lastFocusedElement.focus();
+                this.lastFocusedElement = null;
+            }
         }
 
         async renderPage(number) {
             this.pageRendering = true;
             const page = await this.pdfDoc.getPage(number);
-            const viewport = page.getViewport({ scale: this.scale });
-            this.canvas.height = viewport.height;
-            this.canvas.width = viewport.width;
-            await page.render({ canvasContext: this.ctx, viewport }).promise;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const cssViewport = page.getViewport({ scale: this.scale });
+            const renderViewport = page.getViewport({ scale: this.scale * dpr });
+            this.canvas.width = Math.floor(renderViewport.width);
+            this.canvas.height = Math.floor(renderViewport.height);
+            this.canvas.style.width = `${Math.floor(cssViewport.width)}px`;
+            this.canvas.style.height = `${Math.floor(cssViewport.height)}px`;
+            await page.render({ canvasContext: this.ctx, viewport: renderViewport }).promise;
             this.pageRendering = false;
             if (this.pageNumPending !== null) {
                 const pending = this.pageNumPending;

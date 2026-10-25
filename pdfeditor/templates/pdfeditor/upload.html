@@ -14,26 +14,41 @@
         <div class="form-group">
             <label for="pdf_file" class="file-label">
                 <span class="file-icon">📁</span>
-                <span class="file-text">{% trans "Choose PDF file" %}</span>
+                <span class="file-text">{% trans "Choose PDF file(s)" %}</span>
             </label>
             <input type="file"
                    name="pdf_file"
                    id="pdf_file"
-                   accept=".pdf"
+                   accept=".pdf,application/pdf"
+                   multiple
                    required
                    class="file-input">
             <span class="file-name" id="fileName">{% trans "No file selected" %}</span>
         </div>
 
-        <button type="submit" class="btn btn-primary">{% trans "Upload and continue" %} →</button>
+        <button type="submit" id="upload-submit-btn" class="btn btn-primary">{% trans "Upload and continue" %} →</button>
     </form>
 </div>
 
 <script nonce="{{ request.csp_nonce }}">
 const noFileMsg = '{% trans "No file selected" %}';
-document.getElementById('pdf_file').addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name || noFileMsg;
-    document.getElementById('fileName').textContent = fileName;
+const pdfInput = document.getElementById('pdf_file');
+pdfInput.addEventListener('change', function(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) {
+        document.getElementById('fileName').textContent = noFileMsg;
+    } else if (files.length === 1) {
+        document.getElementById('fileName').textContent = files[0].name;
+    } else {
+        document.getElementById('fileName').textContent = files.length + ' PDFs: ' + files.map(f => f.name).join(', ');
+    }
+});
+pdfInput.closest('form')?.addEventListener('submit', function() {
+    const btn = document.getElementById('upload-submit-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ {% trans "Uploading..." %}';
+    }
 });
 </script>
 {% endblock %}

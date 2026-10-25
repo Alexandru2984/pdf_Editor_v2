@@ -16,12 +16,6 @@
         <a href="{{ export_url }}" style="color:#4f46e5;">export it</a>.{% endblocktrans %}
     </p>
 
-    {% if messages %}
-        {% for message in messages %}
-        <div class="message-box {{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-
     <form method="post" class="edit-form" novalidate>
         {% csrf_token %}
         {% if form.non_field_errors %}

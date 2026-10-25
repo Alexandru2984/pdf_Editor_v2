@@ -1,6 +1,7 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Add Page Numbers{% endblock %}
+{% block title %}{% trans "Add Page Numbers" %}{% endblock %}
 
 {% block content %}
 <div class="preview-container" style="--tool-max-width: 900px;">
@@ -9,7 +10,7 @@
         {% if uploaded_pdfs|length > 1 %}
         <div class="tool-pdf-selector-bar">
             <label for="pdf-selector">
-                📂 Select PDF:
+                📂 {% trans "Select PDF:" %}
             </label>
             <select id="pdf-selector" data-nav-select="{% url 'page_numbers' %}">
                 {% for pdf in uploaded_pdfs %}
@@ -22,8 +23,8 @@
         {% endif %}
 
         <div class="text-center">
-            <h2 class="tool-page-title">🔢 Add Page Numbers</h2>
-            <p class="tool-page-subtitle">Add page numbers to: <strong>{{ pdf_name }}</strong></p>
+            <h2 class="tool-page-title">🔢 {% trans "Add Page Numbers" %}</h2>
+            <p class="tool-page-subtitle">{% trans "Add page numbers to:" %} <strong>{{ pdf_name }}</strong></p>
         </div>
     </div>
 
@@ -31,7 +32,7 @@
         <form method="post">
             {% csrf_token %}
 
-            <h3 class="tool-section-title">Position:</h3>
+            <h3 class="tool-section-title">{% trans "Position:" %}</h3>
             <div class="position-grid" style="max-width: 600px; margin-bottom: 2rem;">
                 {% for value, label in form.position.field.choices %}
                 <label class="position-option">
@@ -41,7 +42,7 @@
                 {% endfor %}
             </div>
 
-            <h3 class="tool-section-title">Format:</h3>
+            <h3 class="tool-section-title">{% trans "Format:" %}</h3>
             <div class="tool-options-list">
                 {% for value, label in form.format.field.choices %}
                 <label class="option-pill format-option">
@@ -65,8 +66,8 @@
             </div>
 
             <div class="tool-form-actions">
-                <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back</a>
-                <button type="submit" class="btn btn-primary">🔢 Add Page Numbers</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">← {% trans "Back" %}</a>
+                <button type="submit" class="btn btn-primary">🔢 {% trans "Add Page Numbers" %}</button>
             </div>
         </form>
     </div>
@@ -76,7 +77,9 @@
 .form-input {
     width: 100%;
     padding: 0.75rem 1rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--input-border, #d1d5db);
+    background: var(--input-bg, #ffffff);
+    color: var(--text-primary, #1f2937);
     border-radius: 0.5rem;
     font-size: 1rem;
     transition: all 0.15s;

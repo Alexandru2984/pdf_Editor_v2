@@ -33,14 +33,6 @@
             <div class="storage-meter-fill {% if storage_percent >= 90 %}storage-meter-fill--danger{% elif storage_percent >= 70 %}storage-meter-fill--warn{% endif %}" style="width: {{ storage_percent }}%;"></div>
         </div>
     </div>
-    <style>
-        .storage-meter { max-width: 720px; margin: 0 auto 1rem; padding: 0.625rem 0.875rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; }
-        .storage-meter-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #4b5563; margin-bottom: 0.4rem; }
-        .storage-meter-track { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
-        .storage-meter-fill { height: 100%; background: #10b981; transition: width 0.3s; }
-        .storage-meter-fill--warn { background: #f59e0b; }
-        .storage-meter-fill--danger { background: #ef4444; }
-    </style>
     {% endif %}
 
     <h2 class="section-title">{% trans "PDF Operations" %}</h2>
@@ -320,6 +312,21 @@ const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const uploadForm = document.getElementById('upload-form');
 
+function showUploadingState(count) {
+    const label = uploadForm.querySelector('label[for="file-input"]');
+    if (label) {
+        label.textContent = '⏳ {% trans "Uploading & scanning..." %} (' + count + ')';
+        label.style.pointerEvents = 'none';
+        label.style.opacity = '0.8';
+    }
+}
+
+dropZone.addEventListener('click', (e) => {
+    if (!e.target.closest('label') && e.target !== fileInput) {
+        fileInput.click();
+    }
+});
+
 dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
     dropZone.classList.add('drag-over');
@@ -335,8 +342,10 @@ dropZone.addEventListener('drop', (e) => {
     
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-        // Check if all files are PDFs
-        const pdfFiles = Array.from(files).filter(file => file.type === 'application/pdf');
+        // Accept files by MIME type or .pdf extension (some OS/browsers omit file.type on drag)
+        const pdfFiles = Array.from(files).filter(
+            file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+        );
         
         if (pdfFiles.length === 0) {
             alert('{% trans "Please drop PDF files only" %}');
@@ -347,16 +356,17 @@ dropZone.addEventListener('drop', (e) => {
             alert('{% trans "Some files were skipped — only PDFs are accepted." %}');
         }
         
-        // Set files and submit
         const dataTransfer = new DataTransfer();
         pdfFiles.forEach(file => dataTransfer.items.add(file));
         fileInput.files = dataTransfer.files;
+        showUploadingState(pdfFiles.length);
         uploadForm.submit();
     }
 });
 
 fileInput.addEventListener('change', () => {
     if (fileInput.files.length > 0) {
+        showUploadingState(fileInput.files.length);
         uploadForm.submit();
     }
 });

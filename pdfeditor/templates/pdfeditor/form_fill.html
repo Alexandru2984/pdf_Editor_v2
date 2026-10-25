@@ -1,15 +1,16 @@
 {% extends 'pdfeditor/base.html' %}
+{% load i18n %}
 
-{% block title %}Fill PDF Form{% endblock %}
+{% block title %}{% trans "Fill PDF Form" %}{% endblock %}
 
 {% block content %}
 <div class="card">
-    <h2>📝 Fill PDF Form</h2>
+    <h2>📝 {% trans "Fill PDF Form" %}</h2>
 
     {% if uploaded_pdfs|length > 1 %}
     <div class="tool-pdf-selector-bar">
         <label for="pdf-selector">
-            📂 Select PDF to fill:
+            📂 {% trans "Select PDF to fill:" %}
         </label>
         <select id="pdf-selector" data-nav-select="{% url 'form_fill' %}">
             {% for pdf in uploaded_pdfs %}
@@ -22,14 +23,14 @@
     {% endif %}
 
     <p class="pdf-info">
-        Filling: <strong>{{ pdf_name }}</strong>
-        <button data-pdf-modal="/media/{{ pdf_path_relative }}" class="btn btn-preview">
-            👁️ Preview PDF
+        {% trans "Filling:" %} <strong>{{ pdf_name }}</strong>
+        <button type="button" data-pdf-modal="{% url 'pdf_preview' selected_pdf.id %}" class="btn btn-preview">
+            👁️ {% trans "Preview PDF" %}
         </button>
     </p>
 
     <p class="tool-section-helper">
-        Detected <strong>{{ fields|length }}</strong> fillable field(s) in this PDF.
+        {% blocktrans with count=fields|length %}Detected <strong>{{ count }}</strong> fillable field(s) in this PDF.{% endblocktrans %}
     </p>
 
     <form method="post" class="edit-form">
@@ -39,8 +40,8 @@
         <div class="tool-form-group">
             <label for="field_{{ field.name }}" class="tool-form-label">
                 {{ field.name }}
-                <span style="font-size: 0.75rem; font-weight: 400; color: #6b7280;">
-                    ({{ field.field_type }} · page {{ field.page_number|add:1 }}{% if field.is_required %} · required{% endif %}{% if field.is_readonly %} · read-only{% endif %})
+                <span style="font-size: 0.75rem; font-weight: 400; color: var(--text-secondary, #6b7280);">
+                    ({{ field.field_type }} · {% trans "page" %} {{ field.page_number|add:1 }}{% if field.is_required %} · {% trans "required" %}{% endif %}{% if field.is_readonly %} · {% trans "read-only" %}{% endif %})
                 </span>
             </label>
 
@@ -52,13 +53,13 @@
                        style="width: 1.25rem; height: 1.25rem; vertical-align: middle;">
             {% elif field.field_type == "combobox" or field.field_type == "listbox" %}
                 <select id="field_{{ field.name }}" name="field_{{ field.name }}" class="select-input">
-                    <option value="">-- choose --</option>
+                    <option value="">-- {% trans "choose" %} --</option>
                     {% for opt in field.options %}
                     <option value="{{ opt }}" {% if opt == field.current_value %}selected{% endif %}>{{ opt }}</option>
                     {% endfor %}
                 </select>
             {% elif field.field_type == "signature" %}
-                <input type="text" value="(signature field — cannot be filled here)" disabled class="text-input">
+                <input type="text" value="{% trans '(signature field — cannot be filled here)' %}" disabled class="text-input">
             {% else %}
                 <input type="text" id="field_{{ field.name }}" name="field_{{ field.name }}"
                        value="{{ field.current_value }}"
@@ -71,16 +72,16 @@
         <div class="checkbox-row">
             <label>
                 <input type="checkbox" name="flatten">
-                <span>Flatten form (bake values into the page so the result is no longer editable)</span>
+                <span>{% trans "Flatten form (bake values into the page so the result is no longer editable)" %}</span>
             </label>
         </div>
 
         <div class="tool-form-actions" style="margin-top: 2rem;">
             <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-                ← Back
+                ← {% trans "Back" %}
             </a>
             <button type="submit" class="btn btn-primary">
-                ✅ Fill Form
+                ✅ {% trans "Fill Form" %}
             </button>
         </div>
     </form>

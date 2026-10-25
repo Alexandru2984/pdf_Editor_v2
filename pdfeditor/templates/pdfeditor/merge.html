@@ -1,5 +1,5 @@
 {% extends 'pdfeditor/base.html' %}
-{% load i18n %}
+{% load i18n static %}
 
 {% block title %}{% trans "Merge PDFs" %}{% endblock %}
 
@@ -26,8 +26,8 @@
                 <div id="pdf-list" class="pdf-merge-list">
                     {% for pdf in uploaded_pdfs %}
                     <div class="pdf-merge-item" data-pdf-id="{{ pdf.id }}">
-                        <input type="checkbox" class="pdf-checkbox" value="{{ pdf.id }}">
-                        <div class="drag-handle">⋮⋮</div>
+                        <input type="checkbox" class="pdf-checkbox" value="{{ pdf.id }}" aria-label="{% blocktrans with name=pdf.name %}Select {{ name }}{% endblocktrans %}">
+                        <div class="drag-handle" aria-hidden="true">⋮⋮</div>
                         <div class="pdf-info">
                             <div class="pdf-name">📄 {{ pdf.name }}</div>
                             <div class="pdf-size">{{ pdf.size|filesizeformat }}</div>
@@ -64,6 +64,7 @@
     </div>
 </div>
 
+<script src="{% static 'vendor/sortable/Sortable.min.js' %}"></script>
 <script nonce="{{ request.csp_nonce }}">
 const checkboxes = document.querySelectorAll('.pdf-checkbox');
 const selectedInput = document.querySelector('input[name="selected_pdfs"]');
@@ -101,45 +102,13 @@ function updateSelection() {
 
 checkboxes.forEach(cb => cb.addEventListener('change', updateSelection));
 
-let draggedElement = null;
-
-document.querySelectorAll('.pdf-merge-item').forEach(item => {
-    item.draggable = true;
-
-    item.addEventListener('dragstart', (e) => {
-        draggedElement = item;
-        item.style.opacity = '0.5';
+if (window.Sortable && pdfList) {
+    new window.Sortable(pdfList, {
+        animation: 150,
+        handle: '.drag-handle',
+        ghostClass: 'sortable-ghost',
+        onEnd: updateSelection,
     });
-
-    item.addEventListener('dragend', (e) => {
-        item.style.opacity = '1';
-        updateSelection();
-    });
-
-    item.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        const afterElement = getDragAfterElement(pdfList, e.clientY);
-        if (afterElement == null) {
-            pdfList.appendChild(draggedElement);
-        } else {
-            pdfList.insertBefore(draggedElement, afterElement);
-        }
-    });
-});
-
-function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll('.pdf-merge-item:not(.dragging)')];
-
-    return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-
-        if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 updateSelection();
@@ -149,7 +118,9 @@ updateSelection();
 .form-input {
     width: 100%;
     padding: 0.75rem 1rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--input-border, #d1d5db);
+    background: var(--input-bg, #ffffff);
+    color: var(--text-primary, #1f2937);
     border-radius: 0.5rem;
     font-size: 1rem;
     transition: all 0.15s;

@@ -18,9 +18,11 @@
 }
 
 .pdf-modal-content {
-    background: white;
+    background: var(--bg-primary, #ffffff);
+    color: var(--text-primary, #1f2937);
+    border: 1px solid var(--border-color, #e5e7eb);
     border-radius: 1rem;
-    width: 90%;
+    width: 92%;
     max-width: 1200px;
     height: 90vh;
     display: flex;
@@ -30,39 +32,41 @@
 }
 
 .pdf-modal-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.75rem;
 }
 
 .pdf-modal-header h3 {
     margin: 0;
-    color: #1f2937;
+    color: var(--text-primary, #1f2937);
     font-size: 1.25rem;
 }
 
 .pdf-modal-close {
     background: none;
     border: none;
-    font-size: 2rem;
+    font-size: 1.75rem;
     cursor: pointer;
-    color: #6b7280;
+    color: var(--text-secondary, #6b7280);
     line-height: 1;
     padding: 0;
-    width: 2rem;
-    height: 2rem;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 0.5rem;
     transition: all 0.15s;
+    flex-shrink: 0;
 }
 
 .pdf-modal-close:hover {
-    background: #f3f4f6;
-    color: #1f2937;
+    background: var(--bg-tertiary, #f3f4f6);
+    color: var(--text-primary, #1f2937);
 }
 
 .pdf-modal-body {
@@ -70,34 +74,75 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    padding: 1.5rem;
+    padding: 1.25rem;
 }
 
 .pdf-canvas-wrapper {
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: center;
-    background: #f3f4f6;
+    align-items: flex-start;
+    background: var(--bg-tertiary, #f3f4f6);
     border-radius: 0.5rem;
     overflow: auto;
+    padding: 0.75rem;
+    -webkit-overflow-scrolling: touch;
 }
 
 #modal-pdf-canvas {
     max-width: 100%;
     height: auto;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
 }
 
 .pdf-modal-controls {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 1rem;
-    margin-top: 1rem;
-    padding: 1rem;
-    background: #f9fafb;
+    gap: 0.75rem;
+    margin-top: 0.875rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-secondary, #f9fafb);
+    border: 1px solid var(--border-color, #e5e7eb);
     border-radius: 0.5rem;
+}
+
+.pdf-modal-controls .page-info {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary, #1f2937);
+    white-space: nowrap;
+}
+
+.pdf-modal-controls .zoom-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pdf-modal-controls .icon-btn {
+    min-height: 40px;
+    min-width: 40px;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--border-color, #d1d5db);
+    border-radius: 0.5rem;
+    background: var(--bg-primary, #ffffff);
+    color: var(--text-primary, #1f2937);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.pdf-modal-controls .icon-btn:hover:not(:disabled) {
+    background: var(--bg-tertiary, #f3f4f6);
+    border-color: var(--primary-light, #818cf8);
+}
+
+.pdf-modal-controls .icon-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 @keyframes slideUp {
@@ -115,11 +160,39 @@
 .btn-preview {
     background: var(--info-color);
     color: white;
-    margin-top: 1rem;
 }
 
 .btn-preview:hover {
     background: #2563eb;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+@media (max-width: 600px) {
+    .pdf-modal-content {
+        width: 96%;
+        height: 92vh;
+        border-radius: 0.75rem;
+    }
+    .pdf-modal-header {
+        padding: 0.75rem 1rem;
+    }
+    .pdf-modal-header h3 {
+        font-size: 1.05rem;
+    }
+    .pdf-modal-body {
+        padding: 0.75rem;
+    }
+    .pdf-canvas-wrapper {
+        padding: 0.5rem;
+    }
+    .pdf-modal-controls {
+        gap: 0.5rem;
+        padding: 0.625rem;
+        margin-top: 0.625rem;
+    }
+    .pdf-modal-controls .icon-btn {
+        padding: 0.4rem 0.65rem;
+        font-size: 0.8125rem;
+    }
 }

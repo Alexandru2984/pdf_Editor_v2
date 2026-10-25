@@ -15,12 +15,6 @@
     </div>
 
     <div class="pdf-viewer-wrapper">
-        {% if messages %}
-            {% for message in messages %}
-            <div class="alert-box alert-box--{{ message.tags|default:'info' }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-
         <form method="post" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
 
