@@ -4,9 +4,9 @@ dj-database-url>=3.1.2
 # non-LTS and drops Python 3.10/3.11 from the CI matrix — let Dependabot
 # keep patching 5.2.* but not jump to 6. See .github/dependabot.yml for
 # the matching ignore rule.
-# Floor bumped to 5.2.15: 5.2.14 carried PYSEC-2026-197..201. Stay on the
+# Floor bumped to 5.2.17 for the August 2026 security release. Stay on the
 # 5.2.* LTS line; Dependabot keeps patching within it.
-Django>=5.2.15,<5.3
+Django>=5.2.17,<5.3
 django-axes>=8.3.1
 django-ratelimit>=4.1.0
 celery[redis]>=5.4.0
@@ -17,7 +17,7 @@ clamd>=1.0.2
 # 50.0.0 also fixes CVE-2026-69247; stay within the current major series.
 cryptography>=50.0.0,<51
 django-prometheus>=2.4.1
-djangorestframework>=3.17.1
+djangorestframework>=3.17.2
 drf-spectacular>=0.27.0
 # Self-host Swagger UI and Redoc assets. Pin the monthly asset bundle so a
 # rebuild cannot silently change executable documentation code.
@@ -44,7 +44,7 @@ pytesseract==0.3.13
 python-dotenv>=1.0.0
 requests>=2.28.0
 sentry-sdk[django]>=2.0.0
-sqlparse>=0.5.4
+sqlparse>=0.6.0
 uvicorn[standard]>=0.30.0
 # WSGI/ASGI server for the container (installed into the image; the exact
 # pin + hash lives in requirements.lock, which is what Docker installs).
