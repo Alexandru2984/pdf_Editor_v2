@@ -158,7 +158,7 @@ services:
 
   redis:
     <<: [*hardening, *logging]
-    # maxmemory is already 256mb (allkeys-lru); 512m leaves AOF/COW headroom.
+    # maxmemory is already 256mb (volatile-lru); 512m leaves AOF/COW headroom.
     mem_limit: 512m
     # The entrypoint runs as root: it chowns the /data AOF dir to fix
     # ownership (CHOWN + DAC_OVERRIDE + FOWNER to traverse/chown files it
@@ -174,9 +174,11 @@ services:
     # isn't published to the host, this blocks the SSRF→task-injection→RCE
     # path: a forged request to redis:6379 from inside the network can't
     # issue commands without the password.
+    # volatile-lru evicts only keys with an explicit TTL (cache/sessions in DB 2
+    # and Celery results in DB 1), protecting TTL-less Celery broker queues in DB 0.
     command: >
       redis-server --appendonly yes --maxmemory 256mb
-      --maxmemory-policy allkeys-lru
+      --maxmemory-policy volatile-lru
       --requirepass "${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}"
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env}
@@ -201,7 +203,7 @@ services:
     image: pdfeditor:latest
     read_only: true
     tmpfs:
-      - /tmp
+      - /tmp:size=128m
     depends_on:
       db:
         condition: service_healthy
@@ -242,8 +244,8 @@ services:
     #   /home/app/.gunicorn → gunicorn 26 control socket (verified needed)
     read_only: true
     tmpfs:
-      - /tmp
-      - /home/app/.gunicorn
+      - /tmp:size=256m
+      - /home/app/.gunicorn:size=32m
     depends_on:
       db:
         condition: service_healthy
@@ -268,6 +270,11 @@ services:
       - ./media:/app/media
       - ./staticfiles:/app/staticfiles
       - embeddings_cache:/app/data/fastembed
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   nginx:
@@ -322,7 +329,7 @@ services:
     # (OCR/docx) and write outputs to the media volume; no other writes.
     read_only: true
     tmpfs:
-      - /tmp
+      - /tmp:size=512m
     depends_on:
       db:
         condition: service_healthy

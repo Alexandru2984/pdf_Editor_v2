@@ -11,9 +11,11 @@
  */
 
 // Bump on every deploy so clients with a stale SW pick up new assets.
-const CACHE_NAME = "pdfeditor-shell-v3";
+const CACHE_NAME = "pdfeditor-shell-v4";
 const APP_SHELL = [
     "/static/offline.html",
+    "/static/css/style.css",
+    "/static/css/pdf-modal.css",
 ];
 
 self.addEventListener("install", (event) => {
@@ -41,13 +43,20 @@ self.addEventListener("fetch", (event) => {
     const url = new URL(req.url);
     if (url.origin !== self.location.origin) return;
 
-    // Never cache API, admin, downloads, or anything that depends on the
-    // current session/user. Those must always hit the network so we don't
-    // serve stale per-user data.
-    const NO_CACHE_PREFIXES = ["/api/", "/admin/", "/media/", "/download_", "/jobs/", "/chat/"];
+    // Never intercept API, admin, accounts, downloads, or streaming routes.
+    const NO_CACHE_PREFIXES = [
+        "/api/",
+        "/admin/",
+        "/accounts/",
+        "/media/",
+        "/download_",
+        "/jobs/",
+        "/chat/",
+        "/s/",
+    ];
     if (NO_CACHE_PREFIXES.some((p) => url.pathname.startsWith(p))) return;
 
-    // Cache the app shell (static assets) cache-first.
+    // Cache immutable/static assets cache-first.
     if (url.pathname.startsWith("/static/")) {
         event.respondWith(
             caches.match(req).then((hit) => hit || fetch(req).then((resp) => {
@@ -61,19 +70,12 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
-    // For navigations, try the network first; fall back to last-cached
-    // version if offline; if neither, show the offline page.
+    // For HTML navigations, never persist dynamic pages in CacheStorage
+    // (they carry per-request CSP nonces, CSRF tokens, and session state).
+    // Hit the network and fall back to the offline shell page if unreachable.
     if (req.mode === "navigate") {
         event.respondWith(
-            fetch(req)
-                .then((resp) => {
-                    if (resp.ok) {
-                        const copy = resp.clone();
-                        caches.open(CACHE_NAME).then((c) => c.put(req, copy));
-                    }
-                    return resp;
-                })
-                .catch(() => caches.match(req).then((cached) => cached || caches.match("/static/offline.html")))
+            fetch(req).catch(() => caches.match("/static/offline.html"))
         );
     }
 });
