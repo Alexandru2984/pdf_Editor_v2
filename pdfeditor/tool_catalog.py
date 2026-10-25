@@ -923,6 +923,597 @@ TOOL_LANDINGS: tuple[ToolLanding, ...] = (
             ),
         ),
     ),
+    ToolLanding(
+        key="crop_pdf",
+        slug="crop-pdf",
+        operation_url_name="crop",
+        icon="✂️",
+        name=text("Crop PDF Margins", "Decupează margini PDF"),
+        category=text("Organize", "Organizare"),
+        short_description=text(
+            "Trim page margins in millimeters or points across all pages or a range.",
+            "Ajustează marginile paginilor în milimetri sau puncte pentru tot documentul sau un interval.",
+        ),
+        seo_title=text(
+            "Crop PDF Pages and Trim Margins Online | PDF Platform",
+            "Decupează pagini PDF și margini online | PDF Platform",
+        ),
+        seo_description=text(
+            "Crop PDF pages and trim unwanted margins in millimeters or points. Apply consistent margins across every page or a selected range online.",
+            "Decupează paginile PDF și elimină marginile nedorite în milimetri sau puncte. Aplică margini uniforme tuturor paginilor sau unui interval.",
+        ),
+        intro=text(
+            "Remove wide white borders, scanner artifacts or printer crop marks by adjusting top, right, bottom and left margins in millimeters or points.",
+            "Elimină bordurile albe late, urmele de scanare sau marcajele de tipar ajustând marginile sus, dreapta, jos și stânga în milimetri sau puncte.",
+        ),
+        highlights=(
+            text(
+                "Supports millimeters (mm) and PDF points (pt).", "Suportă milimetri (mm) și puncte PDF (pt)."
+            ),
+            text(
+                "Apply to all pages or target specific page ranges.",
+                "Aplică tuturor paginilor sau doar unor intervale specifice.",
+            ),
+            text(
+                "Updates the PDF CropBox without rasterizing text.",
+                "Actualizează CropBox-ul PDF fără rasterizarea textului.",
+            ),
+        ),
+        steps=(
+            text("Upload the PDF you want to crop.", "Încarcă PDF-ul pe care vrei să îl decupezi."),
+            text(
+                "Enter top, right, bottom and left margin insets.",
+                "Introdu valorile de decupare pentru sus, dreapta, jos și stânga.",
+            ),
+            text(
+                "Apply the crop and download the trimmed PDF.", "Aplică decuparea și descarcă PDF-ul ajustat."
+            ),
+        ),
+        note=text(
+            "Cropping adjusts the visible page box (CropBox) rather than permanently erasing outside objects. Use redaction if hidden margin content is confidential.",
+            "Decuparea ajustează zona vizibilă a paginii (CropBox), fără a șterge fizic obiectele exterioare. Folosește redactarea dacă marginile conțin date confidențiale.",
+        ),
+        faqs=(
+            faq(
+                "Does cropping change image or text quality?",
+                "Decuparea afectează calitatea textului sau a imaginilor?",
+                "No. Cropping modifies the page boundary coordinates without re-encoding text or embedded images.",
+                "Nu. Decuparea modifică doar coordonatele marginilor paginii, fără a recoda textul sau imaginile.",
+            ),
+            faq(
+                "Can I crop only odd or specific pages?",
+                "Pot decupa doar anumite pagini?",
+                "Yes. Specify a page range such as 1-3,5,8-10 or leave the field blank to crop every page.",
+                "Da. Specifică un interval precum 1-3,5,8-10 sau lasă câmpul gol pentru a decupa toate paginile.",
+            ),
+        ),
+    ),
+    ToolLanding(
+        key="flatten_pdf",
+        slug="flatten-pdf",
+        operation_url_name="flatten",
+        icon="🧱",
+        name=text("Flatten PDF", "Aplatizează PDF"),
+        category=text("Security", "Securitate"),
+        short_description=text(
+            "Bake interactive form fields and annotations into static page content.",
+            "Transformă câmpurile de formular și adnotările interactive în conținut static.",
+        ),
+        seo_title=text(
+            "Flatten PDF Forms and Annotations Online | PDF Platform",
+            "Aplatizează formulare și adnotări PDF | PDF Platform",
+        ),
+        seo_description=text(
+            "Flatten interactive PDF form fields and annotations into static page content so values cannot be edited accidentally by recipients.",
+            "Aplatizează câmpurile interactive și adnotările PDF în conținut static pe pagină, astfel încât valorile să nu fie modificate accidental.",
+        ),
+        intro=text(
+            "Lock in completed form values, stamps and comments before sending a PDF to clients or printers so interactive widgets no longer float above the page.",
+            "Fixează valorile completate în formulare, ștampilele și comentariile înainte de trimitere sau tipărire, eliminând câmpurile interactive.",
+        ),
+        highlights=(
+            text(
+                "Merges AcroForm fields and annotations into the page stream.",
+                "Contopește câmpurile AcroForm și adnotările în fluxul paginii.",
+            ),
+            text(
+                "Improves compatibility with printers and archival viewers.",
+                "Îmbunătățește compatibilitatea la tipărire și arhivare.",
+            ),
+            text(
+                "Generates a clean flattened copy while keeping your original.",
+                "Generează o copie aplatizată curată, păstrând originalul intact.",
+            ),
+        ),
+        steps=(
+            text("Upload the PDF with forms or annotations.", "Încarcă PDF-ul cu formulare sau adnotări."),
+            text("Confirm the flatten operation.", "Confirmă operațiunea de aplatizare."),
+            text("Download the static flattened PDF.", "Descarcă PDF-ul static aplatizat."),
+        ),
+        note=text(
+            "Once flattened, form fields can no longer be edited as interactive inputs. Keep the unflattened file if you need to update values later.",
+            "După aplatizare, câmpurile de formular nu mai pot fi editate interactiv. Păstrează fișierul original dacă vei avea nevoie de modificări ulterioare.",
+        ),
+        faqs=(
+            faq(
+                "What does flattening a PDF do?",
+                "Ce face aplatizarea unui PDF?",
+                "It converts interactive form inputs, checkboxes and annotations into regular static graphics and text on the page.",
+                "Convertește câmpurile interactive, căsuțele de bifat și adnotările în grafică și text static obișnuit pe pagină.",
+            ),
+            faq(
+                "Is flattening the same as password protection?",
+                "Aplatizarea este același lucru cu protecția prin parolă?",
+                "No. Flattening removes interactive form widgets, whereas password protection encrypts the file and restricts permissions.",
+                "Nu. Aplatizarea elimină elementele interactive de formular, în timp ce protecția cu parolă criptează fișierul.",
+            ),
+        ),
+    ),
+    ToolLanding(
+        key="page_numbers_pdf",
+        slug="add-page-numbers-pdf",
+        operation_url_name="page_numbers",
+        icon="🔢",
+        name=text("Add Page Numbers", "Numerotează pagini PDF"),
+        category=text("Edit", "Editare"),
+        short_description=text(
+            "Insert customizable page numbers in the header or footer of your PDF.",
+            "Inserează numere de pagină personalizabile în antetul sau subsolul PDF-ului.",
+        ),
+        seo_title=text(
+            "Add Page Numbers to PDF Online | PDF Platform",
+            "Adaugă numere de pagină în PDF online | PDF Platform",
+        ),
+        seo_description=text(
+            "Insert customizable page numbers into any PDF document. Choose the numbering format, starting page, font size and header or footer position.",
+            "Inserează numere de pagină personalizabile în orice document PDF. Alege formatul numerotării, pagina de start, dimensiunea și poziția.",
+        ),
+        intro=text(
+            "Prepare reports, legal bundles and academic submissions with clear, consistent page numbering in the header or footer.",
+            "Pregătește rapoarte, dosare juridice și lucrări academice cu o numerotare clară și uniformă în antet sau subsol.",
+        ),
+        highlights=(
+            text(
+                "Multiple formats including Page X of Y and simple numbers.",
+                "Formate multiple, inclusiv „Pagina X din Y” sau numere simple.",
+            ),
+            text(
+                "Six header and footer positions with adjustable margins.",
+                "Șase poziții în antet și subsol, cu margini ajustabile.",
+            ),
+            text(
+                "Custom starting number and font size controls.",
+                "Control pentru numărul de start și dimensiunea fontului.",
+            ),
+        ),
+        steps=(
+            text(
+                "Upload the PDF document to number.", "Încarcă documentul PDF pe care vrei să îl numerotezi."
+            ),
+            text(
+                "Choose position, numbering format, font size and start number.",
+                "Alege poziția, formatul numerotării, dimensiunea fontului și numărul de start.",
+            ),
+            text("Generate and download the numbered PDF.", "Generează și descarcă PDF-ul numerotat."),
+        ),
+        note=text(
+            "If your document already has printed page numbers, adding new ones will overlay them unless you choose a different corner or crop the old footer first.",
+            "Dacă documentul are deja numere tipărite, noile numere se vor suprapune dacă nu alegi alt colț sau nu decupezi mai întâi vechiul subsol.",
+        ),
+        faqs=(
+            faq(
+                "Can I start numbering from a number other than 1?",
+                "Pot începe numerotarea de la alt număr decât 1?",
+                "Yes. Set the starting number to match continuous multi-volume pagination.",
+                "Da. Setează numărul de start dorit pentru a continua numerotarea între mai multe volume.",
+            ),
+            faq(
+                "Where can page numbers be placed?",
+                "Unde pot fi plasate numerele de pagină?",
+                "You can place them at the top-left, top-center, top-right, bottom-left, bottom-center or bottom-right of every page.",
+                "Le poți plasa sus-stânga, sus-centru, sus-dreapta, jos-stânga, jos-centru sau jos-dreapta pe fiecare pagină.",
+            ),
+        ),
+    ),
+    ToolLanding(
+        key="metadata_pdf",
+        slug="edit-pdf-metadata",
+        operation_url_name="metadata",
+        icon="🏷️",
+        name=text("Edit PDF Metadata", "Editează metadate PDF"),
+        category=text("Security", "Securitate"),
+        short_description=text(
+            "Inspect, update or completely strip title, author, subject and keyword metadata.",
+            "Verifică, actualizează sau șterge complet titlul, autorul, subiectul și cuvintele-cheie.",
+        ),
+        seo_title=text(
+            "View, Edit or Strip PDF Metadata Online | PDF Platform",
+            "Editează sau șterge metadate PDF online | PDF Platform",
+        ),
+        seo_description=text(
+            "Inspect, update or completely strip PDF metadata fields including title, author, subject and keywords before sharing your document online.",
+            "Verifică, actualizează sau șterge complet metadatele PDF precum titlul, autorul, subiectul și cuvintele-cheie înainte de a distribui fișierul.",
+        ),
+        intro=text(
+            "Clean up hidden document properties before publishing a file, or set accurate title, author and keyword fields for indexing and archives.",
+            "Curăță proprietățile ascunse ale documentului înainte de publicare sau setează corect titlul, autorul și cuvintele-cheie pentru arhivare.",
+        ),
+        highlights=(
+            text(
+                "Edit Title, Author, Subject, Keywords, Creator and Producer.",
+                "Editează Titlul, Autorul, Subiectul, Cuvintele-cheie, Creatorul și Producătorul.",
+            ),
+            text(
+                "One-click option to strip all metadata for privacy.",
+                "Opțiune rapidă pentru ștergerea completă a metadatelor.",
+            ),
+            text(
+                "Preserves page layout and visual appearance.",
+                "Păstrează intacte aspectul vizual și structura paginilor.",
+            ),
+        ),
+        steps=(
+            text("Upload the PDF to inspect.", "Încarcă PDF-ul pe care vrei să îl verifici."),
+            text(
+                "Edit the metadata fields or select strip all metadata.",
+                "Editează câmpurile de metadate sau alege ștergerea lor completă.",
+            ),
+            text("Save and download the updated PDF.", "Salvează și descarcă PDF-ul actualizat."),
+        ),
+        note=text(
+            "Stripping document metadata removes standard info dictionary and XMP properties, but does not remove author names written visibly inside page text.",
+            "Ștergerea metadatelor elimină proprietățile din dicționarul info și XMP, dar nu șterge numele de autori scrise vizibil în textul paginii.",
+        ),
+        faqs=(
+            faq(
+                "Why should I strip PDF metadata?",
+                "De ce ar trebui să șterg metadatele PDF?",
+                "PDFs often store the creator username, software version and internal document title, which you may not want to disclose publicly.",
+                "Fișierele PDF păstrează adesea numele utilizatorului, aplicația folosită și titluri interne pe care nu dorești să le expui public.",
+            ),
+            faq(
+                "Does editing metadata alter the pages?",
+                "Editarea metadatelor modifică paginile?",
+                "No. Only the document information properties are updated; page text and images remain untouched.",
+                "Nu. Doar proprietățile informative ale documentului sunt actualizate; textul și imaginile rămân neschimbate.",
+            ),
+        ),
+    ),
+    ToolLanding(
+        key="pdfa_pdf",
+        slug="pdf-to-pdfa",
+        operation_url_name="pdfa",
+        icon="🏛️",
+        name=text("Convert to PDF/A", "Convertește în PDF/A"),
+        category=text("Convert", "Conversie"),
+        short_description=text(
+            "Convert standard PDFs into archival PDF/A format for long-term preservation.",
+            "Convertește fișiere PDF standard în formatul de arhivare PDF/A pe termen lung.",
+        ),
+        seo_title=text(
+            "Convert PDF to Archival PDF/A Online | PDF Platform",
+            "Convertește PDF în format PDF/A online | PDF Platform",
+        ),
+        seo_description=text(
+            "Convert standard PDF files into ISO-standardized archival PDF/A documents with embedded color profiles and metadata for long-term storage.",
+            "Convertește fișiere PDF standard în documente PDF/A de arhivare conform ISO, cu profiluri de culoare și metadate încorporate pe termen lung.",
+        ),
+        intro=text(
+            "Prepare documents for public institutions, court filings and long-term digital archives that require self-contained PDF/A compliance.",
+            "Pregătește documente pentru instituții publice, depuneri oficiale și arhive digitale pe termen lung care solicită conformitate PDF/A.",
+        ),
+        highlights=(
+            text(
+                "Supports PDF/A-1b, PDF/A-2b and PDF/A-3b conformance levels.",
+                "Suportă nivelurile de conformitate PDF/A-1b, PDF/A-2b și PDF/A-3b.",
+            ),
+            text(
+                "Embeds output intent color profiles and XMP metadata.",
+                "Încorporează profiluri de culoare și metadate XMP standardizate.",
+            ),
+            text(
+                "Removes forbidden dynamic content for archival stability.",
+                "Elimină elementele dinamice interzise pentru stabilitate în arhivă.",
+            ),
+        ),
+        steps=(
+            text("Upload the PDF you need to archive.", "Încarcă PDF-ul pe care trebuie să îl arhivezi."),
+            text(
+                "Select the target PDF/A conformance level.",
+                "Selectează nivelul de conformitate PDF/A dorit.",
+            ),
+            text(
+                "Convert and download the archival PDF/A file.",
+                "Convertește și descarcă fișierul PDF/A de arhivă.",
+            ),
+        ),
+        note=text(
+            "If the source PDF uses unembedded fonts missing on the server, verify the converted document with your target archive validator before submission.",
+            "Dacă PDF-ul sursă folosește fonturi neîncorporate, verifică documentul convertit cu validatorul instituției înainte de depunerea oficială.",
+        ),
+        faqs=(
+            faq(
+                "Which PDF/A version should I choose?",
+                "Ce versiune PDF/A ar trebui să aleg?",
+                "PDF/A-2b is recommended for most modern archives as it supports JPEG2000 compression and transparency.",
+                "PDF/A-2b este recomandat pentru majoritatea arhivelor moderne, deoarece suportă transparență și compresie eficientă.",
+            ),
+            faq(
+                "Can an encrypted PDF be converted to PDF/A?",
+                "Poate fi convertit în PDF/A un PDF criptat?",
+                "PDF/A forbids password encryption. Unlock the PDF first before converting it to PDF/A.",
+                "Standardul PDF/A interzice criptarea cu parolă. Deblochează mai întâi PDF-ul înainte de conversia în PDF/A.",
+            ),
+        ),
+    ),
+    ToolLanding(
+        key="compare_pdf",
+        slug="compare-pdf",
+        operation_url_name="compare",
+        icon="⚖️",
+        name=text("Compare PDFs", "Compară două PDF-uri"),
+        category=text("Edit", "Editare"),
+        short_description=text(
+            "Spot text changes and visual differences between two versions of a PDF.",
+            "Identifică modificările de text și diferențele vizuale dintre două versiuni PDF.",
+        ),
+        seo_title=text(
+            "Compare Two PDF Files Side by Side | PDF Platform",
+            "Compară două fișiere PDF vizual și text | PDF Platform",
+        ),
+        seo_description=text(
+            "Compare two PDF versions to spot text changes and visual page differences. Generate a unified diff summary and highlighted comparison PDF.",
+            "Compară două versiuni PDF pentru a identifica modificările de text și diferențele vizuale. Generează un raport diff și un PDF evidențiat.",
+        ),
+        intro=text(
+            "Check contract revisions, proofread updated layouts or verify that only approved clauses changed between two PDF drafts.",
+            "Verifică reviziile unui contract, compară machete actualizate sau confirmă că doar clauzele aprobate s-au schimbat între două variante PDF.",
+        ),
+        highlights=(
+            text(
+                "Extracts a unified text diff across pages.",
+                "Extrage diferențele de text (diff) pe parcursul paginilor.",
+            ),
+            text(
+                "Generates a visual comparison PDF highlighting changed regions.",
+                "Generează un PDF comparativ care evidențiază vizual zonele modificate.",
+            ),
+            text(
+                "Upload two files at once or compare against an existing upload.",
+                "Încarcă două fișiere simultan sau compară cu un document deja încărcat.",
+            ),
+        ),
+        steps=(
+            text(
+                "Upload the base PDF and the revised PDF.", "Încarcă PDF-ul de bază și versiunea revizuită."
+            ),
+            text("Run the comparison engine.", "Rulează motorul de comparare."),
+            text(
+                "Review the text diff and download the visual comparison PDF.",
+                "Analizează diferențele de text și descarcă PDF-ul comparativ.",
+            ),
+        ),
+        note=text(
+            "Scanned PDFs without a text layer will only show visual pixel differences unless you run OCR on both files first.",
+            "PDF-urile scanate fără strat de text vor afișa doar diferențe vizuale la nivel de pixeli dacă nu rulezi mai întâi OCR pe ambele fișiere.",
+        ),
+        faqs=(
+            faq(
+                "How are visual differences shown?",
+                "Cum sunt afișate diferențele vizuale?",
+                "Pages are rendered and compared so regions that changed between the two versions are highlighted in the output PDF.",
+                "Paginile sunt randate și comparate, iar zonele care diferă între cele două versiuni sunt evidențiate în PDF-ul rezultat.",
+            ),
+            faq(
+                "Can I compare PDFs with different page counts?",
+                "Pot compara PDF-uri cu număr diferit de pagini?",
+                "Yes. Shared pages are compared pair by pair and extra pages are noted in the comparison output.",
+                "Da. Paginile comune sunt comparate pereche cu pereche, iar paginile suplimentare sunt semnalate în rezultat.",
+            ),
+        ),
+        multiple_upload=True,
+    ),
+    ToolLanding(
+        key="outline_pdf",
+        slug="pdf-bookmarks-outline",
+        operation_url_name="outline",
+        icon="🔖",
+        name=text("PDF Bookmarks and Outline", "Semne de carte și cuprins PDF"),
+        category=text("Organize", "Organizare"),
+        short_description=text(
+            "View, add or edit hierarchical bookmarks and table-of-contents entries.",
+            "Vizualizează, adaugă sau editează semne de carte ierarhice și intrări de cuprins.",
+        ),
+        seo_title=text(
+            "Edit PDF Bookmarks and Table of Contents | PDF Platform",
+            "Editează semne de carte și cuprins PDF | PDF Platform",
+        ),
+        seo_description=text(
+            "View, add or replace PDF bookmarks and hierarchical outline entries so readers can jump directly to chapters and sections in your document.",
+            "Vizualizează, adaugă sau înlocuiește semnele de carte și cuprinsul ierarhic PDF, astfel încât cititorii să sară rapid la capitole și secțiuni.",
+        ),
+        intro=text(
+            "Make long manuals, e-books and legal filings easy to navigate by defining a clean sidebar bookmark tree pointing to exact page numbers.",
+            "Fă manualele lungi, cărțile electronice și dosarele ușor de parcurs definind un arbore de semne de carte către paginile exacte.",
+        ),
+        highlights=(
+            text(
+                "Pre-fills existing bookmarks so you can edit them quickly.",
+                "Preîncarcă semnele de carte existente pentru editare rapidă.",
+            ),
+            text(
+                "Supports nested hierarchy levels (chapters, sections, subsections).",
+                "Suportă niveluri ierarhice imbricate (capitole, secțiuni, subsecțiuni).",
+            ),
+            text(
+                "Simple line-by-line format: level | title | page.",
+                "Format simplu linie cu linie: nivel | titlu | pagină.",
+            ),
+        ),
+        steps=(
+            text("Upload the PDF document.", "Încarcă documentul PDF."),
+            text(
+                "Edit or enter bookmark lines with level, title and target page.",
+                "Editează sau introdu liniile de cuprins cu nivel, titlu și pagină.",
+            ),
+            text(
+                "Apply the outline and download the updated PDF.",
+                "Aplică cuprinsul și descarcă PDF-ul actualizat.",
+            ),
+        ),
+        note=text(
+            "PDF bookmarks update the viewer navigation sidebar; they do not insert a newly typeset table-of-contents page inside the document body.",
+            "Semnele de carte actualizează panoul lateral de navigare al cititorului PDF; nu inserează o pagină nouă de cuprins în interiorul documentului.",
+        ),
+        faqs=(
+            faq(
+                "How do I create sub-bookmarks?",
+                "Cum creez sub-capitole în cuprins?",
+                "Use level 1 for top-level chapters, level 2 for sections under the preceding level 1, and so on.",
+                "Folosește nivelul 1 pentru capitole principale, nivelul 2 pentru secțiuni sub capitolul precedent ș.a.m.d.",
+            ),
+            faq(
+                "Can I remove all existing bookmarks?",
+                "Pot șterge toate semnele de carte existente?",
+                "Yes. Clear the outline editor and submit to strip the bookmark tree from the generated copy.",
+                "Da. Golește editorul de cuprins și salvează pentru a elimina arborele de semne de carte din copia generată.",
+            ),
+        ),
+    ),
+    ToolLanding(
+        key="form_fill_pdf",
+        slug="fill-pdf-forms",
+        operation_url_name="form_fill",
+        icon="📋",
+        name=text("Fill PDF Forms", "Completează formulare PDF"),
+        category=text("Edit", "Editare"),
+        short_description=text(
+            "Complete interactive AcroForm fields online and optionally flatten the result.",
+            "Completează online câmpurile AcroForm interactive și aplatizează opțional rezultatul.",
+        ),
+        seo_title=text(
+            "Fill Interactive PDF Forms Online | PDF Platform",
+            "Completează formulare PDF interactive | PDF Platform",
+        ),
+        seo_description=text(
+            "Detect and fill interactive AcroForm fields in your PDF online, including text inputs, checkboxes and dropdowns, with optional flattening.",
+            "Detectează și completează online câmpurile AcroForm dintr-un PDF, inclusiv casete de text, bife și liste, cu opțiune de aplatizare finală.",
+        ),
+        intro=text(
+            "Automatically list every interactive field in an official application, tax form or contract, type your values in a clean web form and export the completed PDF.",
+            "Listează automat toate câmpurile interactive dintr-o cerere, formular fiscal sau contract, completează valorile și descarcă PDF-ul gata completat.",
+        ),
+        highlights=(
+            text(
+                "Detects text fields, checkboxes, radio groups and dropdowns.",
+                "Detectează câmpuri de text, căsuțe de bifat, butoane radio și liste.",
+            ),
+            text(
+                "Groups fields by page for fast, structured completion.",
+                "Grupează câmpurile pe pagini pentru o completare rapidă și clară.",
+            ),
+            text(
+                "Optional one-step flatten so completed values cannot be altered.",
+                "Opțiune de aplatizare directă pentru blocarea valorilor completate.",
+            ),
+        ),
+        steps=(
+            text(
+                "Upload a PDF with interactive form fields.",
+                "Încarcă un PDF cu câmpuri de formular interactive.",
+            ),
+            text(
+                "Fill in the detected fields and choose whether to flatten.",
+                "Completează câmpurile detectate și alege dacă dorești aplatizarea.",
+            ),
+            text("Generate and download the filled PDF.", "Generează și descarcă PDF-ul completat."),
+        ),
+        note=text(
+            "If your PDF is a flat scan without interactive AcroForm widgets, use the visual PDF Editor to place text directly over the page.",
+            "Dacă PDF-ul este o scanare simplă fără câmpuri AcroForm interactive, folosește Editorul PDF vizual pentru a plasa text direct pe pagină.",
+        ),
+        faqs=(
+            faq(
+                "Why does the tool say no form fields were found?",
+                "De ce instrumentul spune că nu s-au găsit câmpuri de formular?",
+                "Many PDFs look like forms visually but lack interactive AcroForm widgets. Open those files in Edit PDF to add text boxes anywhere.",
+                "Multe PDF-uri arată ca formulare, dar nu conțin câmpuri AcroForm interactive. Deschide-le în Editează PDF pentru a adăuga text oriunde.",
+            ),
+            faq(
+                "Should I flatten the form after filling it?",
+                "Ar trebui să aplatizez formularul după completare?",
+                "Flatten it if you are submitting a final read-only copy; leave it unflattened if the recipient needs to edit the fields further.",
+                "Aplatizează-l dacă trimiți varianta finală; lasă-l neaplatizat dacă destinatarul trebuie să mai modifice câmpurile.",
+            ),
+        ),
+    ),
+    ToolLanding(
+        key="summarize_pdf",
+        slug="ai-pdf-summarizer",
+        operation_url_name="summarize",
+        icon="🧠",
+        name=text("AI PDF Summarizer", "Rezumat PDF cu AI"),
+        category=text("Convert", "Conversie"),
+        short_description=text(
+            "Generate concise executive summaries and key takeaways from any PDF in your language.",
+            "Generează rezumate executive concise și idei principale din orice PDF, în limba dorită.",
+        ),
+        seo_title=text(
+            "AI PDF Summarizer and Key Takeaways | PDF Platform",
+            "Rezumat PDF cu AI și idei principale | PDF Platform",
+        ),
+        seo_description=text(
+            "Generate concise AI-powered summaries and key bullet points from any PDF document in your preferred language, then copy or download the text.",
+            "Generează rezumate concise și idei principale cu AI din orice document PDF în limba dorită, apoi copiază sau descarcă textul rezultat.",
+        ),
+        intro=text(
+            "Turn lengthy reports, research papers and contracts into structured summaries with bulleted key points in seconds.",
+            "Transformă în câteva secunde rapoarte lungi, articole de cercetare și contracte în rezumate structurate cu ideile esențiale.",
+        ),
+        highlights=(
+            text(
+                "Supports output in English, Romanian, German, French, Spanish and more.",
+                "Suportă rezumate în română, engleză, germană, franceză, spaniolă și alte limbi.",
+            ),
+            text(
+                "Automatic fallback across local and cloud AI models.",
+                "Comutare automată între modelele AI disponibile.",
+            ),
+            text(
+                "One-click copy to clipboard or .txt download.",
+                "Copiere rapidă în clipboard sau descărcare ca fișier .txt.",
+            ),
+        ),
+        steps=(
+            text(
+                "Upload the PDF document you want to summarize.",
+                "Încarcă documentul PDF pe care vrei să îl rezumi.",
+            ),
+            text(
+                "Select your preferred output language and AI model.",
+                "Selectează limba dorită pentru rezumat și modelul AI.",
+            ),
+            text("Generate, copy or download the summary.", "Generează, copiază sau descarcă rezumatul."),
+        ),
+        note=text(
+            "AI summaries can omit nuances or misinterpret dense tables. Always verify critical clauses, figures and obligations in the original PDF.",
+            "Rezumatele generate cu AI pot omite nuanțe sau pot interpreta greșit tabele complexe. Verifică mereu cifrele și clauzele critice în documentul original.",
+        ),
+        faqs=(
+            faq(
+                "Can I summarize a PDF in another language?",
+                "Pot rezuma un PDF în altă limbă?",
+                "Yes. Choose your target output language (such as Romanian or English) and the AI will summarize and translate the key points.",
+                "Da. Alege limba dorită (de exemplu română sau engleză), iar AI-ul va rezuma și traduce ideile principale.",
+            ),
+            faq(
+                "What if my PDF is a scanned image?",
+                "Ce fac dacă PDF-ul meu este o scanare?",
+                "Run Searchable PDF (OCR) first so the document has selectable text before generating an AI summary.",
+                "Rulează mai întâi funcția PDF căutabil (OCR) pentru a extrage textul înainte de generarea rezumatului cu AI.",
+            ),
+        ),
+    ),
 )
 
 TOOL_LANDINGS_BY_SLUG = {tool.slug: tool for tool in TOOL_LANDINGS}

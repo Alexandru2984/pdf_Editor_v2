@@ -201,6 +201,31 @@ def download_split_file_view(request):
     return attachment_response(outputs[idx].path, not_found_message="File not found on disk")
 
 
+def download_split_zip_view(request):
+    import io
+    import zipfile
+
+    from django.http import HttpResponse
+
+    outputs = [o for o in _session_split_outputs(request) if o.exists_on_disk()]
+    if not outputs:
+        raise Http404("No split files found")
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        used_names: set[str] = set()
+        for idx, out in enumerate(outputs, 1):
+            arcname = os.path.basename(out.name) or f"part_{idx}.pdf"
+            if arcname in used_names:
+                arcname = f"{idx}_{arcname}"
+            used_names.add(arcname)
+            zf.write(out.path, arcname=arcname)
+
+    response = HttpResponse(buf.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = 'attachment; filename="split_pdfs.zip"'
+    return response
+
+
 # ---------- Merge ----------
 
 MAX_MERGE_INPUTS = 20

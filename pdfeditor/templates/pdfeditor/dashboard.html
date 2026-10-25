@@ -205,6 +205,13 @@
         </div>
         {% endif %}
 
+        <div class="operation-card" data-feature="summarize">
+            <div class="card-icon">🧠</div>
+            <h3>{% trans "AI Summarize" %}</h3>
+            <p>{% trans "Generate an instant executive summary of your PDF in English, Romanian, or 4 other languages" %}</p>
+            <a href="{% url 'summarize' %}" class="btn btn-ai">✨ {% trans "Summarize" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="page-numbers">
             <div class="card-icon">🔢</div>
             <h3>{% trans "Add Page Numbers" %}</h3>

@@ -1,0 +1,108 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "AI PDF Summarizer" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 900px;">
+    <div class="preview-header">
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
+                📂 {% trans "Select PDF:" %}
+            </label>
+            <select id="pdf-selector" data-nav-select="{% url 'summarize' %}">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="tool-page-title">🧠 {% trans "AI PDF Summarizer" %}</h2>
+            <p class="tool-page-subtitle">
+                {% trans "Generate an executive summary covering the main topic, key points, and conclusions of your PDF" %}
+            </p>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <div class="tool-info-bar" style="margin-bottom: 1.5rem;">
+            <div>
+                <strong>📄 {% trans "Document:" %}</strong> {{ pdf_name }}
+            </div>
+            <div>
+                <button type="button" data-pdf-modal="{% url 'pdf_preview' selected_pdf.id %}" class="btn btn-preview">
+                    👁️ {% trans "Preview PDF" %}
+                </button>
+            </div>
+        </div>
+
+        <form method="post" id="summarize-form">
+            {% csrf_token %}
+            <input type="hidden" name="pdf_id" value="{{ selected_pdf.id }}">
+
+            <div class="tool-form-group">
+                <label for="language-select" class="tool-form-label">
+                    🌐 {% trans "Output Language:" %}
+                </label>
+                <select name="language" id="language-select" class="select-input">
+                    {% for code, label in summary_languages %}
+                    <option value="{{ code }}" {% if code == selected_language %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <small class="tool-form-help">
+                    {% trans "For scanned PDFs without selectable text, run Make Searchable (OCR) first." %}
+                </small>
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+                    ← {% trans "Back" %}
+                </a>
+                <button type="submit" id="summarize-submit-btn" class="btn btn-ai">
+                    ✨ {% trans "Generate Summary" %}
+                </button>
+            </div>
+        </form>
+
+        {% if summary_result %}
+        <div class="tool-form-section" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem;">
+                <h3 class="tool-section-title" style="margin: 0;">📋 {% trans "Executive Summary" %} ({{ selected_language }})</h3>
+                <span style="font-size: 0.8125rem; color: var(--text-secondary);">
+                    {% blocktrans with chars=summary_result.chars_used %}Analyzed {{ chars }} characters{% endblocktrans %}
+                    {% if summary_result.truncated %} · {% trans "Truncated to first 80,000 chars" %}{% endif %}
+                </span>
+            </div>
+
+            <textarea id="summary-output" class="mt-text-area" readonly style="height: 280px; margin-bottom: 1rem;">{{ summary_result.summary }}</textarea>
+
+            <div class="tool-form-actions">
+                <button type="button" class="btn btn-secondary" data-copy="{{ summary_result.summary }}">
+                    📋 {% trans "Copy Summary" %}
+                </button>
+                <a href="{% url 'download_text' %}" class="btn btn-primary">
+                    📥 {% trans "Download .txt" %}
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+document.getElementById('summarize-form')?.addEventListener('submit', function() {
+    const btn = document.getElementById('summarize-submit-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ {% trans "Summarizing with AI..." %}';
+    }
+});
+</script>
+{% endblock %}

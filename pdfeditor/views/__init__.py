@@ -34,6 +34,7 @@ from .basic_ops import (
     download_searchable_view,
     download_signed_view,
     download_split_file_view,
+    download_split_zip_view,
     download_unprotected_view,
     flatten_result_view,
     flatten_view,
@@ -77,6 +78,8 @@ from .extract import (
     extract_text_ajax,
     more_tools_view,
     ocr_text_ajax,
+    summarize_text_ajax,
+    summarize_view,
 )
 from .form_fill import (
     download_filled_view,
@@ -185,6 +188,7 @@ __all__ = [
     "split_view",
     "split_result_view",
     "download_split_file_view",
+    "download_split_zip_view",
     "merge_view",
     "merge_result_view",
     "download_merged_view",
@@ -251,6 +255,8 @@ __all__ = [
     "more_tools_view",
     "extract_text_ajax",
     "ocr_text_ajax",
+    "summarize_view",
+    "summarize_text_ajax",
     "download_text_view",
     "rephrase_view",
     "rephrase_preview_ajax",

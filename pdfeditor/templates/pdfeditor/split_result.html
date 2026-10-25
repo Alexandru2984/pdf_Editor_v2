@@ -12,7 +12,14 @@
     </div>
 
     <div class="pdf-viewer-wrapper">
-        <h3 class="result-section-title" style="text-align: left;">{% trans "📁 Generated Files:" %}</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+            <h3 class="result-section-title" style="text-align: left; margin: 0;">{% trans "📁 Generated Files:" %}</h3>
+            {% if split_count > 1 %}
+            <a href="{% url 'download_split_zip' %}" class="btn btn-primary">
+                📦 {% trans "Download All as ZIP" %}
+            </a>
+            {% endif %}
+        </div>
 
         <div class="file-card-list">
             {% for file in files_info %}
@@ -22,10 +29,10 @@
                     <div class="file-card-meta">{% blocktrans with size=file.size|filesizeformat %}Size: {{ size }}{% endblocktrans %}</div>
                 </div>
                 <div class="file-card-actions">
-                    <button data-pdf-modal="/media/{{ file.path_relative }}" class="btn btn-preview">
+                    <button type="button" data-pdf-modal="/media/{{ file.path_relative }}" class="btn btn-preview">
                         {% trans "👁️ Preview" %}
                     </button>
-                    <a href="/download_split/?file={{ forloop.counter0 }}" class="btn btn-primary">
+                    <a href="{% url 'download_split' %}?file={{ forloop.counter0 }}" class="btn btn-primary">
                         {% trans "📥 Download" %}
                     </a>
                 </div>
@@ -37,8 +44,8 @@
             <a href="{% url 'dashboard' %}" class="btn btn-secondary">
                 {% trans "← Dashboard" %}
             </a>
-            <a href="{% url 'dashboard' %}" class="btn btn-primary">
-                {% trans "Process Another PDF" %}
+            <a href="{% url 'split' %}" class="btn btn-primary">
+                {% trans "Split Another PDF" %}
             </a>
         </div>
     </div>

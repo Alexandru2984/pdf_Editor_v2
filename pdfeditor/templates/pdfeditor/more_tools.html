@@ -1,36 +1,21 @@
 {% extends 'pdfeditor/base.html' %}
-{% load i18n %}
+{% load i18n static %}
 
 {% block title %}{% trans "More Tools" %}{% endblock %}
 
 {% block content %}
-<canvas id="confetti-canvas" class="mt-confetti-canvas"></canvas>
-
-<div id="surprise-overlay" class="mt-overlay">
-    <div class="mt-overlay-content">
-        <div class="mt-overlay-icon">🚀</div>
-        <h1 class="mt-overlay-title">PDF Editor 2.0</h1>
-        <p class="mt-overlay-subtitle">{% trans "The Future of PDF Editing" %}</p>
-        <div class="mt-loading-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-    </div>
-</div>
-
-<div id="more-tools-modal" style="opacity: 0; transition: opacity 0.5s;">
+<div id="more-tools-modal">
     <div id="pdf-list-view" class="mt-list-view">
         <div class="mt-hero">
             <div class="mt-hero-badge">✨ PDF Editor 2.0</div>
             <div class="mt-hero-icon">🛠️</div>
             <h2>{% trans "Advanced PDF Command Center" %}</h2>
-            <p>{% trans "All your PDF tools in one powerful interface" %}</p>
+            <p>{% trans "Extract text, run OCR, generate AI summaries, and launch specialized tools side-by-side with live preview" %}</p>
         </div>
 
         <div class="mt-pdf-grid">
             {% for pdf in uploaded_pdfs %}
-            <div class="mt-pdf-card pdf-card" data-pdf-id="{{ pdf.id }}" data-pdf-name="{{ pdf.name }}" data-pdf-path="uploads/{{ pdf.name }}">
+            <div class="mt-pdf-card pdf-card" data-pdf-id="{{ pdf.id }}" data-pdf-name="{{ pdf.name }}" data-pdf-url="{% url 'pdf_preview' pdf.id %}">
                 <div class="mt-pdf-card-row">
                     <div class="mt-pdf-card-icon">📄</div>
                     <div class="mt-pdf-card-info">
@@ -39,7 +24,7 @@
                     </div>
                 </div>
                 <div class="mt-pdf-card-action">
-                    <button class="select-pdf-btn btn btn-primary">
+                    <button type="button" class="select-pdf-btn btn btn-primary">
                         {% trans "Select & Preview" %} →
                     </button>
                 </div>
@@ -50,24 +35,20 @@
 
     <div id="pdf-tools-view" class="mt-tools-view" style="display: none;">
         <div class="mt-tools-header">
-            <button id="back-to-list-btn" class="btn mt-back-btn">
+            <button type="button" id="back-to-list-btn" class="btn mt-back-btn">
                 ← {% trans "Back to List" %}
             </button>
-            <div class="mt-tools-title">
+            <div class="mt-tools-title" id="selected-pdf-heading">
                 ✨ PDF Editor 2.0
             </div>
         </div>
 
         <div class="mt-tabs-bar">
             <div class="mt-tabs-nav">
-                <button class="tab-btn active" data-tab="extract">📄 {% trans "Extract Text" %}</button>
-                <button class="tab-btn" data-tab="ocr">🔍 {% trans "OCR" %}</button>
-                <button class="tab-btn" data-tab="edit">✏️ {% trans "Edit" %}</button>
-                <button class="tab-btn" data-tab="split">✂️ {% trans "Split" %}</button>
-                <button class="tab-btn" data-tab="compress">🗜️ {% trans "Compress" %}</button>
-                <button class="tab-btn" data-tab="watermark">💧 {% trans "Watermark" %}</button>
-                <button class="tab-btn" data-tab="rotate">🔄 {% trans "Rotate" %}</button>
-                <button class="tab-btn" data-tab="numbers">🔢 {% trans "Page Numbers" %}</button>
+                <button type="button" class="tab-btn active" data-tab="extract">📄 {% trans "Extract Text" %}</button>
+                <button type="button" class="tab-btn" data-tab="ocr">🔍 {% trans "OCR" %}</button>
+                <button type="button" class="tab-btn" data-tab="summarize">🧠 {% trans "AI Summary" %}</button>
+                <button type="button" class="tab-btn" data-tab="quick-tools">🧰 {% trans "Quick Launch" %}</button>
             </div>
         </div>
 
@@ -77,9 +58,9 @@
                     <div class="mt-pane-header">
                         <h3>{% trans "PDF Preview" %}</h3>
                         <div class="mt-page-controls">
-                            <button id="prev-page-btn" class="btn btn-secondary">← {% trans "Prev" %}</button>
+                            <button type="button" id="prev-page-btn" class="btn btn-secondary">← {% trans "Prev" %}</button>
                             <span id="page-indicator" class="mt-page-indicator">{% blocktrans with current=1 total=1 %}Page {{ current }} of {{ total }}{% endblocktrans %}</span>
-                            <button id="next-page-btn" class="btn btn-secondary">{% trans "Next" %} →</button>
+                            <button type="button" id="next-page-btn" class="btn btn-secondary">{% trans "Next" %} →</button>
                         </div>
                     </div>
                     <div id="pdf-preview-container" class="mt-pdf-preview">
@@ -91,11 +72,11 @@
                     <div id="panel-extract" class="tab-panel mt-tab-panel active">
                         <div class="mt-pane-header">
                             <h3>📄 {% trans "Extract Text" %}</h3>
-                            <button id="extract-text-btn" class="btn btn-primary">{% trans "Extract Now" %}</button>
+                            <button type="button" id="extract-text-btn" class="btn btn-primary">{% trans "Extract Now" %}</button>
                         </div>
                         <textarea id="extracted-text-area" class="mt-text-area" readonly placeholder="{% trans "Click 'Extract Now' to extract text from PDF..." %}"></textarea>
                         <div id="extract-actions" class="mt-tab-actions">
-                            <button id="copy-extract-btn" class="btn btn-secondary">📋 {% trans "Copy" %}</button>
+                            <button type="button" id="copy-extract-btn" class="btn btn-secondary">📋 {% trans "Copy" %}</button>
                             <a href="{% url 'download_text' %}" class="btn btn-primary" style="text-decoration: none;">📥 {% trans "Download" %}</a>
                         </div>
                     </div>
@@ -103,48 +84,55 @@
                     <div id="panel-ocr" class="tab-panel mt-tab-panel">
                         <div class="mt-pane-header">
                             <h3>🔍 {% trans "OCR to Text" %}</h3>
-                            <button id="ocr-text-btn" class="btn btn-primary">{% trans "Start OCR" %}</button>
+                            <button type="button" id="ocr-text-btn" class="btn btn-primary">{% trans "Start OCR" %}</button>
                         </div>
                         <textarea id="ocr-text-area" class="mt-text-area" readonly placeholder="{% trans "Click 'Start OCR' to extract text via OCR..." %}"></textarea>
                         <div id="ocr-actions" class="mt-tab-actions">
-                            <button id="copy-ocr-btn" class="btn btn-secondary">📋 {% trans "Copy" %}</button>
+                            <button type="button" id="copy-ocr-btn" class="btn btn-secondary">📋 {% trans "Copy" %}</button>
                             <a href="{% url 'download_text' %}" class="btn btn-primary" style="text-decoration: none;">📥 {% trans "Download" %}</a>
                         </div>
                     </div>
 
-                    <div id="panel-edit" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">✏️ {% trans "Edit Text" %}</h3>
-                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
+                    <div id="panel-summarize" class="tab-panel mt-tab-panel">
+                        <div class="mt-pane-header" style="flex-wrap: wrap; gap: 0.5rem;">
+                            <h3>🧠 {% trans "AI Document Summary" %}</h3>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <select id="summarize-lang-select" class="select-input" style="padding: 0.45rem 0.75rem; width: auto;">
+                                    {% for code, label in summary_languages %}
+                                    <option value="{{ code }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" id="summarize-text-btn" class="btn btn-ai">✨ {% trans "Summarize" %}</button>
+                            </div>
+                        </div>
+                        <textarea id="summarize-text-area" class="mt-text-area" readonly placeholder="{% trans "Click 'Summarize' to generate an executive summary of this PDF..." %}"></textarea>
+                        <div id="summarize-actions" class="mt-tab-actions">
+                            <button type="button" id="copy-summarize-btn" class="btn btn-secondary">📋 {% trans "Copy" %}</button>
+                            <a href="{% url 'download_text' %}" class="btn btn-primary" style="text-decoration: none;">📥 {% trans "Download" %}</a>
+                        </div>
                     </div>
 
-                    <div id="panel-split" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">✂️ {% trans "Split PDF" %}</h3>
-                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
-                    </div>
-
-                    <div id="panel-compress" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">🗜️ {% trans "Compress PDF" %}</h3>
-                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
-                    </div>
-
-                    <div id="panel-watermark" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">💧 {% trans "Add Watermark" %}</h3>
-                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
-                    </div>
-
-                    <div id="panel-rotate" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">🔄 {% trans "Rotate Pages" %}</h3>
-                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
-                    </div>
-
-                    <div id="panel-numbers" class="tab-panel mt-tab-panel">
-                        <h3 style="margin: 0 0 1rem 0; color: #1f2937;">🔢 {% trans "Add Page Numbers" %}</h3>
-                        <p style="color: #6b7280;">{% trans "Coming soon..." %}</p>
+                    <div id="panel-quick-tools" class="tab-panel mt-tab-panel">
+                        <h3 style="margin: 0 0 1rem 0; color: var(--text-primary);">🧰 {% trans "Open Selected PDF in Tool" %}</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem;">
+                            <a data-tool-base="{% url 'edit' %}" href="{% url 'edit' %}" class="btn btn-secondary quick-tool-link">✏️ {% trans "Find & Replace" %}</a>
+                            <a data-tool-base="{% url 'rephrase' %}" href="{% url 'rephrase' %}" class="btn btn-ai quick-tool-link">🤖 {% trans "AI Rephrase" %}</a>
+                            <a data-tool-base="{% url 'split' %}" href="{% url 'split' %}" class="btn btn-secondary quick-tool-link">✂️ {% trans "Split PDF" %}</a>
+                            <a data-tool-base="{% url 'compress' %}" href="{% url 'compress' %}" class="btn btn-secondary quick-tool-link">📦 {% trans "Compress" %}</a>
+                            <a data-tool-base="{% url 'watermark' %}" href="{% url 'watermark' %}" class="btn btn-secondary quick-tool-link">💧 {% trans "Watermark" %}</a>
+                            <a data-tool-base="{% url 'rotate' %}" href="{% url 'rotate' %}" class="btn btn-secondary quick-tool-link">🔄 {% trans "Rotate Pages" %}</a>
+                            <a data-tool-base="{% url 'page_numbers' %}" href="{% url 'page_numbers' %}" class="btn btn-secondary quick-tool-link">🔢 {% trans "Page Numbers" %}</a>
+                            <a data-tool-base="{% url 'reorder' %}" href="{% url 'reorder' %}" class="btn btn-secondary quick-tool-link">📑 {% trans "Reorder Pages" %}</a>
+                            <a data-tool-base="{% url 'crop' %}" href="{% url 'crop' %}" class="btn btn-secondary quick-tool-link">✂️ {% trans "Crop Pages" %}</a>
+                            <a data-tool-base="{% url 'redact' %}" href="{% url 'redact' %}" class="btn btn-secondary quick-tool-link">⬛ {% trans "Redact Text" %}</a>
+                            <a data-tool-base="{% url 'protect' %}" href="{% url 'protect' %}" class="btn btn-secondary quick-tool-link">🔒 {% trans "Protect PDF" %}</a>
+                            <a data-tool-base="{% url 'metadata' %}" href="{% url 'metadata' %}" class="btn btn-secondary quick-tool-link">🏷️ {% trans "Edit Metadata" %}</a>
+                        </div>
                     </div>
 
                     <div id="loading-indicator" class="mt-loading">
                         <div class="mt-loading-icon">⏳</div>
-                        <p style="color: #6b7280;">{% trans "Processing... This may take a moment." %}</p>
+                        <p style="color: var(--text-secondary);">{% trans "Processing... This may take a moment." %}</p>
                     </div>
                 </div>
             </div>
@@ -152,66 +140,8 @@
     </div>
 </div>
 
-<script src="/static/vendor/pdfjs/pdf.min.js?v=3.11.174"></script>
+<script src="{% static 'vendor/pdfjs/pdf.min.js' %}"></script>
 <script nonce="{{ request.csp_nonce }}">
-// ===== SURPRISE REVEAL ANIMATION =====
-const canvas = document.getElementById('confetti-canvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-const confettiPieces = [];
-const confettiCount = 150;
-const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'];
-
-for (let i = 0; i < confettiCount; i++) {
-    confettiPieces.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height - canvas.height,
-        w: Math.random() * 10 + 5,
-        h: Math.random() * 10 + 5,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        speed: Math.random() * 3 + 2,
-        rotation: Math.random() * 360
-    });
-}
-
-function drawConfetti() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    confettiPieces.forEach(p => {
-        ctx.save();
-        ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
-        ctx.rotate(p.rotation * Math.PI / 180);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-        ctx.restore();
-
-        p.y += p.speed;
-        p.rotation += 2;
-
-        if (p.y > canvas.height) {
-            p.y = -p.h;
-            p.x = Math.random() * canvas.width;
-        }
-    });
-    requestAnimationFrame(drawConfetti);
-}
-
-drawConfetti();
-
-setTimeout(() => {
-    const overlay = document.getElementById('surprise-overlay');
-    overlay.style.opacity = '0';
-    setTimeout(() => {
-        overlay.style.display = 'none';
-        document.getElementById('more-tools-modal').style.opacity = '1';
-    }, 1000);
-}, 2500);
-
-setTimeout(() => {
-    canvas.style.display = 'none';
-}, 5000);
-
 // ===== TABS NAVIGATION =====
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabPanels = document.querySelectorAll('.tab-panel');
@@ -227,21 +157,31 @@ tabBtns.forEach(btn => {
 });
 
 // ===== PDF.js setup =====
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/vendor/pdfjs/pdf.worker.min.js?v=3.11.174';
+pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'vendor/pdfjs/pdf.worker.min.js' %}";
 
 let currentPdfId = null;
-let currentPdfPath = null;
+let currentPdfUrl = null;
 let pdfDoc = null;
 
 document.querySelectorAll('.pdf-card').forEach(card => {
     card.addEventListener('click', function() {
         currentPdfId = this.dataset.pdfId;
-        currentPdfPath = `/media/${this.dataset.pdfPath}`;
+        currentPdfUrl = this.dataset.pdfUrl;
+        const nameEl = document.getElementById('selected-pdf-heading');
+        if (nameEl) {
+            nameEl.textContent = '📄 ' + (this.dataset.pdfName || 'PDF Editor 2.0');
+        }
+        document.querySelectorAll('.quick-tool-link').forEach(link => {
+            const base = link.getAttribute('data-tool-base');
+            if (base) {
+                link.href = `${base}?pdf=${encodeURIComponent(currentPdfId)}`;
+            }
+        });
 
         document.getElementById('pdf-list-view').style.display = 'none';
         document.getElementById('pdf-tools-view').style.display = 'block';
 
-        loadPdfPreview(currentPdfPath);
+        loadPdfPreview(currentPdfUrl);
     });
 });
 
@@ -326,26 +266,67 @@ document.getElementById('ocr-text-btn').addEventListener('click', function() {
     });
 });
 
-document.getElementById('copy-extract-btn').addEventListener('click', function() {
-    const textArea = document.getElementById('extracted-text-area');
-    textArea.select();
-    document.execCommand('copy');
+document.getElementById('summarize-text-btn').addEventListener('click', function() {
+    if (!currentPdfId) return;
 
-    const btn = this;
-    const original = btn.textContent;
-    btn.textContent = '✅ {% trans "Copied!" %}';
-    setTimeout(() => btn.textContent = original, 2000);
+    const textArea = document.getElementById('summarize-text-area');
+    const loading = document.getElementById('loading-indicator');
+    const actions = document.getElementById('summarize-actions');
+    const language = document.getElementById('summarize-lang-select')?.value || 'English';
+
+    textArea.style.display = 'none';
+    loading.style.display = 'block';
+    actions.classList.remove('visible');
+
+    fetch(`/summarize-text/${currentPdfId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ language })
+    })
+    .then(response => response.json())
+    .then(data => {
+        loading.style.display = 'none';
+        textArea.style.display = 'block';
+
+        if (data.success) {
+            textArea.value = data.text;
+            actions.classList.add('visible');
+        } else {
+            textArea.value = `{% trans "Error" %}: ${data.error}`;
+        }
+    })
+    .catch(error => {
+        loading.style.display = 'none';
+        textArea.style.display = 'block';
+        textArea.value = `{% trans "Error" %}: ${error.message}`;
+    });
 });
 
-document.getElementById('copy-ocr-btn').addEventListener('click', function() {
-    const textArea = document.getElementById('ocr-text-area');
-    textArea.select();
-    document.execCommand('copy');
-
-    const btn = this;
+function copyFromTextarea(textareaId, btn) {
+    const textArea = document.getElementById(textareaId);
+    if (!textArea) return;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(textArea.value);
+    } else {
+        textArea.select();
+        document.execCommand('copy');
+    }
     const original = btn.textContent;
     btn.textContent = '✅ {% trans "Copied!" %}';
     setTimeout(() => btn.textContent = original, 2000);
+}
+
+document.getElementById('copy-extract-btn').addEventListener('click', function() {
+    copyFromTextarea('extracted-text-area', this);
+});
+document.getElementById('copy-ocr-btn').addEventListener('click', function() {
+    copyFromTextarea('ocr-text-area', this);
+});
+document.getElementById('copy-summarize-btn').addEventListener('click', function() {
+    copyFromTextarea('summarize-text-area', this);
 });
 
 let currentPageNum = 1;
@@ -400,16 +381,4 @@ document.getElementById('next-page-btn').addEventListener('click', function() {
     updatePageIndicator();
 });
 </script>
-
-<style>
-@keyframes fadeInScale {
-    0% { opacity: 0; transform: scale(0.9); }
-    100% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-}
-</style>
 {% endblock %}
