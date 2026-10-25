@@ -28,7 +28,7 @@ def guarded_fetcher_backend(per_request_timeout: int = 10):
     from pyhanko_certvalidator.fetchers.requests_fetchers.util import RequestsFetcherMixin
 
     class _GuardMixin(RequestsFetcherMixin):
-        async def _fetch(self, method, url, acceptable_content_types, *, data=None, content_type=None):
+        async def _http_fetch(self, method, url, acceptable_content_types, *, data=None, content_type=None):
             headers = {"Accept": ",".join(acceptable_content_types), "User-Agent": self.user_agent}
             if content_type:
                 headers["Content-Type"] = content_type
@@ -40,10 +40,12 @@ def guarded_fetcher_backend(per_request_timeout: int = 10):
             return response
 
         def _get(self, url, *, acceptable_content_types):
-            return self._fetch("GET", url, acceptable_content_types)
+            return self._http_fetch("GET", url, acceptable_content_types)
 
         def _post(self, url, data, *, content_type, acceptable_content_types):
-            return self._fetch("POST", url, acceptable_content_types, data=data, content_type=content_type)
+            return self._http_fetch(
+                "POST", url, acceptable_content_types, data=data, content_type=content_type
+            )
 
     class _GuardedOCSP(_GuardMixin, RequestsOCSPFetcher):
         pass
