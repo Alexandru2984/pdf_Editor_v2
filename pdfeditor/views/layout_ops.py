@@ -70,6 +70,7 @@ def _render_watermark_form(request, *, form, selected_pdf, uploaded_pdfs, pdf_pa
 # ---------- Watermark ----------
 
 
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="120/h", method="POST")
 def watermark_view(request):
     selected_pdf, uploaded_pdfs, early = _require_pdf(request)
     if early:
@@ -171,6 +172,7 @@ def download_watermarked_view(request):
 # ---------- Rotate ----------
 
 
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="120/h", method="POST")
 def rotate_view(request):
     selected_pdf, uploaded_pdfs, early = _require_pdf(request)
     if early:
@@ -248,6 +250,7 @@ def download_rotated_view(request):
 # ---------- Page numbers ----------
 
 
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="120/h", method="POST")
 def page_numbers_view(request):
     selected_pdf, uploaded_pdfs, early = _require_pdf(request)
     if early:
@@ -325,6 +328,7 @@ def download_numbered_view(request):
 # ---------- Reorder / delete pages ----------
 
 
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="120/h", method="POST")
 def reorder_view(request):
     selected_pdf, uploaded_pdfs, early = _require_pdf(request)
     if early:

@@ -37,7 +37,9 @@ from ..ratelimiting import auth_aware_ratelimit
 _PENDING_USER = "mfa_pending_user_id"
 _PENDING_TS = "mfa_pending_ts"
 _PENDING_NEXT = "mfa_pending_next"
+_PENDING_FAILS = "mfa_pending_failures"
 _PENDING_MAX_AGE = 300  # seconds — re-login required if the code step stalls
+_MFA_MAX_FAILURES = 5  # max failed TOTP/backup tries before pending login is invalidated
 
 # The user reaches mfa_verify from session, not authenticate(), so login()
 # needs an explicit backend. Use the project's real (non-axes) backend.
@@ -52,9 +54,11 @@ class MfaLoginView(auth_views.LoginView):
     def form_valid(self, form):
         user = form.get_user()
         if user_has_mfa(user):
+            self.request.session.cycle_key()
             self.request.session[_PENDING_USER] = user.pk
             self.request.session[_PENDING_TS] = timezone.now().isoformat()
             self.request.session[_PENDING_NEXT] = self.get_success_url()
+            self.request.session[_PENDING_FAILS] = 0
             return redirect("mfa_verify")
         return super().form_valid(form)
 
@@ -74,7 +78,7 @@ def _pending_user(request: HttpRequest):
 
 
 def _clear_pending(request: HttpRequest) -> None:
-    for key in (_PENDING_USER, _PENDING_TS, _PENDING_NEXT):
+    for key in (_PENDING_USER, _PENDING_TS, _PENDING_NEXT, _PENDING_FAILS):
         request.session.pop(key, None)
 
 
@@ -88,13 +92,29 @@ def mfa_verify_view(request: HttpRequest) -> HttpResponse:
         return redirect("login")
 
     if request.method == "POST":
+        from django.core.cache import cache
+
+        fail_cache_key = f"mfa_fail:{user.pk}"
         code = request.POST.get("code") or ""
         device = MfaDevice.objects.filter(user=user, confirmed=True).first()
         if device and (verify_totp(device, code) or consume_backup_code(device, code)):
+            cache.delete(fail_cache_key)
             next_url = request.session.get(_PENDING_NEXT) or settings.LOGIN_REDIRECT_URL
             _clear_pending(request)
             auth_login(request, user, backend=_LOGIN_BACKEND)
             return redirect(next_url)
+
+        fails = int(request.session.get(_PENDING_FAILS, 0)) + 1
+        cache_fails = int(cache.get(fail_cache_key, 0)) + 1
+        cache.set(fail_cache_key, cache_fails, timeout=_PENDING_MAX_AGE)
+        request.session[_PENDING_FAILS] = fails
+        if max(fails, cache_fails) >= _MFA_MAX_FAILURES:
+            _clear_pending(request)
+            messages.error(
+                request,
+                _("Too many invalid verification codes. Please sign in with your password again."),
+            )
+            return redirect("login")
         messages.error(request, _("Invalid code. Try again or use a backup code."))
 
     return render(request, "registration/mfa_verify.html")
@@ -138,6 +158,15 @@ def mfa_disable_view(request: HttpRequest) -> HttpResponse:
         messages.error(request, _("Password incorrect — two-factor authentication was not disabled."))
         return redirect("profile")
     MfaDevice.objects.filter(user=request.user).delete()
+    # Revoke other active sessions when MFA is disabled so any concurrent session must re-authenticate.
+    from ..models import UserSession
+    from .sessions import _kill_django_session
+
+    current_key = request.session.session_key or ""
+    others = UserSession.objects.filter(user=request.user).exclude(session_key=current_key)
+    for row in others:
+        _kill_django_session(row.session_key)
+    others.delete()
     messages.success(request, _("Two-factor authentication disabled."))
     return redirect("profile")
 

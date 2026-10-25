@@ -14,6 +14,7 @@ from django.views.decorators.http import require_POST
 
 from ..models import UploadedPDF
 from ..pdf_processor import check_pdf_has_text, inspect_pdf, sanitize_pdf
+from ..ratelimiting import auth_aware_ratelimit
 from ..scanning import UploadBlocked, scan_fileobj
 from ..tool_catalog import is_upload_destination_allowed
 from ._common import _owner_kwargs, get_uploaded_pdfs, owner_filter, storage_quota, storage_usage
@@ -63,6 +64,10 @@ def dashboard_view(request):
     )
 
 
+MAX_FILES_PER_UPLOAD = 20
+
+
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="120/h", method="POST")
 def upload_view(request):
     if request.method != "POST":
         return render(request, "pdfeditor/upload.html")
@@ -71,6 +76,13 @@ def upload_view(request):
     if not uploaded_files:
         messages.error(request, _("Please select at least one PDF file."))
         return render(request, "pdfeditor/upload.html")
+    if len(uploaded_files) > MAX_FILES_PER_UPLOAD:
+        messages.warning(
+            request,
+            _("Only the first %(max)d files in a single upload were processed.")
+            % {"max": MAX_FILES_PER_UPLOAD},
+        )
+        uploaded_files = uploaded_files[:MAX_FILES_PER_UPLOAD]
 
     max_bytes = getattr(settings, "PDF_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
     quota = storage_quota(request)

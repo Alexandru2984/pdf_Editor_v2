@@ -105,6 +105,7 @@ def _fetch_output(request, session_key):
 # ---------- Split ----------
 
 
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="120/h", method="POST")
 def split_view(request):
     selected_pdf, uploaded_pdfs, early = _resolve_pdf_or_redirect(request)
     if early:
@@ -201,7 +202,10 @@ def download_split_file_view(request):
 
 # ---------- Merge ----------
 
+MAX_MERGE_INPUTS = 20
 
+
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="120/h", method="POST")
 def merge_view(request):
     uploaded_pdfs = get_uploaded_pdfs(request)
     if len(uploaded_pdfs) < 2:
@@ -212,8 +216,15 @@ def merge_view(request):
         form = MergePDFForm(request.POST)
         if form.is_valid():
             try:
+                selected_ids = form.cleaned_data["selected_pdfs"]
+                if len(selected_ids) > MAX_MERGE_INPUTS:
+                    messages.error(
+                        request,
+                        _("You can merge at most %(max)d PDFs at once.") % {"max": MAX_MERGE_INPUTS},
+                    )
+                    return redirect("merge")
                 pdf_paths = []
-                for pdf_id in form.cleaned_data["selected_pdfs"]:
+                for pdf_id in selected_ids:
                     pdf = get_pdf_by_id(request, pdf_id)
                     if not pdf:
                         messages.error(

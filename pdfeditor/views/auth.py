@@ -68,6 +68,15 @@ class RegisterForm(HoneypotMixin, UserCreationForm):
         model = User
         fields = ("username", "email")
 
+    def clean_username(self) -> str:
+        username = (self.cleaned_data.get("username") or "").strip()
+        if username and User.objects.filter(username__iexact=username).exists():
+            raise forms.ValidationError(
+                self.error_messages["unique"],
+                code="unique",
+            )
+        return username
+
     def clean_email(self) -> str:
         # Normalise only. Uniqueness is NOT enforced here on purpose: raising
         # "this email already exists" would turn registration into an
@@ -129,6 +138,7 @@ def register_view(request: HttpRequest) -> HttpResponse:
     return render(request, "registration/register.html", {"form": form})
 
 
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="30/h", method="GET")
 def confirm_email_view(request: HttpRequest, uidb64: str, token: str) -> HttpResponse:
     """Activate a user account from the link sent in the confirmation email."""
     user = decode_uid(uidb64)
@@ -231,6 +241,7 @@ def change_email_view(request: HttpRequest) -> HttpResponse:
     return render(request, "registration/email_change_form.html", {"form": form})
 
 
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="30/h", method="GET")
 def confirm_email_change_view(request: HttpRequest, token: str) -> HttpResponse:
     """Apply the email change requested via the signed token."""
     result = verify_email_change_token(token)

@@ -112,9 +112,9 @@ def _on_user_logged_in(sender, request, user, **_):
     ip = client_ip(request)
     user_agent = request.META.get("HTTP_USER_AGENT", "")[:300]
 
-    # "New device" = this account has prior sessions, none from this browser.
-    known = UserSession.objects.filter(user=user)
-    is_new_device = known.exists() and not known.filter(user_agent=user_agent).exists()
+    # "New device" = this account has prior sessions, none from this browser + IP.
+    known = UserSession.objects.filter(user=user).exclude(session_key=session_key)
+    is_new_device = known.exists() and not known.filter(user_agent=user_agent, ip_address=ip).exists()
 
     UserSession.objects.update_or_create(
         session_key=session_key,

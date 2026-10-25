@@ -9,6 +9,7 @@ from django.shortcuts import redirect, render
 
 from ..models import ProcessedPDF
 from ..pdf_processor import extract_form_fields, fill_form_fields, has_form_fields
+from ..ratelimiting import auth_aware_ratelimit
 from ._common import (
     attachment_response,
     get_pdf_by_id,
@@ -39,6 +40,7 @@ def _fetch_output(request, session_key):
     return ProcessedPDF.objects.filter(owner_filter(request), id=output_id).first()
 
 
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="120/h", method="POST")
 def form_fill_view(request):
     selected_pdf, uploaded_pdfs, early = _resolve_pdf(request)
     if early:

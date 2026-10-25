@@ -544,6 +544,20 @@ class MfaFlowTests(TestCase):
         self.client.post("/accounts/mfa/disable/", {"password": _PW})
         self.assertFalse(MfaDevice.objects.filter(user=self.user).exists())
 
+    def test_mfa_lockout_clears_pending_session_after_five_failures(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        secret = self._enable_mfa()
+        self._login()
+        for _ in range(5):
+            resp = self.client.post("/accounts/mfa/verify/", {"code": "000000"})
+        self.assertRedirects(resp, "/accounts/login/", fetch_redirect_response=False)
+        # Even a valid TOTP code now fails until the user re-enters their password.
+        resp2 = self.client.post("/accounts/mfa/verify/", {"code": pyotp.TOTP(secret).now()})
+        self.assertRedirects(resp2, "/accounts/login/", fetch_redirect_response=False)
+        self.assertFalse(self._logged_in())
+
 
 # --------------------------------------------------------------------------
 # 2026-06-10 audit: TOTP replay protection + backup-code hardening

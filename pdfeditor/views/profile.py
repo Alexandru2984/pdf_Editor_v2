@@ -16,8 +16,11 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 
 from ..models import ApiKey, MfaDevice, ProcessedPDF, UploadedPDF
+from ..ratelimiting import auth_aware_ratelimit
 
 logger = logging.getLogger(__name__)
+
+MAX_API_KEYS_PER_USER = 20
 
 
 @login_required
@@ -46,10 +49,19 @@ def profile_view(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@auth_aware_ratelimit(anon_rate="10/h", user_rate="20/h", method="POST")
 @require_http_methods(["POST"])
 def create_api_key_view(request: HttpRequest) -> HttpResponse:
+    active_count = ApiKey.objects.filter(user=request.user, revoked_at__isnull=True).count()
+    if active_count >= MAX_API_KEYS_PER_USER:
+        messages.error(
+            request,
+            _("You can have at most %(max)d active API keys. Revoke an unused key first.")
+            % {"max": MAX_API_KEYS_PER_USER},
+        )
+        return redirect("profile")
     label = (request.POST.get("label") or "").strip()[:80]
-    _, token = ApiKey.create_for_user(request.user, label=label)
+    _key_obj, token = ApiKey.create_for_user(request.user, label=label)
     request.session["new_api_key_token"] = token
     messages.success(request, _("API key created. Copy the token now — it won't be shown again."))
     return redirect("profile")
@@ -67,6 +79,7 @@ def revoke_api_key_view(request: HttpRequest, key_id: str) -> HttpResponse:
 
 
 @login_required
+@auth_aware_ratelimit(anon_rate="5/h", user_rate="10/h", method="GET")
 def export_data_view(request: HttpRequest) -> JsonResponse:
     """Return a JSON dump of the user's account data + PDF metadata (GDPR Art. 20)."""
     user = request.user
@@ -77,7 +90,7 @@ def export_data_view(request: HttpRequest) -> JsonResponse:
             "size_bytes": pdf.size,
             "uploaded_at": pdf.uploaded_at.isoformat(),
         }
-        for pdf in UploadedPDF.objects.filter(user=user).order_by("-uploaded_at")
+        for pdf in UploadedPDF.objects.filter(user=user).order_by("-uploaded_at")[:500]
     ]
     processed = [
         {
@@ -89,7 +102,7 @@ def export_data_view(request: HttpRequest) -> JsonResponse:
             "created_at": p.created_at.isoformat(),
             "source_id": str(p.source_id) if p.source_id else None,
         }
-        for p in ProcessedPDF.objects.filter(user=user).order_by("-created_at")
+        for p in ProcessedPDF.objects.filter(user=user).order_by("-created_at")[:500]
     ]
 
     payload: dict[str, Any] = {
@@ -140,6 +153,7 @@ class DeleteAccountForm(forms.Form):
 
 
 @login_required
+@auth_aware_ratelimit(anon_rate="5/h", user_rate="5/h", method="POST")
 def delete_account_view(request: HttpRequest) -> HttpResponse:
     """Permanent account deletion. Wipes user, FK-cascaded PDF rows, and on-disk files.
 
