@@ -1520,7 +1520,7 @@ def add_qr_code_stamp(
         elif pages_mode == "last":
             indices = [total - 1]
         elif pages_mode == "range" and (page_range or "").strip():
-            indices = parse_page_range(page_range, total)
+            indices = parse_page_range(page_range or "", total)
         else:
             indices = list(range(total))
 

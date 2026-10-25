@@ -106,7 +106,7 @@ def history_download_view(request, output_id):
 @require_POST
 def history_delete_view(request, output_id):
     """Remove a past output (DB row + file) owned by the current requester."""
-    deleted_count, _ = ProcessedPDF.objects.filter(owner_filter(request), id=output_id).delete()
+    deleted_count, _details = ProcessedPDF.objects.filter(owner_filter(request), id=output_id).delete()
     if deleted_count:
         messages.success(request, _("Output removed from history."))
     else:
