@@ -53,6 +53,7 @@ from ..scanning import UploadBlocked, scan_fileobj
 from ..tasks import enqueue_job
 from ._common import (
     attachment_response,
+    ensure_session_key,
     get_pdf_by_id,
     get_uploaded_pdfs,
     owner_filter,
@@ -64,10 +65,7 @@ from ._localization import localized_public_view
 def _queue_async_job(request, *, kind: str, source, second_source=None, params: dict | None = None):
     """Create a Job row, dispatch its Celery task, and return the Job."""
     owner_user = request.user if request.user.is_authenticated else None
-    session_key = "" if owner_user else (request.session.session_key or "")
-    if not owner_user and not session_key:
-        request.session.save()
-        session_key = request.session.session_key or ""
+    session_key = "" if owner_user else ensure_session_key(request)
 
     job = Job.objects.create(
         user=owner_user,

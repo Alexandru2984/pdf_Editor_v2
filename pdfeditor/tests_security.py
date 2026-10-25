@@ -617,6 +617,65 @@ class ShareTokenTests(TestCase):
             last = self.client.get("/s/no-such-token/")
         self.assertEqual(last.status_code, 403)  # Ratelimited → PermissionDenied
 
+    @override_settings(RATELIMIT_ENABLE=False)
+    def test_anonymous_without_session_cannot_see_or_revoke_blank_session_links(self):
+        pdf = ProcessedPDF.objects.create(
+            user=None,
+            session_key="owner-session",
+            kind=ProcessedPDF.KIND_COMPRESS,
+            name="out.pdf",
+            path="/tmp/nonexistent.pdf",
+            size=100,
+        )
+        orphan = ShareLink.objects.create(
+            processed_pdf=pdf,
+            creator=None,
+            session_key="",
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        resp = self.client.get("/share/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, orphan.token)
+        self.client.post(f"/share/revoke/{orphan.token}/")
+        self.assertTrue(ShareLink.objects.filter(pk=orphan.pk).exists())
+
+    @override_settings(RATELIMIT_ENABLE=False)
+    def test_head_probe_does_not_burn_single_use_share_link(self):
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(suffix=".pdf") as tmp:
+            tmp.write(b"%PDF-1.4\n%%EOF\n")
+            tmp.flush()
+            pdf = ProcessedPDF.objects.create(
+                user=None,
+                session_key="owner-session",
+                kind=ProcessedPDF.KIND_COMPRESS,
+                name="single.pdf",
+                path=tmp.name,
+                size=16,
+            )
+            link = ShareLink.objects.create(
+                processed_pdf=pdf,
+                creator=None,
+                session_key="owner-session",
+                expires_at=timezone.now() + timedelta(hours=1),
+                max_downloads=1,
+            )
+            head_resp = self.client.head(f"/s/{link.token}/")
+            self.assertEqual(head_resp.status_code, 200)
+            self.assertEqual(head_resp["Cache-Control"], "private, no-store")
+            self.assertEqual(head_resp["Referrer-Policy"], "no-referrer")
+            link.refresh_from_db()
+            self.assertEqual(link.download_count, 0)
+
+            get_resp = self.client.get(f"/s/{link.token}/")
+            self.assertEqual(get_resp.status_code, 200)
+            self.assertEqual(get_resp["Cache-Control"], "private, no-store")
+            self.assertEqual(get_resp["Referrer-Policy"], "no-referrer")
+            list(get_resp.streaming_content)
+            link.refresh_from_db()
+            self.assertEqual(link.download_count, 1)
+
 
 # --------------------------------------------------------------------------
 # CSP violation reporting endpoint (views/csp.py)

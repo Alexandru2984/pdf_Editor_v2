@@ -133,11 +133,9 @@ class ApiKeySerializer(serializers.ModelSerializer):
 
 
 class WebhookSerializer(serializers.ModelSerializer):
-    """A user's webhook endpoint. ``secret`` is read-only but always returned —
-    it's the caller's own HMAC signing key (over authenticated TLS), and API
-    clients need it to verify deliveries; unlike API-key tokens it isn't a
-    credential that grants access, so idempotent retrieval is the friendlier
-    contract."""
+    """A user's webhook endpoint. The HMAC signing ``secret`` is returned only
+    once in the ``201 Created`` response (matching the web UI and ``ApiKey``),
+    so subsequent ``GET`` calls cannot exfiltrate existing signing secrets."""
 
     class Meta:
         model = Webhook
@@ -145,7 +143,6 @@ class WebhookSerializer(serializers.ModelSerializer):
             "id",
             "url",
             "description",
-            "secret",
             "is_active",
             "created_at",
             "last_triggered_at",
@@ -154,7 +151,6 @@ class WebhookSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
-            "secret",
             "created_at",
             "last_triggered_at",
             "last_status",

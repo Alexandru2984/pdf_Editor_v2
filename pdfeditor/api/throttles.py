@@ -16,6 +16,7 @@ from __future__ import annotations
 from rest_framework.throttling import SimpleRateThrottle
 
 from ..models import ApiKey
+from ..netutils import client_ip
 
 _DEFAULT_CATEGORY = "op"
 _VALID_CATEGORIES = frozenset({"read", "op", "upload"})
@@ -54,7 +55,7 @@ class ScopedAuthAwareThrottle(SimpleRateThrottle):
             return request.auth.pk
         if method == "user":
             return request.user.pk
-        return self.get_ident(request)
+        return client_ip(request) or self.get_ident(request)
 
     def get_cache_key(self, request, view):
         ident = self._identity(request)

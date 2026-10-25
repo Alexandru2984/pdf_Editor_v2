@@ -6,6 +6,7 @@ Ownership rule: when the request is authenticated, the PDF must be linked to
 rows never alias each other.
 """
 
+import mimetypes
 import os
 
 from django.conf import settings
@@ -17,10 +18,20 @@ from .. import objectstore
 from ..models import AuditLog, ProcessedPDF, UploadedPDF
 from ..netutils import client_ip
 
+_SAFE_MEDIA_MIME_TYPES = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".zip": "application/zip",
+    ".png": "image/png",
+}
+
 
 def storage_usage(request: HttpRequest) -> int:
-    """Total bytes occupied by the requester's uploaded PDFs."""
-    return UploadedPDF.objects.filter(owner_filter(request)).aggregate(total=models.Sum("size"))["total"] or 0
+    """Total bytes occupied by the requester's uploaded and processed PDFs."""
+    f = owner_filter(request)
+    uploaded_total = UploadedPDF.objects.filter(f).aggregate(total=models.Sum("size"))["total"] or 0
+    processed_total = ProcessedPDF.objects.filter(f).aggregate(total=models.Sum("size"))["total"] or 0
+    return int(uploaded_total) + int(processed_total)
 
 
 def storage_quota(request: HttpRequest) -> int:
@@ -127,15 +138,28 @@ def latest_output(request: HttpRequest, kind: str):
     return ProcessedPDF.objects.filter(owner_filter(request), kind=kind).first()
 
 
-def _allowed_media_paths(request: HttpRequest) -> set[str]:
-    """Absolute paths the current requester is allowed to read from MEDIA_ROOT."""
+def _is_owned_media_path(request: HttpRequest, requested_real: str) -> bool:
+    """Check whether ``requested_real`` belongs to the current requester without full-table realpath scans."""
     f = owner_filter(request)
-    allowed: set[str] = set()
-    for obj in UploadedPDF.objects.filter(f, ingest_status=UploadedPDF.INGEST_SANITIZED):
-        allowed.add(os.path.realpath(obj.path))
-    for obj in ProcessedPDF.objects.filter(f):
-        allowed.add(os.path.realpath(obj.path))
-    return allowed
+    if (
+        UploadedPDF.objects.filter(
+            f,
+            ingest_status=UploadedPDF.INGEST_SANITIZED,
+            path=requested_real,
+        ).exists()
+        or ProcessedPDF.objects.filter(f, path=requested_real).exists()
+    ):
+        return True
+    # Fallback for rows whose stored path uses a non-canonical prefix (e.g. symlinked MEDIA_ROOT in tests).
+    for raw_path in UploadedPDF.objects.filter(f, ingest_status=UploadedPDF.INGEST_SANITIZED).values_list(
+        "path", flat=True
+    ):
+        if os.path.realpath(raw_path) == requested_real:
+            return True
+    for raw_path in ProcessedPDF.objects.filter(f).values_list("path", flat=True):
+        if os.path.realpath(raw_path) == requested_real:
+            return True
+    return False
 
 
 def serve_media_view(request: HttpRequest, rel_path: str) -> FileResponse:
@@ -145,19 +169,35 @@ def serve_media_view(request: HttpRequest, rel_path: str) -> FileResponse:
 
     if not requested.startswith(media_root + os.sep):
         raise Http404()
-    if requested not in _allowed_media_paths(request):
+    if not _is_owned_media_path(request, requested):
         raise Http404()
     if not os.path.exists(requested):
         raise Http404()
 
-    return FileResponse(open(requested, "rb"), content_type="application/pdf")
+    ext = os.path.splitext(requested)[1].lower()
+    content_type = (
+        _SAFE_MEDIA_MIME_TYPES.get(ext) or mimetypes.guess_type(requested)[0] or "application/octet-stream"
+    )
+    as_attachment = ext not in (".pdf", ".png")
+    response = FileResponse(
+        open(requested, "rb"),  # noqa: SIM115 — FileResponse owns the handle
+        as_attachment=as_attachment,
+        filename=os.path.basename(requested),
+        content_type=content_type,
+    )
+    response["Cache-Control"] = "private, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 def attachment_response(path: str, not_found_message: str = "File not found.") -> FileResponse:
     if not path or not os.path.exists(path):
         raise Http404(not_found_message)
-    return FileResponse(
-        open(path, "rb"),
+    response = FileResponse(
+        open(path, "rb"),  # noqa: SIM115 — FileResponse owns the handle
         as_attachment=True,
         filename=os.path.basename(path),
     )
+    response["Cache-Control"] = "private, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response

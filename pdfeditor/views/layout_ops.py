@@ -419,10 +419,15 @@ def download_reordered_view(request):
         return redirect("dashboard")
 
 
+@auth_aware_ratelimit(anon_rate="120/m", user_rate="300/m", method="GET")
 @require_GET
 def page_thumbnail_view(request, pdf_id, page_number):
     """Serve a PNG thumbnail of a single page from an uploaded PDF."""
-    pdf = UploadedPDF.objects.filter(owner_filter(request), id=pdf_id).first()
+    pdf = UploadedPDF.objects.filter(
+        owner_filter(request),
+        id=pdf_id,
+        ingest_status=UploadedPDF.INGEST_SANITIZED,
+    ).first()
     if pdf is None or not pdf.exists_on_disk():
         raise Http404
     try:
@@ -431,6 +436,7 @@ def page_thumbnail_view(request, pdf_id, page_number):
         raise Http404 from err
     response = HttpResponse(png, content_type="image/png")
     response["Cache-Control"] = "private, max-age=3600"
+    response["X-Content-Type-Options"] = "nosniff"
     return response
 
 

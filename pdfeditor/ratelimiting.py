@@ -52,7 +52,7 @@ def check_rate_limit(
     group: str,
     anon_rate: str,
     user_rate: str,
-    method: str = "POST",
+    method: str | tuple[str, ...] | list[str] = "POST",
     increment: bool = True,
 ) -> bool:
     """Return True iff the request is over-quota. Suitable for async views."""
@@ -71,7 +71,7 @@ def auth_aware_ratelimit(
     *,
     anon_rate: str,
     user_rate: str,
-    method: str = "POST",
+    method: str | tuple[str, ...] | list[str] = "POST",
     block: bool = True,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator: anonymous requesters → ``anon_rate`` per IP, authenticated → ``user_rate`` per user."""

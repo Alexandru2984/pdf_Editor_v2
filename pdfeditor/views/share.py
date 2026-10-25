@@ -4,8 +4,8 @@ import os
 from datetime import timedelta
 
 from django.contrib import messages
-from django.db.models import F
-from django.http import FileResponse, Http404
+from django.db.models import F, Q
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -16,7 +16,14 @@ from .. import objectstore
 from ..forms import ShareLinkForm
 from ..models import ProcessedPDF, ShareLink
 from ..ratelimiting import auth_aware_ratelimit
-from ._common import owner_filter
+from ._common import ensure_session_key, owner_filter
+
+
+def _apply_share_privacy_headers(response: HttpResponse) -> HttpResponse:
+    response["Cache-Control"] = "private, no-store"
+    response["Referrer-Policy"] = "no-referrer"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @auth_aware_ratelimit(anon_rate="10/h", user_rate="60/h", method="POST")
@@ -39,10 +46,7 @@ def create_share_link_view(request):
     expires_at = timezone.now() + timedelta(hours=ttl_hours)
 
     creator = request.user if request.user.is_authenticated else None
-    session_key = "" if creator else (request.session.session_key or "")
-    if not creator and not session_key:
-        request.session.save()
-        session_key = request.session.session_key or ""
+    session_key = "" if creator else ensure_session_key(request)
 
     link = ShareLink.objects.create(
         processed_pdf=processed,
@@ -71,7 +75,7 @@ def share_links_view(request):
 
     processed_qs = ProcessedPDF.objects.filter(owner_filter(request))[:50]
 
-    return render(
+    response = render(
         request,
         "pdfeditor/share_links.html",
         {
@@ -80,6 +84,7 @@ def share_links_view(request):
             "form": ShareLinkForm(),
         },
     )
+    return _apply_share_privacy_headers(response)
 
 
 @auth_aware_ratelimit(anon_rate="30/h", user_rate="200/h", method="POST")
@@ -94,19 +99,32 @@ def revoke_share_link_view(request, token: str):
     return redirect("share_links")
 
 
-@auth_aware_ratelimit(anon_rate="60/h", user_rate="120/h", method="GET")
+@auth_aware_ratelimit(anon_rate="60/h", user_rate="120/h", method=("GET", "HEAD"))
+@require_http_methods(["GET", "HEAD"])
 def public_share_download_view(request, token: str):
     """Public, no-auth endpoint that serves the PDF behind a share token."""
     link = get_object_or_404(ShareLink, token=token)
     if link.is_expired():
-        return render(request, "pdfeditor/share_unavailable.html", {"reason": "expired"}, status=410)
+        return _apply_share_privacy_headers(
+            render(request, "pdfeditor/share_unavailable.html", {"reason": "expired"}, status=410)
+        )
     if link.is_exhausted():
-        return render(request, "pdfeditor/share_unavailable.html", {"reason": "exhausted"}, status=410)
+        return _apply_share_privacy_headers(
+            render(request, "pdfeditor/share_unavailable.html", {"reason": "exhausted"}, status=410)
+        )
 
     pdf = link.processed_pdf
     r2_url = objectstore.presigned_download_url(pdf) if pdf else None
     if not pdf or not (pdf.exists_on_disk() or r2_url):
-        return render(request, "pdfeditor/share_unavailable.html", {"reason": "missing"}, status=410)
+        return _apply_share_privacy_headers(
+            render(request, "pdfeditor/share_unavailable.html", {"reason": "missing"}, status=410)
+        )
+
+    # Link previewers and chat/email bots issue HEAD probes before a human
+    # clicks the link. Do not burn a download slot on HEAD requests.
+    if request.method == "HEAD":
+        head_resp = HttpResponse(status=200, content_type="application/pdf")
+        return _apply_share_privacy_headers(head_resp)
 
     # Atomically claim a download slot. The is_exhausted() check above is a
     # fast path; this conditional UPDATE is what actually enforces the cap
@@ -117,27 +135,31 @@ def public_share_download_view(request, token: str):
             download_count=F("download_count") + 1
         )
         if not claimed:
-            return render(request, "pdfeditor/share_unavailable.html", {"reason": "exhausted"}, status=410)
+            return _apply_share_privacy_headers(
+                render(request, "pdfeditor/share_unavailable.html", {"reason": "exhausted"}, status=410)
+            )
     else:
         ShareLink.objects.filter(pk=link.pk).update(download_count=F("download_count") + 1)
 
     if r2_url:
         # Serve straight from the R2 mirror: the presigned URL is short-lived
         # and download-count was already claimed above.
-        return redirect(r2_url)
+        return _apply_share_privacy_headers(redirect(r2_url))
     try:
-        return FileResponse(
-            open(pdf.path, "rb"),
+        resp = FileResponse(
+            open(pdf.path, "rb"),  # noqa: SIM115 — FileResponse owns the handle
             as_attachment=True,
             filename=os.path.basename(pdf.path),
         )
+        return _apply_share_privacy_headers(resp)
     except FileNotFoundError as exc:
         raise Http404("PDF missing") from exc
 
 
-def _owner_filter_for_links(request):
-    from django.db.models import Q
-
+def _owner_filter_for_links(request) -> Q:
     if request.user.is_authenticated:
         return Q(creator=request.user)
-    return Q(creator__isnull=True, session_key=request.session.session_key or "")
+    session_key = request.session.session_key
+    if not session_key:
+        return Q(pk__isnull=True)
+    return Q(creator__isnull=True, session_key=session_key)

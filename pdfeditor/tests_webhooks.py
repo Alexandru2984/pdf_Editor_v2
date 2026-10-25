@@ -286,6 +286,10 @@ class WebhookApiTests(TestCase):
         ids = {row["id"] for row in listing["results"]}
         self.assertIn(str(mine.id), ids)
         self.assertNotIn(str(theirs.id), ids)
+        for row in listing["results"]:
+            self.assertNotIn("secret", row)
+        detail = self.client.get(f"{self.BASE}{mine.id}/", **self._auth()).json()
+        self.assertNotIn("secret", detail)
         self.assertEqual(self.client.get(f"{self.BASE}{theirs.id}/", **self._auth()).status_code, 404)
 
     def test_patch_toggles_active_and_delete_removes(self):

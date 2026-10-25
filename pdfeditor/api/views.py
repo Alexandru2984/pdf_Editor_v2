@@ -299,6 +299,15 @@ class WebhookViewSet(viewsets.ModelViewSet):
             )
         serializer.save(user=self.request.user)
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        data = dict(serializer.data)
+        data["secret"] = serializer.instance.secret
+        headers = self.get_success_headers(serializer.data)
+        return Response(data, status=status.HTTP_201_CREATED, headers=headers)
+
     @extend_schema(
         summary="Send a test event",
         description=(
