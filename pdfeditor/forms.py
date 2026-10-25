@@ -281,9 +281,12 @@ class VerifyPDFForm(forms.Form):
     )
 
     def clean_pdf_file(self):
+        from django.conf import settings
+
         f = self.cleaned_data.get("pdf_file")
-        if f and f.size > 50 * 1024 * 1024:
-            raise forms.ValidationError("PDF too large (max 50 MB).")
+        max_bytes = getattr(settings, "PDF_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
+        if f and f.size > max_bytes:
+            raise forms.ValidationError(f"PDF too large (max {max_bytes // (1024 * 1024)} MB).")
         return f
 
     def clean_trust_certs(self):

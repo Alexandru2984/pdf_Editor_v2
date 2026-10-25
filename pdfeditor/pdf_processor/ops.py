@@ -17,6 +17,10 @@ from PIL import Image as PILImage
 
 from ._common import new_output_path, parse_page_range, safe_basename, sanitize_pdf, timestamp
 
+# Cap decoded image pixels (~25 MP) to prevent decompression-bomb OOMs in
+# watermarking, compression, and images-to-PDF conversion.
+PILImage.MAX_IMAGE_PIXELS = 25_000_000
+
 # Resolve ghostscript binary up-front so PDF/A conversion fails fast with a
 # clear message in environments where it isn't installed.
 GHOSTSCRIPT_CMD = os.environ.get("GHOSTSCRIPT_CMD") or shutil.which("gs") or "/usr/bin/gs"
@@ -55,17 +59,24 @@ def split_pdf(pdf_path: str, ranges: list[tuple[int, int]]) -> list[str]:
     """ranges: list of (start,end) 1-indexed inclusive."""
     if not os.path.exists(pdf_path):
         raise ValueError(f"PDF file not found: {pdf_path}")
+    if len(ranges) > 50:
+        raise ValueError("Too many split ranges (max 50).")
 
     base = safe_basename(pdf_path)
 
     with fitz.open(pdf_path) as doc:
         total = len(doc)
+        total_output_pages = 0
+        for start, end in ranges:
+            if start < 1 or end > total or start > end:
+                raise ValueError(f"Invalid range: {start}-{end} (PDF has {total} pages)")
+            total_output_pages += end - start + 1
+        if total_output_pages > max(total * 2, 500):
+            raise ValueError("Total pages across split ranges exceed limit.")
+
         out_files: list[str] = []
 
         for idx, (start, end) in enumerate(ranges, 1):
-            if start < 1 or end > total or start > end:
-                raise ValueError(f"Invalid range: {start}-{end} (PDF has {total} pages)")
-
             new_doc = fitz.open()
             new_doc.insert_pdf(doc, from_page=start - 1, to_page=end - 1)
 
@@ -82,6 +93,8 @@ def split_pdf(pdf_path: str, ranges: list[tuple[int, int]]) -> list[str]:
 def merge_pdfs(pdf_paths: list[str], output_name: str | None = None) -> str:
     if len(pdf_paths) < 2:
         raise ValueError("At least 2 PDF files are required for merging")
+    if len(pdf_paths) > 20:
+        raise ValueError("At most 20 PDF files can be merged at once")
     for p in pdf_paths:
         if not os.path.exists(p):
             raise ValueError(f"PDF file not found: {p}")
@@ -90,9 +103,13 @@ def merge_pdfs(pdf_paths: list[str], output_name: str | None = None) -> str:
     out_path = new_output_path(f"{name}.pdf")
 
     out = fitz.open()
+    total_pages = 0
     try:
         for p in pdf_paths:
             with fitz.open(p) as d:
+                total_pages += len(d)
+                if total_pages > 1000:
+                    raise ValueError("Merged PDF exceeds maximum page limit (1000 pages).")
                 out.insert_pdf(d)
         out.save(out_path, garbage=4, deflate=True, clean=True)
         return out_path
@@ -1276,7 +1293,11 @@ def render_page_thumbnail(pdf_path: str, page_number: int, max_width: int = 200)
             raise ValueError(f"Invalid page number: {page_number} (PDF has {total} pages)")
         page = doc[page_number - 1]
         rect = page.rect
-        zoom = max_width / rect.width if rect.width > 0 else 1.0
+        zoom = min(
+            max_width / max(rect.width, 1),
+            (max_width * 2) / max(rect.height, 1),
+        )
+        _guard_pixmap_memory(page, zoom, page_number)
         matrix = fitz.Matrix(zoom, zoom)
         pix = page.get_pixmap(matrix=matrix, alpha=False)
         return bytes(pix.tobytes("png"))

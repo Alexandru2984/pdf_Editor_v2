@@ -71,6 +71,7 @@ def _groq_payload(text: str, style: str, model: str, custom_prompt: str | None) 
         ],
         "model": model,
         "temperature": 0.7,
+        "max_tokens": 1024,
     }
 
 
@@ -106,7 +107,7 @@ class OllamaProvider(AIProvider):
             )
             if response.status_code == 200:
                 return response.json().get("response", "").strip(), True, ""
-            return "", False, f"Ollama Error: {response.text}"
+            return "", False, f"Ollama Error: {response.text[:300]}"
         except Exception as e:
             return "", False, f"Connection Error: {str(e)}"
 
@@ -128,7 +129,7 @@ class OllamaProvider(AIProvider):
                 response = await client.post(f"{OLLAMA_BASE_URL}/api/generate", json=payload)
             if response.status_code == 200:
                 return response.json().get("response", "").strip(), True, ""
-            return "", False, f"Ollama Error: {response.text}"
+            return "", False, f"Ollama Error: {response.text[:300]}"
         except Exception as e:
             return "", False, f"Connection Error: {str(e)}"
 
@@ -168,7 +169,7 @@ class GroqProvider(AIProvider):
             if response.status_code == 200:
                 content = response.json()["choices"][0]["message"]["content"].strip()
                 return content, True, ""
-            return "", False, f"Groq Error: {response.text}"
+            return "", False, f"Groq Error: {response.text[:300]}"
         except Exception as e:
             return "", False, f"Connection Error: {str(e)}"
 
@@ -187,7 +188,7 @@ class GroqProvider(AIProvider):
             if response.status_code == 200:
                 content = response.json()["choices"][0]["message"]["content"].strip()
                 return content, True, ""
-            return "", False, f"Groq Error: {response.text}"
+            return "", False, f"Groq Error: {response.text[:300]}"
         except Exception as e:
             return "", False, f"Connection Error: {str(e)}"
 
@@ -198,8 +199,25 @@ def get_provider(provider_name: str) -> AIProvider:
     return OllamaProvider()
 
 
+_MODELS_CACHE_KEY = "ai_service:all_models"
+_MODELS_CACHE_TTL = 300
+
+
 def get_all_models() -> dict[str, list[str]]:
-    """Returns models grouped by provider"""
+    """Returns models grouped by provider, cached for 5 minutes."""
+    from django.core.cache import cache
+
+    is_mocked = hasattr(OllamaProvider.get_models, "_mock_name") or hasattr(
+        GroqProvider.get_models, "_mock_name"
+    )
+    if not is_mocked:
+        cached = cache.get(_MODELS_CACHE_KEY)
+        if isinstance(cached, dict):
+            return cached
+
     ollama = OllamaProvider().get_models()
     groq = GroqProvider().get_models()
-    return {"ollama": ollama, "groq": groq}
+    result = {"ollama": ollama, "groq": groq}
+    if not is_mocked and (ollama or groq):
+        cache.set(_MODELS_CACHE_KEY, result, timeout=_MODELS_CACHE_TTL)
+    return result

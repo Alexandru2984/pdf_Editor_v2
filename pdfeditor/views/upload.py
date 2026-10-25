@@ -14,6 +14,7 @@ from django.views.decorators.http import require_POST
 
 from ..models import UploadedPDF
 from ..pdf_processor import check_pdf_has_text, inspect_pdf, sanitize_pdf
+from ..pdf_processor.ops import _guard_pixmap_memory
 from ..ratelimiting import auth_aware_ratelimit
 from ..scanning import UploadBlocked, scan_fileobj
 from ..tool_catalog import is_upload_destination_allowed
@@ -37,7 +38,11 @@ def _generate_thumbnail(pdf_path: str, thumb_path: str) -> bool:
             if len(doc) == 0:
                 return False
             page = doc.load_page(0)
-            zoom = THUMB_TARGET_WIDTH / max(page.rect.width, 1)
+            zoom = min(
+                THUMB_TARGET_WIDTH / max(page.rect.width, 1),
+                (THUMB_TARGET_WIDTH * 2) / max(page.rect.height, 1),
+            )
+            _guard_pixmap_memory(page, zoom, 1)
             mat = fitz.Matrix(zoom, zoom)
             pix = page.get_pixmap(matrix=mat, alpha=False)
             os.makedirs(os.path.dirname(thumb_path), exist_ok=True)

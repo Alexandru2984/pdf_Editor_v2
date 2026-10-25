@@ -90,6 +90,9 @@ def _handle_rephrase_post(request, selected_pdf, ollama_models, groq_models):
     if not selected_text:
         messages.error(request, "Please select text from the PDF first.")
         return
+    if len(selected_text) > 5000:
+        messages.error(request, "Selected text is too long (maximum 5,000 characters).")
+        return
     if all(v == 0 for v in bbox.values()):
         messages.error(request, "Missing selection coordinates. Please capture the selection again.")
         return
@@ -163,6 +166,11 @@ def rephrase_preview_ajax(request):
 
         if not text:
             return _json_response({"success": False, "error": "No text provided"}, status=400)
+        if len(text) > 5000:
+            return _json_response(
+                {"success": False, "error": "Text too long (maximum 5,000 characters)"},
+                status=400,
+            )
 
         groq_models = get_all_models().get("groq", [])
         provider_name = "groq" if model in groq_models else "ollama"
@@ -181,8 +189,8 @@ def rephrase_preview_ajax(request):
                 "style": style,
             }
         )
-    except Exception as e:
-        return _json_response({"success": False, "error": str(e)}, status=500)
+    except Exception:
+        return _json_response({"success": False, "error": "Internal error during preview."}, status=500)
 
 
 def rephrase_result_view(request):

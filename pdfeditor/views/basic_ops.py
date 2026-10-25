@@ -36,6 +36,7 @@ from ..pdf_processor import (
     convert_pdf_to_images,
     edit_pdf_metadata,
     flatten_pdf,
+    inspect_pdf,
     merge_pdfs,
     pdf_page_count,
     protect_pdf,
@@ -1595,6 +1596,16 @@ def verify_signature_view(request):
         form = VerifyPDFForm(request.POST, request.FILES)
         if form.is_valid():
             pdf_file = form.cleaned_data["pdf_file"]
+            try:
+                scan_fileobj(pdf_file)
+            except UploadBlocked as exc:
+                messages.error(request, str(exc))
+                return render(
+                    request,
+                    "pdfeditor/verify_signature.html",
+                    {"form": form, "reports": None},
+                )
+
             trust_file = form.cleaned_data.get("trust_certs")
             extra_certs: list[bytes] = []
             if trust_file:
@@ -1611,6 +1622,7 @@ def verify_signature_view(request):
                     for chunk in pdf_file.chunks():
                         out.write(chunk)
                 try:
+                    inspect_pdf(tmp_path)
                     reports = verify_pdf_signatures(tmp_path, extra_trust_certs=extra_certs)
                 except Exception as e:
                     messages.error(request, _("Error verifying signatures: %(err)s") % {"err": e})

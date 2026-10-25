@@ -57,6 +57,7 @@ def _user_pdf(user, pdf_id, *, allow_encrypted: bool = False) -> UploadedPDF:
 
 def _record(request, kind: str, path: str, source: UploadedPDF | None) -> ProcessedPDF:
     """Lightweight wrapper around the web-flow record_output. Logs audit too."""
+    from .. import objectstore
     from ..models import AuditLog
 
     output = ProcessedPDF.objects.create(
@@ -79,6 +80,7 @@ def _record(request, kind: str, path: str, source: UploadedPDF | None) -> Proces
             ip_address=_client_ip(request),
             user_agent=request.META.get("HTTP_USER_AGENT", "")[:300],
         )
+    objectstore.schedule_mirror(output)
     return output
 
 
@@ -563,6 +565,7 @@ class PageNumbersOpView(_BaseOpView):
             pdf_path,
             options={
                 "position": params["position"],
+                "start_page": params["start_at"],
                 "start_at": params["start_at"],
                 "page_range": params.get("page_range") or None,
             },
@@ -659,7 +662,11 @@ class ConvertDocxOpView(APIView):
 
 
 class _SummarizeSerializer(_PdfIdSerializer):
-    language = serializers.CharField(default="English", help_text="Output language (e.g. English, Romanian).")
+    language = serializers.CharField(
+        default="English",
+        max_length=40,
+        help_text="Output language (e.g. English, Romanian).",
+    )
 
 
 @extend_schema(

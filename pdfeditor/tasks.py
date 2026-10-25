@@ -184,6 +184,9 @@ def _record_output(job: Job, kind: str, out_path: str) -> ProcessedPDF:
         path=out_path,
         size=os.path.getsize(out_path) if os.path.exists(out_path) else 0,
     )
+    if Job.objects.filter(pk=job.pk, status=Job.STATUS_FAILED).exists():
+        # Job was cancelled while running; preserve the failed/cancelled status.
+        return output
     job.output = output
     job.status = Job.STATUS_DONE
     job.progress = 100
@@ -404,15 +407,17 @@ def run_chat_index_task(job_id: str) -> str | None:
         return None
 
     # No ProcessedPDF for indexing — just mark done with progress=100.
+    if Job.objects.filter(pk=job.pk, status=Job.STATUS_FAILED).exists():
+        return str(job.id)
     merged = dict(job.params or {})
     merged["chunk_count"] = len(chunks)
     job.params = merged
     job.status = Job.STATUS_DONE
     job.progress = 100
-    from django.utils import timezone as _tz
-
-    job.finished_at = _tz.now()
+    job.finished_at = timezone.now()
     job.save(update_fields=["params", "status", "progress", "finished_at"])
+    JOB_TOTAL.labels(kind=job.kind, status="done").inc()
+    _publish_job_event(job)
     return str(job.id)
 
 
@@ -484,6 +489,8 @@ def run_batch_task(job_id: str) -> str | None:
     successes = 0
     total = len(pdf_ids)
     for idx, pid in enumerate(pdf_ids):
+        if Job.objects.filter(pk=job.pk, status=Job.STATUS_FAILED).exists():
+            break
         pdf = UploadedPDF.objects.filter(
             user=job.user,
             id=pid,
@@ -505,6 +512,7 @@ def run_batch_task(job_id: str) -> str | None:
                     path=out_path,
                     size=os.path.getsize(out_path) if os.path.exists(out_path) else 0,
                 )
+                objectstore.schedule_mirror(output)
                 results.append({"pdf_id": str(pid), "output_id": str(output.id)})
                 successes += 1
                 OP_TOTAL.labels(kind=output_kind, outcome="success").inc()
@@ -527,6 +535,8 @@ def run_batch_task(job_id: str) -> str | None:
 
     # Final state — done if at least one succeeded, otherwise failed.
     job.refresh_from_db()
+    if job.status == Job.STATUS_FAILED:
+        return str(job.id)
     job.progress = 100
     job.finished_at = timezone.now()
     merged = dict(job.params or {})
