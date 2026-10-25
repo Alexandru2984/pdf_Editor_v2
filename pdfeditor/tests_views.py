@@ -2435,3 +2435,26 @@ class SplitZipAndSummarizeViewTests(_ViewTestBase):
         self.assertEqual(chain_resp.status_code, 302)
         self.assertTrue(chain_resp["Location"].startswith(f"{reverse('sign')}?pdf="))
         self.assertEqual(UploadedPDF.objects.count(), initial_count + 1)
+
+    def test_qr_code_stamp_workflow(self):
+        pdf = self.upload_and_get_pdf(num_pages=2)
+        get_resp = self.client.get(f"{reverse('qr_code')}?pdf={pdf.id}")
+        self.assertEqual(get_resp.status_code, 200)
+        self.assertContains(get_resp, "Add QR Code Stamp")
+
+        post_resp = self.client.post(
+            f"{reverse('qr_code')}?pdf={pdf.id}",
+            {
+                "qr_data": "https://pdf.micutu.com/verify/123",
+                "label_text": "Scan to verify",
+                "position": "bottom-right",
+                "size_pt": 72,
+                "pages_mode": "first",
+                "page_range": "",
+            },
+        )
+        self.assertEqual(post_resp.status_code, 302)
+        res_resp = self.client.get(reverse("qr_code_result"))
+        self.assertEqual(res_resp.status_code, 200)
+        dl_resp = self.client.get(reverse("download_qr_code"))
+        self.assertEqual(dl_resp.status_code, 200)

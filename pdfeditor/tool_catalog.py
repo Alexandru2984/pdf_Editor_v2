@@ -1514,6 +1514,76 @@ TOOL_LANDINGS: tuple[ToolLanding, ...] = (
             ),
         ),
     ),
+    ToolLanding(
+        key="qr_code_pdf",
+        slug="add-qr-code-to-pdf",
+        operation_url_name="qr_code",
+        icon="📱",
+        name=text("Add QR Code to PDF", "Adaugă cod QR pe PDF"),
+        category=text("Security", "Securitate"),
+        short_description=text(
+            "Stamp a scannable QR code onto one or all pages of a PDF for verification links or invoices.",
+            "Aplică un cod QR scanabil pe una sau pe toate paginile unui PDF pentru linkuri de verificare sau facturi.",
+        ),
+        seo_title=text(
+            "Add QR Code Stamp to PDF Pages Online | PDF Platform",
+            "Adaugă cod QR pe paginile PDF online | PDF Platform",
+        ),
+        seo_description=text(
+            "Generate and stamp a high-resolution scannable QR code onto any PDF page with custom position, size and caption.",
+            "Generează și aplică un cod QR scanabil de înaltă rezoluție pe orice pagină PDF, cu poziție, dimensiune și etichetă configurabile.",
+        ),
+        intro=text(
+            "Embed a crisp verification URL, payment link or document reference as a scannable QR code on the first page, last page or every page of your PDF.",
+            "Integrează un link de verificare, link de plată sau referință de document sub formă de cod QR scanabil pe prima pagină, ultima pagină sau pe toate paginile PDF-ului.",
+        ),
+        highlights=(
+            text(
+                "High-contrast QR generation with medium error correction.",
+                "Generare cod QR cu contrast ridicat și corecție de erori medie.",
+            ),
+            text(
+                "Target the first page, last page, all pages or a custom page range.",
+                "Aplicare pe prima pagină, ultima pagină, toate paginile sau un interval ales.",
+            ),
+            text(
+                "Optional text caption printed neatly below the QR code.",
+                "Etichetă opțională de text afișată sub codul QR.",
+            ),
+        ),
+        steps=(
+            text(
+                "Upload the PDF document that needs a QR stamp.",
+                "Încarcă documentul PDF pe care vrei să aplici codul QR.",
+            ),
+            text(
+                "Enter the target URL or text, choose corner position, size and pages.",
+                "Introdu URL-ul sau textul dorit, alege colțul paginii, dimensiunea și paginile.",
+            ),
+            text(
+                "Apply the QR stamp and download the updated PDF.",
+                "Aplică ștampila QR și descarcă PDF-ul actualizat.",
+            ),
+        ),
+        note=text(
+            "Test the stamped QR code with your phone camera before printing or distributing large batches.",
+            "Testează codul QR aplicat cu camera telefonului înainte de tipărire sau distribuire.",
+        ),
+        faqs=(
+            faq(
+                "Can I place the QR code only on the first or last page?",
+                "Pot plasa codul QR doar pe prima sau pe ultima pagină?",
+                "Yes. Choose First page only, Last page only, All pages or a custom page range such as 1-3, 5.",
+                "Da. Poți alege doar prima pagină, doar ultima pagină, toate paginile sau un interval personalizat precum 1-3, 5.",
+            ),
+            faq(
+                "Does the QR code work when printed in black and white?",
+                "Funcționează codul QR atunci când documentul este tipărit alb-negru?",
+                "Yes. The QR stamp is rendered in pure black on white with a clean quiet zone so laser and inkjet printers reproduce it reliably.",
+                "Da. Codul QR este generat negru pe alb cu margine de siguranță clară, astfel încât imprimantele îl reproduc fără probleme.",
+            ),
+        ),
+    ),
 )
 
 TOOL_LANDINGS_BY_SLUG = {tool.slug: tool for tool in TOOL_LANDINGS}

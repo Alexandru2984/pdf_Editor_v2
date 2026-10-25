@@ -4488,6 +4488,189 @@ msgstr "Webhook dezactivat."
 msgid "Webhook deleted."
 msgstr "Webhook șters."
 
+msgid "API Docs"
+msgstr "Documentație API"
+
+msgid "AI Summarize"
+msgstr "Rezumat cu AI"
+
+msgid "Summarize"
+msgstr "Rezumă"
+
+msgid "AI PDF Summarizer"
+msgstr "Rezumat PDF cu AI"
+
+msgid "Generate a concise executive summary and key bullet points from:"
+msgstr "Generează un rezumat executiv concis și ideile principale din:"
+
+msgid "Output Language"
+msgstr "Limba rezumatului"
+
+msgid "Generate Summary"
+msgstr "Generează rezumat"
+
+msgid "Analyzing document & generating summary..."
+msgstr "Se analizează documentul și se generează rezumatul..."
+
+msgid "Summary Result"
+msgstr "Rezultatul rezumatului"
+
+msgid "Copy to Clipboard"
+msgstr "Copiază în clipboard"
+
+msgid "Download .txt"
+msgstr "Descarcă .txt"
+
+msgid "Download All (ZIP)"
+msgstr "Descarcă tot (ZIP)"
+
+msgid "Pipeline Chaining"
+msgstr "Înlănțuire operațiuni"
+
+msgid "Continue with this PDF in another tool"
+msgstr "Continuă cu acest PDF într-un alt instrument"
+
+msgid "No need to download and re-upload — send this processed PDF straight into the next operation:"
+msgstr "Nu este nevoie să descarci și să încarci din nou — trimite direct acest PDF procesat în următoarea operațiune:"
+
+msgid "Digital Sign"
+msgstr "Semnătură digitală"
+
+msgid "Create Share Link"
+msgstr "Creează link de partajare"
+
+msgid "Choose another PDF tool"
+msgstr "Alege alt instrument PDF"
+
+msgid "Open in Tool"
+msgstr "Deschide în instrument"
+
+msgid "All Tools"
+msgstr "Toate instrumentele"
+
+msgid "Organize & Pages"
+msgstr "Organizare & Pagini"
+
+msgid "Edit & Convert"
+msgstr "Editare & Conversie"
+
+msgid "Security & Sign"
+msgstr "Securitate & Semnătură"
+
+msgid "AI & OCR"
+msgstr "AI & OCR"
+
+msgid "Search PDF tools (e.g. compress, sign, OCR, summarize, merge)..."
+msgstr "Caută instrumente PDF (ex. comprimare, semnătură, OCR, rezumat, unire)..."
+
+msgid "Search PDF tools"
+msgstr "Caută instrumente PDF"
+
+msgid "Filter tools by category"
+msgstr "Filtrează instrumentele după categorie"
+
+msgid "No PDF tools match your search. Try another keyword or switch to 'All Tools'."
+msgstr "Niciun instrument PDF nu corespunde căutării. Încearcă alt cuvânt sau alege „Toate instrumentele”."
+
+msgid "Open in tool..."
+msgstr "Deschide în instrument..."
+
+msgid "Open in tool"
+msgstr "Deschide în instrument"
+
+msgid "Chat"
+msgstr "Chat"
+
+msgid "QR Code Stamp"
+msgstr "Ștampilă cod QR"
+
+msgid "Add QR Code Stamp"
+msgstr "Adaugă ștampilă cod QR"
+
+msgid "Stamp a scannable verification QR code onto one or all pages"
+msgstr "Aplică un cod QR de verificare scanabil pe una sau pe toate paginile"
+
+msgid "Stamp a scannable verification QR code onto:"
+msgstr "Aplică un cod QR de verificare scanabil pe:"
+
+msgid "QR code URL or text"
+msgstr "URL sau text pentru codul QR"
+
+msgid "Enter a verification URL, invoice link, or reference text (max 1024 chars)."
+msgstr "Introdu un URL de verificare, link de factură sau text de referință (max. 1024 caractere)."
+
+msgid "Caption below QR code (optional)"
+msgstr "Etichetă sub codul QR (opțional)"
+
+msgid "Short label printed underneath the QR stamp (e.g. 'Scan to verify')."
+msgstr "Etichetă scurtă tipărită sub codul QR (ex. „Scanează pentru verificare”)."
+
+msgid "Scan to verify"
+msgstr "Scanează pentru verificare"
+
+msgid "Position on page"
+msgstr "Poziție pe pagină"
+
+msgid "QR code size (pt)"
+msgstr "Dimensiune cod QR (pt)"
+
+msgid "72 pt = 1 inch (2.54 cm). Allowed range: 36–220 pt."
+msgstr "72 pt = 1 inch (2,54 cm). Interval permis: 36–220 pt."
+
+msgid "Apply to pages"
+msgstr "Aplică pe paginile"
+
+msgid "All pages"
+msgstr "Toate paginile"
+
+msgid "First page only"
+msgstr "Doar prima pagină"
+
+msgid "Last page only"
+msgstr "Doar ultima pagină"
+
+msgid "Custom page range"
+msgstr "Interval personalizat de pagini"
+
+msgid "Page range (when custom)"
+msgstr "Interval de pagini (dacă este personalizat)"
+
+msgid "Preview Source PDF"
+msgstr "Previzualizează PDF-ul sursă"
+
+msgid "Apply QR Stamp"
+msgstr "Aplică ștampila QR"
+
+msgid "QR Code Stamp Result"
+msgstr "Rezultat ștampilă cod QR"
+
+msgid "QR Code Stamp Added!"
+msgstr "Ștampila cu cod QR a fost adăugată!"
+
+msgid "Your PDF now includes a scannable QR code stamp."
+msgstr "PDF-ul tău include acum un cod QR scanabil."
+
+msgid "Preview Stamped PDF"
+msgstr "Previzualizează PDF-ul cu cod QR"
+
+msgid "Download Stamped PDF"
+msgstr "Descarcă PDF-ul cu cod QR"
+
+msgid "QR code stamp added successfully!"
+msgstr "Ștampila cu cod QR a fost adăugată cu succes!"
+
+msgid "QR stamped file not found."
+msgstr "Fișierul cu cod QR nu a fost găsit."
+
+msgid "Test"
+msgstr "Testează"
+
+msgid "Send a signed test ping"
+msgstr "Trimite un eveniment de test semnat"
+
+msgid "Use this PDF in another tool"
+msgstr "Folosește acest PDF într-un alt instrument"
+
 #~ msgid "Drag & drop your PDF here or click to browse"
 #~ msgstr "Trage și plasează PDF-ul aici sau apasă pentru a alege"
 

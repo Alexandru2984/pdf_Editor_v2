@@ -912,3 +912,77 @@ class OutlineForm(forms.Form):
                         _("Entry %(n)s is missing field '%(k)s'.") % {"n": i, "k": key}
                     )
         return data
+
+
+class QrCodeStampForm(forms.Form):
+    """Stamp a verifiable QR code onto one or more PDF pages."""
+
+    POSITION_CHOICES = [
+        ("bottom-right", _("Bottom right")),
+        ("bottom-left", _("Bottom left")),
+        ("top-right", _("Top right")),
+        ("top-left", _("Top left")),
+        ("center", _("Center")),
+    ]
+
+    PAGES_MODE_CHOICES = [
+        ("all", _("All pages")),
+        ("first", _("First page only")),
+        ("last", _("Last page only")),
+        ("range", _("Custom page range")),
+    ]
+
+    qr_data = forms.CharField(
+        required=True,
+        max_length=1024,
+        label=_("QR code URL or text"),
+        help_text=_("Enter a verification URL, invoice link, or reference text (max 1024 chars)."),
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "https://pdf.micutu.com/verify/...",
+            }
+        ),
+    )
+    label_text = forms.CharField(
+        required=False,
+        max_length=60,
+        label=_("Caption below QR code (optional)"),
+        help_text=_("Short label printed underneath the QR stamp (e.g. 'Scan to verify')."),
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": _("Scan to verify"),
+            }
+        ),
+    )
+    position = forms.ChoiceField(
+        required=True,
+        choices=POSITION_CHOICES,
+        initial="bottom-right",
+        label=_("Position on page"),
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    size_pt = forms.IntegerField(
+        required=True,
+        min_value=36,
+        max_value=220,
+        initial=72,
+        label=_("QR code size (pt)"),
+        help_text=_("72 pt = 1 inch (2.54 cm). Allowed range: 36–220 pt."),
+        widget=forms.NumberInput(attrs={"class": "form-control", "min": "36", "max": "220"}),
+    )
+    pages_mode = forms.ChoiceField(
+        required=True,
+        choices=PAGES_MODE_CHOICES,
+        initial="all",
+        label=_("Apply to pages"),
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    page_range = forms.CharField(
+        required=False,
+        max_length=100,
+        label=_("Page range (when custom)"),
+        help_text=_("Example: 1-3, 5"),
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "1-3, 5"}),
+    )

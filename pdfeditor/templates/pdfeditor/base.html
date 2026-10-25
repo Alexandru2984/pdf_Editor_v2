@@ -143,6 +143,7 @@
     <footer class="site-footer">
         <span>© 2026 PDF Platform</span>
         <a href="{{ seo.tools_hub_url }}">{% if LANGUAGE_CODE|slice:':2' == 'ro' %}Instrumente PDF{% else %}PDF Tools{% endif %}</a>
+        <a href="{% url 'api:docs' %}">{% trans "API Docs" %}</a>
         <a href="{{ seo.privacy_url }}">{% trans "Privacy Policy" %}</a>
         <a href="{{ seo.terms_url }}">{% trans "Terms of Service" %}</a>
         <a href="https://github.com/Alexandru2984/pdf_Editor_v2" target="_blank" rel="noopener">{% trans "Open source" %} (MIT)</a>

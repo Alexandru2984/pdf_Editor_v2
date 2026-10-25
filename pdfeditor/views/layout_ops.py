@@ -11,10 +11,18 @@ from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_GET
 
-from ..forms import CropPagesForm, PageNumbersForm, ReorderPagesForm, RotatePagesForm, WatermarkForm
+from ..forms import (
+    CropPagesForm,
+    PageNumbersForm,
+    QrCodeStampForm,
+    ReorderPagesForm,
+    RotatePagesForm,
+    WatermarkForm,
+)
 from ..models import ProcessedPDF, UploadedPDF
 from ..pdf_processor import (
     add_page_numbers,
+    add_qr_code_stamp,
     add_watermark,
     crop_pages,
     render_page_thumbnail,
@@ -524,6 +532,88 @@ def crop_result_view(request):
 
 def download_cropped_view(request):
     output = _fetch_output(request, "cropped_pdf_id")
+    if not output:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+    try:
+        return attachment_response(output.path)
+    except Http404:
+        messages.error(request, _("File not found."))
+        return redirect("dashboard")
+
+
+# ---------- QR Code Stamp ----------
+
+
+@auth_aware_ratelimit(anon_rate="20/h", user_rate="120/h", method="POST")
+def qr_code_view(request):
+    selected_pdf, uploaded_pdfs, early = _require_pdf(request)
+    if early:
+        return early
+
+    pdf_path = selected_pdf.path
+
+    if request.method == "POST":
+        form = QrCodeStampForm(request.POST)
+        if form.is_valid():
+            try:
+                output_path = add_qr_code_stamp(
+                    pdf_path,
+                    form.cleaned_data["qr_data"],
+                    position=form.cleaned_data["position"],
+                    size_pt=int(form.cleaned_data["size_pt"]),
+                    pages_mode=form.cleaned_data["pages_mode"],
+                    page_range=form.cleaned_data.get("page_range") or None,
+                    label_text=form.cleaned_data.get("label_text") or None,
+                )
+                output = record_output(
+                    request,
+                    kind=ProcessedPDF.KIND_WATERMARK,
+                    path=output_path,
+                    source=selected_pdf,
+                )
+                request.session["qr_stamped_pdf_id"] = str(output.id)
+                messages.success(request, _("QR code stamp added successfully!"))
+                return redirect("qr_code_result")
+            except ValueError as e:
+                messages.error(request, _("Error: %(err)s") % {"err": e})
+            except Exception as e:
+                messages.error(request, _("Error adding QR code stamp: %(err)s") % {"err": e})
+    else:
+        form = QrCodeStampForm()
+
+    return render(
+        request,
+        "pdfeditor/qr_code.html",
+        {
+            "form": form,
+            "pdf_name": selected_pdf.name,
+            "pdf_path_relative": os.path.relpath(pdf_path, settings.MEDIA_ROOT),
+            "uploaded_pdfs": uploaded_pdfs,
+            "selected_pdf": selected_pdf,
+        },
+    )
+
+
+def qr_code_result_view(request):
+    output = _fetch_output(request, "qr_stamped_pdf_id")
+    if not output or not output.exists_on_disk():
+        messages.error(request, _("QR stamped file not found."))
+        return redirect("dashboard")
+
+    return render(
+        request,
+        "pdfeditor/qr_code_result.html",
+        {
+            "pdf_filename": output.name,
+            "size": os.path.getsize(output.path),
+            "pdf_path_relative": os.path.relpath(output.path, settings.MEDIA_ROOT),
+        },
+    )
+
+
+def download_qr_code_view(request):
+    output = _fetch_output(request, "qr_stamped_pdf_id")
     if not output:
         messages.error(request, _("File not found."))
         return redirect("dashboard")

@@ -159,6 +159,9 @@ urlpatterns = [
     path("crop/", views.crop_view, name="crop"),
     path("crop/result/", views.crop_result_view, name="crop_result"),
     path("download_cropped/", views.download_cropped_view, name="download_cropped"),
+    path("qr-code/", views.qr_code_view, name="qr_code"),
+    path("qr-code/result/", views.qr_code_result_view, name="qr_code_result"),
+    path("download_qr_code/", views.download_qr_code_view, name="download_qr_code"),
     path(
         "pdf/<str:pdf_id>/page/<int:page_number>/thumbnail/",
         views.page_thumbnail_view,

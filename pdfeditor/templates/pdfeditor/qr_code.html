@@ -1,0 +1,87 @@
+{% extends 'pdfeditor/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Add QR Code Stamp" %}{% endblock %}
+
+{% block content %}
+<div class="preview-container" style="--tool-max-width: 900px;">
+    <div class="preview-header">
+        {% if uploaded_pdfs|length > 1 %}
+        <div class="tool-pdf-selector-bar">
+            <label for="pdf-selector">
+                📂 {% trans "Select PDF:" %}
+            </label>
+            <select id="pdf-selector" data-nav-select="{% url 'qr_code' %}">
+                {% for pdf in uploaded_pdfs %}
+                <option value="{{ pdf.id }}" {% if pdf.id == selected_pdf.id %}selected{% endif %}>
+                    📄 {{ pdf.name }} • {{ pdf.size|filesizeformat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="text-center">
+            <h2 class="tool-page-title">📱 {% trans "Add QR Code Stamp" %}</h2>
+            <p class="tool-page-subtitle">{% trans "Stamp a scannable verification QR code onto:" %} <strong>{{ pdf_name }}</strong></p>
+        </div>
+    </div>
+
+    <div class="pdf-viewer-wrapper">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="tool-form-group" style="margin-bottom: 1.5rem;">
+                <label class="tool-form-label" for="{{ form.qr_data.id_for_label }}">{{ form.qr_data.label }}</label>
+                {{ form.qr_data }}
+                <small class="tool-form-help">{{ form.qr_data.help_text }}</small>
+                {% if form.qr_data.errors %}
+                <div class="form-error">{{ form.qr_data.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="tool-form-group" style="margin-bottom: 1.5rem;">
+                <label class="tool-form-label" for="{{ form.label_text.id_for_label }}">{{ form.label_text.label }}</label>
+                {{ form.label_text }}
+                <small class="tool-form-help">{{ form.label_text.help_text }}</small>
+            </div>
+
+            <div class="form-grid-2" style="margin-bottom: 1.5rem;">
+                <div class="tool-form-group" style="margin-bottom: 0;">
+                    <label class="tool-form-label" for="{{ form.position.id_for_label }}">{{ form.position.label }}</label>
+                    {{ form.position }}
+                </div>
+
+                <div class="tool-form-group" style="margin-bottom: 0;">
+                    <label class="tool-form-label" for="{{ form.size_pt.id_for_label }}">
+                        {{ form.size_pt.label }}: <span id="qr-size-value">72</span> pt
+                    </label>
+                    <input type="range" name="size_pt" min="36" max="220" value="72" class="range-input" data-range-output="qr-size-value">
+                    <small class="tool-form-help">{{ form.size_pt.help_text }}</small>
+                </div>
+            </div>
+
+            <div class="form-grid-2">
+                <div class="tool-form-group" style="margin-bottom: 0;">
+                    <label class="tool-form-label" for="{{ form.pages_mode.id_for_label }}">{{ form.pages_mode.label }}</label>
+                    {{ form.pages_mode }}
+                </div>
+
+                <div class="tool-form-group" style="margin-bottom: 0;">
+                    <label class="tool-form-label" for="{{ form.page_range.id_for_label }}">{{ form.page_range.label }}</label>
+                    {{ form.page_range }}
+                    <small class="tool-form-help">{{ form.page_range.help_text }}</small>
+                </div>
+            </div>
+
+            <div class="tool-form-actions">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">← {% trans "Back" %}</a>
+                <button type="button" data-pdf-modal="/media/{{ pdf_path_relative }}" class="btn btn-preview">
+                    👁️ {% trans "Preview Source PDF" %}
+                </button>
+                <button type="submit" class="btn btn-primary">📱 {% trans "Apply QR Stamp" %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

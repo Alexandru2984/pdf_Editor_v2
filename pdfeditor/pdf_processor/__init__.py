@@ -16,6 +16,7 @@ from .extract import extract_text_from_pdf, make_pdf_searchable, ocr_pdf_to_text
 from .forms import FormField, extract_form_fields, fill_form_fields, has_form_fields
 from .ops import (
     add_page_numbers,
+    add_qr_code_stamp,
     add_watermark,
     compare_pdfs,
     compress_pdf,
@@ -71,6 +72,7 @@ __all__ = [
     "sign_pdf",
     "verify_pdf_signatures",
     "add_watermark",
+    "add_qr_code_stamp",
     "rotate_pages",
     "add_page_numbers",
     "extract_text_from_pdf",

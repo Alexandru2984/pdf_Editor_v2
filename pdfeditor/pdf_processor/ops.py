@@ -1466,3 +1466,93 @@ def add_page_numbers(pdf_path: str, options: dict | None = None) -> str:
         doc.save(out_path, garbage=4, deflate=True, clean=True)
 
     return out_path
+
+
+def add_qr_code_stamp(
+    pdf_path: str,
+    qr_data: str,
+    *,
+    position: str = "bottom-right",
+    size_pt: int = 72,
+    pages_mode: str = "all",
+    page_range: str | None = None,
+    label_text: str | None = None,
+) -> str:
+    """Render a QR code PNG in memory and stamp it onto the selected pages of ``pdf_path``."""
+    if not os.path.exists(pdf_path):
+        raise ValueError(f"PDF file not found: {pdf_path}")
+
+    payload = (qr_data or "").strip()
+    if not payload:
+        raise ValueError("QR code content cannot be empty")
+    if len(payload) > 1024:
+        raise ValueError("QR code content cannot exceed 1024 characters")
+
+    size_pt = max(36, min(int(size_pt or 72), 220))
+    caption = (label_text or "").strip()[:60]
+
+    import qrcode
+
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=2,
+    )
+    qr.add_data(payload)
+    qr.make(fit=True)
+    pil_img = qr.make_image(fill_color="black", back_color="white")
+    buf = io.BytesIO()
+    pil_img.save(buf, format="PNG")
+    png_bytes = buf.getvalue()
+
+    out_path = new_output_path(f"qr_{safe_basename(pdf_path)}_{timestamp()}.pdf")
+
+    with fitz.open(pdf_path) as doc:
+        if doc.is_encrypted:
+            raise ValueError("Cannot stamp an encrypted PDF — remove the password first")
+        total = len(doc)
+        if total == 0:
+            raise ValueError("PDF has no pages")
+
+        if pages_mode == "first":
+            indices = [0]
+        elif pages_mode == "last":
+            indices = [total - 1]
+        elif pages_mode == "range" and (page_range or "").strip():
+            indices = parse_page_range(page_range, total)
+        else:
+            indices = list(range(total))
+
+        margin = 24.0
+        for idx in indices:
+            page = doc[idx]
+            pw, ph = page.rect.width, page.rect.height
+            coords = {
+                "top-left": (margin, margin),
+                "top-right": (max(margin, pw - size_pt - margin), margin),
+                "bottom-left": (margin, max(margin, ph - size_pt - margin)),
+                "bottom-right": (
+                    max(margin, pw - size_pt - margin),
+                    max(margin, ph - size_pt - margin),
+                ),
+                "center": ((pw - size_pt) / 2.0, (ph - size_pt) / 2.0),
+            }
+            x, y = coords.get(position, coords["bottom-right"])
+            rect = fitz.Rect(x, y, x + size_pt, y + size_pt)
+            page.insert_image(rect, stream=png_bytes, overlay=True)
+            if caption:
+                font_size = 8
+                text_y = y + size_pt + 10 if (y + size_pt + 14) < ph else max(12, y - 4)
+                page.insert_text(
+                    (x, text_y),
+                    caption,
+                    fontsize=font_size,
+                    fontname="helv",
+                    color=(0.15, 0.15, 0.15),
+                    overlay=True,
+                )
+
+        doc.save(out_path, garbage=4, deflate=True, clean=True)
+
+    return out_path

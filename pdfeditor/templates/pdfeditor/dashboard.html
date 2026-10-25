@@ -147,6 +147,13 @@
             <a href="{% url 'watermark' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
+        <div class="operation-card" data-feature="qr_code" data-category="edit security">
+            <div class="card-icon">📱</div>
+            <h3>{% trans "QR Code Stamp" %}</h3>
+            <p>{% trans "Stamp a scannable verification QR code onto one or all pages" %}</p>
+            <a href="{% url 'qr_code' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
+        </div>
+
         <div class="operation-card" data-feature="rotate" data-category="organize">
             <div class="card-icon">🔄</div>
             <h3>{% trans "Rotate Pages" %}</h3>
