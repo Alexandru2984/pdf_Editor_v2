@@ -55,6 +55,9 @@ OLLAMA_BASE_URL = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 PDF_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+# Both nginx layers allow 20 MiB request bodies. Leave room for multipart
+# headers so a multi-file upload can fail helpfully before reaching that cap.
+PDF_MAX_BATCH_UPLOAD_BYTES = 19 * 1024 * 1024
 PDF_MAX_PAGES = int(os.environ.get("PDF_MAX_PAGES", 500))
 
 # Page count above which expensive ops (PDF→images rasterization) are

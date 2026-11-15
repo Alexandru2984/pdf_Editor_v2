@@ -1,0 +1,14 @@
+{% load i18n %}
+<div data-upload-feedback
+     data-max-files="{{ upload_max_files }}"
+     data-max-file-bytes="{{ upload_max_file_bytes }}"
+     data-max-batch-bytes="{{ upload_max_batch_bytes }}"
+     data-type-error="{% trans 'Choose PDF files only.' %}"
+     data-count-error="{% blocktrans with count=upload_max_files %}Select at most {{ count }} files at a time.{% endblocktrans %}"
+     data-size-error="{% blocktrans with size=upload_max_file_bytes|filesizeformat %}Each PDF must be no larger than {{ size }}.{% endblocktrans %}"
+     data-batch-error="{% trans 'The selected files exceed the batch size limit. Upload fewer files at a time.' %}"
+     data-uploading="{% trans 'Uploading and scanning your PDFs…' %}">
+    <p class="upload-limits" id="upload-limits">{% blocktrans with count=upload_max_files per_file=upload_max_file_bytes|filesizeformat batch=upload_max_batch_bytes|filesizeformat %}Up to {{ count }} files · {{ per_file }} per PDF · {{ batch }} per batch{% endblocktrans %}</p>
+    <p class="upload-feedback upload-feedback-error" id="upload-error" role="alert" hidden></p>
+    <p class="upload-feedback" data-upload-status role="status" aria-live="polite"></p>
+</div>

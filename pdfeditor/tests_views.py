@@ -145,6 +145,19 @@ class UploadViewExtraTests(_ViewTestBase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "select at least one")
 
+    @override_settings(PDF_MAX_BATCH_UPLOAD_BYTES=1024)
+    @patch("pdfeditor.views.upload.scan_fileobj")
+    def test_multi_file_batch_limit_rejects_before_scanning_or_persisting(self, scan):
+        from .models import UploadedPDF
+
+        response = self.client.post(
+            reverse("upload"), {"pdf_file": [_make_uploaded("one.pdf"), _make_uploaded("two.pdf")]}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Upload fewer files at a time.")
+        scan.assert_not_called()
+        self.assertEqual(UploadedPDF.objects.count(), 0)
+
     def test_upload_rejects_oversize(self):
         big = SimpleUploadedFile(
             "big.pdf",

@@ -25,6 +25,15 @@ logger = logging.getLogger(__name__)
 
 THUMB_SUBDIR = "thumbs"
 THUMB_TARGET_WIDTH = 480
+MAX_FILES_PER_UPLOAD = 20
+
+
+def _upload_limits() -> dict:
+    return {
+        "upload_max_files": MAX_FILES_PER_UPLOAD,
+        "upload_max_file_bytes": settings.PDF_MAX_UPLOAD_BYTES,
+        "upload_max_batch_bytes": settings.PDF_MAX_BATCH_UPLOAD_BYTES,
+    }
 
 
 def _thumbnail_path(pdf_id) -> str:
@@ -61,6 +70,7 @@ def dashboard_view(request):
         request,
         "pdfeditor/dashboard.html",
         {
+            **_upload_limits(),
             "uploaded_pdfs": get_uploaded_pdfs(request, include_encrypted=True),
             "storage_used": used,
             "storage_quota": quota,
@@ -69,18 +79,15 @@ def dashboard_view(request):
     )
 
 
-MAX_FILES_PER_UPLOAD = 20
-
-
 @auth_aware_ratelimit(anon_rate="20/h", user_rate="120/h", method="POST")
 def upload_view(request):
     if request.method != "POST":
-        return render(request, "pdfeditor/upload.html")
+        return render(request, "pdfeditor/upload.html", _upload_limits())
 
     uploaded_files = request.FILES.getlist("pdf_file")
     if not uploaded_files:
         messages.error(request, _("Please select at least one PDF file."))
-        return render(request, "pdfeditor/upload.html")
+        return render(request, "pdfeditor/upload.html", _upload_limits())
     if len(uploaded_files) > MAX_FILES_PER_UPLOAD:
         messages.warning(
             request,
@@ -88,6 +95,12 @@ def upload_view(request):
             % {"max": MAX_FILES_PER_UPLOAD},
         )
         uploaded_files = uploaded_files[:MAX_FILES_PER_UPLOAD]
+
+    if sum(file.size for file in uploaded_files) > settings.PDF_MAX_BATCH_UPLOAD_BYTES:
+        messages.error(
+            request, _("The selected files exceed the batch size limit. Upload fewer files at a time.")
+        )
+        return render(request, "pdfeditor/upload.html", _upload_limits())
 
     max_bytes = getattr(settings, "PDF_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
     quota = storage_quota(request)
@@ -216,7 +229,7 @@ def upload_view(request):
         return redirect(destination if is_upload_destination_allowed(destination) else "dashboard")
 
     messages.error(request, _("No valid PDF files were uploaded."))
-    return render(request, "pdfeditor/upload.html")
+    return render(request, "pdfeditor/upload.html", _upload_limits())
 
 
 @require_POST

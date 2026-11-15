@@ -4926,3 +4926,72 @@ msgstr "Cod din aplicația de autentificare sau cod de rezervă"
 
 msgid "Enter your current password and a valid authenticator or backup code."
 msgstr "Introdu parola actuală și un cod valid din aplicația de autentificare sau un cod de rezervă."
+
+msgid "Choose PDF files only."
+msgstr "Alege numai fișiere PDF."
+
+msgid "Select at most %(count)s files at a time."
+msgstr "Selectează cel mult %(count)s fișiere odată."
+
+msgid "Each PDF must be no larger than %(size)s."
+msgstr "Fiecare PDF trebuie să aibă cel mult %(size)s."
+
+msgid "The selected files exceed the batch size limit. Upload fewer files at a time."
+msgstr "Fișierele selectate depășesc limita totală. Încarcă mai puține fișiere odată."
+
+msgid "Uploading and scanning your PDFs…"
+msgstr "Se încarcă și se scanează fișierele PDF…"
+
+msgid "Up to %(count)s files · %(per_file)s per PDF · %(batch)s per batch"
+msgstr "Cel mult %(count)s fișiere · %(per_file)s per PDF · %(batch)s în total"
+
+msgid "Favorite tools"
+msgstr "Instrumente favorite"
+
+msgid "Favorite tool"
+msgstr "Instrument favorit"
+
+msgid "Find a document"
+msgstr "Caută un document"
+
+msgid "Search by filename…"
+msgstr "Caută după numele fișierului…"
+
+msgid "Document status"
+msgstr "Starea documentului"
+
+msgid "All documents"
+msgstr "Toate documentele"
+
+msgid "Ready to use"
+msgstr "Gata de utilizare"
+
+msgid "Sort documents"
+msgstr "Sortează documentele"
+
+msgid "Newest first"
+msgstr "Cele mai recente"
+
+msgid "Oldest first"
+msgstr "Cele mai vechi"
+
+msgid "Filename A–Z"
+msgstr "Nume fișier A–Z"
+
+msgid "Largest first"
+msgstr "Cele mai mari"
+
+msgid "%(visible)s of %(total)s documents"
+msgstr "%(visible)s din %(total)s documente"
+
+msgid "No documents match these filters."
+msgstr "Niciun document nu corespunde acestor filtre."
+
+msgid "Reduce PDF file size with adjustable quality"
+msgstr "Redu dimensiunea PDF-ului cu o calitate ajustabilă"
+
+msgid "Temporary document storage with automatic cleanup"
+msgstr "Stocare temporară a documentelor, cu ștergere automată"
+
+msgid "Workspace shortcuts"
+msgstr "Acces rapid în spațiul de lucru"

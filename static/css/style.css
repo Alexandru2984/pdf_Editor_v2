@@ -359,13 +359,11 @@ footer {
     font-weight: 800;
     margin-bottom: var(--spacing-sm);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    animation: fadeInDown 0.6s ease-out;
 }
 
 .hero-subtitle {
     font-size: 1.25rem;
     opacity: 0.95;
-    animation: fadeInUp 0.6s ease-out 0.2s both;
 }
 
 /* ========================================
@@ -382,7 +380,6 @@ footer {
     border: 3px dashed var(--border-color);
     transition: all var(--transition-base);
     cursor: pointer;
-    animation: fadeIn 0.6s ease-out 0.4s both;
 }
 
 .upload-zone:hover {
@@ -400,7 +397,6 @@ footer {
 .upload-icon {
     font-size: 4rem;
     margin-bottom: var(--spacing-md);
-    animation: bounce 2s infinite;
 }
 
 .upload-zone h2 {
@@ -3473,6 +3469,55 @@ footer {
     gap: 0.85rem;
     margin: 0 auto 1.75rem;
     max-width: 920px;
+}
+
+.operation-card[hidden], .pdf-item-card[hidden], .upload-feedback[hidden] { display: none; }
+
+.tool-favorite {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    min-width: 44px;
+    min-height: 44px;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+.tool-favorite[aria-pressed="true"] { color: var(--primary-color); border-color: var(--primary-color); }
+
+.document-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+}
+.document-toolbar > div { min-width: 0; }
+.document-toolbar label { display: block; margin-bottom: 0.35rem; font-size: 0.875rem; font-weight: 600; }
+.document-toolbar .form-control { width: 100%; min-width: 0; min-height: 44px; font: inherit; padding: 0.6rem 0.75rem; border: 1px solid var(--input-border); border-radius: var(--radius-md); background: var(--input-bg); color: var(--text-primary); }
+.workspace-shortcuts { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 1rem; }
+.workspace-shortcuts a { min-height: 44px; padding: 0.6rem 1rem; border: 1px solid var(--border-color); border-radius: 999px; color: var(--primary-color); background: var(--bg-primary); text-decoration: none; font-weight: 600; }
+#your-documents, #pdf-tools { scroll-margin-top: 7rem; }
+.document-count, .upload-limits { color: var(--text-secondary); font-size: 0.875rem; margin: 0.75rem 0; }
+.document-count { color: #fff; }
+.upload-feedback { margin-top: 0.75rem; overflow-wrap: anywhere; }
+.upload-feedback-error { color: var(--text-primary); border: 1px solid var(--error-color); border-radius: var(--radius-sm); padding: 0.75rem; background: var(--bg-primary); }
+.upload-busy label[for="file-input"] { pointer-events: none; opacity: 0.7; }
+#file-input:focus-visible + label { outline: 3px solid #fbbf24; outline-offset: 3px; }
+#fileName { overflow-wrap: anywhere; }
+.category-pill, .pdf-item-tool-select { min-height: 44px; }
+
+@media (max-width: 768px) {
+    .document-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .document-search-field { grid-column: 1 / -1; }
+}
+@media (max-width: 380px) {
+    .document-toolbar { grid-template-columns: minmax(0, 1fr); }
 }
 
 .dashboard-search-wrap {

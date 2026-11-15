@@ -1,5 +1,5 @@
 {% extends 'pdfeditor/base.html' %}
-{% load i18n %}
+{% load i18n static %}
 
 {% block title %}{{ seo.title }}{% endblock %}
 
@@ -8,18 +8,25 @@
     <div class="hero-section">
         <h1 class="hero-title">📄 {% trans "PDF Platform" %}</h1>
         <p class="hero-subtitle">{% trans "Professional PDF Tools - All in One Place" %}</p>
+        {% if uploaded_pdfs %}
+        <nav class="workspace-shortcuts" aria-label="{% trans 'Workspace shortcuts' %}">
+            <a href="#your-documents">{% trans "Your PDFs" %}</a>
+            <a href="#pdf-tools">{% trans "PDF Operations" %}</a>
+        </nav>
+        {% endif %}
     </div>
 
     <div class="upload-zone" id="drop-zone">
         <div class="upload-icon">📁</div>
         <h2>{% trans "Upload Your PDFs" %}</h2>
         <p>{% trans "Drag & drop one or more PDFs here, or click to browse (hold Ctrl/Shift in the picker to select multiple)" %}</p>
-        <form method="post" action="{% url 'upload' %}" enctype="multipart/form-data" id="upload-form">
+        <form method="post" action="{% url 'upload' %}" enctype="multipart/form-data" id="upload-form" data-pdf-upload data-auto-upload>
             {% csrf_token %}
-            <input type="file" name="pdf_file" id="file-input" accept=".pdf,application/pdf" multiple style="display: none;">
+            <input type="file" name="pdf_file" id="file-input" accept=".pdf,application/pdf" multiple class="sr-only" aria-describedby="upload-limits upload-error">
             <label for="file-input" class="btn btn-primary btn-large" style="cursor: pointer;">
                 {% trans "Choose Files" %}
             </label>
+            {% include 'pdfeditor/includes/upload_feedback.html' %}
         </form>
     </div>
 
@@ -35,7 +42,103 @@
     </div>
     {% endif %}
 
-    <h2 class="section-title">{% trans "PDF Operations" %}</h2>
+    {% if uploaded_pdfs %}
+    <h2 class="section-title section-title-spaced" id="your-documents">
+        {% trans "Your PDFs" %}
+        <span class="section-title-count">{{ uploaded_pdfs|length }}</span>
+    </h2>
+
+    <div class="user-pdfs-wrapper">
+        <div class="document-toolbar">
+            <div class="document-search-field">
+                <label for="documents-search">{% trans "Find a document" %}</label>
+                <input type="search" id="documents-search" class="form-control" placeholder="{% trans 'Search by filename…' %}" autocomplete="off" aria-controls="documents-grid">
+            </div>
+            <div>
+                <label for="documents-filter">{% trans "Document status" %}</label>
+                <select id="documents-filter" class="form-control" aria-controls="documents-grid">
+                    <option value="all">{% trans "All documents" %}</option>
+                    <option value="ready">{% trans "Ready to use" %}</option>
+                    <option value="encrypted">{% trans "Encrypted" %}</option>
+                </select>
+            </div>
+            <div>
+                <label for="documents-sort">{% trans "Sort documents" %}</label>
+                <select id="documents-sort" class="form-control" aria-controls="documents-grid">
+                    <option value="newest">{% trans "Newest first" %}</option>
+                    <option value="oldest">{% trans "Oldest first" %}</option>
+                    <option value="name">{% trans "Filename A–Z" %}</option>
+                    <option value="largest">{% trans "Largest first" %}</option>
+                </select>
+            </div>
+        </div>
+        <p id="documents-count" class="document-count" role="status" aria-live="polite"
+           data-count-template="{% trans '%(visible)s of %(total)s documents' %}"></p>
+        <p id="documents-no-results" class="dashboard-no-results" hidden>{% trans "No documents match these filters." %}</p>
+        <div class="user-pdfs-grid" id="documents-grid">
+            {% for pdf in uploaded_pdfs %}
+            <div class="pdf-item-card" data-document-name="{{ pdf.name }}" data-document-size="{{ pdf.size }}"
+                 data-document-date="{{ pdf.uploaded_at|date:'U' }}" data-document-status="{% if pdf.is_processable %}ready{% else %}encrypted{% endif %}">
+                {% if pdf.is_processable %}
+                <button type="button" data-pdf-modal="{% url 'pdf_preview' pdf.id %}" class="pdf-item-thumb" aria-label="{% blocktrans with name=pdf.name %}Preview {{ name }}{% endblocktrans %}">
+                    <img src="{% url 'pdf_thumbnail' pdf.id %}" alt="" loading="lazy" data-remove-on-error>
+                    <span class="pdf-item-thumb-overlay" aria-hidden="true">👁️ {% trans "Preview" %}</span>
+                </button>
+                {% else %}
+                <div class="pdf-item-thumb pdf-item-thumb--encrypted" aria-label="{% trans 'Encrypted PDF' %}">
+                    <span aria-hidden="true">🔐</span>
+                    <span>{% trans "Encrypted" %}</span>
+                </div>
+                {% endif %}
+                <div class="pdf-item-body">
+                    <h3 class="pdf-item-name" title="{{ pdf.name }}">{{ pdf.name }}</h3>
+                    <p class="pdf-item-meta-row">
+                        <span><span aria-hidden="true">📦</span> {{ pdf.size|filesizeformat }}</span>
+                        <span><span aria-hidden="true">📅</span> <time datetime="{{ pdf.uploaded_at|date:'c' }}">{{ pdf.uploaded_at|date:"Y-m-d" }}</time></span>
+                    </p>
+                    {% if pdf.is_processable %}
+                    <div class="pdf-item-quick-launch">
+                        <label for="quick-tool-{{ pdf.id }}" class="sr-only">{% trans "Open in tool" %}</label>
+                        <select id="quick-tool-{{ pdf.id }}" class="form-control pdf-item-tool-select" data-pdf-tool-jump="{{ pdf.id }}">
+                            <option value="">⚡ {% trans "Open in tool..." %}</option>
+                            <option value="{% url 'edit' %}">✏️ {% trans "Find & Replace" %}</option>
+                            <option value="{% url 'rephrase' %}">🤖 {% trans "AI Rephrase" %}</option>
+                            <option value="{% url 'summarize' %}">✨ {% trans "AI Summarize" %}</option>
+                            <option value="{% url 'compress' %}">📦 {% trans "Compress" %}</option>
+                            <option value="{% url 'split' %}">✂️ {% trans "Split PDF" %}</option>
+                            <option value="{% url 'merge' %}">🔗 {% trans "Merge PDFs" %}</option>
+                            <option value="{% url 'sign' %}">✍️ {% trans "Digital Sign" %}</option>
+                            <option value="{% url 'protect' %}">🔒 {% trans "Password Protect" %}</option>
+                            <option value="{% url 'watermark' %}">💧 {% trans "Watermark" %}</option>
+                            <option value="{% url 'rotate' %}">🔄 {% trans "Rotate Pages" %}</option>
+                            <option value="{% url 'reorder' %}">📑 {% trans "Reorder Pages" %}</option>
+                            <option value="{% url 'page_numbers' %}">🔢 {% trans "Page Numbers" %}</option>
+                            <option value="{% url 'redact' %}">⬛ {% trans "Redact Text" %}</option>
+                            <option value="{% url 'searchable' %}">🔍 {% trans "Make Searchable (OCR)" %}</option>
+                            <option value="{% url 'convert' %}">📝 {% trans "Convert to Word" %}</option>
+                        </select>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="pdf-item-actions">
+                    {% if pdf.is_processable %}
+                    <button data-pdf-modal="{% url 'pdf_preview' pdf.id %}" class="btn btn-preview pdf-item-btn">👁️ {% trans "Preview" %}</button>
+                    <a href="{% url 'chat' pdf.id %}" class="btn btn-secondary pdf-item-btn" title="{% trans 'Chat with PDF' %}">💬 {% trans "Chat" %}</a>
+                    {% else %}
+                    <a href="{% url 'unprotect' %}?pdf={{ pdf.id }}" class="btn btn-primary pdf-item-btn">🔓 {% trans "Remove Password" %}</a>
+                    {% endif %}
+                    <form method="post" action="{% url 'delete_pdf' pdf.id %}" class="pdf-item-action-form" data-confirm="{% trans "Delete this PDF?" %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-delete pdf-item-btn">🗑️ {% trans "Delete" %}</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <h2 class="section-title" id="pdf-tools">{% trans "PDF Operations" %}</h2>
 
     <div class="dashboard-filter-bar">
         <div class="dashboard-search-wrap">
@@ -49,16 +152,18 @@
                 autocomplete="off"
             >
         </div>
-        <div class="dashboard-category-pills" role="tablist" aria-label="{% trans 'Filter tools by category' %}">
-            <button type="button" class="category-pill active" data-cat-filter="all">{% trans "All Tools" %}</button>
-            <button type="button" class="category-pill" data-cat-filter="organize">📐 {% trans "Organize & Pages" %}</button>
-            <button type="button" class="category-pill" data-cat-filter="edit">✏️ {% trans "Edit & Convert" %}</button>
-            <button type="button" class="category-pill" data-cat-filter="security">🔒 {% trans "Security & Sign" %}</button>
-            <button type="button" class="category-pill" data-cat-filter="ai">🤖 {% trans "AI & OCR" %}</button>
+        <div class="dashboard-category-pills" role="group" aria-label="{% trans 'Filter tools by category' %}">
+            <button type="button" class="category-pill active" data-cat-filter="all" aria-pressed="true" aria-controls="operations-grid">{% trans "All Tools" %}</button>
+            <button type="button" class="category-pill" data-cat-filter="favorites" aria-pressed="false" aria-controls="operations-grid">☆ {% trans "Favorite tools" %}</button>
+            <button type="button" class="category-pill" data-cat-filter="organize" aria-pressed="false" aria-controls="operations-grid">📐 {% trans "Organize & Pages" %}</button>
+            <button type="button" class="category-pill" data-cat-filter="edit" aria-pressed="false" aria-controls="operations-grid">✏️ {% trans "Edit & Convert" %}</button>
+            <button type="button" class="category-pill" data-cat-filter="security" aria-pressed="false" aria-controls="operations-grid">🔒 {% trans "Security & Sign" %}</button>
+            <button type="button" class="category-pill" data-cat-filter="ai" aria-pressed="false" aria-controls="operations-grid">🤖 {% trans "AI & OCR" %}</button>
         </div>
     </div>
 
-    <div class="operations-grid" id="operations-grid">
+    <div class="operations-grid" id="operations-grid"
+         data-favorite-label="{% trans 'Favorite tool' %}">
 
         <div class="operation-card" data-feature="edit" data-category="edit ai">
             <div class="card-icon">✏️</div>
@@ -87,7 +192,7 @@
         <div class="operation-card" data-feature="compress" data-category="edit">
             <div class="card-icon">📦</div>
             <h3>{% trans "Compress" %}</h3>
-            <p>{% trans "Reduce PDF file size without losing quality" %}</p>
+            <p>{% trans "Reduce PDF file size with adjustable quality" %}</p>
             <a href="{% url 'compress' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
 
@@ -268,78 +373,9 @@
             <a href="{% url 'more_tools' %}" class="btn btn-secondary">{% trans "Get Started" %}</a>
         </div>
     </div>
-    <p id="tools-no-results" class="dashboard-no-results" hidden>
+    <p id="tools-no-results" class="dashboard-no-results" role="status" hidden>
         {% trans "No PDF tools match your search. Try another keyword or switch to 'All Tools'." %}
     </p>
-
-    {% if uploaded_pdfs %}
-    <h2 class="section-title section-title-spaced">
-        {% trans "Your PDFs" %}
-        <span class="section-title-count">{{ uploaded_pdfs|length }}</span>
-    </h2>
-
-    <div class="user-pdfs-wrapper">
-        <div class="user-pdfs-grid">
-            {% for pdf in uploaded_pdfs %}
-            <div class="pdf-item-card">
-                {% if pdf.is_processable %}
-                <button type="button" data-pdf-modal="{% url 'pdf_preview' pdf.id %}" class="pdf-item-thumb" aria-label="{% blocktrans with name=pdf.name %}Preview {{ name }}{% endblocktrans %}">
-                    <img src="{% url 'pdf_thumbnail' pdf.id %}" alt="" loading="lazy" data-remove-on-error>
-                    <span class="pdf-item-thumb-overlay" aria-hidden="true">👁️ {% trans "Preview" %}</span>
-                </button>
-                {% else %}
-                <div class="pdf-item-thumb pdf-item-thumb--encrypted" aria-label="{% trans 'Encrypted PDF' %}">
-                    <span aria-hidden="true">🔐</span>
-                    <span>{% trans "Encrypted" %}</span>
-                </div>
-                {% endif %}
-                <div class="pdf-item-body">
-                    <h3 class="pdf-item-name" title="{{ pdf.name }}">{{ pdf.name }}</h3>
-                    <p class="pdf-item-meta-row">
-                        <span><span aria-hidden="true">📦</span> {{ pdf.size|filesizeformat }}</span>
-                        <span><span aria-hidden="true">📅</span> {{ pdf.uploaded_at|slice:":10" }}</span>
-                    </p>
-                    {% if pdf.is_processable %}
-                    <div class="pdf-item-quick-launch">
-                        <label for="quick-tool-{{ pdf.id }}" class="sr-only">{% trans "Open in tool" %}</label>
-                        <select id="quick-tool-{{ pdf.id }}" class="form-control pdf-item-tool-select" data-pdf-tool-jump="{{ pdf.id }}">
-                            <option value="">⚡ {% trans "Open in tool..." %}</option>
-                            <option value="{% url 'edit' %}">✏️ {% trans "Find & Replace" %}</option>
-                            <option value="{% url 'rephrase' %}">🤖 {% trans "AI Rephrase" %}</option>
-                            <option value="{% url 'summarize' %}">✨ {% trans "AI Summarize" %}</option>
-                            <option value="{% url 'compress' %}">📦 {% trans "Compress" %}</option>
-                            <option value="{% url 'split' %}">✂️ {% trans "Split PDF" %}</option>
-                            <option value="{% url 'merge' %}">🔗 {% trans "Merge PDFs" %}</option>
-                            <option value="{% url 'sign' %}">✍️ {% trans "Digital Sign" %}</option>
-                            <option value="{% url 'protect' %}">🔒 {% trans "Password Protect" %}</option>
-                            <option value="{% url 'watermark' %}">💧 {% trans "Watermark" %}</option>
-                            <option value="{% url 'rotate' %}">🔄 {% trans "Rotate Pages" %}</option>
-                            <option value="{% url 'reorder' %}">📑 {% trans "Reorder Pages" %}</option>
-                            <option value="{% url 'page_numbers' %}">🔢 {% trans "Page Numbers" %}</option>
-                            <option value="{% url 'redact' %}">⬛ {% trans "Redact Text" %}</option>
-                            <option value="{% url 'searchable' %}">🔍 {% trans "Make Searchable (OCR)" %}</option>
-                            <option value="{% url 'convert' %}">📝 {% trans "Convert to Word" %}</option>
-                        </select>
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="pdf-item-actions">
-                    {% if pdf.is_processable %}
-                    <button data-pdf-modal="{% url 'pdf_preview' pdf.id %}" class="btn btn-preview pdf-item-btn">👁️ {% trans "Preview" %}</button>
-                    <a href="{% url 'chat' pdf.id %}" class="btn btn-secondary pdf-item-btn" title="{% trans 'Chat with PDF' %}">💬 {% trans "Chat" %}</a>
-                    {% else %}
-                    <a href="{% url 'unprotect' %}?pdf={{ pdf.id }}" class="btn btn-primary pdf-item-btn">🔓 {% trans "Remove Password" %}</a>
-                    {% endif %}
-                    <form method="post" action="{% url 'delete_pdf' pdf.id %}" class="pdf-item-action-form" data-confirm="{% trans "Delete this PDF?" %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-delete pdf-item-btn">🗑️ {% trans "Delete" %}</button>
-                    </form>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 
     <div class="features-section">
         <h2 class="section-title">{% trans "Why Choose Our Platform?" %}</h2>
@@ -347,7 +383,7 @@
             <div class="feature-item">
                 <div class="feature-icon">🔒</div>
                 <h3>{% trans "Secure" %}</h3>
-                <p>{% trans "Your files are automatically deleted after processing" %}</p>
+                <p>{% trans "Temporary document storage with automatic cleanup" %}</p>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">⚡</div>
@@ -368,120 +404,6 @@
     </div>
 </div>
 
-<script nonce="{{ request.csp_nonce }}">
-// Drag and drop functionality
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
-const uploadForm = document.getElementById('upload-form');
-
-function showUploadingState(count) {
-    const label = uploadForm.querySelector('label[for="file-input"]');
-    if (label) {
-        label.textContent = '⏳ {% trans "Uploading & scanning..." %} (' + count + ')';
-        label.style.pointerEvents = 'none';
-        label.style.opacity = '0.8';
-    }
-}
-
-dropZone.addEventListener('click', (e) => {
-    if (!e.target.closest('label') && e.target !== fileInput) {
-        fileInput.click();
-    }
-});
-
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('drag-over');
-});
-
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('drag-over');
-});
-
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('drag-over');
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-        // Accept files by MIME type or .pdf extension (some OS/browsers omit file.type on drag)
-        const pdfFiles = Array.from(files).filter(
-            file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-        );
-        
-        if (pdfFiles.length === 0) {
-            alert('{% trans "Please drop PDF files only" %}');
-            return;
-        }
-
-        if (pdfFiles.length < files.length) {
-            alert('{% trans "Some files were skipped — only PDFs are accepted." %}');
-        }
-        
-        const dataTransfer = new DataTransfer();
-        pdfFiles.forEach(file => dataTransfer.items.add(file));
-        fileInput.files = dataTransfer.files;
-        showUploadingState(pdfFiles.length);
-        uploadForm.submit();
-    }
-});
-
-fileInput.addEventListener('change', () => {
-    if (fileInput.files.length > 0) {
-        showUploadingState(fileInput.files.length);
-        uploadForm.submit();
-    }
-});
-
-// Instant tool search + category filter
-const searchInput = document.getElementById('tools-search-input');
-const categoryPills = document.querySelectorAll('[data-cat-filter]');
-const toolCards = document.querySelectorAll('#operations-grid .operation-card');
-const noResultsMsg = document.getElementById('tools-no-results');
-let activeCategory = 'all';
-
-function filterDashboardTools() {
-    const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
-    let visibleCount = 0;
-
-    toolCards.forEach(card => {
-        const cats = (card.getAttribute('data-category') || '').split(/\s+/);
-        const text = (card.textContent || '').toLowerCase();
-        const feature = (card.getAttribute('data-feature') || '').toLowerCase();
-        const catMatch = activeCategory === 'all' || cats.includes(activeCategory);
-        const queryMatch = !query || text.includes(query) || feature.includes(query);
-
-        if (catMatch && queryMatch) {
-            card.style.display = '';
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-
-    if (noResultsMsg) {
-        noResultsMsg.hidden = visibleCount > 0;
-    }
-}
-
-searchInput?.addEventListener('input', filterDashboardTools);
-
-categoryPills.forEach(pill => {
-    pill.addEventListener('click', () => {
-        categoryPills.forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        activeCategory = pill.getAttribute('data-cat-filter') || 'all';
-        filterDashboardTools();
-    });
-});
-
-// Quick-launch select on uploaded PDF cards
-document.addEventListener('change', (e) => {
-    const sel = e.target.closest('[data-pdf-tool-jump]');
-    if (sel && sel.value) {
-        const pdfId = sel.getAttribute('data-pdf-tool-jump');
-        window.location.href = sel.value + '?pdf=' + encodeURIComponent(pdfId);
-    }
-});
-</script>
+<script defer src="{% static 'js/upload.js' %}"></script>
+<script defer src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends 'pdfeditor/base.html' %}
-{% load i18n %}
+{% load i18n static %}
 
 {% block title %}{% trans "Upload PDF - PDF Editor" %}{% endblock %}
 
@@ -8,7 +8,7 @@
     <h2>📤 {% trans "Upload PDF" %}</h2>
     <p>{% trans "Select the PDF file you want to edit." %}</p>
 
-    <form method="post" enctype="multipart/form-data" class="upload-form">
+    <form method="post" enctype="multipart/form-data" class="upload-form" data-pdf-upload>
         {% csrf_token %}
 
         <div class="form-group">
@@ -22,33 +22,16 @@
                    accept=".pdf,application/pdf"
                    multiple
                    required
+                   aria-describedby="upload-limits upload-error"
                    class="file-input">
             <span class="file-name" id="fileName">{% trans "No file selected" %}</span>
         </div>
+
+        {% include 'pdfeditor/includes/upload_feedback.html' %}
 
         <button type="submit" id="upload-submit-btn" class="btn btn-primary">{% trans "Upload and continue" %} →</button>
     </form>
 </div>
 
-<script nonce="{{ request.csp_nonce }}">
-const noFileMsg = '{% trans "No file selected" %}';
-const pdfInput = document.getElementById('pdf_file');
-pdfInput.addEventListener('change', function(e) {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) {
-        document.getElementById('fileName').textContent = noFileMsg;
-    } else if (files.length === 1) {
-        document.getElementById('fileName').textContent = files[0].name;
-    } else {
-        document.getElementById('fileName').textContent = files.length + ' PDFs: ' + files.map(f => f.name).join(', ');
-    }
-});
-pdfInput.closest('form')?.addEventListener('submit', function() {
-    const btn = document.getElementById('upload-submit-btn');
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = '⏳ {% trans "Uploading..." %}';
-    }
-});
-</script>
+<script defer src="{% static 'js/upload.js' %}"></script>
 {% endblock %}
