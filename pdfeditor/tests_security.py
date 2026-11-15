@@ -977,6 +977,46 @@ class CspReportEndpointTests(TestCase):
     def test_get_is_rejected(self):
         self.assertEqual(self.client.get("/csp-report/").status_code, 405)
 
+    def test_unrecognised_directives_share_one_metric_label(self):
+        import json
+
+        with patch("pdfeditor.views.csp.CSP_VIOLATION_TOTAL") as counter:
+            for value in ("attacker-one", "attacker-two", "script-src\nforged-log"):
+                self.client.post(
+                    "/csp-report/",
+                    json.dumps({"csp-report": {"effective-directive": value}}),
+                    content_type="application/csp-report",
+                )
+        self.assertEqual(counter.labels.call_count, 3)
+        for call in counter.labels.call_args_list:
+            self.assertEqual(call.kwargs, {"directive": "unknown"})
+
+    def test_log_drops_url_secrets_and_escapes_untrusted_fields(self):
+        import json
+
+        payload = {
+            "csp-report": {
+                "effective-directive": "script-src-elem",
+                "document-uri": "https://pdf.example/s/private-share-token/?key=private-api-token#secret",
+                "source-file": "https://url-user:url-password@pdf.example/customer-name.js?secret=1",
+                "blocked-uri": "data:text/html,private-document-text\nforged log line",
+            }
+        }
+        with self.assertLogs("pdfeditor.views.csp", level="WARNING") as captured:
+            self.client.post("/csp-report/", json.dumps(payload), content_type="application/csp-report")
+        rendered = "\n".join(captured.output)
+        self.assertIn("https://pdf.example", rendered)
+        for secret in (
+            "private-share-token",
+            "private-api-token",
+            "url-user",
+            "url-password",
+            "customer-name",
+            "private-document-text",
+            "forged log line",
+        ):
+            self.assertNotIn(secret, rendered)
+
 
 # --------------------------------------------------------------------------
 # Stage 9: strict nonce-based Content-Security-Policy

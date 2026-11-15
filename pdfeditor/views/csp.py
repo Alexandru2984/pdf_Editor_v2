@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import logging
+from urllib.parse import urlsplit
 
 from django.http import HttpRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -31,6 +32,53 @@ logger = logging.getLogger(__name__)
 # used to firehose the log pipeline.
 _MAX_REPORT_BYTES = 16 * 1024
 _MAX_REPORTS_PER_POST = 10
+_DIRECTIVES = frozenset(
+    {
+        "base-uri",
+        "child-src",
+        "connect-src",
+        "default-src",
+        "font-src",
+        "form-action",
+        "frame-ancestors",
+        "frame-src",
+        "img-src",
+        "manifest-src",
+        "media-src",
+        "object-src",
+        "report-to",
+        "report-uri",
+        "require-trusted-types-for",
+        "sandbox",
+        "script-src",
+        "script-src-attr",
+        "script-src-elem",
+        "style-src",
+        "style-src-attr",
+        "style-src-elem",
+        "trusted-types",
+        "upgrade-insecure-requests",
+        "worker-src",
+    }
+)
+
+
+def _report_origin(value: str) -> str:
+    """Keep diagnostics without persisting tokens, filenames or URL credentials."""
+    if value in {"inline", "eval", "wasm-eval", "self"}:
+        return value
+    try:
+        parsed = urlsplit(value)
+        if parsed.scheme in {"data", "blob"}:
+            return parsed.scheme
+        if parsed.scheme in {"https", "http"} and parsed.hostname:
+            host = parsed.hostname
+            if ":" in host:
+                host = f"[{host}]"
+            return f"{parsed.scheme}://{host}"[:200]
+    except ValueError:
+        pass
+    return "unknown"
 
 
 def _normalise(payload: object) -> list[dict]:
@@ -73,14 +121,17 @@ def csp_report_view(request: HttpRequest) -> HttpResponse:
 
     for report in _normalise(payload):
         directive = _field(report, "effective-directive", "effectiveDirective", "violated-directive")
-        # Label cardinality guard: directives are a small fixed vocabulary,
-        # but the value is attacker-supplied — truncate defensively.
-        CSP_VIOLATION_TOTAL.labels(directive=directive[:64]).inc()
+        # Length limits do not bound the number of attacker-chosen series.
+        # Collapse all unrecognised labels to a single fixed bucket.
+        directive = directive.partition(" ")[0]
+        if directive not in _DIRECTIVES:
+            directive = "unknown"
+        CSP_VIOLATION_TOTAL.labels(directive=directive).inc()
         logger.warning(
-            "CSP violation: directive=%s blocked=%s page=%s source=%s",
-            directive[:64],
-            _field(report, "blocked-uri", "blockedURL")[:300],
-            _field(report, "document-uri", "documentURL")[:300],
-            _field(report, "source-file", "sourceFile")[:300],
+            "CSP violation: directive=%r blocked=%r page=%r source=%r",
+            directive,
+            _report_origin(_field(report, "blocked-uri", "blockedURL")),
+            _report_origin(_field(report, "document-uri", "documentURL")),
+            _report_origin(_field(report, "source-file", "sourceFile")),
         )
     return HttpResponse(status=204)
