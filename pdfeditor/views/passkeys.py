@@ -14,12 +14,14 @@ JSON shape — no manual base64url plumbing on either side.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 
 from django.conf import settings
 from django.contrib.auth import login
 from django.core import signing
+from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
@@ -84,6 +86,11 @@ def _consume_challenge(request: HttpRequest, key: str) -> str | None:
     except (signing.BadSignature, TypeError, ValueError):
         return None
     if key == _REG_CHALLENGE_KEY and payload["user_id"] != request.user.pk:
+        return None
+    # Concurrent requests can each load the same session before either saves
+    # its pop(). Claim once in the shared cache before validating a credential.
+    used_key = "webauthn:consumed:" + hashlib.sha256(pending.encode()).hexdigest()
+    if not cache.add(used_key, True, timeout=_CHALLENGE_MAX_AGE):
         return None
     return payload["challenge"]
 

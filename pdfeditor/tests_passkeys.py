@@ -11,16 +11,55 @@ from __future__ import annotations
 
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.test import Client, RequestFactory, SimpleTestCase, TestCase
 from django.urls import reverse
 
 from .models import WebAuthnCredential
 
 _PW = "s3cret-pw-123"
+
+
+class ChallengeConsumptionTests(SimpleTestCase):
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        self.addCleanup(cache.clear)
+
+    def _request(self):
+        request = RequestFactory().post("/accounts/passkeys/login/")
+        request.user = SimpleNamespace(pk=None)
+        request.session = {}
+        return request
+
+    def test_concurrent_requests_cannot_consume_one_assertion_challenge(self):
+        from .views.passkeys import _AUTH_CHALLENGE_KEY, _consume_challenge, _store_challenge
+
+        original = self._request()
+        _store_challenge(original, _AUTH_CHALLENGE_KEY, b"parallel-challenge")
+        pending = original.session[_AUTH_CHALLENGE_KEY]
+
+        def consume(index):
+            request = self._request()
+            request.session[_AUTH_CHALLENGE_KEY] = pending
+            return _consume_challenge(request, _AUTH_CHALLENGE_KEY)
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            consumed = list(pool.map(consume, range(20)))
+        self.assertEqual(sum(value is not None for value in consumed), 1)
+
+    def test_different_challenges_are_independent(self):
+        from .views.passkeys import _AUTH_CHALLENGE_KEY, _consume_challenge, _store_challenge
+
+        for challenge in (b"first-challenge", b"second-challenge"):
+            request = self._request()
+            _store_challenge(request, _AUTH_CHALLENGE_KEY, challenge)
+            self.assertIsNotNone(_consume_challenge(request, _AUTH_CHALLENGE_KEY))
 
 
 def _post_json(client: Client, url: str, payload: dict):
