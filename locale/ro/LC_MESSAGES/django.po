@@ -4917,3 +4917,6 @@ msgstr "Folosește acest PDF într-un alt instrument"
 
 #~ msgid "Bigger models are more accurate but slower."
 #~ msgstr "Modelele mari sunt mai precise dar mai lente."
+
+msgid "Too many invalid verification codes. Wait five minutes and sign in again."
+msgstr "Prea multe coduri de verificare incorecte. Așteaptă cinci minute și autentifică-te din nou."

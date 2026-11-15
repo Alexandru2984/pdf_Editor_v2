@@ -8,6 +8,7 @@ Most are DB-free (SimpleTestCase); only the ShareLink cap test needs the DB.
 from __future__ import annotations
 
 import re
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from io import BytesIO
 from unittest.mock import MagicMock, patch
@@ -18,7 +19,7 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import F
 from django.http import HttpResponse
-from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
+from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 
 from .mfa import consume_backup_code, generate_backup_codes, verify_totp
@@ -471,6 +472,10 @@ _BACKEND = "pdfeditor.auth_backends.CaseInsensitiveModelBackend"
 @override_settings(RATELIMIT_ENABLE=False)
 class MfaFlowTests(TestCase):
     def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        self.addCleanup(cache.clear)
         self.user = get_user_model().objects.create_user(username="alice", password=_PW, is_active=True)
 
     def _enable_mfa(self, secret: str | None = None) -> str:
@@ -557,6 +562,124 @@ class MfaFlowTests(TestCase):
         resp2 = self.client.post("/accounts/mfa/verify/", {"code": pyotp.TOTP(secret).now()})
         self.assertRedirects(resp2, "/accounts/login/", fetch_redirect_response=False)
         self.assertFalse(self._logged_in())
+
+    def test_mfa_budget_is_shared_by_already_pending_sessions(self):
+        secret = self._enable_mfa()
+        self._login()
+        other = Client()
+        other.post("/accounts/login/", {"username": "alice", "password": _PW})
+        for _ in range(5):
+            self.client.post("/accounts/mfa/verify/", {"code": "not-a-code"})
+
+        with patch("pdfeditor.views.mfa.verify_totp") as verify:
+            response = other.post("/accounts/mfa/verify/", {"code": pyotp.TOTP(secret).now()})
+        verify.assert_not_called()
+        self.assertRedirects(response, "/accounts/login/", fetch_redirect_response=False)
+        self.assertNotIn("_auth_user_id", other.session)
+
+    def test_password_reentry_does_not_reset_mfa_budget(self):
+        secret = self._enable_mfa()
+        self._login()
+        for _ in range(5):
+            self.client.post("/accounts/mfa/verify/", {"code": "not-a-code"})
+        self._login()
+        self.client.post("/accounts/mfa/verify/", {"code": pyotp.TOTP(secret).now()})
+        self.assertFalse(self._logged_in())
+
+    def test_mfa_budget_expires_and_valid_login_clears_it(self):
+        from django.core.cache import cache
+
+        secret = self._enable_mfa()
+        cache.set(f"mfa_fail:{self.user.pk}", 5, timeout=0)
+        self._login()
+        self.client.post("/accounts/mfa/verify/", {"code": pyotp.TOTP(secret).now()})
+        self.assertTrue(self._logged_in())
+        self.assertIsNone(cache.get(f"mfa_fail:{self.user.pk}"))
+
+
+@override_settings(RATELIMIT_ENABLE=False)
+class AdminMfaTests(TestCase):
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        self.addCleanup(cache.clear)
+        self.user = get_user_model().objects.create_superuser(
+            username="admin-mfa", email="admin@example.com", password=_PW
+        )
+        self.secret = pyotp.random_base32()
+        self.device = MfaDevice.objects.create(user=self.user, secret=self.secret, confirmed=True)
+
+    def _password_step(self, client=None, next_url="/admin/"):
+        return (client or self.client).post(
+            "/admin/login/", {"username": self.user.username, "password": _PW, "next": next_url}
+        )
+
+    def test_admin_password_cannot_bypass_mfa(self):
+        response = self._password_step()
+        self.assertRedirects(response, "/accounts/mfa/verify/", fetch_redirect_response=False)
+        self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertEqual(self.client.get("/admin/").status_code, 302)
+        response = self.client.post("/accounts/mfa/verify/", {"code": pyotp.TOTP(self.secret).now()})
+        self.assertRedirects(response, "/admin/", fetch_redirect_response=False)
+        self.assertEqual(self.client.get("/admin/").status_code, 200)
+
+    def test_admin_accepts_backup_code_and_preserves_destination(self):
+        code = generate_backup_codes(self.device)[0]
+        self._password_step(next_url="/admin/auth/user/")
+        response = self.client.post("/accounts/mfa/verify/", {"code": code})
+        self.assertRedirects(response, "/admin/auth/user/", fetch_redirect_response=False)
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_admin_without_mfa_keeps_password_login(self):
+        self.device.delete()
+        response = self._password_step()
+        self.assertRedirects(response, "/admin/", fetch_redirect_response=False)
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_admin_rejects_nonstaff_before_mfa(self):
+        self.user.is_staff = False
+        self.user.save(update_fields=["is_staff"])
+        response = self._password_step()
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("mfa_pending_user_id", self.client.session)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_admin_login_requires_csrf(self):
+        response = self._password_step(client=Client(enforce_csrf_checks=True))
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_rejects_external_redirect(self):
+        self._password_step(next_url="https://attacker.example/")
+        response = self.client.post("/accounts/mfa/verify/", {"code": pyotp.TOTP(self.secret).now()})
+        self.assertRedirects(response, "/admin/", fetch_redirect_response=False)
+
+
+class MfaAttemptBudgetTests(SimpleTestCase):
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        self.addCleanup(cache.clear)
+
+    def test_parallel_verifications_reserve_at_most_five_slots(self):
+        from .views.mfa import _claim_mfa_attempt
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            accepted = list(pool.map(_claim_mfa_attempt, [123] * 40))
+        self.assertEqual(sum(accepted), 5)
+
+    def test_expiry_between_add_and_increment_is_retried(self):
+        from .views.mfa import _claim_mfa_attempt
+
+        with patch("pdfeditor.views.mfa.cache.incr", side_effect=[ValueError(), 1]):
+            self.assertTrue(_claim_mfa_attempt(123))
+
+    def test_repeated_expiry_fails_closed(self):
+        from .views.mfa import _claim_mfa_attempt
+
+        with patch("pdfeditor.views.mfa.cache.incr", side_effect=ValueError()):
+            self.assertFalse(_claim_mfa_attempt(123))
 
 
 # --------------------------------------------------------------------------

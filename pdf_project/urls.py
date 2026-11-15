@@ -19,14 +19,16 @@ import os
 
 from django.conf import settings
 from django.contrib import admin
+from django.contrib.admin.forms import AdminAuthenticationForm
 from django.http import FileResponse, Http404
-from django.urls import include, path, re_path
+from django.urls import include, path, re_path, reverse_lazy
 from django.views.decorators.http import require_safe
 from django.views.generic import RedirectView
 from django.views.i18n import JavaScriptCatalog
 
 from pdfeditor.seo import robots_txt, sitemap_xml
 from pdfeditor.views import admin_health_view, serve_media_view
+from pdfeditor.views.mfa import MfaLoginView
 
 
 def serve_service_worker(request):
@@ -63,6 +65,16 @@ urlpatterns = [
     path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
     path(".well-known/security.txt", serve_security_txt, name="security_txt"),
     path("admin/health/", admin_health_view, name="admin_health"),
+    # Admin must use the same second-factor flow as the normal login. Keep
+    # Django's staff-only form and safe `next` handling at this entry point.
+    path(
+        "admin/login/",
+        MfaLoginView.as_view(
+            authentication_form=AdminAuthenticationForm,
+            next_page=reverse_lazy("admin:index"),
+        ),
+        name="admin_mfa_login",
+    ),
     path("admin/", admin.site.urls),
     # Service worker must be served from the root path so its `scope` can
     # cover the whole site — browsers cap SW scope at the URL's directory.

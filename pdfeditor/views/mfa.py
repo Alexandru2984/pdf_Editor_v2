@@ -16,6 +16,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -44,6 +45,23 @@ _MFA_MAX_FAILURES = 5  # max failed TOTP/backup tries before pending login is in
 # The user reaches mfa_verify from session, not authenticate(), so login()
 # needs an explicit backend. Use the project's real (non-axes) backend.
 _LOGIN_BACKEND = "pdfeditor.auth_backends.CaseInsensitiveModelBackend"
+
+
+def _claim_mfa_attempt(user_id: int) -> bool:
+    """Reserve one verification atomically across all sessions and replicas.
+
+    Increment before checking either factor. A fixed expiry prevents new
+    password logins from resetting the budget or extending a lockout forever.
+    Retry once if the key expires between add and incr; otherwise fail closed.
+    """
+    key = f"mfa_fail:{user_id}"
+    for _attempt in range(2):
+        cache.add(key, 0, timeout=_PENDING_MAX_AGE)
+        try:
+            return cache.incr(key) <= _MFA_MAX_FAILURES
+        except ValueError:
+            continue
+    return False
 
 
 class MfaLoginView(auth_views.LoginView):
@@ -92,9 +110,13 @@ def mfa_verify_view(request: HttpRequest) -> HttpResponse:
         return redirect("login")
 
     if request.method == "POST":
-        from django.core.cache import cache
-
         fail_cache_key = f"mfa_fail:{user.pk}"
+        if not _claim_mfa_attempt(user.pk):
+            _clear_pending(request)
+            messages.error(
+                request, _("Too many invalid verification codes. Wait five minutes and sign in again.")
+            )
+            return redirect("login")
         code = request.POST.get("code") or ""
         device = MfaDevice.objects.filter(user=user, confirmed=True).first()
         if device and (verify_totp(device, code) or consume_backup_code(device, code)):
@@ -105,14 +127,12 @@ def mfa_verify_view(request: HttpRequest) -> HttpResponse:
             return redirect(next_url)
 
         fails = int(request.session.get(_PENDING_FAILS, 0)) + 1
-        cache_fails = int(cache.get(fail_cache_key, 0)) + 1
-        cache.set(fail_cache_key, cache_fails, timeout=_PENDING_MAX_AGE)
         request.session[_PENDING_FAILS] = fails
-        if max(fails, cache_fails) >= _MFA_MAX_FAILURES:
+        if fails >= _MFA_MAX_FAILURES:
             _clear_pending(request)
             messages.error(
                 request,
-                _("Too many invalid verification codes. Please sign in with your password again."),
+                _("Too many invalid verification codes. Wait five minutes and sign in again."),
             )
             return redirect("login")
         messages.error(request, _("Invalid code. Try again or use a backup code."))
