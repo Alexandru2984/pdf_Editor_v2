@@ -10,6 +10,7 @@ sign-count bookkeeping, MFA bypass semantics and owner-scoped deletion.
 from __future__ import annotations
 
 import json
+import time
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -97,6 +98,38 @@ class RegistrationVerifyTests(_PasskeyTestBase):
         self.assertEqual(resp.status_code, 400)
         self.assertFalse(WebAuthnCredential.objects.exists())
 
+    def test_expired_registration_is_consumed_before_verification(self):
+        self._prime_challenge()
+        with (
+            patch("django.core.signing.time.time", return_value=time.time() + 301),
+            patch("pdfeditor.views.passkeys.verify_registration_response") as verify,
+        ):
+            response = _post_json(self.client, reverse("passkey_register"), {"credential": {"id": "x"}})
+        self.assertEqual(response.status_code, 400)
+        verify.assert_not_called()
+        self.assertNotIn("webauthn_reg_challenge", self.client.session)
+
+    def test_registration_is_bound_to_initiating_account(self):
+        from django.core import signing
+
+        self._prime_challenge()
+        session = self.client.session
+        pending = signing.loads(session["webauthn_reg_challenge"], salt="webauthn_reg_challenge")
+        pending["user_id"] = self.user.pk + 1
+        session["webauthn_reg_challenge"] = signing.dumps(pending, salt="webauthn_reg_challenge")
+        session.save()
+        with patch("pdfeditor.views.passkeys.verify_registration_response") as verify:
+            response = _post_json(self.client, reverse("passkey_register"), {"credential": {"id": "x"}})
+        self.assertEqual(response.status_code, 400)
+        verify.assert_not_called()
+
+    def test_legacy_or_tampered_registration_challenge_fails_closed(self):
+        session = self.client.session
+        session["webauthn_reg_challenge"] = "legacy-base64-challenge"
+        session.save()
+        response = _post_json(self.client, reverse("passkey_register"), {"credential": {"id": "x"}})
+        self.assertEqual(response.status_code, 400)
+
 
 class LoginTests(TestCase):
     def setUp(self):
@@ -109,6 +142,19 @@ class LoginTests(TestCase):
         resp = client.post(reverse("passkey_auth_options"))
         self.assertEqual(resp.status_code, 200)
         self.assertIn("challenge", json.loads(resp.content))
+
+    def test_expired_authentication_never_checks_credential(self):
+        client = Client()
+        self._prime(client)
+        with (
+            patch("django.core.signing.time.time", return_value=time.time() + 301),
+            patch("pdfeditor.views.passkeys.verify_authentication_response") as verify,
+        ):
+            response = _post_json(client, reverse("passkey_login"), {"credential": {"id": "AQID"}})
+        self.assertEqual(response.status_code, 400)
+        verify.assert_not_called()
+        self.assertNotIn("_auth_user_id", client.session)
+        self.assertNotIn("webauthn_auth_challenge", client.session)
 
     def test_successful_passkey_login_creates_session(self):
         client = Client()

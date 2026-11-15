@@ -19,6 +19,7 @@ import logging
 
 from django.conf import settings
 from django.contrib.auth import login
+from django.core import signing
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
@@ -48,6 +49,7 @@ _REG_CHALLENGE_KEY = "webauthn_reg_challenge"
 _AUTH_CHALLENGE_KEY = "webauthn_auth_challenge"
 _MAX_BODY = 16 * 1024
 _MAX_PASSKEYS_PER_USER = 10
+_CHALLENGE_MAX_AGE = 300
 _ALLOWED_TRANSPORTS = frozenset({"usb", "nfc", "ble", "smart-card", "hybrid", "internal"})
 
 
@@ -65,6 +67,25 @@ def _json_body(request: HttpRequest) -> dict:
     except (ValueError, UnicodeDecodeError):
         return {}
     return body if isinstance(body, dict) else {}
+
+
+def _store_challenge(request: HttpRequest, key: str, challenge: bytes) -> None:
+    request.session[key] = signing.dumps(
+        {"challenge": bytes_to_base64url(challenge), "user_id": request.user.pk}, salt=key
+    )
+
+
+def _consume_challenge(request: HttpRequest, key: str) -> str | None:
+    pending = request.session.pop(key, None)
+    if not pending:
+        return None
+    try:
+        payload = signing.loads(pending, salt=key, max_age=_CHALLENGE_MAX_AGE)
+    except (signing.BadSignature, TypeError, ValueError):
+        return None
+    if key == _REG_CHALLENGE_KEY and payload["user_id"] != request.user.pk:
+        return None
+    return payload["challenge"]
 
 
 @auth_aware_ratelimit(anon_rate="30/h", user_rate="60/h", method="POST")
@@ -93,7 +114,7 @@ def passkey_register_options_view(request: HttpRequest) -> HttpResponse:
             for c in WebAuthnCredential.objects.filter(user=request.user)
         ],
     )
-    request.session[_REG_CHALLENGE_KEY] = bytes_to_base64url(options.challenge)
+    _store_challenge(request, _REG_CHALLENGE_KEY, options.challenge)
     return HttpResponse(options_to_json(options), content_type="application/json")
 
 
@@ -103,7 +124,7 @@ def passkey_register_view(request: HttpRequest) -> HttpResponse:
     """Step 2 of enrolment: verify the attestation and store the credential."""
     if not request.user.is_authenticated:
         return JsonResponse({"error": "auth required"}, status=403)
-    challenge_b64 = request.session.pop(_REG_CHALLENGE_KEY, None)  # one-shot
+    challenge_b64 = _consume_challenge(request, _REG_CHALLENGE_KEY)
     if not challenge_b64:
         return JsonResponse({"error": "no pending registration"}, status=400)
 
@@ -154,7 +175,7 @@ def passkey_auth_options_view(request: HttpRequest) -> HttpResponse:
         rp_id=_rp_id(),
         user_verification=UserVerificationRequirement.REQUIRED,
     )
-    request.session[_AUTH_CHALLENGE_KEY] = bytes_to_base64url(options.challenge)
+    _store_challenge(request, _AUTH_CHALLENGE_KEY, options.challenge)
     return HttpResponse(options_to_json(options), content_type="application/json")
 
 
@@ -162,7 +183,7 @@ def passkey_auth_options_view(request: HttpRequest) -> HttpResponse:
 @require_http_methods(["POST"])
 def passkey_login_view(request: HttpRequest) -> HttpResponse:
     """Step 2 of sign-in: verify the assertion and create the session."""
-    challenge_b64 = request.session.pop(_AUTH_CHALLENGE_KEY, None)  # one-shot
+    challenge_b64 = _consume_challenge(request, _AUTH_CHALLENGE_KEY)
     if not challenge_b64:
         return JsonResponse({"error": "no pending authentication"}, status=400)
 
