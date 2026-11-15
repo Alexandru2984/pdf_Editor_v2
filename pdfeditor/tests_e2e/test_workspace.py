@@ -82,6 +82,9 @@ class WorkspaceTests(PlaywrightTestCase):
                     box = self.page.locator(".tool-favorite").first.bounding_box()
                     self.assertGreaterEqual(box["width"], 44)
                     self.assertGreaterEqual(box["height"], 44)
+                    upload_input = self.page.locator("#file-input").bounding_box()
+                    self.assertLessEqual(upload_input["width"], 1)
+                    self.assertLessEqual(upload_input["height"], 1)
             self.page.locator("body").click(position={"x": 3, "y": 400})
             self.page.keyboard.press("/")
             self.assertTrue(
