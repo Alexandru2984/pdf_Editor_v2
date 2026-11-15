@@ -58,14 +58,20 @@
             <strong>{{ backup_codes_left }}</strong> {% trans "backup codes remaining." %}
         </p>
         <div class="mfa-actions">
-            <form method="post" action="{% url 'mfa_backup_codes' %}">
+            <form method="post" action="{% url 'mfa_backup_codes' %}" class="mfa-change-form">
                 {% csrf_token %}
+                <label for="mfa-backup-password">{% trans "Current password" %}</label>
+                <input id="mfa-backup-password" type="password" name="password" autocomplete="current-password" required>
+                <label for="mfa-backup-code">{% trans "Authenticator or backup code" %}</label>
+                <input id="mfa-backup-code" type="text" name="code" autocomplete="one-time-code" maxlength="64" required>
                 <button type="submit" class="profile-btn neutral">🔁 {% trans "Regenerate backup codes" %}</button>
             </form>
-            <form method="post" action="{% url 'mfa_disable' %}" class="mfa-disable-form">
+            <form method="post" action="{% url 'mfa_disable' %}" class="mfa-change-form">
                 {% csrf_token %}
-                <input type="password" name="password" autocomplete="current-password" required
-                       placeholder="{% trans 'Current password' %}">
+                <label for="mfa-disable-password">{% trans "Current password" %}</label>
+                <input id="mfa-disable-password" type="password" name="password" autocomplete="current-password" required>
+                <label for="mfa-disable-code">{% trans "Authenticator or backup code" %}</label>
+                <input id="mfa-disable-code" type="text" name="code" autocomplete="one-time-code" maxlength="64" required>
                 <button type="submit" class="profile-btn danger">{% trans "Disable 2FA" %}</button>
             </form>
         </div>
@@ -171,8 +177,10 @@
     .mfa-badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
     .mfa-badge.on { background: #065f46; color: #fff; }
     .mfa-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-start; }
-    .mfa-disable-form { display: flex; gap: 0.5rem; flex: 1 1 280px; }
-    .mfa-disable-form input { flex: 1; padding: 0.5rem 0.625rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-family: inherit; }
+    .mfa-change-form { display: flex; flex-direction: column; gap: 0.5rem; flex: 1 1 240px; min-width: 0; }
+    .mfa-change-form label { font-size: 0.875rem; color: #374151; }
+    .mfa-change-form input { width: 100%; min-width: 0; min-height: 44px; padding: 0.5rem 0.625rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-family: inherit; }
+    .mfa-change-form .profile-btn { flex: none; min-height: 44px; }
 </style>
 
 <style>

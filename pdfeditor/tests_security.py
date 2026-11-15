@@ -539,15 +539,72 @@ class MfaFlowTests(TestCase):
         self.assertTrue(device.confirmed)
         self.assertEqual(device.backup_codes.count(), 10)
 
-    def test_disable_requires_correct_password(self):
-        self._enable_mfa()
+    def test_disable_requires_correct_password_and_factor(self):
+        secret = self._enable_mfa()
         self.client.force_login(self.user, backend=_BACKEND)
 
         self.client.post("/accounts/mfa/disable/", {"password": "wrong"})
         self.assertTrue(MfaDevice.objects.filter(user=self.user).exists())
 
         self.client.post("/accounts/mfa/disable/", {"password": _PW})
+        self.assertTrue(MfaDevice.objects.filter(user=self.user).exists())
+
+        self.client.post("/accounts/mfa/disable/", {"password": _PW, "code": pyotp.TOTP(secret).now()})
         self.assertFalse(MfaDevice.objects.filter(user=self.user).exists())
+
+    def test_backup_regeneration_rejects_session_cookie_alone(self):
+        self._enable_mfa()
+        device = MfaDevice.objects.get(user=self.user)
+        previous = generate_backup_codes(device)
+        self.client.force_login(self.user, backend=_BACKEND)
+        response = self.client.post("/accounts/mfa/backup-codes/")
+        self.assertRedirects(response, "/accounts/profile/", fetch_redirect_response=False)
+        self.assertTrue(consume_backup_code(device, previous[0]))
+
+    def test_backup_regeneration_requires_password_even_with_valid_factor(self):
+        secret = self._enable_mfa()
+        device = MfaDevice.objects.get(user=self.user)
+        self.client.force_login(self.user, backend=_BACKEND)
+        response = self.client.post(
+            "/accounts/mfa/backup-codes/", {"password": "wrong", "code": pyotp.TOTP(secret).now()}
+        )
+        self.assertRedirects(response, "/accounts/profile/", fetch_redirect_response=False)
+        self.assertEqual(device.backup_codes.count(), 0)
+        self.assertTrue(verify_totp(device, pyotp.TOTP(secret).now()))
+
+    def test_backup_regeneration_accepts_password_and_totp(self):
+        secret = self._enable_mfa()
+        device = MfaDevice.objects.get(user=self.user)
+        previous = generate_backup_codes(device)
+        self.client.force_login(self.user, backend=_BACKEND)
+        response = self.client.post(
+            "/accounts/mfa/backup-codes/", {"password": _PW, "code": pyotp.TOTP(secret).now()}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["codes"]), 10)
+        self.assertFalse(consume_backup_code(device, previous[0]))
+
+    def test_backup_regeneration_accepts_one_time_backup_code(self):
+        self._enable_mfa()
+        device = MfaDevice.objects.get(user=self.user)
+        previous = generate_backup_codes(device)
+        self.client.force_login(self.user, backend=_BACKEND)
+        response = self.client.post("/accounts/mfa/backup-codes/", {"password": _PW, "code": previous[0]})
+        self.assertEqual(response.status_code, 200)
+        response = self.client.post("/accounts/mfa/backup-codes/", {"password": _PW, "code": previous[0]})
+        self.assertRedirects(response, "/accounts/profile/", fetch_redirect_response=False)
+
+    def test_factor_changes_share_the_login_attempt_budget(self):
+        from django.core.cache import cache
+
+        secret = self._enable_mfa()
+        self.client.force_login(self.user, backend=_BACKEND)
+        cache.set(f"mfa_fail:{self.user.pk}", 5, timeout=300)
+        response = self.client.post(
+            "/accounts/mfa/backup-codes/", {"password": _PW, "code": pyotp.TOTP(secret).now()}
+        )
+        self.assertRedirects(response, "/accounts/profile/", fetch_redirect_response=False)
+        self.assertEqual(MfaDevice.objects.get(user=self.user).backup_codes.count(), 0)
 
     def test_mfa_lockout_clears_pending_session_after_five_failures(self):
         from django.core.cache import cache
@@ -680,6 +737,39 @@ class MfaAttemptBudgetTests(SimpleTestCase):
 
         with patch("pdfeditor.views.mfa.cache.incr", side_effect=ValueError()):
             self.assertFalse(_claim_mfa_attempt(123))
+
+
+class SensitiveResponseCacheTests(SimpleTestCase):
+    def test_dynamic_responses_are_not_stored_regardless_of_auth_method(self):
+        for path in ("/", "/en/", "/accounts/profile/", "/api/v1/pdfs/", "/download/", "/s/token/"):
+            for status in (200, 302, 400, 404):
+                with self.subTest(path=path, status=status):
+                    request = RequestFactory().get(path)
+                    response = SecurityHeadersMiddleware(lambda req, s=status: HttpResponse(status=s))(
+                        request
+                    )
+                    self.assertEqual(response["Cache-Control"], "private, no-store")
+
+    def test_existing_no_store_policy_is_preserved(self):
+        def view(request):
+            response = HttpResponse()
+            response["Cache-Control"] = "no-store"
+            return response
+
+        response = SecurityHeadersMiddleware(view)(RequestFactory().get("/healthz"))
+        self.assertEqual(response["Cache-Control"], "no-store")
+
+    def test_public_bootstrap_assets_keep_their_cache_policy(self):
+        for path in ("/static/css/style.css", "/robots.txt", "/sitemap.xml", "/sw.js", "/jsi18n/"):
+            with self.subTest(path=path):
+
+                def view(request):
+                    response = HttpResponse()
+                    response["Cache-Control"] = "public, max-age=3600"
+                    return response
+
+                response = SecurityHeadersMiddleware(view)(RequestFactory().get(path))
+                self.assertEqual(response["Cache-Control"], "public, max-age=3600")
 
 
 # --------------------------------------------------------------------------

@@ -144,6 +144,20 @@ _REPORTING_ENDPOINTS = 'csp-endpoint="/csp-report/"'
 # server / e2e it would force subresources to https://localhost and break them.
 _CSP_HTTPS_SUFFIX = "; upgrade-insecure-requests"
 
+# Only these non-personal discovery/bootstrap responses may opt into caching.
+# HTML carries CSP nonces/CSRF tokens; API/files can contain owner-scoped data
+# even when Django's request.user is anonymous (e.g. X-API-Key authentication).
+_PUBLIC_CACHE_PATHS = frozenset(
+    {
+        "/robots.txt",
+        "/sitemap.xml",
+        "/.well-known/security.txt",
+        "/sw.js",
+        "/manifest.webmanifest",
+        "/jsi18n/",
+    }
+)
+
 # Django Admin uses a handful of framework-owned inline data/script blocks
 # without a nonce. Restrict them to same-origin resources; this is still a
 # material boundary compared with leaving the route without any CSP.
@@ -208,6 +222,12 @@ class SecurityHeadersMiddleware:
         nonce = secrets.token_urlsafe(16)
         request.csp_nonce = nonce
         response = self.get_response(request)
+        if (
+            not request.path_info.startswith("/static/")
+            and request.path_info not in _PUBLIC_CACHE_PATHS
+            and "no-store" not in response.get("Cache-Control", "").lower()
+        ):
+            response["Cache-Control"] = "private, no-store"
         if self.permissions_policy:
             response.setdefault("Permissions-Policy", self.permissions_policy)
         skipped = self.csp_skip_prefixes and request.path.startswith(self.csp_skip_prefixes)

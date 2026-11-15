@@ -173,11 +173,11 @@ def mfa_setup_view(request: HttpRequest) -> HttpResponse:
 @auth_aware_ratelimit(anon_rate="5/h", user_rate="5/h", method="POST")
 @require_http_methods(["POST"])
 def mfa_disable_view(request: HttpRequest) -> HttpResponse:
-    """Turn MFA off — re-auth with the account password first."""
-    if not request.user.check_password(request.POST.get("password") or ""):
-        messages.error(request, _("Password incorrect — two-factor authentication was not disabled."))
+    """Turn MFA off only after proving both password and an existing factor."""
+    device = MfaDevice.objects.filter(user=request.user, confirmed=True).first()
+    if device is None or not _verify_mfa_change(request, device):
         return redirect("profile")
-    MfaDevice.objects.filter(user=request.user).delete()
+    device.delete()
     # Revoke other active sessions when MFA is disabled so any concurrent session must re-authenticate.
     from ..models import UserSession
     from .sessions import _kill_django_session
@@ -200,5 +200,24 @@ def mfa_backup_codes_view(request: HttpRequest) -> HttpResponse:
     if device is None:
         messages.error(request, _("Enable two-factor authentication first."))
         return redirect("profile")
+    if not _verify_mfa_change(request, device):
+        return redirect("profile")
     codes = generate_backup_codes(device)
     return render(request, "registration/mfa_backup_codes.html", {"codes": codes, "fresh": False})
+
+
+def _verify_mfa_change(request: HttpRequest, device: MfaDevice) -> bool:
+    """A session cookie alone must never mint recovery codes or remove MFA."""
+    if not _claim_mfa_attempt(request.user.pk):
+        messages.error(
+            request, _("Too many invalid verification codes. Wait five minutes and sign in again.")
+        )
+        return False
+    code = request.POST.get("code") or ""
+    if request.user.check_password(request.POST.get("password") or "") and (
+        verify_totp(device, code) or consume_backup_code(device, code)
+    ):
+        cache.delete(f"mfa_fail:{request.user.pk}")
+        return True
+    messages.error(request, _("Enter your current password and a valid authenticator or backup code."))
+    return False
