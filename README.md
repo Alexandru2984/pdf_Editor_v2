@@ -4,7 +4,7 @@
 [![deploy](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml/badge.svg)](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml)
 ![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
 ![django](https://img.shields.io/badge/django-5.2%20LTS-092e20)
-![tests](https://img.shields.io/badge/tests-877%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-1020%20passing-brightgreen)
 ![security](https://img.shields.io/badge/security-bandit%20%2B%20pip--audit%20%2B%20trivy-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
@@ -29,11 +29,11 @@ and a CI gate that blocks deploys on critical CVEs.
 | **Sustained load** | **500 concurrent users**, 53,580 requests over 5 min, **0.15% failure rate** |
 | **Peak throughput** | **179 req/s** at 8 workers across 2 replicas (+48% vs single-replica baseline) |
 | **Endpoint speedup story** | `/api/v1/outputs/` **60s → 1.2s** after pagination + cache + DB tuning |
-| **Tests** | **877 passing** across Django + SDK · 3.10/3.11/3.12 matrix · pgvector required |
+| **Tests** | **1,020 passing** locally on Python 3.12 (992 Django + 23 SDK + 5 browser tests) · CI matrix: 3.10/3.11/3.12 · pgvector required |
 | **Lines of Python** | ~21,500 (excluding migrations) |
 | **PDF ops** | 25+, all reachable both from web UI and REST API |
 | **Async jobs** | 6 kinds (OCR, PDF/A, Compare, Convert, RAG-index, ToImages) — sub-5-page sync, threshold-async |
-| **Security review** | No exploitable findings (path traversal, SSE auth, race conditions, XSS, open redirect, Redis pub/sub all clean) |
+| **Security review** | [Current findings, fixes and release status](docs/AUDIT_2026-11-16.md); residual risks remain tracked |
 | **Compose services** | 13 (db · pgbouncer · redis · migrate · web×N · worker · nginx · clamav · prometheus · grafana · loki · promtail · node-exporter) |
 
 Full benchmark write-up with per-endpoint p95 and the tuning story in [`scripts/loadtest/benchmarks.md`](scripts/loadtest/benchmarks.md).
@@ -384,6 +384,11 @@ same SMTP relay the app uses for password resets — no separate notification
 service needed.
 
 ## Security posture
+
+The latest [audit and focused product plan](docs/AUDIT_2026-11-16.md) records
+admin MFA, recovery-code protection, passkey expiry, private response caching,
+CSP telemetry, dependency fixes and responsive workspace improvements. It also
+distinguishes committed source changes from the currently deployed image.
 
 The dated [security/production audit](docs/SECURITY_AUDIT_2026-08-09.md)
 contains the evidence, residual risk register and release gates. The

@@ -6,9 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -36,6 +40,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Install system dependencies
         run: |
@@ -94,6 +100,12 @@ jobs:
           coverage report --omit='*/migrations/*,*/tests*.py,*/templates/*'
           coverage xml --omit='*/migrations/*,*/tests*.py,*/templates/*'
 
+      - name: Run Python SDK and CLI tests
+        if: matrix.python-version == '3.12'
+        env:
+          PYTHONPATH: sdk
+        run: python -m unittest discover -s sdk/tests -v
+
       - name: Run Django deployment check
         env:
           SECRET_KEY: a-sufficiently-long-random-secret-key-for-ci-deploy-check-only
@@ -117,6 +129,7 @@ jobs:
     # green before build-and-deploy fires, because deploy.yml gates on this
     # whole workflow's conclusion.
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     services:
       db:
@@ -138,6 +151,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
 
       - name: Install system dependencies
         run: |

@@ -15,7 +15,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import close_old_connections
+from django.db import close_old_connections, connections
 from django.test import Client, TestCase, TransactionTestCase, override_settings, skipUnlessDBFeature
 from django.urls import reverse
 from django.utils.encoding import force_bytes
@@ -458,7 +458,9 @@ class ActivationConcurrencyTests(TransactionTestCase):
                 response = client.get(url)
                 return response.status_code, "_auth_user_id" in client.session
             finally:
-                close_old_connections()
+                # CONN_MAX_AGE=600 keeps healthy connections open; worker
+                # threads must close theirs before Django drops the test DB.
+                connections.close_all()
 
         with (
             patch("pdfeditor.views.auth.decode_uid", side_effect=read_before_lock),

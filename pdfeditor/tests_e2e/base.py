@@ -74,13 +74,9 @@ class PlaywrightTestCase(StaticLiveServerTestCase):
         from playwright.sync_api import sync_playwright
 
         cls._playwright = sync_playwright().start()
+        cls.addClassCleanup(cls._playwright.stop)
         cls.browser = cls._playwright.chromium.launch(headless=cls.headless)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        cls.browser.close()
-        cls._playwright.stop()
-        super().tearDownClass()
+        cls.addClassCleanup(cls.browser.close)
 
     def setUp(self) -> None:
         super().setUp()
