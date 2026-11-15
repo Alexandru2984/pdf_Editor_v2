@@ -38,6 +38,8 @@ pyOpenSSL>=26.3.0,<27
 PyMuPDF>=1.27.0,<2.0
 # WebAuthn/passkeys: server-side ceremony validation (pdfeditor/views/passkeys.py).
 webauthn>=3.0.0
+# WebAuthn ASN.1 decoders: 0.6.5 fixes the October 2026 CPU-exhaustion advisories.
+pyasn1>=0.6.5
 # TOTP MFA: secret/code handling (pyotp) + enrolment QR codes (qrcode).
 pyotp>=2.9.0
 qrcode[pil]>=7.4.0
