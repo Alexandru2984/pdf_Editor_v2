@@ -4,7 +4,7 @@
 [![deploy](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml/badge.svg)](https://github.com/Alexandru2984/pdf_Editor_v2/actions/workflows/deploy.yml)
 ![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
 ![django](https://img.shields.io/badge/django-5.2%20LTS-092e20)
-![tests](https://img.shields.io/badge/tests-1020%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-1028%20passing-brightgreen)
 ![security](https://img.shields.io/badge/security-bandit%20%2B%20pip--audit%20%2B%20trivy-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
@@ -29,7 +29,7 @@ and a CI gate that blocks deploys on critical CVEs.
 | **Sustained load** | **500 concurrent users**, 53,580 requests over 5 min, **0.15% failure rate** |
 | **Peak throughput** | **179 req/s** at 8 workers across 2 replicas (+48% vs single-replica baseline) |
 | **Endpoint speedup story** | `/api/v1/outputs/` **60s → 1.2s** after pagination + cache + DB tuning |
-| **Tests** | **1,020 passing** locally on Python 3.12 (992 Django + 23 SDK + 5 browser tests) · CI matrix: 3.10/3.11/3.12 · pgvector required |
+| **Tests** | **1,028 passing** (992 Django + 23 SDK + 5 browser + 8 deployment tests) · CI matrix: 3.10/3.11/3.12 · pgvector required |
 | **Lines of Python** | ~21,500 (excluding migrations) |
 | **PDF ops** | 25+, all reachable both from web UI and REST API |
 | **Async jobs** | 6 kinds (OCR, PDF/A, Compare, Convert, RAG-index, ToImages) — sub-5-page sync, threshold-async |

@@ -124,6 +124,11 @@ if ! docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' 
     exit 1
 fi
 TARGET_IMAGE_ID="$(docker image inspect --format '{{.Id}}' "$TARGET_REF")"
+TARGET_REVISION="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$TARGET_REF")"
+if [[ "$TARGET_REVISION" != "$EXPECTED_COMMIT" ]]; then
+    echo "✗ signed image source revision does not match the tested commit" >&2
+    exit 1
+fi
 
 if ! docker image inspect "$LOCAL_IMAGE" >/dev/null 2>&1; then
     echo "✗ no current ${LOCAL_IMAGE}; refusing a production deploy without rollback" >&2

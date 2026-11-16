@@ -80,7 +80,7 @@ jobs:
 
       - name: Run bandit SAST
         if: matrix.python-version == '3.12'
-        run: bandit -r pdfeditor/ pdf_project/ -c pyproject.toml -x "tests*,*/tests*"
+        run: bandit -r pdfeditor/ pdf_project/ scripts/deploy_from_ci.py -c pyproject.toml -x "tests*,*/tests*"
 
       - name: Run pip-audit (dep CVEs)
         if: matrix.python-version == '3.12'
@@ -105,6 +105,13 @@ jobs:
         env:
           PYTHONPATH: sdk
         run: python -m unittest discover -s sdk/tests -v
+
+      - name: Verify restricted deployment entry point
+        if: matrix.python-version == '3.12'
+        run: |
+          ruff check scripts/deploy_from_ci.py scripts/tests/
+          ruff format --check scripts/deploy_from_ci.py scripts/tests/
+          python -m unittest discover -s scripts/tests -v
 
       - name: Run Django deployment check
         env:
