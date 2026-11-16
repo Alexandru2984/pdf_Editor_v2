@@ -15,7 +15,7 @@ boto3>=1.43.67
 # clamd client for optional ClamAV upload scanning (pdfeditor/scanning.py).
 clamd>=1.0.2
 # 50.0.0 also fixes CVE-2026-69247; stay within the current major series.
-cryptography>=50.0.0,<51
+cryptography>=50.0.2,<51
 django-prometheus>=2.4.1
 djangorestframework>=3.18.2
 drf-spectacular>=0.27.0
